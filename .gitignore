@@ -1,0 +1,8 @@
+# Directories
+bin/
+
+# Files
+*.o
+*.d
+*.gch
+*.exe

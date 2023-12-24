@@ -1,0 +1,13 @@
+[
+  {
+    "arguments": [
+      "gcc",
+      "-std=gnu99",
+      "-Wall",
+      "-Wextra",
+      "-DDEBUG"
+    ],
+    "directory": "D:/Users/Administrator/Desktop/project/typing",
+    "file": "src/main.c"
+  }
+]

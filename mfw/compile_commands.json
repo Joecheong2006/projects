@@ -1,0 +1,20 @@
+[
+  { 
+    "arguments": [
+      "g++",
+      "-std=c++17",
+      "-Wall",
+      "-Wextra",
+      "-g",
+      "-Ilib/stb_image",
+      "-Ilib/glew",
+      "-Ilib/glm",
+      "-Ilib",
+      "-Isrc",
+      "-Os",
+      "-DDEBUG",
+    ],
+    "directory": "~/joech/program/c++/gldemo",
+    "file": "src/main.cpp"
+  }
+]

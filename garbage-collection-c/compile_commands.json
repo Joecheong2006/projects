@@ -1,0 +1,13 @@
+[
+  {
+    "arguments": [
+      "gcc",
+      "-std=gnu2x",
+      "-Wall",
+      "-Wextra",
+      "-lm"
+    ],
+    "directory": "D:/Users/Administrator/Desktop/project/garbage-collection-c",
+    "file": "src/main.c"
+  }
+]

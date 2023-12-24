@@ -1,0 +1,13 @@
+[
+  {
+    "arguments": [
+      "gcc",
+      "-std=gnu99",
+      "-Wall",
+      "-Wextra",
+      "-lm"
+    ],
+    "directory": "D:/Users/Administrator/Desktop/project/ml",
+    "file": "src/main.c"
+  }
+]
