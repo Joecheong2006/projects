@@ -1,8 +1,7 @@
 #pragma once
 
 #include "WindowsWindow.h"
-#define GLEW_STATIC 1
-#include "glew/GL/glew.h"
+#include <mfwpch.h>
 
 namespace mfw {
     void GLClearError();

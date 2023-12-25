@@ -1,6 +1,5 @@
 #pragma once
 
-#include "EventSystem.h"
 #include "WindowsWindow.h"
 #include "OpenglContext.h"
 
@@ -17,6 +16,7 @@ namespace mfw {
 
         WindowsWindow m_window;
         OpenglContext openglContext;
+        EventListener eventListener;
 
     };
 

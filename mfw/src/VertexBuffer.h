@@ -1,16 +1,19 @@
 #pragma once
 #include "util.h"
 
-class VertexBuffer
-{
-private:
-    u32 m_id;
+namespace mfw {
+    class VertexBuffer
+    {
+    private:
+        u32 m_id;
 
-public:
-    explicit VertexBuffer(const void* data, u32 size);
-    ~VertexBuffer();
+    public:
+        explicit VertexBuffer(const void* data, u32 size);
+        ~VertexBuffer();
 
-    void bind() const;
-    void unbind() const;
+        void bind() const;
+        void unbind() const;
 
-};
+    };
+}
+

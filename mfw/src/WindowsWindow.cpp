@@ -2,6 +2,7 @@
 
 #include "log.h"
 #include "WindowEventSystem.h"
+
 #define GETLOWORD(l) ((i16) (((i64) (l)) & 0xffff))
 #define GETHIWORD(l) ((i16) ((((i64) (l)) >> 16) & 0xffff))
 
@@ -27,39 +28,39 @@ namespace mfw {
         switch (message) {
         case WM_CREATE: {
                 m_state.isRunning = true;
-                m_state.m_callBackFunction(WindowCreateEvent());
+                m_state.m_callBackFunc(WindowCreateEvent());
             } break;
         case WM_CLOSE: {
-                m_state.isRunning = false;
-                m_state.m_callBackFunction(WindowCloseEvent());
+                m_state.m_callBackFunc(WindowCloseEvent());
             } break;
 
         case WM_DESTROY: {
-                m_state.m_callBackFunction(WindowDestroyEvent());
-            } break;
+                m_state.m_callBackFunc(WindowDestroyEvent());
+                m_state.isRunning = false;
+            } return;
 
         case WM_MOVE: {
                 m_state.x = GETLOWORD(lparam);
                 m_state.y = GETHIWORD(lparam);
-                m_state.m_callBackFunction(WindowMoveEvent(m_state.x, m_state.y));
+                m_state.m_callBackFunc(WindowMoveEvent(m_state.x, m_state.y));
             } break;
 
         case WM_SIZE: {
                 m_state.width = GETLOWORD(lparam);
                 m_state.height = GETHIWORD(lparam);
-                m_state.m_callBackFunction(WindowResizeEvent(m_state.width, m_state.height));
+                m_state.m_callBackFunc(WindowResizeEvent(m_state.width, m_state.height));
                 if (wparam == SIZE_MAXIMIZED)
-                    m_state.m_callBackFunction(WindowMaximizeEvent());
+                    m_state.m_callBackFunc(WindowMaximizeEvent());
                 else if (wparam == SIZE_MINIMIZED)
-                    m_state.m_callBackFunction(WindowMinimizeEvent());
+                    m_state.m_callBackFunc(WindowMinimizeEvent());
             } break;
 
         case WM_SETFOCUS: {
-                m_state.m_callBackFunction(WindowFocusEvent());
+                m_state.m_callBackFunc(WindowFocusEvent());
             } break;
 
         case WM_KILLFOCUS: {
-                m_state.m_callBackFunction(WindowNotFocusEvent());
+                m_state.m_callBackFunc(WindowNotFocusEvent());
             } break;
 
         default:
@@ -67,11 +68,11 @@ namespace mfw {
         }
     }
 
-    WindowsWindow::WindowsWindow(const char* title, int width, int height, int style)
-        : m_state((char*)title, style, 0, 0, width, height)
+    WindowsWindow::WindowsWindow()
     {}
-   
-    void WindowsWindow::initialize() {
+
+    void WindowsWindow::initialize(const WindowState& state) {
+        m_state = state;
         registerWindowClass();
         createWindowsWindow();
         ShowWindow(m_hwnd, SW_NORMAL);

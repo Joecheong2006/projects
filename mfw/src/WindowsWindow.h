@@ -2,7 +2,7 @@
 
 #include "EventSystem.h"
 #include "Window.h"
-#include "mfwpch.h"
+#include <mfwpch.h>
 
 #define MFW_DEFAULT_STYLE WS_OVERLAPPEDWINDOW
 #define MFW_OVERLAPPED WS_OVERLAPPED
@@ -16,7 +16,7 @@ namespace  mfw {
     class WindowsWindow : public Window {
         friend class OpenglContext;
     public:
-        explicit WindowsWindow(const char* title, int width, int height, int style = MFW_DEFAULT_STYLE);
+        explicit WindowsWindow();
         ~WindowsWindow();
 
         virtual bool isRunning() const override { return m_state.isRunning; }
@@ -27,10 +27,10 @@ namespace  mfw {
         virtual i32 style() const override { return m_state.style; }
         virtual const char* title() const override { return m_state.title.c_str(); }
         void setEventCallBack(const std::function<void(const Event&)>& callBackFunction) override {
-            m_state.m_callBackFunction = std::move(callBackFunction);
+            m_state.m_callBackFunc = std::move(callBackFunction);
         }
         virtual void setVSync(bool enable) override { m_state.isVSync = enable; }
-        virtual void initialize() override;
+        virtual void initialize(const WindowState& state) override;
         virtual void update() override;
 
         inline void swapBuffers() const { SwapBuffers(m_hdc); }

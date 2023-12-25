@@ -9,6 +9,7 @@
       "-Ilib/stb_image",
       "-Ilib/glew",
       "-Ilib/glm",
+      "-Ilib/glad/include",
       "-Ilib",
       "-Isrc",
       "-Os",

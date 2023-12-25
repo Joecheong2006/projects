@@ -2,6 +2,7 @@
 
 #include "util.h"
 #include "log.h"
+#include <mfwpch.h>
 
 namespace mfw {
     enum struct EventType : u32 {
@@ -36,15 +37,24 @@ namespace mfw {
 
     };
 
-    class EventDispatcher {
+    class EventListener {
+        using EventFunc = std::function<void(const Event&)>;
     public:
         template <class T = Event>
-        static void Dispatch(const Event& event) {
+        void listen(const Event& event) {
             if (event.getEventType() == T::Type()) {
-                LOG_INFOLN(event);
+                eventCallBackMap[T::Type()](event);
             }
         }
-    };
 
+        template <class T = Event>
+        void addEventFunc(EventFunc eventFunc) {
+            eventCallBackMap[T::Type()] = eventFunc;
+        }
+
+    private:
+        std::unordered_map<EventType, EventFunc> eventCallBackMap;
+
+    };
 }
 

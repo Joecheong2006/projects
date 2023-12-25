@@ -1,25 +1,29 @@
 #include "VertexBuffer.h"
-#include "OpenglContext.h"
 #include "Renderer.h"
+#include <mfwpch.h>
 
-VertexBuffer::VertexBuffer(const void* data, u32 size)
-{
-    GLCALL(glGenBuffers(1, &m_id));
-    GLCALL(glBindBuffer(GL_ARRAY_BUFFER, m_id));
-    GLCALL(glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW));
+
+namespace mfw {
+    VertexBuffer::VertexBuffer(const void* data, u32 size)
+    {
+        GLCALL(glGenBuffers(1, &m_id));
+        GLCALL(glBindBuffer(GL_ARRAY_BUFFER, m_id));
+        GLCALL(glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW));
+    }
+
+    VertexBuffer::~VertexBuffer()
+    {
+        GLCALL(glDeleteBuffers(1, &m_id));
+    }
+
+    void VertexBuffer::bind() const
+    {
+        GLCALL(glBindBuffer(GL_ARRAY_BUFFER, m_id));
+    }
+
+    void VertexBuffer::unbind() const
+    {
+        GLCALL(glBindBuffer(GL_ARRAY_BUFFER, 0));
+    }
 }
 
-VertexBuffer::~VertexBuffer()
-{
-    GLCALL(glDeleteBuffers(1, &m_id));
-}
-
-void VertexBuffer::bind() const
-{
-    GLCALL(glBindBuffer(GL_ARRAY_BUFFER, m_id));
-}
-
-void VertexBuffer::unbind() const
-{
-    GLCALL(glBindBuffer(GL_ARRAY_BUFFER, 0));
-}

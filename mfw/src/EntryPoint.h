@@ -5,6 +5,8 @@
 extern mfw::Application* mfw::CreateApplication();
 
 int main(int argc, char** argv) {
+    (void)argc;
+    (void)argv;
     mfw::Application* application = mfw::CreateApplication();
     application->run();
     delete application;

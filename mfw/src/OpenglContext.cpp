@@ -1,5 +1,4 @@
 #include "OpenglContext.h"
-#include "glew/GL/wglew.h"
 #include "log.h"
 
 namespace mfw {
@@ -54,7 +53,10 @@ namespace mfw {
         m_hglrc = wglCreateContext(hdc);
         wglMakeCurrent(hdc, m_hglrc);
 
-        if(glewInit() != GLEW_OK) {
+        //if (gladLoadGLLoader((GLADloadproc)wglGetProcAddress)) {
+        //    LOG_INFOLN("GLAD FAIL TO LOAD GL LIBARARY");
+        //}
+        if (glewInit() != GLEW_OK) {
             LOG_INFOLN("GLAD FAIL TO LOAD GL LIBARARY");
         }
 

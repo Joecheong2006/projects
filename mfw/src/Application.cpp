@@ -1,17 +1,24 @@
 #include "Application.h"
-
-#include "OpenglContext.h"
+#include "EventSystem.h"
 #include "WindowEventSystem.h"
+#include <mfwpch.h>
 
 namespace mfw {
     Application::Application()
-        : m_window("demo", 960, 640, MFW_DEFAULT_STYLE)
+        : m_window()
     {
+        m_window.initialize({MFW_DEFAULT_STYLE, "demo", 960, 640});
         m_window.setEventCallBack([this](const Event& event) {
                     this->handleEvent(event);
                 });
-        m_window.initialize();
         openglContext.createMorden(&m_window);
+
+        eventListener.addEventFunc<WindowCloseEvent>([](const Event& event) {
+                    LOG_INFOLN(event);
+                });
+        eventListener.addEventFunc<WindowMoveEvent>([](const Event& event) {
+                    LOG_INFOLN(event);
+                });
     }
 
     Application::~Application() {
@@ -19,20 +26,21 @@ namespace mfw {
     }
 
     void Application::run() {
+        glClearColor(0.1, 0.1, 0.1, 1);
         while (m_window.isRunning()) {
+            glViewport(0, 0, m_window.width(), m_window.height());
+            glClear(GL_COLOR_BUFFER_BIT);
             update();
             m_window.update();
         }
     }
 
     void Application::handleEvent(const Event& event) {
-        EventDispatcher::Dispatch<WindowMoveEvent>(event);
+        eventListener.listen<WindowCloseEvent>(event);
+        eventListener.listen<WindowMoveEvent>(event);
     }
 
     void Application::update() {
-        glViewport(0, 0, m_window.width(), m_window.height());
-        glClearColor(0.1, 0.1, 0.1, 1);
-        glClear(GL_COLOR_BUFFER_BIT);
         m_window.swapBuffers();
     }
 }

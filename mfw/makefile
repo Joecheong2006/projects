@@ -6,6 +6,7 @@ RFLAGS := -Os -march=native -flto -fdefer-pop -fmerge-constants -fthread-jumps -
 SOURCE = src src/**
 LIBRARY = lib/stb_image lib/glew
 INCLUDE = -Ilib -Ilib/glew -Ilib/stb_image -Isrc
+LIB = -lopengl32 -lUser32 -lGdi32 -lGlu32 -lShell32
 OUT = $(BIN)/mfw_demo.exe
 
 
@@ -13,9 +14,6 @@ SRC = $(wildcard $(patsubst %, %/*.cpp, $(SOURCE)))
 LIBOBJ = $(wildcard $(patsubst %, %/*.o, $(LIBRARY))) 
 OBJ = $(SRC:%.cpp=%.o)
 DEP = $(OBJ:%.o=%.d)
-
-LIB = -lopengl32 -lUser32 -lGdi32 -lGlu32 -lShell32
-
 BIN = bin
 
 PROCESS_INDEX = -1
@@ -37,7 +35,7 @@ build:
 	@echo "Compiling library"
 	@cd lib/stb_image && $(CC) -o stb_image.o -c stb_image.cpp
 	@cd lib/glew && gcc -c glew.c -o glew.o
-	@$(CC) -x c++-header -o $(PCH).gch -c $(PCH)
+	@$(CC) -x c++-header $(INCLUDE) -o $(PCH).gch -c $(PCH)
 	@echo "Completed"
 
 release: $(eval CFLAGS += $(RFLAGS)) bin $(OBJ)

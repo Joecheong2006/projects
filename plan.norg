@@ -3,12 +3,13 @@
       - ( ) tetris
       - ( ) chess
       - ( ) test editor
-      - (=) typing race
+      - (-) typing race
+      - (=) mfw
       - ( ) json parser
       - ( ) game of life
       - ( ) simulation
       - ( ) graphics engine
-      - ( ) log system
+      - (=) log system
 
 ***** learning
       - (=) opengl

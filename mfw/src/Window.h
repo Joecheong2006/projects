@@ -2,29 +2,28 @@
 
 #include "util.h"
 #include "EventSystem.h"
-#include "mfwpch.h"
+#include <mfwpch.h>
 
 namespace mfw {
     struct WindowState {
         WindowState()
             : isRunning(false), isVSync(false)
         {}
-        WindowState(char* title, i32 style, i32 x, i32 y, i32 width = 960, i32 height = 640)
-            : title(title), style(style), x(x), y(y), width(width), height(height)
+        WindowState(i32 style, std::string title, i32 x, i32 y, i32 width = 960, i32 height = 640)
+            : style(style), title(title), x(x), y(y), width(width), height(height), m_callBackFunc([](const Event&) {})
         {}
 
-        std::string title;
         i32 style;
+        std::string title;
         i32 x, y, width, height;
         bool isRunning, isVSync;
-
-        std::function<void(const Event&)> m_callBackFunction = [](const Event&) {};
+        std::function<void(const Event&)> m_callBackFunc;
     };
 
     struct Window {
     public:
         ~Window() {}
-        virtual void initialize() = 0;
+        virtual void initialize(const WindowState& state) = 0;
         virtual void update() = 0;
         virtual bool isRunning() const = 0;
         virtual i32 width() const = 0;
