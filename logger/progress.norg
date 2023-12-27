@@ -1,4 +1,8 @@
 *** progress
     - (=) debug log
-    -- ( ) testing
+    --- (=) color pattern win / non-win
+    --- (x) user define data type
+    --- ( ) asyncable
+    --- ( ) thread safe
+    --- ( ) testing
 
