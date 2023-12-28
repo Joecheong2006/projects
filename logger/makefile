@@ -1,5 +1,5 @@
 CC = g++
-CFLAGS := -std=c++11 -Wall -Wextra -Wpedantic -Wstrict-aliasing -g -lm
+CFLAGS := -std=c++11 -Wall -Wextra -Wpedantic -Wstrict-aliasing -g
 SOURCE = src src/**
 OUT = $(BIN)/mfw_demo.exe
 

@@ -25,49 +25,16 @@ namespace Log {
 DEFINE_PATTERN_BASIC_LOG(int, "%d", value);
 DEFINE_PATTERN_BASIC_LOG(float, "%g", value);
 DEFINE_PATTERN_BASIC_LOG(double, "%lg", value);
+DEFINE_PATTERN_BASIC_LOG(size_t, "%llu", value);
 DEFINE_PATTERN_BASIC_LOG(char*, "%s", value);
 DEFINE_PATTERN_BASIC_LOG(char, "%c", value);
 DEFINE_PATTERN_BASIC_LOG(std::string, "%s", value.c_str());
 
-#if defined(WIN32) || defined(_WIN32)
-#include <windows.h>
 namespace Log {
-    enum class ColorPattern {
-        Reset = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE,
-        Black = 0,
-        Red = FOREGROUND_RED,
-        Green = FOREGROUND_GREEN,
-        Yellow = Green | Red,
-        Blue = FOREGROUND_BLUE,
-        Magenta = Blue | Red,
-        Cyan = Blue | Green,
-        White = Reset,
-    };
-    void SetColor(int colorPattern);
-    void SetColor(ColorPattern colorPattern = ColorPattern::Reset);
-}
-#else
-#include <stdlib.h>
-namespace Log {
-    enum class ColorPattern {
-        Reset = 0,
-        Black = 30,
-        Red,
-        Green,
-        Yellow,
-        Blue,
-        Magenta,
-        Cyan,
-        White
-    };
-
-    void SetColor(int colorPattern);
-    void SetColor(ColorPattern colorPattern = ColorPattern::Reset);
-}
-#endif
-
-namespace Log {
-    const std::string find_string_between(const std::string& str, char a, char b);
+    inline const std::string find_string_between(const std::string& str, char a, char b) {
+        auto fristIndex = str.find(a);
+        return str.substr(fristIndex + 1, str.find(b) - fristIndex - 1);
+    }
 
     template <typename Arg>
     void basic_log(const std::string& pattern, const Arg& arg) {
@@ -93,7 +60,51 @@ namespace Log {
         basic_log(pattern, args...);
     }
 
-    void basic_log(const std::string& pattern);
+#if defined(WIN32) || defined(_WIN32)
+#include <windows.h>
+    enum class ColorPattern {
+        Reset = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE,
+        Black = 0,
+        Red = FOREGROUND_RED,
+        Green = FOREGROUND_GREEN,
+        Yellow = Green | Red,
+        Blue = FOREGROUND_BLUE,
+        Magenta = Blue | Red,
+        Cyan = Blue | Green,
+        White = Reset,
+    };
+
+    inline void SetColor(int colorPattern) {
+        HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
+        SetConsoleTextAttribute(handle, colorPattern);
+    }
+
+    inline void SetColor(ColorPattern colorPattern = ColorPattern::Reset) { 
+        SetColor((int)colorPattern);
+    }
+#else
+#include <stdlib.h>
+    enum class ColorPattern {
+        Reset = 0,
+        Black = 30,
+        Red,
+        Green,
+        Yellow,
+        Blue,
+        Magenta,
+        Cyan,
+        White
+    };
+
+    inline void SetColor(int colorPattern) { 
+        std::string pattern = "\033[1;" + std::to_string(colorPattern) + "m";
+        Pattern<std::string>::Log(pattern); 
+    }
+
+    inline void SetColor(ColorPattern colorPattern = ColorPattern::Reset) { 
+        SetColor((int)colorPattern);
+    }
+#endif
 
     template <typename... Args>
     void Log(ColorPattern colorPattern, const std::string& pattern, const Args& ...args) {
@@ -102,7 +113,20 @@ namespace Log {
         SetColor();
     }
 
-    void Log(ColorPattern colorPattern, const std::string& pattern);
+    template <typename... Args>
+    void Log(const std::string& pattern, const Args& ...args) {
+        basic_log(pattern, args...);
+    }
+
+    inline void basic_log(const std::string& pattern) {
+        Pattern<std::string>::Log(pattern);
+    }
+    
+    inline void Log(ColorPattern colorPattern, const std::string& pattern) {
+        SetColor(colorPattern);
+        basic_log(pattern);
+        SetColor();
+    }
 
 }
 
