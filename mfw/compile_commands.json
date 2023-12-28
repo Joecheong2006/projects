@@ -15,7 +15,7 @@
       "-Os",
       "-DDEBUG",
     ],
-    "directory": "~/joech/program/c++/gldemo",
+    "directory": "E:/project/mfw",
     "file": "src/main.cpp"
   }
 ]

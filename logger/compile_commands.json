@@ -1,0 +1,15 @@
+[
+  { 
+    "arguments": [
+      "g++",
+      "-std=c++11",
+      "-Wall",
+      "-Wextra",
+      "-Wpedantic",
+      "-Wstrict-aliasing",
+      "-g",
+    ],
+    "directory": "E:/project/logger",
+    "file": "src/main.cpp"
+  }
+]
