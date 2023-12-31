@@ -2,33 +2,116 @@
 
 #include <stdio.h>
 #include <string>
+#include <cstdint>
+
+#include <vector>
 
 namespace Log {
     template <typename T>
     struct Pattern {
         explicit Pattern() {}
-        static void Log(const T& value) { (void)value; }
+        static void Log(const T& value, std::string format) { 
+            (void)value;
+            (void)format;
+        }
     };
-}
 
-#define DEFINE_PATTERN_BASIC_LOG(type, pattern, ...)\
+    inline std::string get_format_specifier(std::string& format, const char* default_res = "") {
+        std::string result;
+        if (format.empty())
+            return default_res;
+        if (format[0] != ':') {
+            result = format.substr(0, format.find(':'));
+        }
+        return result;
+    };
+
+    inline std::string get_format_flag(std::string& format, const char* default_res = "") {
+        std::string result;
+        int sIndex = format.find(':');
+        if (sIndex == -1)
+            return default_res;
+        result = format[sIndex + 1];
+        if (result[0] != '<' && result[0] != '>') {
+            result = '-';
+            return result;
+        }
+        if (result[0] == '<') {
+            result = '-';
+            return result;
+        }
+        if (result[0] == '>')
+            result = "";
+        return result;
+    };
+
+    inline std::string get_format_width(std::string& format, const char* default_res = "0") {
+        std::string result = default_res;
+        int sIndex = format.find(':');
+        if (sIndex == -1)
+            return result;
+
+        if (format[sIndex + 1] != '<' && format[sIndex + 1] != '>')
+            --sIndex;
+
+        int dIndex = format.find('.');
+        if (dIndex == -1 && (int)format.size() - sIndex > 2) {
+            result = format.substr(sIndex + 2);
+            return result;
+        }
+        if (dIndex > sIndex + 2)
+            result = format.substr(sIndex + 2, dIndex - sIndex - 2);
+        return result;
+    };
+
+    inline std::string get_format_percision(std::string& format, const char* default_res = "6") {
+        std::string result = default_res;
+        int dIndex = format.find('.');
+        if(dIndex == -1 || dIndex == (int)format.size() - 1)
+            return result;
+        result = format.substr(dIndex + 1);
+        return result;
+    };
+
+#define DEFINE_PATTERN_BASIC_LOG(type, dspecifier, dpercision, ...)\
         template <>\
-        struct Log::Pattern<type> {\
-            static void Log(const type& value) {\
-                printf(pattern, __VA_ARGS__);\
+        struct Pattern<type> {\
+            static void Log(const type& value, std::string pattern = "") {\
+                std::string final_format = "%";\
+                final_format += get_format_flag(pattern, "-");\
+                final_format += get_format_width(pattern);\
+                final_format.push_back('.');\
+                final_format += get_format_percision(pattern, dpercision);\
+                final_format += get_format_specifier(pattern, dspecifier);\
+                printf(final_format.c_str(), __VA_ARGS__);\
             }\
         };
 
-#define DEFINE_PATTERN_BASIC_LOGLN(type, pattern, ...)\
-    DEFINE_PATTERN_BASIC_LOG(type, pattern "\n", __VA_ARGS__);\
+#define DEFINE_PATTERN_BASIC_CHAR_LOG(type, _pattern, ...)\
+        template <>\
+        struct Pattern<type> {\
+            static void Log(const type& value, std::string pattern = "") {\
+                (void)pattern;\
+                printf(_pattern, __VA_ARGS__);\
+            }\
+        };
 
-DEFINE_PATTERN_BASIC_LOG(int, "%d", value);
-DEFINE_PATTERN_BASIC_LOG(float, "%g", value);
-DEFINE_PATTERN_BASIC_LOG(double, "%lg", value);
-DEFINE_PATTERN_BASIC_LOG(size_t, "%llu", value);
-DEFINE_PATTERN_BASIC_LOG(char*, "%s", value);
-DEFINE_PATTERN_BASIC_LOG(char, "%c", value);
-DEFINE_PATTERN_BASIC_LOG(std::string, "%s", value.c_str());
+// d/i o u x X
+DEFINE_PATTERN_BASIC_LOG(int8_t, "hd", "0", value);
+DEFINE_PATTERN_BASIC_LOG(uint8_t, "uhd", "0", value);
+DEFINE_PATTERN_BASIC_LOG(int16_t, "hd", "0", value);
+DEFINE_PATTERN_BASIC_LOG(uint16_t, "uhd", "0", value);
+DEFINE_PATTERN_BASIC_LOG(int32_t, "d", "0", value);
+DEFINE_PATTERN_BASIC_LOG(uint32_t, "ud", "0", value);
+DEFINE_PATTERN_BASIC_LOG(int64_t, "ld", "0", value);
+DEFINE_PATTERN_BASIC_LOG(uint64_t, "uld", "0", value);
+DEFINE_PATTERN_BASIC_LOG(float, "g", "6", value);
+DEFINE_PATTERN_BASIC_LOG(double, "lg", "6",  value);
+DEFINE_PATTERN_BASIC_CHAR_LOG(char*, "%s", value);
+DEFINE_PATTERN_BASIC_CHAR_LOG(char, "%c", value);
+DEFINE_PATTERN_BASIC_CHAR_LOG(std::string, "%s", value.c_str());
+
+}
 
 namespace Log {
     inline const std::string find_string_between(const std::string& str, char a, char b) {
@@ -44,7 +127,7 @@ namespace Log {
         std::string bs = find_string_between(pattern, '{', '}');
         ptn.erase(0, bstart + bs.length() + 2);
 
-        Pattern<Arg>::Log(arg);
+        Pattern<Arg>::Log(arg, bs);
         Pattern<std::string>::Log(ptn);
     }
 
@@ -56,7 +139,7 @@ namespace Log {
         std::string bs = find_string_between(pattern, '{', '}');
         ptn.erase(0, bstart + bs.length() + 2);
 
-        Pattern<Arg>::Log(arg);
+        Pattern<Arg>::Log(arg, bs);
         basic_log(pattern, args...);
     }
 
@@ -128,20 +211,33 @@ namespace Log {
         SetColor();
     }
 
-}
-
 #define SET_LOG_COLOR_WITH_NAME(name, color)\
-        namespace Log {\
-            template <typename... Args>\
-            void name(const std::string& pattern, const Args& ...args) {\
-                Log::Log(color, pattern, args...);\
-            }\
+        template <typename... Args>\
+        void name(const std::string& pattern, const Args& ...args) {\
+            Log(color, pattern, args...);\
         }\
 
-SET_LOG_COLOR_WITH_NAME(Trace, Log::ColorPattern::White);
-SET_LOG_COLOR_WITH_NAME(Debug, Log::ColorPattern::Green);
-SET_LOG_COLOR_WITH_NAME(Info, Log::ColorPattern::Cyan);
-SET_LOG_COLOR_WITH_NAME(Warn, Log::ColorPattern::Yellow);
-SET_LOG_COLOR_WITH_NAME(Error, Log::ColorPattern::Magenta);
-SET_LOG_COLOR_WITH_NAME(Fatal, Log::ColorPattern::Red);
+SET_LOG_COLOR_WITH_NAME(Trace, ColorPattern::White);
+SET_LOG_COLOR_WITH_NAME(Debug, ColorPattern::Green);
+SET_LOG_COLOR_WITH_NAME(Info, ColorPattern::Cyan);
+SET_LOG_COLOR_WITH_NAME(Warn, ColorPattern::Yellow);
+SET_LOG_COLOR_WITH_NAME(Error, ColorPattern::Magenta);
+SET_LOG_COLOR_WITH_NAME(Fatal, ColorPattern::Red);
+
+    template <typename T>
+    struct Pattern<std::vector<T>> {
+        static void Log(const std::vector<T>& value, std::string format = "") {
+            (void)format;
+            Pattern<char>::Log('[');
+            for (size_t i = 0; i < value.size() - 1; ++i) {
+                Pattern<T>::Log(value[i]);
+                Pattern<std::string>::Log(", ");
+            }
+            Pattern<T>::Log(value.back());
+            Pattern<char>::Log(']');
+        }
+    };
+
+}
+
 

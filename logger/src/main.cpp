@@ -21,41 +21,17 @@ typedef vec3<int> vec3i;
 
 template <typename T>
 struct Log::Pattern<vec3<T>> {
-    static void Log(const vec3<T>& value) {
+    static void Log(const vec3<T>& value, std::string format) {
+        (void)format;
         Log::Log("[{}, {}, {}]", value.x, value.y, value.z);
-    }
-};
-
-
-template <typename T>
-struct Log::Pattern<std::vector<T>> {
-    static void Log(const std::vector<T>& value) {
-        Log::Pattern<char>::Log('[');
-        for (size_t i = 0; i < value.size() - 1; ++i) {
-            Log::Pattern<T>::Log(value[i]);
-            Log::Pattern<std::string>::Log(", ");
-        }
-        Log::Pattern<T>::Log(value.back());
-        Log::Pattern<char>::Log(']');
-    }
-};
-
-template <typename T>
-struct Log::Pattern<std::vector<std::vector<T>>> {
-    static void Log(const std::vector<std::vector<T>>& value) {
-        Log::Pattern<char>::Log('[');
-        for (size_t i = 0; i < value.size() - 1; ++i) {
-            Log::Pattern<std::vector<T>>::Log(value[i]);
-            Log::Pattern<std::string>::Log(",\n ");
-        }
-        Log::Pattern<std::vector<T>>::Log(value.back());
-        Log::Pattern<std::string>::Log("]\n");
     }
 };
 
 #define TEST_MESSAGES "v:{} int:{} double:{} float:{}\n", v, 10, 2.05, 4.3f
 
 typedef double testing_type;
+
+// %[flags][width].[percision][specifier]
 
 int main() {
     vec3f v(6.1, 3.04, 9.889);
@@ -65,7 +41,7 @@ int main() {
         std::vector<testing_type>{ 4.2, 5.3, 6.2 },
         std::vector<testing_type>{ 7.2, 8.4, 9.3 },
     };
-    Log::Trace("vec:\n {}", vec);
+    Log::Trace("{}\n", vec);
 
     Log::Trace(TEST_MESSAGES);
     Log::Debug(TEST_MESSAGES);
@@ -73,6 +49,8 @@ int main() {
     Log::Warn(TEST_MESSAGES);
     Log::Error(TEST_MESSAGES);
     Log::Fatal(TEST_MESSAGES);
+
+    Log::Info("{:10.2}\n", 10.1);
 
     Log::Trace("end\n");
 }
