@@ -41,7 +41,7 @@ int main() {
         std::vector<testing_type>{ 4.2, 5.3, 6.2 },
         std::vector<testing_type>{ 7.2, 8.4, 9.3 },
     };
-    Log::Trace("{}\n", vec);
+    Log::Info("{f:<5}\n", vec);
 
     Log::Trace(TEST_MESSAGES);
     Log::Debug(TEST_MESSAGES);
@@ -50,7 +50,7 @@ int main() {
     Log::Error(TEST_MESSAGES);
     Log::Fatal(TEST_MESSAGES);
 
-    Log::Info("{:10.2}\n", 10.1);
+    Log::Info("{p:>10}\n", 12345);
 
     Log::Trace("end\n");
 }

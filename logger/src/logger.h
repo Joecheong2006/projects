@@ -16,17 +16,18 @@ namespace Log {
         }
     };
 
-    inline std::string get_format_specifier(std::string& format, const char* default_res = "") {
+    inline std::string get_format_specifier(const std::string& format, const char* default_res = "") {
         std::string result;
         if (format.empty())
             return default_res;
         if (format[0] != ':') {
             result = format.substr(0, format.find(':'));
+            return result;
         }
-        return result;
+        return default_res;
     };
 
-    inline std::string get_format_flag(std::string& format, const char* default_res = "") {
+    inline std::string get_format_flag(const std::string& format, const char* default_res = "") {
         std::string result;
         int sIndex = format.find(':');
         if (sIndex == -1)
@@ -45,7 +46,7 @@ namespace Log {
         return result;
     };
 
-    inline std::string get_format_width(std::string& format, const char* default_res = "0") {
+    inline std::string get_format_width(const std::string& format, const char* default_res = "0") {
         std::string result = default_res;
         int sIndex = format.find(':');
         if (sIndex == -1)
@@ -64,7 +65,7 @@ namespace Log {
         return result;
     };
 
-    inline std::string get_format_percision(std::string& format, const char* default_res = "6") {
+    inline std::string get_format_percision(const std::string& format, const char* default_res = "6") {
         std::string result = default_res;
         int dIndex = format.find('.');
         if(dIndex == -1 || dIndex == (int)format.size() - 1)
@@ -76,7 +77,7 @@ namespace Log {
 #define DEFINE_PATTERN_BASIC_LOG(type, dspecifier, dpercision, ...)\
         template <>\
         struct Pattern<type> {\
-            static void Log(const type& value, std::string pattern = "") {\
+            static void Log(const type& value, const std::string& pattern) {\
                 std::string final_format = "%";\
                 final_format += get_format_flag(pattern, "-");\
                 final_format += get_format_width(pattern);\
@@ -90,7 +91,7 @@ namespace Log {
 #define DEFINE_PATTERN_BASIC_CHAR_LOG(type, _pattern, ...)\
         template <>\
         struct Pattern<type> {\
-            static void Log(const type& value, std::string pattern = "") {\
+            static void Log(const type& value, const std::string& pattern) {\
                 (void)pattern;\
                 printf(_pattern, __VA_ARGS__);\
             }\
@@ -123,19 +124,19 @@ namespace Log {
     void basic_log(const std::string& pattern, const Arg& arg) {
         std::string& ptn = const_cast<std::string&>(pattern);
         auto bstart = ptn.find("{");
-        Pattern<std::string>::Log(ptn.substr(0, bstart));
+        Pattern<std::string>::Log(ptn.substr(0, bstart), "");
         std::string bs = find_string_between(pattern, '{', '}');
         ptn.erase(0, bstart + bs.length() + 2);
 
         Pattern<Arg>::Log(arg, bs);
-        Pattern<std::string>::Log(ptn);
+        Pattern<std::string>::Log(ptn, "");
     }
 
     template <typename Arg, typename... Args>
     void basic_log(const std::string& pattern, const Arg& arg, const Args& ...args) {
         std::string& ptn = const_cast<std::string&>(pattern);
         auto bstart = ptn.find("{");
-        Pattern<std::string>::Log(ptn.substr(0, bstart));
+        Pattern<std::string>::Log(ptn.substr(0, bstart), "");
         std::string bs = find_string_between(pattern, '{', '}');
         ptn.erase(0, bstart + bs.length() + 2);
 
@@ -202,7 +203,7 @@ namespace Log {
     }
 
     inline void basic_log(const std::string& pattern) {
-        Pattern<std::string>::Log(pattern);
+        Pattern<std::string>::Log(pattern, "");
     }
     
     inline void Log(ColorPattern colorPattern, const std::string& pattern) {
@@ -226,15 +227,15 @@ SET_LOG_COLOR_WITH_NAME(Fatal, ColorPattern::Red);
 
     template <typename T>
     struct Pattern<std::vector<T>> {
-        static void Log(const std::vector<T>& value, std::string format = "") {
+        static void Log(const std::vector<T>& value, const std::string& format) {
             (void)format;
-            Pattern<char>::Log('[');
+            Pattern<char>::Log('[', "");
             for (size_t i = 0; i < value.size() - 1; ++i) {
-                Pattern<T>::Log(value[i]);
-                Pattern<std::string>::Log(", ");
+                Pattern<T>::Log(value[i], format);
+                Pattern<std::string>::Log(", ", "");
             }
-            Pattern<T>::Log(value.back());
-            Pattern<char>::Log(']');
+            Pattern<T>::Log(value.back(), format);
+            Pattern<char>::Log(']', "");
         }
     };
 
