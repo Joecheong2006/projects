@@ -13,9 +13,9 @@
       "-Ilib",
       "-Isrc",
       "-Os",
-      "-DDEBUG",
+      "-DDEBUG"
     ],
-    "directory": "E:/project/mfw",
+    "directory": "D:/project/mfw",
     "file": "src/main.cpp"
   }
 ]

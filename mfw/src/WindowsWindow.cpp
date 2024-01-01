@@ -75,7 +75,6 @@ namespace mfw {
         m_state = state;
         registerWindowClass();
         createWindowsWindow();
-        ShowWindow(m_hwnd, SW_NORMAL);
     }
 
     void WindowsWindow::registerWindowClass() {

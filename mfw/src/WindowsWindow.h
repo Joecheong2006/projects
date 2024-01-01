@@ -32,6 +32,7 @@ namespace  mfw {
         virtual void setVSync(bool enable) override { m_state.isVSync = enable; }
         virtual void initialize(const WindowState& state) override;
         virtual void update() override;
+        void show() const { ShowWindow(m_hwnd, SW_NORMAL); }
 
         inline void swapBuffers() const { SwapBuffers(m_hdc); }
 

@@ -8,10 +8,11 @@ namespace mfw {
         : m_window()
     {
         m_window.initialize({MFW_DEFAULT_STYLE, "demo", 960, 640});
+        openglContext.createMorden(&m_window);
+        m_window.show();
         m_window.setEventCallBack([this](const Event& event) {
                     this->handleEvent(event);
                 });
-        openglContext.createMorden(&m_window);
 
         eventListener.addEventFunc<WindowCloseEvent>([](const Event& event) {
                     LOG_INFOLN(event);

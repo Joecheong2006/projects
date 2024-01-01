@@ -11,5 +11,5 @@ public:
 };
 
 mfw::Application* mfw::CreateApplication() {
-    return  new DemoSandBox();
+    return new DemoSandBox();
 }
