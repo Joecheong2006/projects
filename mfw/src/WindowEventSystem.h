@@ -47,7 +47,7 @@ namespace mfw {
     private:
         virtual void log() const override {
             Event::log();
-            LOG_INFO('[', x, ", ", y,']');
+            LOG_INFO("[{}, {}]", x, y);
         }
 
     };
@@ -61,7 +61,7 @@ namespace mfw {
     private:
         virtual void log() const override {
             Event::log();
-            LOG_INFO('[', width, ", ", height,']');
+            LOG_INFO("[{}, {}]", width, height);
         }
 
     };

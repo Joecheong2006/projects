@@ -1,6 +1,6 @@
 #pragma once
 
-#include "log.h"
+#include "mfwlog.h"
 #include "util.h"
 
 namespace mfw {

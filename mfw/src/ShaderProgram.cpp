@@ -81,7 +81,7 @@ namespace mfw {
         {
             char infolog[512];
             GLCALL(glGetShaderInfoLog(id, 512, NULL, infolog));
-            LOG_INFOLN("Compile error: ", infolog);
+            LOG_INFO("Compile error: {}\n", infolog);
             GLCALL(glDeleteShader(id));
             return 0;
         }
@@ -105,7 +105,7 @@ namespace mfw {
             return m_uniform_location_cache[name];
         GLCALL(i32 location = glGetUniformLocation(m_id, name));
         if(location == -1)
-            LOG_INFOLN("cannot found uniform locaiton: ", name);
+            LOG_INFO("cannot found uniform locaiton: {}\n", name);
         m_uniform_location_cache[name] = location;
         return location;
     }

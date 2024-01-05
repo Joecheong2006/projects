@@ -1,8 +1,7 @@
 #pragma once
 
 #include "util.h"
-#include "log.h"
-#include <mfwpch.h>
+#include "mfwlog.h"
 
 namespace mfw {
     struct VertexBufferElement

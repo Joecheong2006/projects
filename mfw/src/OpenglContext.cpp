@@ -1,13 +1,14 @@
 #include "OpenglContext.h"
-#include "log.h"
+#include "mfwlog.h"
+#include <typeinfo>
 
 namespace mfw {
     const char* OpenglContextClassName = "__@@OpenglDummyWindow";
     void OpenglContext::createOld() {
-        HINSTANCE instance = GetModuleHandle(NULL);
+        //HINSTANCE instance = GetModuleHandle(NULL);
         WNDCLASSEX wc{};
-        if (GetClassInfoEx(instance, OpenglContextClassName, &wc))
-            return;
+        //if (GetClassInfoEx(instance, OpenglContextClassName, &wc))
+        //    return;
         wc.cbSize = sizeof(WNDCLASSEX);
         wc.lpfnWndProc = &DefWindowProc;
         wc.hInstance = GetModuleHandle(NULL);
@@ -53,11 +54,8 @@ namespace mfw {
         m_hglrc = wglCreateContext(hdc);
         wglMakeCurrent(hdc, m_hglrc);
 
-        //if (gladLoadGLLoader((GLADloadproc)wglGetProcAddress)) {
-        //    LOG_INFOLN("GLAD FAIL TO LOAD GL LIBARARY");
-        //}
         if (glewInit() != GLEW_OK) {
-            LOG_INFOLN("GLAD FAIL TO LOAD GL LIBARARY");
+            LOG_INFO("GLEW INIT FAIL\n");
         }
 
         release();
@@ -66,7 +64,6 @@ namespace mfw {
     }
 
     void OpenglContext::createMorden(WindowsWindow* window) {
-        createOld();
         const int attribList[] = {
             WGL_DRAW_TO_WINDOW_ARB, GL_TRUE,
             WGL_SUPPORT_OPENGL_ARB, GL_TRUE,
@@ -97,7 +94,7 @@ namespace mfw {
         m_hglrc = wglCreateContextAttribsARB(window->m_hdc, shareHglrc, contextAttribList);
         wglMakeContextCurrentARB(window->m_hdc, window->m_hdc, m_hglrc);
 
-        LOG_INFOLN("OPENGL VERSION: ", glGetString(GL_VERSION));
+        LOG_INFO("OPENGL VERSION: {}\n", glGetString(GL_VERSION));
     }
 
     void OpenglContext::release() {

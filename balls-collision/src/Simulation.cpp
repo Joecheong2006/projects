@@ -152,7 +152,7 @@ static bool control = false;
 
 void Simulation::update() {
     if(!pause)
-        update_sub_step_physics(4);
+        update_sub_step_physics(5);
     cm.entities[0].m_pos = mouse_pos;
 }
 

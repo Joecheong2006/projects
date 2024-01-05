@@ -1,24 +1,36 @@
 #include "Application.h"
 #include "EventSystem.h"
 #include "WindowEventSystem.h"
+#include "Clock.h"
 #include <mfwpch.h>
 
 namespace mfw {
     Application::Application()
         : m_window()
     {
-        m_window.initialize({MFW_DEFAULT_STYLE, "demo", 960, 640});
-        openglContext.createMorden(&m_window);
+        START_CLOCK_DURATION("INIT");
+        {
+            START_CLOCK_DURATION("OPENGL INIT");
+            openglContext.createOld();
+        }
+        {
+            START_CLOCK_DURATION("WINDOWSWINDOW INIT");
+            m_window.initialize({MFW_DEFAULT_STYLE, "demo", 960, 640});
+        }
+        {
+            START_CLOCK_DURATION("MORDEN OPENGL INIT");
+            openglContext.createMorden(&m_window);
+        }
         m_window.show();
         m_window.setEventCallBack([this](const Event& event) {
                     this->handleEvent(event);
                 });
 
         eventListener.addEventFunc<WindowCloseEvent>([](const Event& event) {
-                    LOG_INFOLN(event);
+                    LOG_INFO("{}\n", event);
                 });
         eventListener.addEventFunc<WindowMoveEvent>([](const Event& event) {
-                    LOG_INFOLN(event);
+                    LOG_INFO("{}\n", event);
                 });
     }
 
@@ -27,6 +39,10 @@ namespace mfw {
     }
 
     void Application::run() {
+        //while (m_window.isRunning()) {
+        //    update();
+        //    m_window.update();
+        //}
         glClearColor(0.1, 0.1, 0.1, 1);
         while (m_window.isRunning()) {
             glViewport(0, 0, m_window.width(), m_window.height());

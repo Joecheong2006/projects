@@ -1,6 +1,6 @@
 #include "WindowsWindow.h"
 
-#include "log.h"
+#include "mfwlog.h"
 #include "WindowEventSystem.h"
 
 #define GETLOWORD(l) ((i16) (((i64) (l)) & 0xffff))
@@ -105,7 +105,7 @@ namespace mfw {
 
         m_hdc = GetDC(m_hwnd);
 
-        LOG_INFOLN("WINDOW CREATE SUCCESS: ", m_state.title);
+        LOG_INFO("WINDOW CREATE SUCCESS: {}\n", m_state.title);
     }
 
     void WindowsWindow::update() {
@@ -123,7 +123,7 @@ namespace mfw {
     WindowsWindow::~WindowsWindow() {
         ReleaseDC(m_hwnd, m_hdc);
         DestroyWindow(m_hwnd);
-        LOG_INFOLN("WINDOW CREATE SUCCESS: ", m_state.title);
+        LOG_INFO("WINDOW CREATE SUCCESS: {}\n", m_state.title);
     }
 
 }

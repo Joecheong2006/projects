@@ -11,7 +11,7 @@ namespace mfw {
     {
         while(GLenum error = glGetError())
         {
-            LOG_INFO('[', file, line, func, error, ']');
+            LOG_INFO("[{}:{}:{}:{}]", file, line, func, error);
             return false;
         }
         return true;

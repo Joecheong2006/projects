@@ -1,7 +1,7 @@
 #pragma once
 
 #include "util.h"
-#include "log.h"
+#include "mfwlog.h"
 #include <mfwpch.h>
 
 namespace mfw {
@@ -16,6 +16,7 @@ namespace mfw {
         static EventType Type() { return eventType; } \
 
     class Event {
+        friend Log::Pattern<mfw::Event>;
     public:
         Event(EventType eventType)
             : m_eventType(eventType)
@@ -23,11 +24,6 @@ namespace mfw {
         static EventType Type();
         EventType getEventType() const { return m_eventType; }
         virtual std::string getEventTypeAsString() const = 0;
-
-        friend std::ostream& operator<<(std::ostream& os, const mfw::Event& event) {
-            event.log();
-            return os;
-        }
 
     protected:
         virtual void log() const {
@@ -55,6 +51,16 @@ namespace mfw {
     private:
         std::unordered_map<EventType, EventFunc> eventCallBackMap;
 
+    };
+}
+
+namespace Log {
+    template <>
+    struct Pattern<mfw::Event> {
+        static void Log(const mfw::Event& value, const std::string& format) {
+            (void)format;
+            value.log();
+        }
     };
 }
 
