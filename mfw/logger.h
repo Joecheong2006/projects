@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <string>
 #include <cstdint>
-#include <typeinfo>
 
 namespace Log {
     template <typename T>
@@ -83,7 +82,7 @@ namespace Log {
                 final_format.push_back('.');\
                 final_format += get_format_percision(pattern, dpercision);\
                 final_format += get_format_specifier(pattern, dspecifier);\
-                printf(final_format.c_str(), value);\
+                printf(final_format.c_str(), __VA_ARGS__);\
             }\
         };
 
@@ -92,30 +91,53 @@ namespace Log {
         struct Pattern<type> {\
             static void Log(type value, const std::string& pattern) {\
                 (void)pattern;\
-                printf(_pattern, value);\
+                printf(_pattern, __VA_ARGS__);\
             }\
         };\
 
 DEFINE_PATTERN_BASIC_LOG(int8_t, "hd", "1", value);
 DEFINE_PATTERN_BASIC_LOG(uint8_t, "uhd", "1", value);
+DEFINE_PATTERN_BASIC_LOG(const int8_t, "hd", "1", value);
+DEFINE_PATTERN_BASIC_LOG(const uint8_t, "uhd", "1", value);
+DEFINE_PATTERN_BASIC_LOG(const int8_t&, "hd", "1", value);
+DEFINE_PATTERN_BASIC_LOG(const uint8_t&, "uhd", "1", value);
 
 DEFINE_PATTERN_BASIC_LOG(int16_t, "hd", "1", value);
 DEFINE_PATTERN_BASIC_LOG(uint16_t, "uhd", "1", value);
+DEFINE_PATTERN_BASIC_LOG(const int16_t, "hd", "1", value);
+DEFINE_PATTERN_BASIC_LOG(const uint16_t, "uhd", "1", value);
+DEFINE_PATTERN_BASIC_LOG(const int16_t&, "hd", "1", value);
+DEFINE_PATTERN_BASIC_LOG(const uint16_t&, "uhd", "1", value);
 DEFINE_PATTERN_BASIC_LOG(int32_t, "d", "1", value);
 DEFINE_PATTERN_BASIC_LOG(uint32_t, "ud", "1", value);
+DEFINE_PATTERN_BASIC_LOG(const int32_t, "d", "1", value);
+DEFINE_PATTERN_BASIC_LOG(const uint32_t, "ud", "1", value);
+DEFINE_PATTERN_BASIC_LOG(const int32_t&, "d", "1", value);
+DEFINE_PATTERN_BASIC_LOG(const uint32_t&, "ud", "1", value);
 DEFINE_PATTERN_BASIC_LOG(int64_t, "ld", "1", value);
 DEFINE_PATTERN_BASIC_LOG(uint64_t, "uld", "1", value);
+DEFINE_PATTERN_BASIC_LOG(const int64_t, "ld", "1", value);
+DEFINE_PATTERN_BASIC_LOG(const uint64_t, "uld", "1", value);
+DEFINE_PATTERN_BASIC_LOG(const int64_t&, "ld", "1", value);
+DEFINE_PATTERN_BASIC_LOG(const uint64_t&, "uld", "1", value);
 
 DEFINE_PATTERN_BASIC_LOG(float, "g", "6", value);
 DEFINE_PATTERN_BASIC_LOG(double, "lg", "6",  value);
+DEFINE_PATTERN_BASIC_LOG(const float, "g", "6", value);
+DEFINE_PATTERN_BASIC_LOG(const double, "lg", "6",  value);
+DEFINE_PATTERN_BASIC_LOG(const float&, "g", "6", value);
+DEFINE_PATTERN_BASIC_LOG(const double&, "lg", "6",  value);
 
 DEFINE_PATTERN_BASIC_CHAR_LOG(char*, "%s", value);
 DEFINE_PATTERN_BASIC_CHAR_LOG(const char*, "%s", value);
+DEFINE_PATTERN_BASIC_CHAR_LOG(const char*&, "%s", value);
 DEFINE_PATTERN_BASIC_CHAR_LOG(unsigned char*, "%s", value);
 DEFINE_PATTERN_BASIC_CHAR_LOG(const unsigned char*, "%s", value);
+DEFINE_PATTERN_BASIC_CHAR_LOG(const unsigned char*&, "%s", value);
 
 DEFINE_PATTERN_BASIC_CHAR_LOG(char, "%c", value);
 DEFINE_PATTERN_BASIC_CHAR_LOG(const char, "%c", value);
+DEFINE_PATTERN_BASIC_CHAR_LOG(const char&, "%c", value);
 
     template <>
     struct Pattern<std::string> {
