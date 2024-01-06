@@ -8,7 +8,6 @@ namespace mfw {
     Application::Application()
         : m_window()
     {
-        START_CLOCK_DURATION("INIT");
         {
             START_CLOCK_DURATION("OPENGL INIT");
             openglContext.createOld();
