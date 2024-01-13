@@ -2,7 +2,7 @@ CC = g++
 PCH = src/mfwpch.h
 CFLAGS := -std=c++17 -Wall -Wextra -Wpedantic -Wstrict-aliasing -g -lm -include $(PCH)
 DFLAGS := -DDEBUG
-RFLAGS := -Os -march=native -flto -fdefer-pop -fmerge-constants -fthread-jumps -floop-optimize -fif-conversion2 -fif-conversion -fcrossjumping -fguess-branch-probability -fcprop-registers -foptimize-sibling-calls -fstrength-reduce -fcse-follow-jumps -fcse-skip-blocks -frerun-cse-after-loop -frerun-loop-opt -fgcse -fgcse-lm -fgcse-sm -fdelete-null-pointer-checks -fexpensive-optimizations -fregmove -fschedule-insns -fschedule-insns2 -fsched-interblock -fsched-spec -fcaller-saves -fpeephole2 -freorder-blocks -freorder-functions -fstrict-aliasing -falign-functions -falign-jumps -falign-loops -falign-labels -finline-functions -frename-registers -DNDEBUG
+RFLAGS := -O3 -march=native -flto -fdefer-pop -fmerge-constants -fthread-jumps -floop-optimize -fif-conversion2 -fif-conversion -fcrossjumping -fguess-branch-probability -fcprop-registers -foptimize-sibling-calls -fstrength-reduce -fcse-follow-jumps -fcse-skip-blocks -frerun-cse-after-loop -frerun-loop-opt -fgcse -fgcse-lm -fgcse-sm -fdelete-null-pointer-checks -fexpensive-optimizations -fregmove -fschedule-insns -fschedule-insns2 -fsched-interblock -fsched-spec -fcaller-saves -fpeephole2 -freorder-blocks -freorder-functions -fstrict-aliasing -falign-functions -falign-jumps -falign-loops -falign-labels -finline-functions -frename-registers -DNDEBUG
 SOURCE = src src/**
 LIBRARY = lib/stb_image lib/glew
 INCLUDE = -Ilib -Ilib/glew -Ilib/stb_image -Isrc

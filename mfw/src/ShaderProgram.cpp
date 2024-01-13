@@ -15,6 +15,12 @@ namespace mfw {
         GLCALL(glDeleteProgram(m_id));
     }
 
+    void ShaderProgram::create() {
+        if (!m_id) {
+            GLCALL(m_id = glCreateProgram());
+        }
+    }
+
     void ShaderProgram::attachShader(u32 type, const char* path)
     {
         u32 shader = compileShader(shaderSource(path).c_str(), type);
@@ -38,34 +44,60 @@ namespace mfw {
         GLCALL(glUseProgram(0));
     }
 
+    void ShaderProgram::release() {
+        if (m_id) {
+            GLCALL(glDeleteProgram(m_id));
+            m_id = 0;
+            m_uniform_location_cache = {};
+        }
+    }
+
     void ShaderProgram::set4f(const char* name, f32 v0, f32 v1, f32 v2, f32 v3)
     {
-        GLCALL(glUniform4f(uniformLocation(name), v0, v1, v2, v3));
+        i32 id = uniformLocation(name);
+        if (id != -1) {
+            GLCALL(glUniform4f(uniformLocation(name), v0, v1, v2, v3));
+        }
     }
 
     void ShaderProgram::set3f(const char* name, f32 v0, f32 v1, f32 v2)
     {
-        GLCALL(glUniform3f(uniformLocation(name), v0, v1, v2));
+        i32 id = uniformLocation(name);
+        if (id != -1) {
+            GLCALL(glUniform3f(uniformLocation(name), v0, v1, v2));
+        }
     }
 
     void ShaderProgram::set3f(const char* name, f32* v)
     {
-        GLCALL(glUniform3f(uniformLocation(name), v[0], v[1], v[2]));
+        i32 id = uniformLocation(name);
+        if (id != -1) {
+            GLCALL(glUniform3f(uniformLocation(name), v[0], v[1], v[2]));
+        }
     }
 
     void ShaderProgram::set1i(const char* name, i32 v0)
     {
-        GLCALL(glUniform1i(uniformLocation(name), v0));
+        i32 id = uniformLocation(name);
+        if (id != -1) {
+            GLCALL(glUniform1i(uniformLocation(name), v0));
+        }
     }
 
     void ShaderProgram::set1f(const char* name, f32 v0)
     {
-        GLCALL(glUniform1f(uniformLocation(name), v0));
+        i32 id = uniformLocation(name);
+        if (id != -1) {
+            GLCALL(glUniform1f(uniformLocation(name), v0));
+        }
     }
 
     void ShaderProgram::setMat4(const char* name, const glm::mat4& m)
     {
-        GLCALL(glUniformMatrix4fv(uniformLocation(name), 1, GL_FALSE, glm::value_ptr(m)));
+        i32 id = uniformLocation(name);
+        if (id != -1) {
+            GLCALL(glUniformMatrix4fv(uniformLocation(name), 1, GL_FALSE, glm::value_ptr(m)));
+        }
     }
 
     u32 ShaderProgram::compileShader(const char* source, u32 type)
@@ -75,7 +107,7 @@ namespace mfw {
         GLCALL(glShaderSource(id, 1, &src, NULL));
         GLCALL(glCompileShader(id));
 
-        int result;
+        i32 result;
         GLCALL(glGetShaderiv(id, GL_COMPILE_STATUS, &result));
         if(result == GL_FALSE)
         {
@@ -96,6 +128,7 @@ namespace mfw {
         std::string source;
         while(getline(stream, line))
             source += line + "\n";
+        stream.close();
         return source;
     }
 
@@ -104,9 +137,11 @@ namespace mfw {
         if(m_uniform_location_cache.find(name) != m_uniform_location_cache.end())
             return m_uniform_location_cache[name];
         GLCALL(i32 location = glGetUniformLocation(m_id, name));
-        if(location == -1)
+        if(location == -1) {
             LOG_INFO("cannot found uniform locaiton: {}\n", name);
-        m_uniform_location_cache[name] = location;
+        } else {
+            m_uniform_location_cache[name] = location;
+        }
         return location;
     }
 }

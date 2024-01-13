@@ -12,13 +12,15 @@ namespace mfw {
         u32 m_id;
 
     public:
-        explicit ShaderProgram();
+        ShaderProgram();
         ~ShaderProgram();
 
+        void create();
         void attachShader(u32 type, const char* path);
         void link();
         void bind() const;
         void unbind() const;
+        void release();
         void set4f(const char* name, f32 v0, f32 v1, f32 v2, f32 v3);
         void set3f(const char* name, f32 v0, f32 v1, f32 v2);
         void set3f(const char* name, f32* v);

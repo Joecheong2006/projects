@@ -127,7 +127,7 @@ void Simulation::update_physics(f32 frame) {
     }
 
     //solve_collision(1, cm.entities.size());
-    const i32 dev = 2;
+    const i32 dev = 1;
     std::vector<std::future<void>> ml;
     auto range = get_range_dev(cm.entities.size(), dev);
     range[0]++;

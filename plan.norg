@@ -10,6 +10,7 @@
       - ( ) simulation
       - ( ) graphics engine
       - (=) log system
+      - ( ) glsl test
 
 ***** learning
       - (=) opengl
