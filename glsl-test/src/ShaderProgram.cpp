@@ -10,6 +10,13 @@ ShaderProgram::ShaderProgram()
     GLCALL(m_id = glCreateProgram());
 }
 
+ShaderProgram::ShaderProgram(const ShaderProgram& shader) {
+    m_id = shader.m_id;
+    error = shader.error;
+    m_uniform_location_cache = shader.m_uniform_location_cache;
+    m_id = 0;
+}
+
 ShaderProgram::~ShaderProgram()
 {
     release();
@@ -18,15 +25,17 @@ ShaderProgram::~ShaderProgram()
 void ShaderProgram::create() {
     if (!m_id) {
         GLCALL(m_id = glCreateProgram());
+        error.reserve(16);
     }
 }
 
 void ShaderProgram::attach_shader(u32 type, const std::string& path)
 {
     u32 shader = compile_shader(shader_source(path), type);
-    ASSERT(shader != 0);
-    GLCALL(glAttachShader(m_id, shader));
-    GLCALL(glDeleteShader(shader));
+    if (shader) {
+        GLCALL(glAttachShader(m_id, shader));
+        GLCALL(glDeleteShader(shader));
+    }
 }
 
 void ShaderProgram::link()
@@ -121,8 +130,7 @@ u32 ShaderProgram::compile_shader(const std::string& source, u32 type)
     {
         char infolog[512];
         GLCALL(glGetShaderInfoLog(id, 512, NULL, infolog));
-        std::cout << "Compile shader error." << std::endl;
-        std::cout << infolog << std::endl;
+        error.emplace_back(infolog);
         GLCALL(glDeleteShader(id));
         return 0;
     }
@@ -146,10 +154,7 @@ i32 ShaderProgram::uniform_location(const std::string& name)
     if(m_uniform_location_cache.find(name) != m_uniform_location_cache.end())
         return m_uniform_location_cache[name];
     GLCALL(i32 location = glGetUniformLocation(m_id, name.c_str()));
-    if(location == -1) {
-        std::cout << "cannot found uniform locaiton: " << name << "\n";
-    }
-    else {
+    if (location != -1) {
         m_uniform_location_cache[name] = location;
     }
     return location;
