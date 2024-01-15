@@ -11,6 +11,9 @@ struct vector_status {
 #define init_vector(vector)\
     _init_vector((void**)(vector), sizeof(**(vector)))
 
+#define vector_reserve(vector, newCapacity)\
+    _vector_reserve((void**)(vector), newCapacity);
+
 #define vector_status(vector)\
     (((struct vector_status*)(*(vector)))[-1])
 

@@ -6,7 +6,8 @@
 int main(void) {
     vector(int) vec;
     init_vector(&vec);
-    for (u64 i = 0; i < 31; ++i) {
+    vector_reserve(&vec, 3);
+    for (u64 i = 0; i < 32; ++i) {
         vector_add(&vec, i);
     }
     for (u64 i = 0; i < vector_status(&vec).size; ++i) {
