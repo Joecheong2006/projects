@@ -5,11 +5,10 @@
       "-std=c99",
       "-Wall",
       "-Wextra",
-      "-Wpedantic",
       "-Wstrict-aliasing",
       "-g"
     ],
-    "directory": "E:/project/cbase",
-    "file": "src/main.cpp"
+    "directory": "E:/project/logger",
+    "file": "src/main.c"
   }
 ]

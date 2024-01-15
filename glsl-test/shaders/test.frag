@@ -16,8 +16,8 @@ float bolw(float smoothness, float width, float value) {
     return smoothstep(width - smoothness * 0.5, width + smoothness * 0.5, value);
 }
 
-float ract(float x, float y, float width, float height) {
-    vec2 d = abs(vec2(x, y)) - vec2(width, height);
+float ract(vec2 point, float width, float height) {
+    vec2 d = abs(point) - vec2(width, height);
     return length(max(d, 0)) + min(max(d.x, d.y), 0);
 }
 
@@ -71,7 +71,7 @@ void test() {
     float cl = 1 - min(step(0.01, abs(line(uv, vec2(0, 0), 0))),
                        step(0.008, abs(line(vec2(uv.x, 0), vec2(0, 0), 1))));
     color += cl * 0.25;
-    color += (1 - step(sin(time) * 0.5 + 0.5, ract(uv.x, uv.y, 0.3, 0.3))) * 0.2;
+    color += (1 - step(sin(time) * 0.5 + 0.5, ract(uv, 0.3, 0.3))) * 0.2;
     color.xy *= (uv + center) / zoom + 0.5;
 
     frag_color = vec4(color, 1);
@@ -98,16 +98,22 @@ void main() {
     float wave = (a * point.x + point.y + c) / sqrt(a * a + 1);
     //color += (1 - bolw(smoothness, width, abs(wave)));
 
+    vec2 pos = mouse;
+    float angle = atan(pos.y / pos.x);
+    mat2 rotate2d = mat2(cos(angle), -sin(angle),
+                         sin(angle),  cos(angle));
     wave = sdf_sin(uv * 1.5, p, f, -offset) * sdf_sin(uv, p, 0, offset);
     color += 1 - smoothstep(0.02 - 0.0025, 0.02 + 0.0025, abs(wave));
 
     //float cc = abs(sdf_circle(uv, 0.5)) * sdf_circle(uv - vec2(sin(time) * 2, 0), 0.5) + sdf_circle(uv, 0.5) * abs(sdf_circle(uv - vec2(sin(time) * 2, 0), 0.5));
     //color += 1 - smoothstep(0.2 - 0.015, 0.2 + 0.015, cc);
 
-    vec2 pos = mouse;
-    float cc = abs(ract(uv.x, uv.y, 0.5, 0.5)) * sdf_circle(uv - mouse, 0.5) +
-               ract(uv.x, uv.y, 0.5, 0.5) * abs(sdf_circle(uv - mouse, 0.5));
+    vec2 _pos = rotate2d * uv;
+    //float cc = abs(ract(_pos, 0.5, 0.5)) * sdf_circle(uv - mouse, 0.5) +
+    //           ract(_pos, 0.5, 0.5) * abs(sdf_circle(uv - mouse, 0.5));
     //color += 1 - smoothstep(0.2 - 0.02, 0.2, cc);
+    float cc = ract(_pos, 0.5, 0.5);
+    color += 1 - step(0, cc);
 
     float cl = 1 - min(step(0.01, abs(line(uv, vec2(0, 0), 0))),
                        step(0.008, abs(line(vec2(uv.x, 0), vec2(0, 0), 1))));
