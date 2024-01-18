@@ -79,7 +79,8 @@ namespace mfw {
                 WORD repeatCount = LOWORD(lparam);
                 BOOL keyRelease = (flags & KF_UP) == KF_UP;
 
-                LOG_TRACE("code[{d:0>3}] flags[{d:0>6}] scancode[{d:0>3}] EK[{d:1}] keyFirst[{d:1}] keyDown[{d:1}] repeatCount[{d:0>2}] keyRelease[{d:1}]\n", code, flags, scancode, isExtendedKey, keyFirst, keyDown, repeatCount, keyRelease);
+                LOG_TRACE("{:03}\n", code);
+                //LOG_TRACE("code[{d:03}] flags[{d:06}] scancode[{d:03}] EK[{d:1}] keyFirst[{d:1}] keyDown[{d:1}] repeatCount[{d:02}] keyRelease[{d:1}]\n", code, flags, scancode, isExtendedKey, keyFirst, keyDown, repeatCount, keyRelease);
             } break;
 
         //case WM_KEYDOWN:

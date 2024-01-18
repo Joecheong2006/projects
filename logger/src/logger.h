@@ -77,14 +77,14 @@ namespace Log {
         return result;
     };
 
-#define DEFINE_PATTERN_BASIC_LOG(type, dspecifier, dpercision, ...)\
+#define DEFINE_PATTERN_BASIC_LOG(type, dspecifier, enablePercision, dpercision, ...)\
         template <>\
         struct Pattern<type> {\
             static void Log(type value, const std::string& pattern) {\
                 std::string final_format = "%";\
                 final_format += get_format_flag(pattern, "-");\
                 final_format += get_format_width(pattern);\
-                if ((dspecifier)[0] != 'd') {\
+                if (enablePercision) {\
                     final_format.push_back('.');\
                     final_format += get_format_percision(pattern, dpercision);\
                 }\
@@ -102,18 +102,18 @@ namespace Log {
             }\
         };\
 
-DEFINE_PATTERN_BASIC_LOG(int8_t, "hd", "1", value);
-DEFINE_PATTERN_BASIC_LOG(uint8_t, "uhd", "1", value);
+DEFINE_PATTERN_BASIC_LOG(int8_t, "hd", false, "1", value);
+DEFINE_PATTERN_BASIC_LOG(uint8_t, "hu", false, "1", value);
 
-DEFINE_PATTERN_BASIC_LOG(int16_t, "hd", "1", value);
-DEFINE_PATTERN_BASIC_LOG(uint16_t, "uhd", "1", value);
-DEFINE_PATTERN_BASIC_LOG(int32_t, "d", "1", value);
-DEFINE_PATTERN_BASIC_LOG(uint32_t, "ud", "1", value);
-DEFINE_PATTERN_BASIC_LOG(int64_t, "ld", "1", value);
-DEFINE_PATTERN_BASIC_LOG(uint64_t, "uld", "1", value);
+DEFINE_PATTERN_BASIC_LOG(int16_t, "hd", false, "1", value);
+DEFINE_PATTERN_BASIC_LOG(uint16_t, "u", false, "1", value);
+DEFINE_PATTERN_BASIC_LOG(int32_t, "d", false, "1", value);
+DEFINE_PATTERN_BASIC_LOG(uint32_t, "u", false, "1", value);
+DEFINE_PATTERN_BASIC_LOG(int64_t, "lld", false, "1", value);
+DEFINE_PATTERN_BASIC_LOG(uint64_t, "llu", false, "1", value);
 
-DEFINE_PATTERN_BASIC_LOG(float, "g", "6", value);
-DEFINE_PATTERN_BASIC_LOG(double, "lg", "6",  value);
+DEFINE_PATTERN_BASIC_LOG(float, "g", true, "6", value);
+DEFINE_PATTERN_BASIC_LOG(double, "lg", true, "6",  value);
 
 DEFINE_PATTERN_BASIC_CHAR_LOG(char*, "%s", value);
 DEFINE_PATTERN_BASIC_CHAR_LOG(const char*, "%s", value);

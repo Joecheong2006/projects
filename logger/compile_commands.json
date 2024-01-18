@@ -1,8 +1,8 @@
 [
   { 
     "arguments": [
-      "gcc",
-      "-std=c99",
+      "g++",
+      "-std=c++11",
       "-Wall",
       "-Wextra",
       "-Wpedantic",

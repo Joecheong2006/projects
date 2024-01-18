@@ -32,6 +32,10 @@ namespace Log {
         if (sIndex == -1)
             return default_res;
         result = format[sIndex + 1];
+        if (result[0] == '0') {
+            result.clear();
+            return result;
+        }
         if (result[0] != '<' && result[0] != '>') {
             result = '-';
             return result;
@@ -80,8 +84,10 @@ namespace Log {
                 std::string final_format = "%";\
                 final_format += get_format_flag(pattern, "-");\
                 final_format += get_format_width(pattern);\
-                final_format.push_back('.');\
-                final_format += get_format_percision(pattern, dpercision);\
+                if ((dspecifier)[0] != 'd') {\
+                    final_format.push_back('.');\
+                    final_format += get_format_percision(pattern, dpercision);\
+                }\
                 final_format += get_format_specifier(pattern, dspecifier);\
                 printf(final_format.c_str(), value);\
             }\
