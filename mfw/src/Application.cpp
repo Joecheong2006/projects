@@ -31,6 +31,10 @@ namespace mfw {
         eventListener.addEventFunc<WindowMoveEvent>([](const Event& event) {
                     LOG_INFO("{}\n", event);
                 });
+        eventListener.addEventFunc<WindowKeyEvent>([this](const Event& event) {
+                    //LOG_INFO("{}\n", event);
+                    this->input(static_cast<const WindowKeyEvent&>(event));
+                });
     }
 
     Application::~Application() {
@@ -51,9 +55,19 @@ namespace mfw {
         }
     }
 
+    void Application::input(const WindowKeyEvent& event) {
+        if (event.key == VK_ESCAPE && event.mode == KeyMode::Down) {
+            m_window.close();
+        }
+        if (event.mode == KeyMode::Down || event.mode == KeyMode::Repeat) {
+            LOG_INFO("{}", (char)event.key);
+        }
+    }
+
     void Application::handleEvent(const Event& event) {
         eventListener.listen<WindowCloseEvent>(event);
         eventListener.listen<WindowMoveEvent>(event);
+        eventListener.listen<WindowKeyEvent>(event);
     }
 
     void Application::update() {

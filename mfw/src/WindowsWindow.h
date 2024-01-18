@@ -35,6 +35,7 @@ namespace  mfw {
         void show() const { ShowWindow(m_hwnd, SW_NORMAL); }
 
         inline void swapBuffers() const { SwapBuffers(m_hdc); }
+        void close() { m_state.isRunning = false; }
 
     private:
         WindowState m_state;

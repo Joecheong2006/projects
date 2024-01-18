@@ -2,6 +2,7 @@
 
 #include "WindowsWindow.h"
 #include "OpenglContext.h"
+#include "WindowEventSystem.h"
 
 namespace mfw {
     class Application {
@@ -12,6 +13,7 @@ namespace mfw {
 
     private:
         void handleEvent(const Event& event);
+        void input(const WindowKeyEvent& event);
         void update();
 
         WindowsWindow m_window;

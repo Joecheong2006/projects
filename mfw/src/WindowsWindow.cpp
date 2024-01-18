@@ -2,6 +2,7 @@
 
 #include "mfwlog.h"
 #include "WindowEventSystem.h"
+#include <locale>
 
 #define GETLOWORD(l) ((i16) (((i64) (l)) & 0xffff))
 #define GETHIWORD(l) ((i16) ((((i64) (l)) >> 16) & 0xffff))
@@ -67,38 +68,20 @@ namespace mfw {
         case WM_SYSKEYDOWN:
         case WM_KEYUP:
         case WM_SYSKEYUP: {
-                WORD code = LOWORD(wparam);
+                WORD key = LOWORD(wparam);
                 WORD flags = HIWORD(lparam);
-                WORD scancode = LOBYTE(flags);
-                BOOL isExtendedKey = (flags & KF_EXTENDED) == KF_EXTENDED;
-                if (isExtendedKey) {
-                    scancode = MAKEWORD(scancode, 0xe0);
+                WORD scandcode = LOBYTE(flags);
+                if ((flags & KF_EXTENDED) == KF_EXTENDED) {
+                    scandcode = MAKEWORD(scandcode, 0xe0);
                 }
-                BOOL keyDown = (flags & KF_REPEAT) == KF_REPEAT;
-                BOOL keyFirst = !keyDown;
-                WORD repeatCount = LOWORD(lparam);
-                BOOL keyRelease = (flags & KF_UP) == KF_UP;
-
-                LOG_TRACE("{:03}\n", code);
-                //LOG_TRACE("code[{d:03}] flags[{d:06}] scancode[{d:03}] EK[{d:1}] keyFirst[{d:1}] keyDown[{d:1}] repeatCount[{d:02}] keyRelease[{d:1}]\n", code, flags, scancode, isExtendedKey, keyFirst, keyDown, repeatCount, keyRelease);
+                BOOL keyRepeat = ((flags & KF_REPEAT) == KF_REPEAT) * 2;
+                BOOL keyDown = !keyRepeat;
+                BOOL keyRelease = ((flags & KF_UP) == KF_UP);
+                KeyMode mode = static_cast<KeyMode>(keyRepeat + keyDown + keyRelease);
+                const Event& e = WindowKeyEvent(key, scandcode, mode);
+                m_state.m_callBackFunc(e);
             } break;
 
-        //case WM_KEYDOWN:
-        //case WM_SYSKEYDOWN: {
-        //        LOG_TRACE("KEYDOWN: [{d}]\n", wparam);
-        //    } break;
-
-        //case WM_KEYUP:
-        //case WM_SYSKEYUP: {
-        //        LOG_TRACE("KEYUP:   [{d}]\n", wparam);
-        //    } break;
-
-        //case WM_CHAR:
-        //case WM_SYSCHAR: {
-        //        LOG_TRACE("KEYCHAR: '{c}'\n", wparam);
-        //    } break;
-
-        default:
             return;
         }
     }
@@ -156,9 +139,15 @@ namespace mfw {
     }
 
     WindowsWindow::~WindowsWindow() {
-        ReleaseDC(m_hwnd, m_hdc);
-        DestroyWindow(m_hwnd);
-        LOG_INFO("WINDOW CREATE SUCCESS: {}\n", m_state.title);
+        if (!m_hdc) {
+            ReleaseDC(m_hwnd, m_hdc);
+            m_hdc = nullptr;
+        }
+        if (!m_hwnd) {
+            DestroyWindow(m_hwnd);
+            m_hwnd = nullptr;
+        }
+        LOG_INFO("WINDOW CLOSE SUCCESS: {}\n", m_state.title);
     }
 
 }
