@@ -9,7 +9,7 @@
 #define DEFAULT_SHADER_NAME "default"
 
 ShaderProgram* Application::currentShader;
-std::string Application::shaderName = "test";
+std::string Application::shaderName = "pixel";
 
 f32 vertexs[] =
 {

@@ -12,7 +12,7 @@ struct vector_status {
     _init_vector((void**)(vector), sizeof(**(vector)))
 
 #define vector_reserve(vector, newCapacity)\
-    _vector_reserve((void**)(vector), newCapacity);
+    _vector_reserve((void**)(vector), newCapacity)
 
 #define vector_status(vector)\
     (((struct vector_status*)(*(vector)))[-1])
@@ -22,7 +22,7 @@ struct vector_status {
     (*(vector))[vector_status(vector).size++] = value;\
 
 #define vector_pop(vector)\
-    --vector_status(vector).size;
+    (--vector_status(vector).size)
 
 #define vector_size(vector)\
     (vector_status(vector).size)
@@ -32,6 +32,9 @@ struct vector_status {
 
 #define vector_itemSize(vector)\
     (vector_status(vector).itemSize)
+
+#define vector_clear(vector)\
+    (vector_status(vector).size = 0)
 
 #define free_vector(vector)\
     _free_vector((void**)(vector));

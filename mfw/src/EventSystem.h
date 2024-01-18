@@ -6,7 +6,8 @@
 
 namespace mfw {
     enum struct EventType : u32 {
-        UnDefine, WindowCreate, WindowClose, WindowDestroy,
+        UnDefine,
+        WindowCreate, WindowClose, WindowDestroy,
         WindowMaximize, WindowMinimize, WindowMove, WindowResize,
         WindowFocus, WindowNotFocus,
     };

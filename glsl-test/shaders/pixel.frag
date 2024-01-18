@@ -34,34 +34,79 @@ float sdf_circle(vec2 point, float r) {
     return length(point) - r;
 }
 
+void test() {
+    float speed = time;
+    float smoothness = 2 * zoom / resolution.x;
+    float lw = 0.025;
+
+    vec2 p1 = vec2(0, 0);
+    vec2 p2 = vec2(0.5, 0.5);
+    vec2 p3 = vec2(1, 0);
+
+    float t = clamp(uv.x, 0, 1);
+    vec2 a = lerp(p1, p2, t);
+    vec2 b = lerp(p2, p3, t);
+
+    vec3 color = vec3(0);
+    //color += (1 - smoothstep(lw - smoothness * 0.5, lw + smoothness * 0.5, distance_to_line(uv, vec2(0), vec2(1, 0))));
+    color += (1 - smoothstep(lw - smoothness * 0.5, lw + smoothness * 0.5, distance_to_line(uv, a, b)));
+    if (step(0, uv.x - mouse.x) != 1) {
+        color *= (1 - step(0, uv.x - mouse.x)) * vec3(uv.x, uv.y, 1);
+    }
+
+    frag_color = vec4(color, 1);
+}
+
+void test1() {
+    float speed = time;
+    float smoothness = 2 * zoom / resolution.x;
+    float lw = 0.025;
+
+    vec2 p1 = vec2(0, 0);
+    vec2 p2 = vec2(0.5, 0.5);
+    vec2 p3 = vec2(1, 0);
+
+    float t = clamp(uv.x, 0, 1);
+    vec2 a = lerp(p1, p2, t);
+    vec2 b = lerp(p2, p3, t);
+
+    vec3 color = vec3(0);
+    //color += (1 - smoothstep(lw - smoothness * 0.5, lw + smoothness * 0.5, distance_to_line(uv, vec2(0), vec2(1, 0))));
+    float offset = sin(time * 10) * 0.005;
+    vec2 uvx = vec2(uv.x - offset, uv.y);
+    vec2 uvy = vec2(uv.x + offset, uv.y);
+    vec2 uvz = vec2(uv.x, uv.y + offset);
+    float x = (1 - smoothstep(lw - smoothness * 0.5, lw + smoothness * 0.5, distance_to_line(uvx, a, b)));
+    float y = (1 - smoothstep(lw - smoothness * 0.5, lw + smoothness * 0.5, distance_to_line(uvy, a, b)));
+    float z = (1 - smoothstep(lw - smoothness * 0.5, lw + smoothness * 0.5, distance_to_line(uvz, a, b)));
+    color = vec3(x, y, z);
+
+    frag_color = vec4(color, 1);
+}
+
 void main() {
+    test1();
+    return;
     float speed = time;
     float smoothness = 2 * zoom / resolution.x;
     float lw = 0.025;
 
     //vec2 p1 = vec2(0.5, 0.5) + vec2(cos(time), sin(time)) * 0.5 - vec2(0, 0.5);
     vec2 p1 = vec2(0, 0);
-    vec2 p2 = vec2(0.2, 0.5);
-    vec2 p3 = vec2(0.7, 0.5);
-    vec2 p4 = vec2(1, 0);
+    vec2 p2 = vec2(0.5, 0.5);
+    vec2 p3 = vec2(1, 0);
 
     //float t = clamp(sin(time) * 0.5 + 0.5, 0, 1);
     float t = clamp(uv.x, 0, 1);
     vec2 a = lerp(p1, p2, t);
     vec2 b = lerp(p2, p3, t);
-    vec2 c = lerp(p3, p4, t);
-    vec2 ab = lerp(a, b, t);
-    vec2 bc = lerp(b, c, t);
-
-    vec2 result = lerp(ab, bc, t);
 
     vec3 color = vec3(0);
-    color += (1 - smoothstep(lw - smoothness * 0.5, lw + smoothness * 0.5, distance_to_line(uv, ab, bc)));
+    color += (1 - smoothstep(lw - smoothness * 0.5, lw + smoothness * 0.5, distance_to_line(uv, a, b)));
 
     color += 1 - smoothstep(0.01 - smoothness * 0.5, 0.01 + smoothness * 0.5, abs(sdf_circle(uv - p1, 0.05)));
     color += 1 - smoothstep(0.01 - smoothness * 0.5, 0.01 + smoothness * 0.5, abs(sdf_circle(uv - p2, 0.05)));
     color += 1 - smoothstep(0.01 - smoothness * 0.5, 0.01 + smoothness * 0.5, abs(sdf_circle(uv - p3, 0.05)));
-    color += 1 - smoothstep(0.01 - smoothness * 0.5, 0.01 + smoothness * 0.5, abs(sdf_circle(uv - p4, 0.05)));
 
     color *=  vec3(uv.x, uv.y, 1) + vec3(0.5);
 

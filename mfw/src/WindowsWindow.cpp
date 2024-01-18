@@ -17,8 +17,7 @@ namespace mfw {
         }
 
         WindowsWindow* window = reinterpret_cast<WindowsWindow*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));;
-        if (window)
-        {
+        if (window) {
             window->handleMessage(message, wparam, lparam);
         }
         return DefWindowProc(hwnd, message, wparam, lparam);
@@ -30,6 +29,7 @@ namespace mfw {
                 m_state.isRunning = true;
                 m_state.m_callBackFunc(WindowCreateEvent());
             } break;
+
         case WM_CLOSE: {
                 m_state.m_callBackFunc(WindowCloseEvent());
             } break;
@@ -62,6 +62,40 @@ namespace mfw {
         case WM_KILLFOCUS: {
                 m_state.m_callBackFunc(WindowNotFocusEvent());
             } break;
+
+        case WM_KEYDOWN:
+        case WM_SYSKEYDOWN:
+        case WM_KEYUP:
+        case WM_SYSKEYUP: {
+                WORD code = LOWORD(wparam);
+                WORD flags = HIWORD(lparam);
+                WORD scancode = LOBYTE(flags);
+                BOOL isExtendedKey = (flags & KF_EXTENDED) == KF_EXTENDED;
+                if (isExtendedKey) {
+                    scancode = MAKEWORD(scancode, 0xe0);
+                }
+                BOOL keyDown = (flags & KF_REPEAT) == KF_REPEAT;
+                BOOL keyFirst = !keyDown;
+                WORD repeatCount = LOWORD(lparam);
+                BOOL keyRelease = (flags & KF_UP) == KF_UP;
+
+                LOG_TRACE("code[{d:0>3}] flags[{d:0>6}] scancode[{d:0>3}] EK[{d:1}] keyFirst[{d:1}] keyDown[{d:1}] repeatCount[{d:0>2}] keyRelease[{d:1}]\n", code, flags, scancode, isExtendedKey, keyFirst, keyDown, repeatCount, keyRelease);
+            } break;
+
+        //case WM_KEYDOWN:
+        //case WM_SYSKEYDOWN: {
+        //        LOG_TRACE("KEYDOWN: [{d}]\n", wparam);
+        //    } break;
+
+        //case WM_KEYUP:
+        //case WM_SYSKEYUP: {
+        //        LOG_TRACE("KEYUP:   [{d}]\n", wparam);
+        //    } break;
+
+        //case WM_CHAR:
+        //case WM_SYSCHAR: {
+        //        LOG_TRACE("KEYCHAR: '{c}'\n", wparam);
+        //    } break;
 
         default:
             return;
