@@ -1,7 +1,8 @@
 #pragma once
 
 #include "util.h"
-#include "EventSystem.h"
+#include "WindowEvent.h"
+#include "InputEvent.h"
 #include <mfwpch.h>
 
 namespace mfw {
@@ -9,11 +10,10 @@ namespace mfw {
         WindowState()
             : isRunning(false), isVSync(false)
         {}
-        WindowState(i32 style, std::string title, i32 x, i32 y, i32 width = 960, i32 height = 640)
-            : style(style), title(title), x(x), y(y), width(width), height(height), m_callBackFunc([](const Event&) {})
+        WindowState(std::string title, i32 x, i32 y, i32 width = 960, i32 height = 640)
+            : title(title), x(x), y(y), width(width), height(height), m_callBackFunc([](const Event&) {})
         {}
 
-        i32 style;
         std::string title;
         i32 x, y, width, height;
         bool isRunning, isVSync;
@@ -22,18 +22,24 @@ namespace mfw {
 
     struct Window {
     public:
-        ~Window() {}
-        virtual void initialize(const WindowState& state) = 0;
+        virtual ~Window() {}
         virtual void update() = 0;
         virtual bool isRunning() const = 0;
         virtual i32 width() const = 0;
         virtual i32 height() const = 0;
         virtual i32 x() const = 0;
         virtual i32 y() const = 0;
-        virtual i32 style() const = 0;
         virtual const char* title() const = 0;
         virtual void setVSync(bool enable) = 0;
         virtual void setEventCallBack(const std::function<void(const Event&)>& callBackFunction) = 0;
+        virtual void* GetNativeWindow() = 0;
+        virtual void close() = 0;
+        virtual void showCursor() = 0;
+        virtual void hideCursor() = 0;
+        virtual void setCursorPos(const u32 x, const u32 y) = 0;
+
+        static Window* Create(const WindowState& state);
+
     };
 }
 

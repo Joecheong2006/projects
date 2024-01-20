@@ -43,6 +43,8 @@ int main() {
     const uint16_t u16 = -1;
     const int32_t i32 = 22;
     const uint32_t u32 = -1;
+    const long l = 22;
+    const unsigned long lu = -1;
     const int64_t i64 = 22;
     const uint64_t u64 = -1;
 
@@ -52,6 +54,8 @@ int main() {
     TEST_LOG_PATTERN(u16);
     TEST_LOG_PATTERN(i32);
     TEST_LOG_PATTERN(u32);
+    TEST_LOG_PATTERN(l);
+    TEST_LOG_PATTERN(lu);
     TEST_LOG_PATTERN(i64);
     TEST_LOG_PATTERN(u64);
 

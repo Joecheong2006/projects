@@ -47,7 +47,7 @@ namespace mfw {
     private:
         virtual void log() const override {
             Event::log();
-            LOG_INFO("[{}, {}]", x, y);
+            LOG_INFO("[x: {} y: {}]", x, y);
         }
 
     };
@@ -61,7 +61,7 @@ namespace mfw {
     private:
         virtual void log() const override {
             Event::log();
-            LOG_INFO("[{}, {}]", width, height);
+            LOG_INFO("[width: {} height: {}]", width, height);
         }
 
     };
@@ -78,28 +78,6 @@ namespace mfw {
             : Event(EventType::WindowNotFocus)
         {}
         SET_EVENT_NORMAL_BEHAVIOUR(EventType::WindowNotFocus);
-    };
-
-    enum KeyMode : u8 {
-        Down = 1,
-        Repeat,
-        Release,
-    };
-
-    struct WindowKeyEvent : public Event {
-        WindowKeyEvent(i32 key, i32 scandcode, KeyMode mode)
-            : Event(EventType::WindowKey), key(key), scandcode(scandcode), mode(mode)
-        {}
-        SET_EVENT_NORMAL_BEHAVIOUR(EventType::WindowKey);
-
-        const i32 key, scandcode;
-        const KeyMode mode;
-    private:
-        virtual void log() const override {
-            Event::log();
-            LOG_INFO("key[{d:03}] scancode[{d:03}] mode[{}]", key, scandcode, static_cast<u8>(mode));
-        }
-
     };
 
 }

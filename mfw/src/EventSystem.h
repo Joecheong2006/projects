@@ -9,7 +9,8 @@ namespace mfw {
         UnDefine,
         WindowCreate, WindowClose, WindowDestroy,
         WindowMaximize, WindowMinimize, WindowMove, WindowResize,
-        WindowFocus, WindowNotFocus, WindowKey,
+        WindowFocus, WindowNotFocus, 
+        Key, MouseButton, CursorMove, MouseScroll
     };
 
 #define SET_EVENT_NORMAL_BEHAVIOUR(eventType) \

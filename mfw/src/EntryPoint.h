@@ -7,10 +7,10 @@ extern mfw::Application* mfw::CreateApplication();
 int main(int argc, char** argv) {
     (void)argc;
     (void)argv;
-    mfw::Application* application = mfw::CreateApplication();
-    application->run();
-    delete application;
+    mfw::Application::Get()->run();
+    delete mfw::Application::Get();
     return 0;
 }
+
 #endif
 

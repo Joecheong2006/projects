@@ -111,6 +111,8 @@ DEFINE_PATTERN_BASIC_LOG(int32_t, "d", false, "1", value);
 DEFINE_PATTERN_BASIC_LOG(uint32_t, "u", false, "1", value);
 DEFINE_PATTERN_BASIC_LOG(int64_t, "lld", false, "1", value);
 DEFINE_PATTERN_BASIC_LOG(uint64_t, "llu", false, "1", value);
+DEFINE_PATTERN_BASIC_LOG(long, "ld", false, "1", value);
+DEFINE_PATTERN_BASIC_LOG(unsigned long, "lu", false, "1", value);
 
 DEFINE_PATTERN_BASIC_LOG(float, "g", true, "6", value);
 DEFINE_PATTERN_BASIC_LOG(double, "lg", true, "6",  value);

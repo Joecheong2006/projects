@@ -5,10 +5,10 @@
 namespace mfw {
     const char* OpenglContextClassName = "__@@OpenglDummyWindow";
     void OpenglContext::createOld() {
-        //HINSTANCE instance = GetModuleHandle(NULL);
+        HINSTANCE instance = GetModuleHandle(NULL);
         WNDCLASSEX wc{};
-        //if (GetClassInfoEx(instance, OpenglContextClassName, &wc))
-        //    return;
+        if (GetClassInfoEx(instance, OpenglContextClassName, &wc))
+            return;
         wc.cbSize = sizeof(WNDCLASSEX);
         wc.lpfnWndProc = &DefWindowProc;
         wc.hInstance = GetModuleHandle(NULL);

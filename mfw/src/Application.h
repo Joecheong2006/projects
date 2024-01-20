@@ -1,8 +1,6 @@
 #pragma once
-
-#include "WindowsWindow.h"
-#include "OpenglContext.h"
-#include "WindowEventSystem.h"
+#include "Window.h"
+#include <mfwpch.h>
 
 namespace mfw {
     class Application {
@@ -11,17 +9,26 @@ namespace mfw {
         virtual ~Application();
         void run();
 
-    private:
-        void handleEvent(const Event& event);
-        void input(const WindowKeyEvent& event);
-        void update();
+        Window* GetWindow() { return m_window; }
 
-        WindowsWindow m_window;
-        OpenglContext openglContext;
+    public:
+        static Application* Get() { return Instance; }
+
+    private:
+        void Eventhandle(const Event& event);
+        void InputHandle(const KeyEvent& event);
+        void MouseButtonHandle(const MouseButtonEvent& event);
+        void MouseScrollHandle(const MouseScrollEvent& event);
+        virtual void Update();
+
+        Window* m_window;
         EventListener eventListener;
+
+        static Application* Instance;
 
     };
 
     Application* CreateApplication();
+
 }
 

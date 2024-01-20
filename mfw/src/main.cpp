@@ -5,6 +5,9 @@ public:
     DemoSandBox() {
     }
 
+    virtual void Update() override {
+    }
+
     ~DemoSandBox() {
     }
 
