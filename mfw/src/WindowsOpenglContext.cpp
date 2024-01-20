@@ -1,10 +1,14 @@
-#include "OpenglContext.h"
+#include "WindowsOpenglContext.h"
+
+#include "WindowsWindow.h"
 #include "mfwlog.h"
-#include <typeinfo>
 
 namespace mfw {
-    const char* OpenglContextClassName = "__@@OpenglDummyWindow";
-    void OpenglContext::createOld() {
+    OpenglContext* OpenglContext::Instance = new WindowsOpenglContext();
+
+    const char* OpenglContextClassName = "__OpenglDummyWindow";
+
+    void WindowsOpenglContext::CreateOldImpl() {
         HINSTANCE instance = GetModuleHandle(NULL);
         WNDCLASSEX wc{};
         if (GetClassInfoEx(instance, OpenglContextClassName, &wc))
@@ -58,12 +62,14 @@ namespace mfw {
             LOG_INFO("GLEW INIT FAIL\n");
         }
 
-        release();
+        ReleaseImpl();
         ReleaseDC(hwnd, hdc);
         DestroyWindow(hwnd);
     }
 
-    void OpenglContext::createMorden(WindowsWindow* window) {
+    void WindowsOpenglContext::CreateMordenImpl(Window* window) {
+        WindowsWindow* w = reinterpret_cast<WindowsWindow*>(window->getNativeWindow());
+
         const int attribList[] = {
             WGL_DRAW_TO_WINDOW_ARB, GL_TRUE,
             WGL_SUPPORT_OPENGL_ARB, GL_TRUE,
@@ -77,10 +83,10 @@ namespace mfw {
 
         int pixelFormat;
         unsigned int numFormats;
-        wglChoosePixelFormatARB(window->m_hdc, attribList, nullptr, 1, &pixelFormat, &numFormats);
+        wglChoosePixelFormatARB(w->m_hdc, attribList, nullptr, 1, &pixelFormat, &numFormats);
 
         PIXELFORMATDESCRIPTOR pfd;
-        SetPixelFormat(window->m_hdc, pixelFormat, &pfd);
+        SetPixelFormat(w->m_hdc, pixelFormat, &pfd);
 
         const int contextAttribList[] = {
             WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
@@ -91,13 +97,13 @@ namespace mfw {
         };
 
         HGLRC shareHglrc = nullptr;
-        m_hglrc = wglCreateContextAttribsARB(window->m_hdc, shareHglrc, contextAttribList);
-        wglMakeContextCurrentARB(window->m_hdc, window->m_hdc, m_hglrc);
+        w->m_hglrc = wglCreateContextAttribsARB(w->m_hdc, shareHglrc, contextAttribList);
+        wglMakeContextCurrentARB(w->m_hdc, w->m_hdc, w->m_hglrc);
 
         LOG_INFO("OPENGL VERSION: {}\n", glGetString(GL_VERSION));
     }
 
-    void OpenglContext::release() {
+    void WindowsOpenglContext::ReleaseImpl() {
         wglDeleteContext(m_hglrc);
     }
 }

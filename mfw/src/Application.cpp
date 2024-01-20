@@ -1,13 +1,23 @@
 #include "Application.h"
 
 #include "Input.h"
+#include "Clock.h"
+#include "OpenglContext.h"
+#include "WindowsWindow.h"
 
 namespace mfw {
     Application* Application::Instance = CreateApplication();
 
     Application::Application()
-        : m_window(Window::Create({"demo", 960, 640}))
     {
+        {
+            START_CLOCK_DURATION("INIT WINDOW");
+            m_window = Window::Create({"demo", 960, 640});
+        }
+        {
+            START_CLOCK_DURATION("INIT OPENGL");
+            OpenglContext::CreateMorden(m_window);
+        }
         m_window->setEventCallBack([this](const Event& event) {
                     this->Eventhandle(event);
                 });
@@ -37,12 +47,15 @@ namespace mfw {
     }
 
     void Application::run() {
+        glClearColor(0.1, 0.1, 0.1, 1);
         while (m_window->isRunning()) {
+            glViewport(0, 0, m_window->width(), m_window->height());
+            glClear(GL_COLOR_BUFFER_BIT);
             if (Input::KeyPress(' ')) {
                 m_window->setCursorPos(m_window->width() * 0.5, m_window->height() * 0.5);
             }
-            Update();
             m_window->update();
+            m_window->swapBuffers();
         }
     }
 
@@ -73,6 +86,7 @@ namespace mfw {
     }
 
     void Application::Update() {
+        m_window->swapBuffers();
     }
 }
 

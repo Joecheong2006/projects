@@ -1,6 +1,5 @@
 #pragma once
 #include "Window.h"
-#include <mfwpch.h>
 
 namespace mfw {
     class Application {

@@ -1,9 +1,9 @@
 #pragma once
 
+#if defined(DEBUG) || defined(_DEBUG)
 #include <mfwpch.h>
 #include "logger.h"
 
-#if defined(DEBUG) || defined(_DEBUG)
 namespace Log {
     template <typename T>
     struct Pattern<std::vector<T>> {

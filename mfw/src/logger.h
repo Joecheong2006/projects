@@ -1,8 +1,7 @@
 #pragma once
 
-#include <stdio.h>
-#include <string>
-#include <cstdint>
+#include "util.h"
+#include <mfwpch.h>
 
 namespace Log {
     template <typename T>

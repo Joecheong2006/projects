@@ -1,10 +1,8 @@
 #include "WindowsWindow.h"
 
-#include "mfwlog.h"
-#include "WindowEvent.h"
-#include "InputEvent.h"
-
+#include "Input.h"
 #include "Clock.h"
+#include "OpenglContext.h"
 
 #include <windowsx.h>
 
@@ -162,11 +160,15 @@ namespace mfw {
     WindowsWindow::WindowsWindow(const WindowState& state)
         : keys{}, mouse{}
     {
-        START_CLOCK_DURATION("INIT WINDOW");
+        {
+            START_CLOCK_DURATION("INIT OLD OPENGL");
+            OpenglContext::CreateOld();
+        }
         m_state = state;
         registerWindowClass();
         createWindowsWindow();
         ShowWindow(m_hwnd, SW_NORMAL);
+        UpdateWindow(m_hwnd);
     }
 
     void WindowsWindow::registerWindowClass() {
@@ -176,7 +178,7 @@ namespace mfw {
             return;
         wc.cbSize = sizeof(WNDCLASSEX);
         wc.lpfnWndProc = &WindowsWindow::WindowProc;
-        wc.hInstance = GetModuleHandle(NULL);
+        wc.hInstance = instance;
         wc.lpszClassName = windowClassName;
         wc.style = CS_OWNDC;
 
@@ -204,7 +206,7 @@ namespace mfw {
         processMessage();
     }
 
-    void* WindowsWindow::GetNativeWindow() {
+    void* WindowsWindow::getNativeWindow() {
         return this;
     }
 
@@ -229,6 +231,10 @@ namespace mfw {
     }
 
     WindowsWindow::~WindowsWindow() {
+        if (!m_hglrc) {
+            wglDeleteContext(m_hglrc);
+            m_hglrc = nullptr;
+        }
         if (!m_hdc) {
             ReleaseDC(m_hwnd, m_hdc);
             m_hdc = nullptr;

@@ -1,14 +1,11 @@
 #pragma once
 
-#include "EventSystem.h"
 #include "Window.h"
-#include "Input.h"
 #include <windows.h>
-#include <mfwpch.h>
 
 namespace  mfw {
     class WindowsWindow : public Window {
-        friend class OpenglContext;
+        friend class WindowsOpenglContext;
         friend class WindowsWindowInput;
     public:
         explicit WindowsWindow(const WindowState& state);
@@ -24,14 +21,13 @@ namespace  mfw {
             m_state.m_callBackFunc = std::move(callBackFunction);
         }
         inline virtual void setVSync(bool enable) override { m_state.isVSync = enable; }
-        virtual void update() override;
-        inline virtual void* GetNativeWindow() override;
+        inline virtual void* getNativeWindow() override;
         inline virtual void close() override { m_state.isRunning = false; }
         inline virtual void showCursor() override;
         inline virtual void hideCursor() override;
-        virtual void setCursorPos(u32 x, u32 y) override;
-
-        inline void swapBuffers() const { SwapBuffers(m_hdc); }
+        inline virtual void setCursorPos(u32 x, u32 y) override;
+        inline virtual void swapBuffers() override { SwapBuffers(m_hdc); }
+        virtual void update() override;
 
     private:
         WindowState m_state;
@@ -44,6 +40,7 @@ namespace  mfw {
 
         HDC m_hdc;
         HWND m_hwnd;
+        HGLRC m_hglrc = nullptr;
 
         bool keys[256];
 

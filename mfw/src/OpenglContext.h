@@ -1,21 +1,24 @@
 #pragma once
 
-#include "WindowsWindow.h"
 #define GLEW_STATIC 1
 #include <GL/glew.h>
 #include <GL/wglew.h>
 
+#include "Window.h"
+
 namespace mfw {
-    void GLClearError();
-    bool GLLogCall(const char* file, int line, const char* func);
     class OpenglContext {
     public:
-        void createOld();
-        void createMorden(WindowsWindow* window);
-        void release();
+        static void CreateMorden(Window* window) { Instance->CreateMordenImpl(window); }
+        static void CreateOld() { Instance->CreateOldImpl(); }
+        static void Release() { Instance->ReleaseImpl(); }
 
     private:
-        HGLRC m_hglrc;
+        virtual void CreateMordenImpl(Window* window) = 0;
+        virtual void CreateOldImpl() = 0;
+        virtual void ReleaseImpl() = 0;
+
+        static OpenglContext* Instance;
 
     };
 }

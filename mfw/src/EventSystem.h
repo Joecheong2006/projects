@@ -1,7 +1,7 @@
 #pragma once
 
 #include "util.h"
-#include "mfwlog.h"
+#include <mfwlog.h>
 #include <mfwpch.h>
 
 namespace mfw {
