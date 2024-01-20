@@ -1,7 +1,7 @@
 #pragma once
 
 #include "util.h"
-#include "mfwlog.h"
+#include "OpenglContext.h"
 
 namespace mfw {
     struct VertexBufferElement

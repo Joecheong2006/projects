@@ -1,7 +1,7 @@
 #include "VertexArray.h"
 #include "Renderer.h"
 #include "VertexBufferLayout.h"
-#include <mfwpch.h>
+#include "OpenglContext.h"
 
 namespace mfw {
     VertexArray::VertexArray()
