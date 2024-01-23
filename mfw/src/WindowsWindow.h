@@ -52,8 +52,6 @@ namespace  mfw {
             KeyMode actions[8];
         } mouse;
 
-        static const char* windowClassName;
-
     };
 }
 

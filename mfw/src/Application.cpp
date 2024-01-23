@@ -3,7 +3,6 @@
 #include "Input.h"
 #include "Clock.h"
 #include "OpenglContext.h"
-#include "WindowsWindow.h"
 
 namespace mfw {
     Application* Application::Instance = CreateApplication();
@@ -19,7 +18,7 @@ namespace mfw {
             OpenglContext::CreateMorden(m_window);
         }
         m_window->setEventCallBack([this](const Event& event) {
-                    this->Eventhandle(event);
+                    Eventhandle(event);
                 });
 
         eventListener.addEventFunc<WindowCloseEvent>([](const Event& event) {
@@ -32,13 +31,13 @@ namespace mfw {
                     LOG_INFO("{}\n", event);
                 });
         eventListener.addEventFunc<KeyEvent>([this](const Event& event) {
-                    this->InputHandle(static_cast<const KeyEvent&>(event));
+                    InputHandle(static_cast<const KeyEvent&>(event));
                 });
         eventListener.addEventFunc<MouseButtonEvent>([this](const Event& event) {
-                    this->MouseButtonHandle(static_cast<const MouseButtonEvent&>(event));
+                    MouseButtonHandle(static_cast<const MouseButtonEvent&>(event));
                 });
         eventListener.addEventFunc<MouseScrollEvent>([this](const Event& event) {
-                    this->MouseScrollHandle(static_cast<const MouseScrollEvent&>(event));
+                    MouseScrollHandle(static_cast<const MouseScrollEvent&>(event));
                 });
     }
 
@@ -47,13 +46,14 @@ namespace mfw {
     }
 
     void Application::run() {
-        glClearColor(0.1, 0.1, 0.1, 1);
+        glClearColor(0.1, 0.22, 0.1, 1);
         while (m_window->isRunning()) {
             glViewport(0, 0, m_window->width(), m_window->height());
             glClear(GL_COLOR_BUFFER_BIT);
             if (Input::KeyPress(' ')) {
                 m_window->setCursorPos(m_window->width() * 0.5, m_window->height() * 0.5);
             }
+            Update();
             m_window->update();
             m_window->swapBuffers();
         }
@@ -86,7 +86,6 @@ namespace mfw {
     }
 
     void Application::Update() {
-        m_window->swapBuffers();
     }
 }
 

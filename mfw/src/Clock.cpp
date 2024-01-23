@@ -19,7 +19,8 @@ namespace mfw {
         Timer::~Timer() {
             auto end = std::chrono::system_clock::now();
             std::chrono::duration<float> duration = end - start;
-            LOG_TRACE("[{}][{}ms]\n", message, duration.count() * 1000);
+            //LOG_TRACE("[{}][{}ms]\n", message, duration.count() * 1000);
+            LOG_INFO("[{}][{}ms]\n", message, duration.count() * 1000);
         }
 
     }

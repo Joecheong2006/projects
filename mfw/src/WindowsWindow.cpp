@@ -10,7 +10,7 @@
 #define GETHIWORD(l) ((i16) ((((i64) (l)) >> 16) & 0xffff))
 
 namespace mfw {
-    const char* WindowsWindow::windowClassName = "__@@WindowClassName";
+    const char* windowClassName = "__@@WindowClassName";
 
     LRESULT CALLBACK WindowsWindow::WindowProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) {
         if (message == WM_CREATE) {
@@ -154,16 +154,13 @@ namespace mfw {
     }
 
     Window* Window::Create(const WindowState& state) {
+        OpenglContext::CreateOld();
         return new WindowsWindow(state);
     }
 
     WindowsWindow::WindowsWindow(const WindowState& state)
         : keys{}, mouse{}
     {
-        {
-            START_CLOCK_DURATION("INIT OLD OPENGL");
-            OpenglContext::CreateOld();
-        }
         m_state = state;
         registerWindowClass();
         createWindowsWindow();
