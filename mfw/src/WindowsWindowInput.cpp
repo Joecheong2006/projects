@@ -15,5 +15,10 @@ namespace mfw {
         return window->mouse.buttons[button] && window->mouse.actions[button] == KeyMode::Down;
     }
 
+    const std::pair<i32, i32> WindowsWindowInput::GetMouseImpl() {
+        WindowsWindow* window = static_cast<WindowsWindow*>(Application::Get()->GetWindow()->getNativeWindow());
+        return { window->mouse.x, window->mouse.y };
+    }
+
 }
 

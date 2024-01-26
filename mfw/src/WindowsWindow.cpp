@@ -84,10 +84,7 @@ namespace mfw {
                 BOOL keyDown = !keyRepeat;
                 BOOL keyRelease = ((flags & KF_UP) == KF_UP);
                 KeyMode mode = static_cast<KeyMode>(keyRepeat + keyDown + keyRelease);
-                if (mode == KeyMode::Down || mode == KeyMode::Press)
-                    keys[key] = true;
-                else
-                    keys[key] = false;
+                keys[key] = mode == KeyMode::Down || mode == KeyMode::Press;
                 m_state.m_callBackFunc(KeyEvent(key, scancode, mode));
             } break;
 
@@ -113,8 +110,8 @@ namespace mfw {
             } break;
 
         case WM_XBUTTONDOWN: {
-                mouse.buttons[MouseButton::X1 + GET_XBUTTON_WPARAM(wparam)] = true;
-                mouse.actions[MouseButton::X1 + GET_XBUTTON_WPARAM(wparam)] = KeyMode::Down;
+                mouse.buttons[MouseButton::X1 + GET_XBUTTON_WPARAM(wparam) - 1] = true;
+                mouse.actions[MouseButton::X1 + GET_XBUTTON_WPARAM(wparam) - 1] = KeyMode::Down;
                 m_state.m_callBackFunc(MouseButtonEvent(MouseButton::X1 + GET_XBUTTON_WPARAM(wparam) - 1, KeyMode::Down));
             } break;
         case WM_LBUTTONDOWN: {
@@ -134,10 +131,10 @@ namespace mfw {
             } break;
 
         case WM_MOUSEMOVE: {
-                GetCursorPos(reinterpret_cast<PPOINT>(&mouse.ax));
-                mouse.rx = mouse.ax - m_state.x;
-                mouse.ry = mouse.ay - m_state.y;
-                m_state.m_callBackFunc(CursorMoveEvent(mouse.rx, mouse.ry));
+                GetCursorPos(reinterpret_cast<PPOINT>(&mouse.x));
+                mouse.x -= m_state.x;
+                mouse.y -= m_state.y;
+                m_state.m_callBackFunc(CursorMoveEvent(mouse.x, mouse.y));
             } break;
 
         case WM_MOUSEHWHEEL: {

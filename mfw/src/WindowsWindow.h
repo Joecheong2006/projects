@@ -45,9 +45,8 @@ namespace  mfw {
         bool keys[256];
 
         struct Mouse {
+            i32 x, y;
             bool show_cursor;
-            i32 ax, ay;
-            i32 rx, ry;
             bool buttons[8];
             KeyMode actions[8];
         } mouse;

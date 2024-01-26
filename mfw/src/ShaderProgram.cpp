@@ -76,6 +76,13 @@ namespace mfw {
         }
     }
 
+    void ShaderProgram::set2f(const char* name, f32 v0, f32 v1) {
+        i32 id = uniformLocation(name);
+        if (id != -1) {
+            GLCALL(glUniform2f(uniformLocation(name), v0, v1));
+        }
+    }
+
     void ShaderProgram::set1i(const char* name, i32 v0)
     {
         i32 id = uniformLocation(name);
@@ -137,9 +144,7 @@ namespace mfw {
         if(m_uniform_location_cache.find(name) != m_uniform_location_cache.end())
             return m_uniform_location_cache[name];
         GLCALL(i32 location = glGetUniformLocation(m_id, name));
-        if(location == -1) {
-            LOG_INFO("cannot found uniform locaiton: {}\n", name);
-        } else {
+        if(location != -1) {
             m_uniform_location_cache[name] = location;
         }
         return location;

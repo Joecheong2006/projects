@@ -8,17 +8,24 @@ namespace mfw {
         virtual ~Application();
         void run();
 
-        Window* GetWindow() { return m_window; }
+        Window* GetWindow() const { return m_window; }
 
     public:
         static Application* Get() { return Instance; }
 
+    protected:
+        inline virtual void Update() {}
+        inline virtual void OnInputKey(const KeyEvent& event) { (void)event; }
+        inline virtual void OnMouseButton(const MouseButtonEvent& event) { (void)event; }
+        inline virtual void OnMouseScroll(const MouseScrollEvent& event) { (void)event; }
+
+        void Terminate() { m_window->close(); }
+
     private:
         void Eventhandle(const Event& event);
-        void InputHandle(const KeyEvent& event);
-        void MouseButtonHandle(const MouseButtonEvent& event);
-        void MouseScrollHandle(const MouseScrollEvent& event);
-        virtual void Update();
+        inline void InputHandle(const KeyEvent& event) { OnInputKey(event); }
+        inline void MouseButtonHandle(const MouseButtonEvent& event) { OnMouseButton(event); }
+        inline void MouseScrollHandle(const MouseScrollEvent& event) { OnMouseScroll(event); }
 
         Window* m_window;
         EventListener eventListener;

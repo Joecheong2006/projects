@@ -1,35 +1,64 @@
 #include <mfw.h>
 
-using namespace mfw;
-
 static f32 vertex[] = {
-     0.0,  0.5,
-    -0.5, -0.5,
-     0.5, -0.5,
+     1,  1,
+    -1,  1,
+     1, -1,
+    -1, -1,
 };
 
+static u32 index[] = {
+    1, 0, 2,
+    1, 3, 2,
+};
+
+using namespace mfw;
 class DemoSandBox : public Application {
 private:
     VertexArray vao;
+    IndexBuffer ibo;
     VertexBuffer vbo;
     ShaderProgram shader;
+    f32 zoom = 3.0;
 
 public:
     DemoSandBox()
-        : vbo(vertex, sizeof(vertex))
+        : ibo(index, 6), vbo(vertex, sizeof(vertex))
     {
         VertexBufferLayout layout;
         layout.add<f32>(2);
         vao.applyBufferLayout(layout);
-        shader.attachShader(GL_VERTEX_SHADER, "res/shaders/default.vert");
-        shader.attachShader(GL_FRAGMENT_SHADER, "res/shaders/default.frag");
+        shader.attachShader(GL_VERTEX_SHADER, "res/shaders/test.vert");
+        shader.attachShader(GL_FRAGMENT_SHADER, "res/shaders/test.frag");
         shader.link();
+
+        glClearColor(0.1, 0.22, 0.1, 1);
     }
 
     virtual void Update() override {
+        auto window = GetWindow();
+        glViewport(0, 0, window->width(), window->height());
+        glClear(GL_COLOR_BUFFER_BIT);
+
         vao.bind();
         shader.bind();
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+
+        float width = window->width();
+        float height = window->height();
+        shader.set2f("resolution", width, height);
+        shader.set1f("time", 0);
+
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+        if (Input::KeyPress(' ')) {
+            window->setCursorPos(window->width() * 0.5, window->height() * 0.5);
+        }
+    }
+
+    virtual void OnInputKey(const KeyEvent& event) override {
+        if (event.key == VK_ESCAPE && event.mode == KeyMode::Down) {
+            Terminate();
+        }
     }
 
     ~DemoSandBox() {

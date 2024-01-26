@@ -23,6 +23,7 @@ namespace mfw {
         void release();
         void set4f(const char* name, f32 v0, f32 v1, f32 v2, f32 v3);
         void set3f(const char* name, f32 v0, f32 v1, f32 v2);
+        void set2f(const char* name, f32 v0, f32 v1);
         void set3f(const char* name, f32* v);
         void set1i(const char* name, i32 v0);
         void set1f(const char* name, f32 v0);
