@@ -6,11 +6,11 @@
 namespace mfw {
     class Time {
     public:
-        inline static f32 GetCurrent() { return Instance->GetCurrentImpl(); }
+        inline static f64 GetCurrent() { return Instance->GetCurrentImpl(); }
         inline static void Sleep(f32 millisecond) { Instance->SleepImpl(millisecond); }
 
     private:
-        virtual f32 GetCurrentImpl() = 0;
+        virtual f64 GetCurrentImpl() = 0;
         virtual void SleepImpl(f32 millisecond) = 0;
 
         static Time* Instance;

@@ -17,10 +17,10 @@ namespace mfw {
             START_CLOCK_TIMER("INIT OPENGL");
             OpenglContext::CreateMorden(m_window);
         }
+
         m_window->setEventCallBack([this](const Event& event) {
                     Eventhandle(event);
                 });
-
         eventListener.addEventFunc<WindowCloseEvent>([](const Event& event) {
                     LOG_INFO("{}\n", event);
                 });

@@ -13,7 +13,7 @@ namespace mfw {
         start = ticks.QuadPart;
     }
 
-    f32 WindowsTime::GetCurrentImpl() {
+    f64 WindowsTime::GetCurrentImpl() {
         LARGE_INTEGER ticks;
         QueryPerformanceCounter(&ticks);
         return (ticks.QuadPart - start) / pcfreq;

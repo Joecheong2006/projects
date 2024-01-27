@@ -9,7 +9,7 @@ namespace mfw {
         WindowsTime();
 
     private:
-        virtual f32 GetCurrentImpl() override;
+        virtual f64 GetCurrentImpl() override;
         virtual void SleepImpl(f32 millisecond) override;
 
         f32 pcfreq;
