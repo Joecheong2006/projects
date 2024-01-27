@@ -10,11 +10,11 @@ namespace mfw {
     Application::Application()
     {
         {
-            START_CLOCK_DURATION("INIT WINDOW");
+            START_CLOCK_TIMER("INIT WINDOW");
             m_window = Window::Create({"demo", 960, 640});
         }
         {
-            START_CLOCK_DURATION("INIT OPENGL");
+            START_CLOCK_TIMER("INIT OPENGL");
             OpenglContext::CreateMorden(m_window);
         }
         m_window->setEventCallBack([this](const Event& event) {

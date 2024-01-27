@@ -2,6 +2,7 @@
 
 #include "Application.h"
 #include "Input.h"
+#include "Clock.h"
 
 #include "EntryPoint.h"
 
