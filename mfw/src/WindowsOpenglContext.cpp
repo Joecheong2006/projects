@@ -101,7 +101,7 @@ namespace mfw {
         wglMakeContextCurrentARB(w->m_hdc, w->m_hdc, w->m_hglrc);
 
         LOG_INFO("OPENGL VERSION: {}\n", glGetString(GL_VERSION));
-        wglSwapIntervalEXT(1);
+        //wglSwapIntervalEXT(1);
     }
 
     void WindowsOpenglContext::ReleaseImpl() {

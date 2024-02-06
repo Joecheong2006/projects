@@ -1,5 +1,4 @@
 #include <mfw.h>
-#include <thread>
 
 static f32 vertex[] = {
      1,  1,
@@ -20,6 +19,8 @@ private:
     IndexBuffer ibo;
     VertexBuffer vbo;
     ShaderProgram shader;
+    f32 zoom = 1;
+    f32 offset_x = 0, offset_y = 0;
 
 public:
     DemoSandBox()
@@ -50,12 +51,28 @@ public:
         f32 width = window->width();
         f32 height = window->height();
         shader.set2f("resolution", width, height);
+        shader.set2f("offset", offset_x, offset_y);
         shader.set1f("time", Time::GetCurrent());
+        shader.set1f("zoom", zoom);
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
+        f32 frame = 1.0 / 144;
+
         if (Input::KeyPress(' ')) {
             window->setCursorPos(window->width() * 0.5, window->height() * 0.5);
+        }
+        if (Input::KeyPress('W')) {
+            offset_y += frame;
+        }
+        if (Input::KeyPress('A')) {
+            offset_x -= frame;
+        }
+        if (Input::KeyPress('S')) {
+            offset_y -= frame;
+        }
+        if (Input::KeyPress('D')) {
+            offset_x += frame;
         }
     }
 
@@ -64,6 +81,11 @@ public:
             Terminate();
         }
     }
+
+    virtual void OnMouseScroll(const MouseScrollEvent& event) override {
+        zoom -= event.ydelta * 0.1;
+    }
+
 
     ~DemoSandBox() {
     }

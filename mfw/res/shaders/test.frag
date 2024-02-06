@@ -1,7 +1,9 @@
 #version 330 core
 
 uniform vec2 resolution;
+uniform vec2 offset;
 uniform float time;
+uniform float zoom;
 
 #define PI 3.1415f
 
@@ -21,12 +23,22 @@ float distance_to_line(vec2 p, vec2 p1, vec2 p2) {
     return abs((a * p.x - p.y + c)) / sqrt(a * a + 1);
 }
 
+float get_iterate(vec2 c) {
+    float maxI = 100;
+    vec2 z = vec2(0);
+    for (float i = 0; i < maxI; ++i) {
+        z = vec2(z.x * z.x - z.y * z.y, 2 * z.x * z.y) + c;
+        if (z.x * z.x + z.y * z.y > 4) {
+            return i / maxI;
+        }
+    }
+    return maxI;
+}
+
+
 void main() {
-    vec2 uv = (gl_FragCoord.xy / resolution - 0.5) * 2.0 * vec2(1, resolution.y / resolution.x);
+    vec2 uv = (gl_FragCoord.xy / resolution - 0.5) * 4 * vec2(1, resolution.y / resolution.x);
 
-    vec3 color = vec3(0.0);
-
-    color += 1 - smoothstep(0, 0.01, distance_to_line(uv, vec2(0), vec2(cos(time), sin(time))));
-
-    frag_color = vec4(color, 1.0);
+    float value = smoothstep(0, 0.4, get_iterate(uv / zoom + offset));
+    frag_color = vec4(vec3(value), 0);
 }
