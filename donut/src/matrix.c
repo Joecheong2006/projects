@@ -1,6 +1,7 @@
 #include "matrix.h"
 #include <stdio.h>
 #include <assert.h>
+#include <math.h>
 
 struct matrix* matrix_create(u64 col, u64 row)
 {
@@ -98,6 +99,45 @@ struct matrix* matrix_dot(struct matrix* m1, struct matrix* m2)
         }
     }
     return m;
+}
+
+void matrix_set_rotateX(struct matrix* m, f32 radius) {
+    assert(m->col == 4 && m->row == 4);
+    m->data[0][0] = 1;
+    m->data[0][1] = 0;
+    m->data[0][2] = 0;
+    m->data[1][0] = 0;
+    m->data[1][1] = cosf(radius);
+    m->data[1][2] = -sinf(radius);
+    m->data[2][0] = 0;
+    m->data[2][1] = sinf(radius);
+    m->data[2][2] = cosf(radius);
+}
+
+void matrix_set_rotateY(struct matrix* m, f32 radius) {
+    assert(m->col == 4 && m->row == 4);
+    m->data[0][0] = cosf(radius);
+    m->data[0][1] = 0;
+    m->data[0][2] = sinf(radius);
+    m->data[1][0] = 0;
+    m->data[1][1] = 1;
+    m->data[1][2] = 0;
+    m->data[2][0] = -sinf(radius);
+    m->data[2][1] = 0;
+    m->data[2][2] = cosf(radius);
+}
+
+void matrix_set_rotateZ(struct matrix* m, f32 radius) {
+    assert(m->col == 4 && m->row == 4);
+    m->data[0][0] = cosf(radius);
+    m->data[0][1] = -sinf(radius);
+    m->data[0][2] = 0;
+    m->data[1][0] = sinf(radius);
+    m->data[1][1] = cosf(radius);
+    m->data[1][2] = 0;
+    m->data[2][0] = 0;
+    m->data[2][1] = 0;
+    m->data[2][2] = 1;
 }
 
 void matrix_apply(struct matrix* m, f32(*func)(f32))
