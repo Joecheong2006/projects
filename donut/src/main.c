@@ -13,7 +13,7 @@
 #define SX 50
 #define SY 50
 char buffer[SX * SY];
-char sc = '4';
+char sc = '9';
 
 u64 memory_allocated;
 
@@ -50,7 +50,7 @@ int main(void) {
 
     const float PI = acos(-1);
 
-    float n = 1, f = 50;
+    float n = 0.1f, f = 50;
     float t = tan(45.0f * PI / 180) * n, b = -t;
     float r = t * (SX / (float)SY), l = -r;
 
@@ -67,11 +67,11 @@ int main(void) {
     struct matrix* rotateY = matrix_create(4, 4);
 
     float xr = 8;
-    float yr = 6;
+    float yr = 3;
     pos = matrix_create(1, 4);
     pos->data[0][0] = yr;
     pos->data[1][0] = 0;
-    pos->data[2][0] = -6;
+    pos->data[2][0] = 0;
 
     pthread_t input_thread;
     pthread_create(&input_thread, NULL, input_handle, NULL);
@@ -91,16 +91,20 @@ int main(void) {
                 struct matrix* rx_pos = matrix_dot(rotateZ, ry_pos);
                 matrix_set_rotateZ(rotateZ, angle_x * 0.4);
                 struct matrix* ro_pos = matrix_dot(rotateZ, rx_pos);
+                rz_pos->data[3][0] += 10;
                 struct matrix* new_pos = matrix_dot(projection, ro_pos);
 
-                float x = new_pos->data[0][0];
-                float y = new_pos->data[1][0];
-                float z = -new_pos->data[2][0];
-                if (new_pos->data[3][0] != 0 && x > -ox && y > -oy && x < SX && y < SY) {
-                    if (buffer[(int)(x + ox) + (int)(y + oy) * SX] == ' ') {
-                        buffer[(int)(x + ox) + (int)(y + oy) * SX] = sc + (int)(z);
-                    } else if(buffer[(int)(x + ox) + (int)(y + oy) * SX] < (int)z) {
-                        buffer[(int)(x + ox) + (int)(y + oy) * SX] = sc + (int)(z);
+                if (new_pos->data[3][0] != 0) {
+                    float w = new_pos->data[3][0];
+                    float x = new_pos->data[0][0];
+                    float y = new_pos->data[1][0];
+                    float z = new_pos->data[2][0];
+                    if (x > -ox && y > -oy && x < SX && y < SY) {
+                        if (buffer[(int)(x + ox) + (int)(y + oy) * SX] == ' ') {
+                            buffer[(int)(x + ox) + (int)(y + oy) * SX] = sc + (int)(z);
+                        } else if(buffer[(int)(x + ox) + (int)(y + oy) * SX] < (int)z) {
+                            buffer[(int)(x + ox) + (int)(y + oy) * SX] = sc + (int)(z);
+                        }
                     }
                 }
 
