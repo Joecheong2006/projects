@@ -9,8 +9,6 @@
 #define disable_cursor() printf("\e[?25l");
 #define enable_cursor() printf("\e[?25h");
 
-#define PI 3.1415
-
 #define SX 50
 #define SY 50
 static char buffer[SX * SY];
@@ -23,6 +21,8 @@ void clear_buffer() {
 
 int main(void) {
     disable_cursor();
+
+    const float PI = acos(-1);
 
     float n = 1, f = 50;
     float t = tan(45.0f * PI / 180) * n, b = -t;
@@ -37,62 +37,117 @@ int main(void) {
     projection->data[2][3] = -2 * f * n / (f - n);
     projection->data[3][2] = -1;
 
-    float a = 0;
     struct matrix* rotateZ = matrix_create(4, 4);
-    rotateZ->data[0][0] = cos(a);
-    rotateZ->data[0][1] = -sin(a);
-    rotateZ->data[1][0] = sin(a);
-    rotateZ->data[1][1] = cos(a);
-    rotateZ->data[2][2] = 1;
 
+    struct matrix* rotateY = matrix_create(4, 4);
+
+    float xr = 7;
+    float yr = 2;
     struct matrix* pos = matrix_create(1, 4);
-    pos->data[0][0] = 10;
+    pos->data[0][0] = yr;
     pos->data[1][0] = 0;
-    pos->data[2][0] = -10;
+    pos->data[2][0] = -3;
+    //pos->data[2][0] = 1;
 
-    float ox = 25, oy = 25;
+    float ox = (float)SX / 2, oy = (float)SY / 2;
+    float angle_step = 0.1f;
+    float angle_x = 0.1f;
 
     while (1) {
         char c = getch();
+        if (c == 'q')
+            break;
         clear_buffer();
         switch (c) {
-            case 'j': a -= 0.1; break;
-            case 'k': a += 0.1; break;
-            case 'w': oy -= 1; break;
-            case 's': oy += 1; break;
             case 'a': ox -= 1; break;
             case 'd': ox += 1; break;
+            case 'w': pos->data[2][0] -= 0.3; break;
+            case 's': pos->data[2][0] += 0.3; break;
+            case 'j': angle_x += 0.1; break;
+            case 'k': angle_x -= 0.1; break;
+            default:
+                break;
         }
-        rotateZ->data[0][0] = cos(a);
-        rotateZ->data[0][1] = -sin(a);
-        rotateZ->data[1][0] = sin(a);
-        rotateZ->data[1][1] = cos(a);
-        struct matrix* ro_pos = matrix_dot(rotateZ, pos);
-        struct matrix* new_pos = matrix_dot(projection, ro_pos);
-        new_pos->data[0][0] += ox + 1;
-        new_pos->data[1][0] += oy + 1;
-        if (new_pos->data[0][0] * new_pos->data[1][0] >= 0)
-            buffer[(int)new_pos->data[0][0] + (int)new_pos->data[1][0] * SX] = '#';
-        buffer[(int)ox + (int)oy * SX] = 'X';
-        matrix_free(new_pos);
-        matrix_free(ro_pos);
+
+        for (float iy = 0; iy < 2 * PI; iy += angle_step) {
+            rotateY->data[1][1] = 1;
+            rotateY->data[0][0] = cosf(iy);
+            rotateY->data[0][2] = sinf(iy);
+            rotateY->data[2][0] = -sinf(iy);
+            rotateY->data[2][2] = cosf(iy);
+            for (float ix = 0; ix < 2 * PI; ix += angle_step) {
+                rotateZ->data[2][2] = 1;
+                rotateZ->data[0][0] = cosf(ix);
+                rotateZ->data[0][1] = -sinf(ix);
+                rotateZ->data[1][0] = sinf(ix);
+                rotateZ->data[1][1] = cosf(ix);
+                struct matrix* rz_pos = matrix_dot(rotateZ, pos);
+                rz_pos->data[0][0] += xr;
+                struct matrix* ry_pos = matrix_dot(rotateY, rz_pos);
+                rotateZ->data[0][0] = 0;
+                rotateZ->data[0][1] = 0;
+                rotateZ->data[0][2] = 0;
+                rotateZ->data[1][0] = 0;
+                rotateZ->data[1][1] = 0;
+                rotateZ->data[1][2] = 0;
+                rotateZ->data[2][0] = 0;
+                rotateZ->data[2][1] = 0;
+                rotateZ->data[2][2] = 0;
+
+                rotateZ->data[0][0] = 1;
+                rotateZ->data[1][1] = cosf(angle_x);
+                rotateZ->data[1][2] = -sinf(angle_x);
+                rotateZ->data[2][1] = sinf(angle_x);
+                rotateZ->data[2][2] = cosf(angle_x);
+                struct matrix* rx_pos = matrix_dot(rotateZ, ry_pos);
+                rotateZ->data[0][0] = 0;
+                rotateZ->data[0][1] = 0;
+                rotateZ->data[0][2] = 0;
+                rotateZ->data[1][0] = 0;
+                rotateZ->data[1][1] = 0;
+                rotateZ->data[1][2] = 0;
+                rotateZ->data[2][0] = 0;
+                rotateZ->data[2][1] = 0;
+                rotateZ->data[2][2] = 0;
+
+                rotateZ->data[2][2] = 1;
+                rotateZ->data[0][0] = cosf(angle_x / 2);
+                rotateZ->data[0][1] = -sinf(angle_x / 2);
+                rotateZ->data[1][0] = sinf(angle_x / 2);
+                rotateZ->data[1][1] = cosf(angle_x / 2);
+                struct matrix* ro_pos = matrix_dot(rotateZ, rx_pos);
+                struct matrix* new_pos = matrix_dot(projection, ro_pos);
+
+                float x = new_pos->data[0][0];
+                float y = new_pos->data[1][0];
+                float z = new_pos->data[2][0];
+                if (new_pos->data[3][0] != 0 && x >= -ox && y >= -oy && x < SX && y < SY) {
+                    if (buffer[(int)(x + ox) + (int)(y + oy) * SX] == ' ') {
+                        buffer[(int)(x + ox) + (int)(y + oy) * SX] = '1' + (int)(z);
+                    } else if(buffer[(int)(x + ox) + (int)(y + oy) * SX] < (int)z) {
+                        buffer[(int)(x + ox) + (int)(y + oy) * SX] = '1' + (int)(z);
+                    }
+                }
+                matrix_free(new_pos);
+                matrix_free(rz_pos);
+                matrix_free(ry_pos);
+                matrix_free(rx_pos);
+                matrix_free(ro_pos);
+            }
+        }
 
         clear();
 
-        for (int i = 0; i < SY; ++i) {
-            for (int j = 0; j < SX; ++j) {
-                putchar(buffer[j + i * SX]);
-                putchar(' ');
-            }
-            putchar('\n');
+        for (int i = 0; i < SY * SX; ++i) {
+            putchar(i % SX ? buffer[i] : '\n');
+            putchar(' ');
         }
-        if (c == 'q')
-            break;
     }
 
     enable_cursor();
     matrix_free(projection);
     matrix_free(rotateZ);
+    matrix_free(rotateY);
     matrix_free(pos);
 
     printf("\n%llu", memory_allocated);
