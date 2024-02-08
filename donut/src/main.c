@@ -10,16 +10,17 @@
 #define disable_cursor() printf("\e[?25l");
 #define enable_cursor() printf("\e[?25h");
 
-#define SX 50
-#define SY 50
+#define SX 40
+#define SY 40
 char buffer[SX * SY];
-char sc = '9';
+char sc = 'A';
 
 u64 memory_allocated;
 
 float ox = (float)SX / 2, oy = (float)SY / 2, oz;
 float angle_step = 0.1f;
 float angle_x = 0.1f;
+float angle_delta = 0.1;
 struct matrix* pos;
 int looping = 1;
 
@@ -33,10 +34,10 @@ void* input_handle() {
         switch (c) {
             case 'a': ox -= 1; break;
             case 'd': ox += 1; break;
-            case 'w': pos->data[2][0] -= 0.3; break;
-            case 's': pos->data[2][0] += 0.3; break;
-            case 'j': angle_x += 0.1; break;
-            case 'k': angle_x -= 0.1; break;
+            case 'w': oz -= 0.3; break;
+            case 's': oz += 0.3; break;
+            case 'j': angle_delta += 0.01; break;
+            case 'k': angle_delta -= 0.01; break;
             default:
                 break;
         }
@@ -45,33 +46,51 @@ void* input_handle() {
     return NULL;
 }
 
+void set_projection(struct matrix* proj, float n, float f, float fov, float rate) {
+    const float PI = acos(-1);
+    float t = tan(fov * 0.5 * PI / 180) * n, b = -t;
+    float r = t * rate, l = -r;
+    proj->data[0][0] = 2 * n / (r - l);
+    proj->data[0][1] = 0;
+    proj->data[0][2] = (r + l) / (r - l);
+    proj->data[0][3] = 0;
+
+    proj->data[1][0] = 0;
+    proj->data[1][1] = 2 * n / (t - b);
+    proj->data[1][2] = (t + b) / (t - b);
+    proj->data[1][4] = 0;
+
+    proj->data[2][0] = 0;
+    proj->data[2][1] = 0;
+    proj->data[2][2] = -(f + n) / (f - n);
+    proj->data[2][3] = -2 * f * n / (f - n);
+
+    proj->data[3][0] = 0;
+    proj->data[3][1] = 0;
+    proj->data[3][2] = 1;
+    proj->data[3][3] = 0;
+}
+
 int main(void) {
     disable_cursor();
 
     const float PI = acos(-1);
-
     float n = 0.1f, f = 50;
-    float t = tan(45.0f * PI / 180) * n, b = -t;
-    float r = t * (SX / (float)SY), l = -r;
 
     struct matrix* projection = matrix_create(4, 4);
-    projection->data[0][0] = 2 * n / (r - l);
-    projection->data[0][2] = (r + l) / (r - l);
-    projection->data[1][1] = 2 * n / (t - b);
-    projection->data[1][2] = (t + b) / (t - b);
-    projection->data[2][2] = -(f + n) / (f - n);
-    projection->data[2][3] = -2 * f * n / (f - n);
-    projection->data[3][2] = -1;
+    set_projection(projection, n, f, 90, SX / (float)SY);
 
     struct matrix* rotateZ = matrix_create(4, 4);
     struct matrix* rotateY = matrix_create(4, 4);
 
     float xr = 8;
-    float yr = 3;
+    float yr = 4;
+
     pos = matrix_create(1, 4);
     pos->data[0][0] = yr;
     pos->data[1][0] = 0;
     pos->data[2][0] = 0;
+    pos->data[3][0] = 1;
 
     pthread_t input_thread;
     pthread_create(&input_thread, NULL, input_handle, NULL);
@@ -87,23 +106,25 @@ int main(void) {
                 struct matrix* rz_pos = matrix_dot(rotateZ, pos);
                 rz_pos->data[0][0] += xr;
                 struct matrix* ry_pos = matrix_dot(rotateY, rz_pos);
+
+                ry_pos->data[1][0] += 15;
                 matrix_set_rotateX(rotateZ, angle_x);
                 struct matrix* rx_pos = matrix_dot(rotateZ, ry_pos);
-                matrix_set_rotateZ(rotateZ, angle_x * 0.4);
+                matrix_set_rotateZ(rotateZ, angle_x * 0.2);
                 struct matrix* ro_pos = matrix_dot(rotateZ, rx_pos);
-                rz_pos->data[3][0] += 10;
+                ro_pos->data[2][0] += oz;
                 struct matrix* new_pos = matrix_dot(projection, ro_pos);
 
                 if (new_pos->data[3][0] != 0) {
-                    float w = new_pos->data[3][0];
                     float x = new_pos->data[0][0];
                     float y = new_pos->data[1][0];
-                    float z = new_pos->data[2][0];
-                    if (x > -ox && y > -oy && x < SX && y < SY) {
-                        if (buffer[(int)(x + ox) + (int)(y + oy) * SX] == ' ') {
-                            buffer[(int)(x + ox) + (int)(y + oy) * SX] = sc + (int)(z);
-                        } else if(buffer[(int)(x + ox) + (int)(y + oy) * SX] < (int)z) {
-                            buffer[(int)(x + ox) + (int)(y + oy) * SX] = sc + (int)(z);
+                    int z = new_pos->data[2][0];
+                    int index = (int)(x + ox - 1) + (int)(y + oy - 1) * SX;
+                    if (index > 0 && index < SX * SY && x < SX - ox && x > -ox) {
+                        if (buffer[index] == ' ') {
+                            buffer[index] = sc + z;
+                        } else if(buffer[index] < z) {
+                            buffer[index] = sc + z;
                         }
                     }
                 }
@@ -116,7 +137,7 @@ int main(void) {
             }
         }
 
-        angle_x += 0.2;
+        angle_x += angle_delta;
 
         gotoxy(0, 0);
         for (int i = 0; i < SY * SX; ++i) {

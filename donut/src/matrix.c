@@ -15,7 +15,7 @@ struct matrix* matrix_create(u64 col, u64 row)
 
     for(u64 row = 0; row < m->row; row++)
     {
-        f32* cols = (f32*)calloc(sizeof(f32) * col, 0);
+        f32* cols = (f32*)malloc(sizeof(f32) * col);
         assert(cols != NULL);
         m->data[row] = cols;
     }
