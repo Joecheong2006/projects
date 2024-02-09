@@ -21,7 +21,7 @@ u64 memory_allocated;
 float ox = (float)SX / 2, oy = (float)SY / 2, fov = 60;
 float angle_step = 0.1f;
 float angle_x = 0.1f;
-float angle_delta = 0.08;
+float angle_delta = 0.1;
 struct matrix* pos;
 struct matrix* cam;
 struct matrix* lpos;
@@ -89,7 +89,7 @@ int main(void) {
     disable_cursor();
 
     const float PI = acos(-1);
-    float n = 0.1f, f = 50 * 2;
+    float n = 0.1, f = 10;
 
     struct matrix* M = matrix_create(4, 4);
     struct matrix* rotateY = matrix_create(4, 4);
@@ -108,11 +108,12 @@ int main(void) {
     cam->data[1][0] = 0;
     cam->data[2][0] = 3;
 
-    lpos = matrix_create(4, 1);
+    lpos = matrix_create(1, 4);
     lpos->data[0][0] = 0;
-    lpos->data[0][1] = 1;
-    lpos->data[0][2] = -1;
-    lpos->data[0][3] = 0;
+    lpos->data[1][0] = 1;
+    lpos->data[2][0] = -1;
+    lpos->data[3][0] = 0;
+    normalize_vec3(lpos);
 
     pthread_t input_thread;
     pthread_create(&input_thread, NULL, input_handle, NULL);
@@ -142,7 +143,7 @@ int main(void) {
                 matrix_set_rotateX(M, angle_x);
                 struct matrix* rx_pos = matrix_dot(M, ry_pos);
                 struct matrix* rx_normal = matrix_dot(M, ry_normal);
-                matrix_set_rotateZ(M, angle_x);
+                matrix_set_rotateZ(M, angle_x * 0.37);
                 struct matrix* ro_pos = matrix_dot(M, rx_pos);
                 struct matrix* ro_normal = matrix_dot(M, rx_normal);
 
@@ -157,18 +158,18 @@ int main(void) {
                 struct matrix* new_pos = matrix_dot(M, ro_pos);
 
                 normalize_vec3(ro_normal);
-                struct matrix* d = matrix_dot(lpos, ro_normal);
+                float normal = ro_normal->data[0][0] * lpos->data[0][0] + ro_normal->data[1][0] * lpos->data[1][0] + ro_normal->data[2][0] * lpos->data[2][0];
 
                 float w = new_pos->data[3][0];
                 float x = SX * new_pos->data[0][0] / w;
                 float y = SY * new_pos->data[1][0] / w;
                 float z = new_pos->data[2][0] / w;
 
-                if (d->data[0][0] > 0) {
+                if (normal > 0) {
                     int index = (int)(x + SX * 0.5f) + (int)(y + SY * 0.5f) * SX;
-                    if (x < SX * 0.5f && x > -SX * 0.5f && y < SY * 0.5f && y > -SY * 0.5f && dbuffer[index] < z) {
-                        buffer[index] = ".,-~:;=!*#$@"[(int)(d->data[0][0] * 8.0)];
-                        dbuffer[index] = z;
+                    if (x < SX * 0.5f && x > -SX * 0.5f && y < SY * 0.5f && y > -SY * 0.5f && dbuffer[index] < 1 / z) {
+                        buffer[index] = ".,-~:;=!*#$@"[(int)(normal * 13.0)];
+                        dbuffer[index] = 1 / z;
                     }
                 }
 
@@ -181,7 +182,6 @@ int main(void) {
                 matrix_free(ry_normal);
                 matrix_free(rx_normal);
                 matrix_free(ro_normal);
-                matrix_free(d);
             }
         }
 
