@@ -13,6 +13,7 @@
 #define SX 60
 #define SY 25
 char buffer[SX * SY];
+char dbuffer[SX * SY];
 char sc = '.';
 
 u64 memory_allocated;
@@ -20,7 +21,7 @@ u64 memory_allocated;
 float ox = (float)SX / 2, oy = (float)SY / 2, fov = 60;
 float angle_step = 0.1f;
 float angle_x = 0.1f;
-float angle_delta = 0.1;
+float angle_delta = 0.08;
 struct matrix* pos;
 struct matrix* cam;
 struct matrix* lpos;
@@ -34,10 +35,10 @@ void* input_handle() {
             return NULL;
         }
         switch (c) {
-            case 'a': cam->data[0][0] -= 0.3; break;
-            case 'd': cam->data[0][0] += 0.3; break;
-            case 'w': cam->data[2][0] -= 0.3; break;
-            case 's': cam->data[2][0] += 0.3; break;
+            case 'a': cam->data[0][0] -= 0.01; break;
+            case 'd': cam->data[0][0] += 0.01; break;
+            case 'w': cam->data[2][0] -= 0.01; break;
+            case 's': cam->data[2][0] += 0.01; break;
             case 'j': angle_delta += 0.01; break;
             case 'k': angle_delta -= 0.01; break;
             case 'u': angle_step += 0.01; break;
@@ -93,8 +94,8 @@ int main(void) {
     struct matrix* M = matrix_create(4, 4);
     struct matrix* rotateY = matrix_create(4, 4);
 
-    float xr = 4;
-    float yr = 2;
+    float xr = 1.3;
+    float yr = 0.6;
 
     pos = matrix_create(1, 4);
     pos->data[0][0] = yr;
@@ -105,12 +106,12 @@ int main(void) {
     cam = matrix_create(1, 3);
     cam->data[0][0] = 0;
     cam->data[1][0] = 0;
-    cam->data[2][0] = 10;
+    cam->data[2][0] = 3;
 
     lpos = matrix_create(4, 1);
     lpos->data[0][0] = 0;
     lpos->data[0][1] = 1;
-    lpos->data[0][2] = -9;
+    lpos->data[0][2] = -1;
     lpos->data[0][3] = 0;
 
     pthread_t input_thread;
@@ -119,6 +120,7 @@ int main(void) {
     clear();
     while (looping) {
         memset(buffer, ' ', SX * SY);
+        memset(dbuffer, 0, SX * SY);
 
         for (float iy = 0; iy < 2 * PI; iy += 0.07) {
             matrix_set_rotateY(rotateY, iy);
@@ -127,8 +129,8 @@ int main(void) {
                 matrix_set_rotateZ(M, ix);
                 struct matrix* rz_pos = matrix_dot(M, pos);
                 struct matrix* rz_normal = matrix_create(1, 4);
-                rz_normal->data[0][0] = cos(ix);
-                rz_normal->data[1][0] = sin(ix);
+                rz_normal->data[0][0] = cosf(ix);
+                rz_normal->data[1][0] = sinf(ix);
                 rz_normal->data[2][0] = 0;
                 rz_normal->data[3][0] = 0;
 
@@ -147,7 +149,6 @@ int main(void) {
                 ro_pos->data[0][0] -= cam->data[0][0];
                 ro_pos->data[1][0] -= cam->data[1][0];
                 ro_pos->data[2][0] -= cam->data[2][0];
-
                 ro_normal->data[0][0] -= cam->data[0][0];
                 ro_normal->data[1][0] -= cam->data[1][0];
                 ro_normal->data[2][0] -= cam->data[2][0];
@@ -161,15 +162,13 @@ int main(void) {
                 float w = new_pos->data[3][0];
                 float x = SX * new_pos->data[0][0] / w;
                 float y = SY * new_pos->data[1][0] / w;
-                int index = (int)(x + SX * 0.5f) + (int)(y + SY * 0.5f) * SX;
+                float z = new_pos->data[2][0] / w;
 
                 if (d->data[0][0] > 0) {
-                    if (x < SX * 0.5f && x > -SX * 0.5f && y < SY * 0.5f && y > -SY * 0.5f) {
-                        if (buffer[index] == ' ') {
-                            buffer[index] = ".,-~:;=!*#$@"[(int)(d->data[0][0])];
-                        } else if(buffer[index] < (int)(d->data[0][0])) {
-                            buffer[index] = ".,-~:;=!*#$@"[(int)(d->data[0][0])];
-                        }
+                    int index = (int)(x + SX * 0.5f) + (int)(y + SY * 0.5f) * SX;
+                    if (x < SX * 0.5f && x > -SX * 0.5f && y < SY * 0.5f && y > -SY * 0.5f && dbuffer[index] < z) {
+                        buffer[index] = ".,-~:;=!*#$@"[(int)(d->data[0][0] * 8.0)];
+                        dbuffer[index] = z;
                     }
                 }
 
