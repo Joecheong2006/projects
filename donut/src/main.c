@@ -10,18 +10,20 @@
 #define disable_cursor() printf("\e[?25l");
 #define enable_cursor() printf("\e[?25h");
 
-#define SX 40
-#define SY 40
+#define SX 60
+#define SY 25
 char buffer[SX * SY];
-char sc = 'A';
+char sc = '.';
 
 u64 memory_allocated;
 
-float ox = (float)SX / 2, oy = (float)SY / 2, oz;
+float ox = (float)SX / 2, oy = (float)SY / 2, fov = 60;
 float angle_step = 0.1f;
 float angle_x = 0.1f;
 float angle_delta = 0.1;
 struct matrix* pos;
+struct matrix* cam;
+struct matrix* lpos;
 int looping = 1;
 
 void* input_handle() {
@@ -32,12 +34,16 @@ void* input_handle() {
             return NULL;
         }
         switch (c) {
-            case 'a': ox -= 1; break;
-            case 'd': ox += 1; break;
-            case 'w': oz -= 0.3; break;
-            case 's': oz += 0.3; break;
+            case 'a': cam->data[0][0] -= 0.3; break;
+            case 'd': cam->data[0][0] += 0.3; break;
+            case 'w': cam->data[2][0] -= 0.3; break;
+            case 's': cam->data[2][0] += 0.3; break;
             case 'j': angle_delta += 0.01; break;
             case 'k': angle_delta -= 0.01; break;
+            case 'u': angle_step += 0.01; break;
+            case 'i': angle_step -= 0.01; break;
+            case 'c': fov += 1; break;
+            case 'v': fov -= 1; break;
             default:
                 break;
         }
@@ -46,18 +52,18 @@ void* input_handle() {
     return NULL;
 }
 
-void set_projection(struct matrix* proj, float n, float f, float fov, float rate) {
-    const float PI = acos(-1);
-    float t = tan(fov * 0.5 * PI / 180) * n, b = -t;
-    float r = t * rate, l = -r;
-    proj->data[0][0] = 2 * n / (r - l);
+void set_projection(struct matrix* proj, float n, float f, float fov, float aspect) {
+    const float PI180 = acosf(-1) / 180;
+    float t = tan(fov * PI180) * n;
+    float r = t * aspect;
+    proj->data[0][0] = n / r;
     proj->data[0][1] = 0;
-    proj->data[0][2] = (r + l) / (r - l);
+    proj->data[0][2] = 0;
     proj->data[0][3] = 0;
 
     proj->data[1][0] = 0;
-    proj->data[1][1] = 2 * n / (t - b);
-    proj->data[1][2] = (t + b) / (t - b);
+    proj->data[1][1] = n / t;
+    proj->data[1][2] = 0;
     proj->data[1][4] = 0;
 
     proj->data[2][0] = 0;
@@ -67,30 +73,45 @@ void set_projection(struct matrix* proj, float n, float f, float fov, float rate
 
     proj->data[3][0] = 0;
     proj->data[3][1] = 0;
-    proj->data[3][2] = 1;
+    proj->data[3][2] = -1;
     proj->data[3][3] = 0;
+}
+
+void normalize_vec3(struct matrix* v) {
+    float r = sqrtf(v->data[0][0] * v->data[0][0] + v->data[1][0] * v->data[1][0] + v->data[2][0] * v->data[2][0]);
+    v->data[0][0] /= r;
+    v->data[1][0] /= r;
+    v->data[2][0] /= r;
 }
 
 int main(void) {
     disable_cursor();
 
     const float PI = acos(-1);
-    float n = 0.1f, f = 50;
+    float n = 0.1f, f = 50 * 2;
 
-    struct matrix* projection = matrix_create(4, 4);
-    set_projection(projection, n, f, 90, SX / (float)SY);
-
-    struct matrix* rotateZ = matrix_create(4, 4);
+    struct matrix* M = matrix_create(4, 4);
     struct matrix* rotateY = matrix_create(4, 4);
 
-    float xr = 8;
-    float yr = 4;
+    float xr = 4;
+    float yr = 2;
 
     pos = matrix_create(1, 4);
     pos->data[0][0] = yr;
     pos->data[1][0] = 0;
     pos->data[2][0] = 0;
-    pos->data[3][0] = 1;
+    pos->data[3][0] = 0;
+
+    cam = matrix_create(1, 3);
+    cam->data[0][0] = 0;
+    cam->data[1][0] = 0;
+    cam->data[2][0] = 10;
+
+    lpos = matrix_create(4, 1);
+    lpos->data[0][0] = 0;
+    lpos->data[0][1] = 1;
+    lpos->data[0][2] = -9;
+    lpos->data[0][3] = 0;
 
     pthread_t input_thread;
     pthread_create(&input_thread, NULL, input_handle, NULL);
@@ -99,32 +120,55 @@ int main(void) {
     while (looping) {
         memset(buffer, ' ', SX * SY);
 
-        for (float iy = 0; iy < 2 * PI; iy += angle_step) {
+        for (float iy = 0; iy < 2 * PI; iy += 0.07) {
             matrix_set_rotateY(rotateY, iy);
             for (float ix = 0; ix < 2 * PI; ix += angle_step) {
-                matrix_set_rotateZ(rotateZ, ix);
-                struct matrix* rz_pos = matrix_dot(rotateZ, pos);
+                // donut position
+                matrix_set_rotateZ(M, ix);
+                struct matrix* rz_pos = matrix_dot(M, pos);
+                struct matrix* rz_normal = matrix_create(1, 4);
+                rz_normal->data[0][0] = cos(ix);
+                rz_normal->data[1][0] = sin(ix);
+                rz_normal->data[2][0] = 0;
+                rz_normal->data[3][0] = 0;
+
                 rz_pos->data[0][0] += xr;
                 struct matrix* ry_pos = matrix_dot(rotateY, rz_pos);
+                struct matrix* ry_normal = matrix_dot(rotateY, rz_normal);
 
-                ry_pos->data[1][0] += 15;
-                matrix_set_rotateX(rotateZ, angle_x);
-                struct matrix* rx_pos = matrix_dot(rotateZ, ry_pos);
-                matrix_set_rotateZ(rotateZ, angle_x * 0.2);
-                struct matrix* ro_pos = matrix_dot(rotateZ, rx_pos);
-                ro_pos->data[2][0] += oz;
-                struct matrix* new_pos = matrix_dot(projection, ro_pos);
+                // model
+                matrix_set_rotateX(M, angle_x);
+                struct matrix* rx_pos = matrix_dot(M, ry_pos);
+                struct matrix* rx_normal = matrix_dot(M, ry_normal);
+                matrix_set_rotateZ(M, angle_x);
+                struct matrix* ro_pos = matrix_dot(M, rx_pos);
+                struct matrix* ro_normal = matrix_dot(M, rx_normal);
 
-                if (new_pos->data[3][0] != 0) {
-                    float x = new_pos->data[0][0];
-                    float y = new_pos->data[1][0];
-                    int z = new_pos->data[2][0];
-                    int index = (int)(x + ox - 1) + (int)(y + oy - 1) * SX;
-                    if (index > 0 && index < SX * SY && x < SX - ox && x > -ox) {
+                ro_pos->data[0][0] -= cam->data[0][0];
+                ro_pos->data[1][0] -= cam->data[1][0];
+                ro_pos->data[2][0] -= cam->data[2][0];
+
+                ro_normal->data[0][0] -= cam->data[0][0];
+                ro_normal->data[1][0] -= cam->data[1][0];
+                ro_normal->data[2][0] -= cam->data[2][0];
+
+                set_projection(M, n, f, fov, SX / (float)(SY * 2.2));
+                struct matrix* new_pos = matrix_dot(M, ro_pos);
+
+                normalize_vec3(ro_normal);
+                struct matrix* d = matrix_dot(lpos, ro_normal);
+
+                float w = new_pos->data[3][0];
+                float x = SX * new_pos->data[0][0] / w;
+                float y = SY * new_pos->data[1][0] / w;
+                int index = (int)(x + SX * 0.5f) + (int)(y + SY * 0.5f) * SX;
+
+                if (d->data[0][0] > 0) {
+                    if (x < SX * 0.5f && x > -SX * 0.5f && y < SY * 0.5f && y > -SY * 0.5f) {
                         if (buffer[index] == ' ') {
-                            buffer[index] = sc + z;
-                        } else if(buffer[index] < z) {
-                            buffer[index] = sc + z;
+                            buffer[index] = ".,-~:;=!*#$@"[(int)(d->data[0][0])];
+                        } else if(buffer[index] < (int)(d->data[0][0])) {
+                            buffer[index] = ".,-~:;=!*#$@"[(int)(d->data[0][0])];
                         }
                     }
                 }
@@ -134,6 +178,11 @@ int main(void) {
                 matrix_free(ry_pos);
                 matrix_free(rx_pos);
                 matrix_free(ro_pos);
+                matrix_free(rz_normal);
+                matrix_free(ry_normal);
+                matrix_free(rx_normal);
+                matrix_free(ro_normal);
+                matrix_free(d);
             }
         }
 
@@ -142,19 +191,18 @@ int main(void) {
         gotoxy(0, 0);
         for (int i = 0; i < SY * SX; ++i) {
             putchar(i % SX ? buffer[i] : '\n');
-            putchar(' ');
         }
-        //Sleep(1);
     }
     clear();
 
     pthread_join(input_thread, NULL);
 
     enable_cursor();
-    matrix_free(projection);
-    matrix_free(rotateZ);
+    matrix_free(M);
     matrix_free(rotateY);
     matrix_free(pos);
+    matrix_free(cam);
+    matrix_free(lpos);
 
     printf("\n%llu", memory_allocated);
 }

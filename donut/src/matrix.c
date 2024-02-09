@@ -106,12 +106,19 @@ void matrix_set_rotateX(struct matrix* m, f32 radius) {
     m->data[0][0] = 1;
     m->data[0][1] = 0;
     m->data[0][2] = 0;
+    m->data[0][3] = 0;
     m->data[1][0] = 0;
     m->data[1][1] = cosf(radius);
     m->data[1][2] = -sinf(radius);
+    m->data[1][3] = 0;
     m->data[2][0] = 0;
     m->data[2][1] = sinf(radius);
     m->data[2][2] = cosf(radius);
+    m->data[2][3] = 0;
+    m->data[3][0] = 0;
+    m->data[3][1] = 0;
+    m->data[3][2] = 0;
+    m->data[3][3] = 0;
 }
 
 void matrix_set_rotateY(struct matrix* m, f32 radius) {
@@ -119,12 +126,19 @@ void matrix_set_rotateY(struct matrix* m, f32 radius) {
     m->data[0][0] = cosf(radius);
     m->data[0][1] = 0;
     m->data[0][2] = sinf(radius);
+    m->data[0][3] = 0;
     m->data[1][0] = 0;
     m->data[1][1] = 1;
     m->data[1][2] = 0;
+    m->data[1][3] = 0;
     m->data[2][0] = -sinf(radius);
     m->data[2][1] = 0;
     m->data[2][2] = cosf(radius);
+    m->data[2][3] = 0;
+    m->data[3][0] = 0;
+    m->data[3][1] = 0;
+    m->data[3][2] = 0;
+    m->data[3][3] = 0;
 }
 
 void matrix_set_rotateZ(struct matrix* m, f32 radius) {
@@ -132,12 +146,19 @@ void matrix_set_rotateZ(struct matrix* m, f32 radius) {
     m->data[0][0] = cosf(radius);
     m->data[0][1] = -sinf(radius);
     m->data[0][2] = 0;
+    m->data[0][3] = 0;
     m->data[1][0] = sinf(radius);
     m->data[1][1] = cosf(radius);
     m->data[1][2] = 0;
+    m->data[1][3] = 0;
     m->data[2][0] = 0;
     m->data[2][1] = 0;
     m->data[2][2] = 1;
+    m->data[2][3] = 0;
+    m->data[3][0] = 0;
+    m->data[3][1] = 0;
+    m->data[3][2] = 0;
+    m->data[3][3] = 0;
 }
 
 void matrix_apply(struct matrix* m, f32(*func)(f32))
@@ -153,7 +174,7 @@ void matrix_print(struct matrix* m)
     for(u64 row = 0; row < m->row; row++)
     {
         for(u64 col = 0; col < m->col; col++)
-            printf("%6.2f ", m->data[row][col]);
+            printf("%9.6f ", m->data[row][col]);
         printf("\n");
     }
 }
