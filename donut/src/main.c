@@ -35,10 +35,10 @@ void* input_handle() {
             return NULL;
         }
         switch (c) {
-            case 'a': cam->data[0][0] -= 0.01; break;
-            case 'd': cam->data[0][0] += 0.01; break;
-            case 'w': cam->data[2][0] -= 0.01; break;
-            case 's': cam->data[2][0] += 0.01; break;
+            case 'a': cam->data[0][0] -= 0.05; break;
+            case 'd': cam->data[0][0] += 0.05; break;
+            case 'w': cam->data[2][0] -= 0.05; break;
+            case 's': cam->data[2][0] += 0.05; break;
             case 'j': angle_delta += 0.01; break;
             case 'k': angle_delta -= 0.01; break;
             case 'u': angle_step += 0.01; break;
@@ -89,13 +89,13 @@ int main(void) {
     disable_cursor();
 
     const float PI = acos(-1);
-    float n = 0.1, f = 10;
+    float n = 0.1, f = 20;
 
     struct matrix* M = matrix_create(4, 4);
     struct matrix* rotateY = matrix_create(4, 4);
 
-    float xr = 1.3;
-    float yr = 0.6;
+    float xr = 0.8;
+    float yr = 0.4;
 
     pos = matrix_create(1, 4);
     pos->data[0][0] = yr;
@@ -106,13 +106,12 @@ int main(void) {
     cam = matrix_create(1, 3);
     cam->data[0][0] = 0;
     cam->data[1][0] = 0;
-    cam->data[2][0] = 3;
+    cam->data[2][0] = 2;
 
-    lpos = matrix_create(1, 4);
+    lpos = matrix_create(1, 3);
     lpos->data[0][0] = 0;
     lpos->data[1][0] = 1;
     lpos->data[2][0] = -1;
-    lpos->data[3][0] = 0;
     normalize_vec3(lpos);
 
     pthread_t input_thread;
@@ -123,27 +122,25 @@ int main(void) {
         memset(buffer, ' ', SX * SY);
         memset(dbuffer, 0, SX * SY);
 
-        for (float iy = 0; iy < 2 * PI; iy += 0.07) {
+        for (float iy = 0; iy < 2 * PI; iy += angle_step * 0.5) {
             matrix_set_rotateY(rotateY, iy);
             for (float ix = 0; ix < 2 * PI; ix += angle_step) {
-                // donut position
                 matrix_set_rotateZ(M, ix);
                 struct matrix* rz_pos = matrix_dot(M, pos);
                 struct matrix* rz_normal = matrix_create(1, 4);
                 rz_normal->data[0][0] = cosf(ix);
                 rz_normal->data[1][0] = sinf(ix);
-                rz_normal->data[2][0] = 0;
-                rz_normal->data[3][0] = 0;
+                rz_normal->data[2][0] = 0; 
+                rz_normal->data[3][0] = 0; 
 
                 rz_pos->data[0][0] += xr;
                 struct matrix* ry_pos = matrix_dot(rotateY, rz_pos);
                 struct matrix* ry_normal = matrix_dot(rotateY, rz_normal);
 
-                // model
                 matrix_set_rotateX(M, angle_x);
                 struct matrix* rx_pos = matrix_dot(M, ry_pos);
                 struct matrix* rx_normal = matrix_dot(M, ry_normal);
-                matrix_set_rotateZ(M, angle_x * 0.37);
+                matrix_set_rotateZ(M, angle_x);
                 struct matrix* ro_pos = matrix_dot(M, rx_pos);
                 struct matrix* ro_normal = matrix_dot(M, rx_normal);
 
@@ -154,7 +151,7 @@ int main(void) {
                 ro_normal->data[1][0] -= cam->data[1][0];
                 ro_normal->data[2][0] -= cam->data[2][0];
 
-                set_projection(M, n, f, fov, SX / (float)(SY * 2.2));
+                set_projection(M, n, f, fov, SX / (float)(SY * 2.3));
                 struct matrix* new_pos = matrix_dot(M, ro_pos);
 
                 normalize_vec3(ro_normal);
@@ -163,13 +160,13 @@ int main(void) {
                 float w = new_pos->data[3][0];
                 float x = SX * new_pos->data[0][0] / w;
                 float y = SY * new_pos->data[1][0] / w;
-                float z = new_pos->data[2][0] / w;
+                float z = w / new_pos->data[2][0];
 
                 if (normal > 0) {
                     int index = (int)(x + SX * 0.5f) + (int)(y + SY * 0.5f) * SX;
-                    if (x < SX * 0.5f && x > -SX * 0.5f && y < SY * 0.5f && y > -SY * 0.5f && dbuffer[index] < 1 / z) {
-                        buffer[index] = ".,-~:;=!*#$@"[(int)(normal * 13.0)];
-                        dbuffer[index] = 1 / z;
+                    if (x < SX * 0.5f && x > -SX * 0.5f && y < SY * 0.5f && y > -SY * 0.5f && dbuffer[index] < z) {
+                        buffer[index] = ".,-~:;=!*#$@"[(int)(normal * 11)];
+                        dbuffer[index] = z;
                     }
                 }
 

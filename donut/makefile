@@ -4,7 +4,7 @@ CFLAGS = -std=c11 -Wall -Wextra -lm
 SRC = $(wildcard src/*.c)
 OBJ = $(SRC:%.c=%.o)
 DEP = $(OBJ:%.o=%.d)
-OUT = ml
+OUT = donut
 
 PROCESS_INDEX = -1
 TOTAL_FILES = $(words $(SRC))
