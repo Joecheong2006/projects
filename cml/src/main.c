@@ -1,13 +1,15 @@
 #include <stdio.h>
 #include <time.h>
 #include "cml.h"
+#include "mat.h"
+#include "vec.h"
 
 void print_vec3(vec3 v) {
-    printf("%-6g %-6g %-6g\n", v[0], v[1], v[2]);
+    printf("%-5g %-5g %-5g\n", v[0], v[1], v[2]);
 }
 
 void print_vec4(vec4 v) {
-    printf("%-6g %-6g %-6g %-6g\n", v[0], v[1], v[2], v[3]);
+    printf("%-5g %-5g %-5g %-5g\n", v[0], v[1], v[2], v[3]);
 }
 
 void print_mat3(mat3 m) {
@@ -25,6 +27,40 @@ void print_mat4(mat4 m) {
 
 void test_mat3(void) {
     {
+        vec3 v = { 2, 5, 1 };
+        printf("\nV:\n");
+        print_vec3(v);
+
+        printf("\nV normalized:\n");
+        vec3_normalize(v);
+        print_vec3(v);
+    }
+    {
+        vec3 u = { 1, 2, 3 };
+        vec3 v = { 2, 5, 1 };
+
+        printf("\nU:\n");
+        print_vec3(u);
+        printf("\nV:\n");
+        print_vec3(v);
+
+        printf("\nU * V:\n");
+        printf("%-6g\n", vec3_dot(u, v));
+    }
+    {
+        vec3 u = { 1, 2, 3 };
+        vec3 v = { 5, 0, -1 };
+
+        printf("\nU:\n");
+        print_vec3(u);
+        printf("\nV:\n");
+        print_vec3(v);
+
+        vec3_cross(v, u, v);
+        printf("\nU x V:\n");
+        print_vec3(v);
+    }
+    {
         vec3 v = { 1, 2, 3 };
         mat3 a = {
             { 1, 0, 0 },
@@ -34,7 +70,7 @@ void test_mat3(void) {
 
         vec3 ov;
 
-        printf("M:\n");
+        printf("\nM:\n");
         print_mat3(a);
         printf("\nV:\n");
         print_vec3(v);
@@ -43,7 +79,6 @@ void test_mat3(void) {
         printf("\nM x V:\n");
         print_vec3(ov);
     }
-
     {
         mat3 a = {
             { 10, 20, 10 },
@@ -58,7 +93,7 @@ void test_mat3(void) {
 
         mat3 om;
 
-        printf("A:\n");
+        printf("\nA:\n");
         print_mat3(a);
         printf("\nB:\n");
         print_mat3(b);
@@ -70,6 +105,37 @@ void test_mat3(void) {
 }
 
 void test_mat4(void) {
+    {
+        mat4 m = MAT4_SET(1);
+        printf("\nM seted[1]:\n");
+        print_mat4(m);
+        mat4_translate(m, m, (vec3){ 3, 4, 2 });
+        mat4_scale(m, m, (vec3){ 1, 2, 1 });
+        mat4_scale(m, m, (vec3){ 2, 3, 8 });
+        printf("\nM translated[3, 4, 2] scaled[1, 2, 1][2, 3, 8]:\n");
+        print_mat4(m);
+    }
+    {
+        vec4 v = { 2, 5, 1, 3 };
+        printf("\nV:\n");
+        print_vec4(v);
+
+        printf("\nV normalized:\n");
+        vec4_normalize(v);
+        print_vec4(v);
+    }
+    {
+        vec4 u = { 1, 2, 3, 4 };
+        vec4 v = { 2, 5, 1, 3 };
+
+        printf("\nU:\n");
+        print_vec4(u);
+        printf("\nV:\n");
+        print_vec4(v);
+
+        printf("\nU * V:\n");
+        printf("%-6g\n", vec4_dot(u, v));
+    }
     {
         vec4 v = { 1, 2, 3, 4 };
         mat4 a = {
@@ -119,7 +185,7 @@ void test_mat4(void) {
     }
 }
 
-#define PERFORMANCE_ITERATE 10000000
+#define PERFORMANCE_ITERATE (u64)10000000
 
 void test_mat3_performance(void) {
     vec3 v = { 1, 2, 3 };
@@ -143,17 +209,17 @@ void test_mat3_performance(void) {
 
     start = clock();
     for (u64 i = 0; i < PERFORMANCE_ITERATE; ++i) {
-        mat3f_mul_vec3f(ov, a, v);
+        mat3_mul_vec3(ov, a, v);
     }
     end = clock();
-    printf("iterate: 10000000 takes: %dms\n", (i32)(1000 * (end - start) / CLOCKS_PER_SEC));
+    printf("iterate: %llu takes: %dms\n", PERFORMANCE_ITERATE, (i32)(1000 * (end - start) / CLOCKS_PER_SEC));
 
     start = clock();
     for (u64 i = 0; i < PERFORMANCE_ITERATE; ++i) {
-        mat3f_mul_mat3f(om, a, b);
+        mat3_mul_mat3(om, a, b);
     }
     end = clock();
-    printf("iterate: 10000000 takes: %dms\n", (i32)(1000 * (end - start) / CLOCKS_PER_SEC));
+    printf("iterate: %llu takes: %dms\n", PERFORMANCE_ITERATE, (i32)(1000 * (end - start) / CLOCKS_PER_SEC));
 }
 
 void test_mat4_performance(void) {
@@ -180,22 +246,23 @@ void test_mat4_performance(void) {
 
     start = clock();
     for (u64 i = 0; i < PERFORMANCE_ITERATE; ++i) {
-        mat4f_mul_vec4f(ov, b, v);
+        mat4_mul_vec4(ov, b, v);
     }
     end = clock();
-    printf("iterate: 10000000 takes: %dms\n", (i32)(1000 * (end - start) / CLOCKS_PER_SEC));
+    printf("iterate: %llu takes: %dms\n", PERFORMANCE_ITERATE, (i32)(1000 * (end - start) / CLOCKS_PER_SEC));
 
     start = clock();
     for (u64 i = 0; i < PERFORMANCE_ITERATE; ++i) {
-        mat4f_mul_mat4f(om, a, b);
+        mat4_mul_mat4(om, a, b);
     }
     end = clock();
-    printf("iterate: 10000000 takes: %dms\n", (i32)(1000 * (end - start) / CLOCKS_PER_SEC));
+    printf("iterate: %llu takes: %dms\n", PERFORMANCE_ITERATE, (i32)(1000 * (end - start) / CLOCKS_PER_SEC));
 }
 
-typedef int a[1];
-
 int main(void) {
+    //test_mat3();
+    //test_mat4();
+
     printf("[mat3 performance]\n");
     test_mat3_performance();
     printf("[mat4 performance]\n");
