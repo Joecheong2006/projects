@@ -6,7 +6,7 @@
 
 #include <random>
 #include <chrono>
-#include <future>
+#include <thread>
 
 #define UFRAME (1.0/144.0)
 #define RFRAME (1.0/144.0)
@@ -79,8 +79,7 @@ void Simulation::solve_collision(i32 begin, i32 end) {
     u64 len = cm.entities.size();
     for(i32 i = begin; i < end; ++i) {
         for(u64 j = 0; j < len; ++j) {
-            Collision::Colliable<Circle>* d;
-            d = static_cast<Collision::Colliable<Circle>*>(&objs[i]);
+            Collision::Colliable<Circle>* d = static_cast<Collision::Colliable<Circle>*>(&objs[i]);
             if(d->collide(objs[j]))
                 d->solve_collision(objs[j]);
         }
@@ -126,15 +125,8 @@ void Simulation::update_physics(f32 frame) {
         }
     }
 
-    //solve_collision(1, cm.entities.size());
-    const i32 dev = 1;
-    std::vector<std::future<void>> ml;
-    auto range = get_range_dev(cm.entities.size(), dev);
-    range[0]++;
-    for(i32 i = 0; i < dev; ++i)
-        ml.push_back(std::async(std::launch::async, &Simulation::solve_collision, this, range[i], range[i+1]));
-    for(auto& e : ml)
-        e.wait();
+    solve_collision(1, cm.entities.size());
+
     for(auto& e : cm.entities)
     {
         e.add_force(glm::vec2(0, -98.1));

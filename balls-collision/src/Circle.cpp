@@ -43,7 +43,7 @@ Circle::Circle(const glm::vec2& pos, const glm::vec3& color, const f32& d)
 
 bool Circle::collide(Circle& c) {
     if(&c == this) return false;
-    return glm::length(m_pos - c.m_pos) < (d + c.d);
+    return (m_pos.x - c.m_pos.x) * (m_pos.x - c.m_pos.x) + (m_pos.y - c.m_pos.y) * (m_pos.y - c.m_pos.y) < (d + c.d) * (d + c.d);
 }
 
 void Circle::solve_collision(Circle& c) {

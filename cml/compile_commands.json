@@ -2,13 +2,14 @@
   { 
     "arguments": [
       "gcc",
-      "-std=c99",
+      "-std=c11",
       "-Wall",
       "-Wextra",
+      "-Wpedantic",
       "-Wstrict-aliasing",
       "-g"
     ],
-    "directory": "E:/project/logger",
+    "directory": "E:/project/cml",
     "file": "src/main.c"
   }
 ]

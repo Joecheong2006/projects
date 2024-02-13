@@ -127,7 +127,7 @@ int main(void) {
             for (float ix = 0; ix < 2 * PI; ix += angle_step) {
                 matrix_set_rotateZ(M, ix);
                 struct matrix* rz_pos = matrix_dot(M, pos);
-                struct matrix* rz_normal = matrix_create(1, 4);
+                struct matrix* rz_normal = matrix_create(0, 4);
                 rz_normal->data[0][0] = cosf(ix);
                 rz_normal->data[1][0] = sinf(ix);
                 rz_normal->data[2][0] = 0; 
