@@ -70,7 +70,7 @@
         out[1][1] *= v[1];\
         out[2][2] *= v[2];\
     }\
-    void mat4##suffix##_euler_rotate(mat4##suffix out, vec3##suffix angle) {\
+    void mat4##suffix##_make_euler_rotate(mat4##suffix out, vec3##suffix angle) {\
         f32 sx = sinf(angle[0]), sy = sinf(angle[1]), sz = sinf(angle[2]);\
         f32 cx = cosf(angle[0]), cy = cosf(angle[1]), cz = cosf(angle[2]);\
         out[0][0] = cy * cz;\
@@ -168,18 +168,18 @@
         out[1][1] *= v[1];\
         out[2][2] *= v[2];\
     }\
-    void mat4_euler_rotate(mat4 out, vec3 angle) {\
+    void mat4_make_euler_rotate(mat4 dest, vec3 angle) {\
         f32 sx = sinf(angle[0]), sy = sinf(angle[1]), sz = sinf(angle[2]);\
         f32 cx = cosf(angle[0]), cy = cosf(angle[1]), cz = cosf(angle[2]);\
-        out[0][0] = cy * cz;\
-        out[0][1] = cy * sz;\
-        out[0][2] = sy;\
-        out[1][0] = cx * sz + sx * sy * cz;\
-        out[1][1] = cx * cz - sx * sy * sz;\
-        out[1][2] = sx * cy;\
-        out[2][0] = sx * sz - cx * sy * cz;\
-        out[2][1] = sx * cz + cx * sy * sz;\
-        out[2][2] = cx * cy;\
+        dest[0][0] = cy * cz;\
+        dest[0][1] = cy * sz;\
+        dest[0][2] = sy;\
+        dest[1][0] = cx * sz + sx * sy * cz;\
+        dest[1][1] = cx * cz - sx * sy * sz;\
+        dest[1][2] = sx * cy;\
+        dest[2][0] = sx * sz - cx * sy * cz;\
+        dest[2][1] = sx * cz + cx * sy * sz;\
+        dest[2][2] = cx * cy;\
     }\
     void mat4_rotate(mat4 out, mat4 m, f32 angle, vec3 v) {\
         f32 c = cosf(angle);\

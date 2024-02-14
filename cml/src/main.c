@@ -2,7 +2,7 @@
 #include <time.h>
 #include "cml/cml.h"
 
-#define PERFORMANCE_ITERATE (u64)1000000000
+#define PERFORMANCE_ITERATE (u64)10000000
 
 void print_vec3(vec3 v) {
     printf("%-5g %-5g %-5g\n", v[0], v[1], v[2]);

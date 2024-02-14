@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS := -std=c11 -Wall -Wextra -Wpedantic -Wstrict-aliasing -g
+CFLAGS := -std=c11 -Wall -Wextra -Wpedantic -Werror -Wstrict-aliasing -g
 SOURCE = src src/**
 OUT = $(BIN)/main.exe
 
