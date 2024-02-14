@@ -1,8 +1,7 @@
 #ifndef MAT4_H
 #define MAT4_H
 
-#define DEFINE_MAT4(suffix)\
-    typedef vec4##suffix mat4##suffix[4];
+#define DEFINE_MAT4(suffix) typedef vec4##suffix mat4##suffix[4];
 
 #define SET_DEFAULT_MAT4(suffix) typedef mat4##suffix mat4
 
@@ -29,7 +28,7 @@
         out[3] = vec4##suffix##_dot(m[3], v);\
     }\
     CML_INLINE\
-    void mat4##suffix##_mul_mat4##suffix(mat4##suffix out, mat4##suffix m1, mat4##suffix m2) {\
+    void mat4##suffix##_mul(mat4##suffix out, mat4##suffix m1, mat4##suffix m2) {\
         {\
         vec4##suffix temp = { m2[0][0],  m2[1][0],  m2[2][0], m2[3][0] };\
         out[0][0] = vec4##suffix##_dot(m1[0], temp);\
@@ -101,7 +100,7 @@
         rotate[0][2] = temp[2] * v[0] + s * v[1];\
         rotate[1][2] = temp[2] * v[1] - s * v[0];\
         rotate[2][2] = c + temp[2] * v[2];\
-        mat4##suffix##_mul_mat4##suffix(out, rotate, m);\
+        mat4##suffix##_mul(out, rotate, m);\
     }\
 
 #define DEFINE_DEFAULT_BASIC_MAT4_BEHAVIOUR(T)\
@@ -127,7 +126,7 @@
         out[3] = vec4_dot(m[3], v);\
     }\
     CML_INLINE\
-    void mat4_mul_mat4(mat4 out, mat4 m1, mat4 m2) {\
+    void mat4_mul(mat4 out, mat4 m1, mat4 m2) {\
         {\
         vec4 temp = { m2[0][0],  m2[1][0],  m2[2][0], m2[3][0] };\
         out[0][0] = vec4_dot(m1[0], temp);\
@@ -199,7 +198,7 @@
         rotate[0][2] = temp[2] * v[0] + s * v[1];\
         rotate[1][2] = temp[2] * v[1] - s * v[0];\
         rotate[2][2] = c + temp[2] * v[2];\
-        mat4_mul_mat4(out, rotate, m);\
+        mat4_mul(out, rotate, m);\
     }\
 
 #define SET_MAT4(T, suffix)\

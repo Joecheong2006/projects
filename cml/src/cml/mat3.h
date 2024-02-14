@@ -1,8 +1,7 @@
 #ifndef MAT3_H
 #define MAT3_H
 
-#define DEFINE_MAT3(suffix)\
-    typedef vec3##suffix mat3##suffix[3];
+#define DEFINE_MAT3(suffix) typedef vec3##suffix mat3##suffix[3];
 
 #define SET_DEFAULT_MAT3(suffix) typedef mat3##suffix mat3
 
@@ -26,7 +25,7 @@
         out[2] = vec3##suffix##_dot(m[2], v);\
     }\
     CML_INLINE\
-    void mat3##suffix##_mul_mat3##suffix(mat3##suffix out, mat3##suffix m1, mat3##suffix m2) {\
+    void mat3##suffix##_mul(mat3##suffix out, mat3##suffix m1, mat3##suffix m2) {\
         {\
         vec3##suffix temp = { m2[0][0],  m2[1][0],  m2[2][0] };\
         out[0][0] = vec3##suffix##_dot(m1[0], temp);\
@@ -67,7 +66,7 @@
         out[2] = vec3_dot(m[2], v);\
     }\
     CML_INLINE\
-    void mat3_mul_mat3(mat3 out, mat3 m1, mat3 m2) {\
+    void mat3_mul(mat3 out, mat3 m1, mat3 m2) {\
         {\
         vec3 temp = { m2[0][0], m2[1][0], m2[2][0] };\
         out[0][0] = vec3_dot(m1[0], temp);\

@@ -1,8 +1,7 @@
 #ifndef VEC3_H
 #define VEC3_H
 
-#define DEFINE_VEC3(T, suffix)\
-    typedef T vec3##suffix[3];\
+#define DEFINE_VEC3(T, suffix) typedef T vec3##suffix[3];
 
 #define SET_DEFAULT_VEC3(suffix) typedef vec3##suffix vec3
 

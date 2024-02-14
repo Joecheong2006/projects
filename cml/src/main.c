@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <time.h>
-#include "cml.h"
-#include "mat.h"
-#include "vec.h"
+#include "cml/cml.h"
+
+#define PERFORMANCE_ITERATE (u64)1000000000
 
 void print_vec3(vec3 v) {
     printf("%-5g %-5g %-5g\n", v[0], v[1], v[2]);
@@ -98,7 +98,7 @@ void test_mat3(void) {
         printf("\nB:\n");
         print_mat3(b);
 
-        mat3_mul_mat3(om, a, b);
+        mat3_mul(om, a, b);
         printf("\nA x B:\n");
         print_mat3(om);
     }
@@ -180,12 +180,10 @@ void test_mat4(void) {
         print_mat4(b);
 
         printf("\nA x B:\n");
-        mat4_mul_mat4(om, a, b);
+        mat4_mul(om, a, b);
         print_mat4(om);
     }
 }
-
-#define PERFORMANCE_ITERATE (u64)10000000
 
 void test_mat3_performance(void) {
     vec3 v = { 1, 2, 3 };
@@ -216,7 +214,7 @@ void test_mat3_performance(void) {
 
     start = clock();
     for (u64 i = 0; i < PERFORMANCE_ITERATE; ++i) {
-        mat3_mul_mat3(om, a, b);
+        mat3_mul(om, a, b);
     }
     end = clock();
     printf("iterate: %llu takes: %dms\n", PERFORMANCE_ITERATE, (i32)(1000 * (end - start) / CLOCKS_PER_SEC));
@@ -253,10 +251,20 @@ void test_mat4_performance(void) {
 
     start = clock();
     for (u64 i = 0; i < PERFORMANCE_ITERATE; ++i) {
-        mat4_mul_mat4(om, a, b);
+        mat4_mul(om, a, b);
     }
     end = clock();
     printf("iterate: %llu takes: %dms\n", PERFORMANCE_ITERATE, (i32)(1000 * (end - start) / CLOCKS_PER_SEC));
+}
+
+void set_projection(mat4 proj, f32 fov, f32 aspect, f32 n, f32 f) {
+    f32 t = tanf(fov * 0.5);
+    mat4_zero(proj);
+    proj[0][0] = 1 / (t * aspect);
+    proj[1][1] = 1 / t;
+    proj[2][2] = -(f + n) / (f - n);
+    proj[2][3] = -2 * f * n / (f - n);
+    proj[3][2] = -1;
 }
 
 int main(void) {
