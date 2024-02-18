@@ -5,18 +5,18 @@
       - ( ) test editor
       - (-) typing race
       - (=) mfw
-      - ( ) json parser
+      - (=) c math library
+      - ( ) image parser
       - ( ) game of life
-      - ( ) simulation
       - ( ) graphics engine
       - (=) log system
-      - ( ) glsl test
+      - (=) glsl test
 
 ***** learning
       - (=) opengl
       - (=) win32 api
       - ( ) SIMD
       - ( ) rust
-      - ( ) network
+      - ( ) game network
       - ( ) machine learning
 

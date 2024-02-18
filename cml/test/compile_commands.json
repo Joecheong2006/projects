@@ -7,6 +7,7 @@
       "-Wextra",
       "-Wpedantic",
       "-Wstrict-aliasing",
+      "-I../src",
       "-g"
     ],
     "directory": "E:/project/cml",

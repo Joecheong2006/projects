@@ -1,6 +1,7 @@
 CC = gcc
 CFLAGS := -std=c11 -Wall -Wextra -Wpedantic -Werror -Wstrict-aliasing -g
-SOURCE = src src/**
+INCLUDE := -I../src/
+SOURCE = src src/** src/**/**
 OUT = $(BIN)/main.exe
 
 SRC = $(wildcard $(patsubst %, %/*.c, $(SOURCE)))
