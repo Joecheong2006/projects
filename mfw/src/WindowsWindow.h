@@ -16,7 +16,7 @@ namespace  mfw {
         inline virtual i32 height() const override { return m_state.height; }
         inline virtual i32 x() const override { return m_state.x; }
         inline virtual i32 y() const override { return m_state.y; }
-        inline virtual const char* title() const override { return m_state.title.c_str(); }
+        inline virtual const wchar_t* title() const override { return m_state.title.c_str(); }
         inline virtual void setEventCallBack(const std::function<void(const Event&)>& callBackFunction) override {
             m_state.m_callBackFunc = std::move(callBackFunction);
         }

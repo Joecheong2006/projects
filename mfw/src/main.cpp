@@ -86,7 +86,6 @@ public:
         zoom -= event.ydelta * 0.1;
     }
 
-
     ~DemoSandBox() {
     }
 

@@ -6,7 +6,7 @@
 namespace mfw {
     OpenglContext* OpenglContext::Instance = new WindowsOpenglContext();
 
-    const char* OpenglContextClassName = "__OpenglDummyWindow";
+    const wchar_t* OpenglContextClassName = L"__OpenglDummyWindow";
 
     void WindowsOpenglContext::CreateOldImpl() {
         HINSTANCE instance = GetModuleHandle(NULL);
@@ -22,7 +22,7 @@ namespace mfw {
         RegisterClassEx(&wc);
         HWND hwnd = CreateWindow(
                 OpenglContextClassName,
-                "",
+                L"",
                 0,
                 0, 0, 0, 0,
                 NULL,

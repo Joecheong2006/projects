@@ -10,7 +10,7 @@
 #define GETHIWORD(l) ((i16) ((((i64) (l)) >> 16) & 0xffff))
 
 namespace mfw {
-    const char* windowClassName = "__@@WindowClassName";
+    const wchar_t* windowClassName = L"__@@WindowClassName";
 
     LRESULT CALLBACK WindowsWindow::WindowProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) {
         if (message == WM_CREATE) {
@@ -20,6 +20,7 @@ namespace mfw {
         }
 
         WindowsWindow* window = reinterpret_cast<WindowsWindow*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));;
+
         if (window) {
             window->handleMessage(message, wparam, lparam);
         }
@@ -69,6 +70,10 @@ namespace mfw {
         case WM_CHAR: {
 
             } break;
+
+        case WM_UNICHAR: {
+                 return;
+            }
 
         case WM_KEYDOWN:
         case WM_SYSKEYDOWN:
@@ -146,7 +151,8 @@ namespace mfw {
                 auto delta = GET_WHEEL_DELTA_WPARAM(wparam) > 0 ? 1 : -1;
                 m_state.m_callBackFunc(MouseScrollEvent(0, delta));
             } break;
-            return;
+        default:
+            break;
         }
     }
 
@@ -218,7 +224,7 @@ namespace mfw {
 
     void WindowsWindow::processMessage() {
         MSG msg{};
-        while(PeekMessage(&msg, m_hwnd, 0, 0, PM_REMOVE)) {
+        while(PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }

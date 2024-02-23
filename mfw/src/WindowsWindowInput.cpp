@@ -3,7 +3,7 @@
 #include "WindowsWindow.h"
 
 namespace mfw {
-    Input* Input::instance = new WindowsWindowInput;
+    Input* Input::instance = new WindowsWindowInput();
 
     bool WindowsWindowInput::KeyPressImpl(const i32& key) {
         WindowsWindow* window = static_cast<WindowsWindow*>(Application::Get()->GetWindow()->getNativeWindow());
