@@ -1,6 +1,8 @@
 #include "WindowsClock.h"
 #include <mfwlog.h>
 
+#include <mmsystem.h>
+
 namespace mfw {
     Time* Time::Instance = new WindowsTime();
 
@@ -20,7 +22,15 @@ namespace mfw {
     };
 
     void WindowsTime::SleepImpl(f32 millisecond) {
+        static const UINT min_period = []{
+            TIMECAPS tc;
+            timeGetDevCaps(&tc, sizeof(TIMECAPS));
+            return tc.wPeriodMin;
+        }();
+
+        timeBeginPeriod(min_period);
         ::Sleep(millisecond);
+        timeEndPeriod(min_period);
     }
 
 }

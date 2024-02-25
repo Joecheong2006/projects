@@ -3,6 +3,10 @@
 #include "WindowsWindow.h"
 #include "mfwlog.h"
 
+#define GLAD_GL_IMPLEMENTATION
+#define GLAD_WGL_IMPLEMENTATION
+#include "glad/wgl.h"
+
 namespace mfw {
     OpenglContext* OpenglContext::Instance = new WindowsOpenglContext();
 
@@ -58,9 +62,11 @@ namespace mfw {
         m_hglrc = wglCreateContext(hdc);
         wglMakeCurrent(hdc, m_hglrc);
 
-        if (glewInit() != GLEW_OK) {
-            LOG_INFO("GLEW INIT FAIL\n");
-        }
+        gladLoaderLoadWGL(hdc);
+
+        //if (glewInit() != GLEW_OK) {
+        //    LOG_INFO("GLEW INIT FAIL\n");
+        //}
 
         ReleaseImpl();
         ReleaseDC(hwnd, hdc);
@@ -99,6 +105,10 @@ namespace mfw {
         HGLRC shareHglrc = nullptr;
         w->m_hglrc = wglCreateContextAttribsARB(w->m_hdc, shareHglrc, contextAttribList);
         wglMakeContextCurrentARB(w->m_hdc, w->m_hdc, w->m_hglrc);
+
+        if (!gladLoaderLoadGL()) {
+            LOG_INFO("glad load gl fail");
+        }
 
         LOG_INFO("OPENGL VERSION: {}\n", glGetString(GL_VERSION));
         //wglSwapIntervalEXT(1);
