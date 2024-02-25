@@ -102,6 +102,13 @@ namespace mfw {
 
         LOG_INFO("OPENGL VERSION: {}\n", glGetString(GL_VERSION));
         //wglSwapIntervalEXT(1);
+
+        IMGUI_CHECKVERSION();
+        ImGui::CreateContext();
+        ImGuiIO io = ImGui::GetIO();
+        ImGui::StyleColorsDark();
+        ImGui_ImplWin32_InitForOpenGL(w->m_hwnd);
+        ImGui_ImplOpenGL3_Init("#version 330");
     }
 
     void WindowsOpenglContext::ReleaseImpl() {

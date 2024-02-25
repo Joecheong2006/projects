@@ -45,6 +45,10 @@ public:
         glViewport(0, 0, window->width(), window->height());
         glClear(GL_COLOR_BUFFER_BIT);
 
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplWin32_NewFrame();
+        ImGui::NewFrame();
+
         vao.bind();
         shader.bind();
 
@@ -74,6 +78,13 @@ public:
         if (Input::KeyPress('D')) {
             offset_x += frame;
         }
+
+        ImGui::Begin("status");
+        ImGui::Text("hello, world\n");
+        ImGui::End();
+
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     }
 
     virtual void OnInputKey(const KeyEvent& event) override {

@@ -9,6 +9,8 @@
 #define GETLOWORD(l) ((i16) (((i64) (l)) & 0xffff))
 #define GETHIWORD(l) ((i16) ((((i64) (l)) >> 16) & 0xffff))
 
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
 namespace mfw {
     const wchar_t* windowClassName = L"__@@WindowClassName";
 
@@ -17,6 +19,10 @@ namespace mfw {
             CREATESTRUCT* create = reinterpret_cast<CREATESTRUCT*>(lparam);
             WindowsWindow* window = reinterpret_cast<WindowsWindow*>(create->lpCreateParams);
             SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)window);
+        }
+
+        if (ImGui_ImplWin32_WndProcHandler(hwnd, message, wparam, lparam)) {
+            return true;
         }
 
         WindowsWindow* window = reinterpret_cast<WindowsWindow*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));;
@@ -231,6 +237,10 @@ namespace mfw {
     }
 
     WindowsWindow::~WindowsWindow() {
+        ImGui_ImplOpenGL3_Shutdown();
+        ImGui_ImplWin32_Shutdown();
+        ImGui::DestroyContext();
+
         if (!m_hglrc) {
             wglDeleteContext(m_hglrc);
             m_hglrc = nullptr;

@@ -37,8 +37,18 @@ float get_iterate(vec2 c) {
 
 
 void main() {
-    vec2 uv = (gl_FragCoord.xy / resolution - 0.5) * 4 * vec2(1, resolution.y / resolution.x);
+    vec2 uv = offset + (gl_FragCoord.xy / resolution - 0.5) * 4 * vec2(1, resolution.y / resolution.x);
+    uv = uv * zoom * 4;
 
-    float value = smoothstep(0, 0.4, get_iterate(uv / zoom + offset));
+    float x = uv.x, y = uv.y;
+    float e = sin(y + time) * cos(x + time) - cos(time);
+
+    float value = 0;
+    value += 1 - smoothstep(0, 0.03, abs(e));
+
+    value = max((1 - min(step(0.01, distance_to_line(uv, vec2(0), vec2(0, 1))),
+                     step(0.01, distance_to_line(uv, vec2(0), vec2(1, 0))))) * 0.3, value);
+
+    //float value = smoothstep(0, 0.4, get_iterate(uv / pow(zoom, zoom) + offset));
     frag_color = vec4(vec3(value), 0);
 }
