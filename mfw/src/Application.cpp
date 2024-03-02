@@ -21,14 +21,11 @@ namespace mfw {
         m_window->setEventCallBack([this](const Event& event) {
                     Eventhandle(event);
                 });
-        eventListener.addEventFunc<WindowCloseEvent>([](const Event& event) {
-                    LOG_INFO("{}\n", event);
+        eventListener.addEventFunc<WindowCloseEvent>([this](const Event& event) {
+                    WindowClose(static_cast<const WindowCloseEvent&>(event));
                 });
-        eventListener.addEventFunc<WindowMoveEvent>([](const Event& event) {
-                    LOG_INFO("{}\n", event);
-                });
-        eventListener.addEventFunc<CursorMoveEvent>([](const Event& event) {
-                    LOG_INFO("{}\n", event);
+        eventListener.addEventFunc<CursorMoveEvent>([this](const Event& event) {
+                    CursorMove(static_cast<const CursorMoveEvent&>(event));
                 });
         eventListener.addEventFunc<KeyEvent>([this](const Event& event) {
                     InputHandle(static_cast<const KeyEvent&>(event));
@@ -47,13 +44,9 @@ namespace mfw {
 
     void Application::run() {
         float start = Time::GetCurrent(), end;
-        i32 count = 0, fps = 120;
+        i32 fps = 120;
         float frame = 1.0 / fps;
         while (m_window->isRunning()) {
-            ++count;
-            if (count % fps == 0) {
-                LOG_INFO("{}\n", count / fps);
-            }
             Update();
             m_window->update();
             m_window->swapBuffers();
@@ -62,7 +55,6 @@ namespace mfw {
             if (cframe < frame) {
                 Time::Sleep((frame - cframe) * 1000);
                 end = Time::GetCurrent();
-                LOG_INFO("{}s\n", 1 / (end - start));
             }
             start = end;
         }
@@ -70,9 +62,9 @@ namespace mfw {
 
     void Application::Eventhandle(const Event& event) {
         eventListener.listen<WindowCloseEvent>(event);
-        eventListener.listen<WindowMoveEvent>(event);
         eventListener.listen<MouseButtonEvent>(event);
         eventListener.listen<MouseScrollEvent>(event);
+        eventListener.listen<CursorMoveEvent>(event);
         eventListener.listen<KeyEvent>(event);
     }
 
