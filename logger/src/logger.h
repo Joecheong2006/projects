@@ -4,6 +4,8 @@
 #include <string>
 #include <cstdint>
 
+#define INLINE inline __attribute((always_inline))
+
 namespace Log {
     template <typename T>
     struct Pattern {
@@ -14,7 +16,7 @@ namespace Log {
         }
     };
 
-    inline std::string get_format_specifier(const std::string& format, const char* default_res = "") {
+    INLINE std::string get_format_specifier(const std::string& format, const char* default_res = "") {
         std::string result;
         if (format.empty())
             return default_res;
@@ -25,30 +27,33 @@ namespace Log {
         return default_res;
     };
 
-    inline std::string get_format_flag(const std::string& format, const char* default_res = "") {
+    INLINE std::string get_format_flag(const std::string& format, const char* default_res = "") {
         std::string result;
         int sIndex = format.find(':');
         if (sIndex == -1)
             return default_res;
         result = format[sIndex + 1];
-        if (result[0] == '0') {
-            result.clear();
-            return result;
-        }
         if (result[0] != '<' && result[0] != '>') {
             result = '-';
             return result;
         }
-        if (result[0] == '<') {
-            result = '-';
-            return result;
+        switch (result[0]) {
+            case '0':
+                result.clear();
+                break;
+            case '<':
+                result = '-';
+                break;
+            case '>':
+                result = "";
+                break;
+            default:
+                break;
         }
-        if (result[0] == '>')
-            result = "";
         return result;
     };
 
-    inline std::string get_format_width(const std::string& format, const char* default_res = "0") {
+    INLINE std::string get_format_width(const std::string& format, const char* default_res = "-1") {
         std::string result = default_res;
         int sIndex = format.find(':');
         if (sIndex == -1)
@@ -67,7 +72,7 @@ namespace Log {
         return result;
     };
 
-    inline std::string get_format_percision(const std::string& format, const char* default_res = "6") {
+    INLINE std::string get_format_percision(const std::string& format, const char* default_res = "6") {
         std::string result = default_res;
         int dIndex = format.find('.');
         if(dIndex == -1 || dIndex == (int)format.size() - 1)
@@ -149,12 +154,12 @@ DEFINE_PATTERN_BASIC_CHAR_LOG(const char, "%c", value);
             White = Reset,
         };
 
-        inline void SetColor(int colorPattern) {
+        INLINE void SetColor(int colorPattern) {
             HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
             SetConsoleTextAttribute(handle, colorPattern);
         }
 
-        inline void SetColor(ColorPattern colorPattern = ColorPattern::Reset) { 
+        INLINE void SetColor(ColorPattern colorPattern = ColorPattern::Reset) { 
             SetColor((int)colorPattern);
         }
     }
@@ -173,25 +178,25 @@ DEFINE_PATTERN_BASIC_CHAR_LOG(const char, "%c", value);
             White
         };
 
-        inline void SetColor(int colorPattern) { 
+        INLINE void SetColor(int colorPattern) { 
             std::string pattern = "\033[1;" + std::to_string(colorPattern) + "m";
             Pattern<std::string>::Log(pattern); 
         }
 
-        inline void SetColor(ColorPattern colorPattern = ColorPattern::Reset) { 
+        INLINE void SetColor(ColorPattern colorPattern = ColorPattern::Reset) { 
             SetColor((int)colorPattern);
         }
     }
 #endif
 
 namespace Log {
-    inline const std::string find_string_between(const std::string& str, char a, char b) {
+    INLINE const std::string find_string_between(const std::string& str, char a, char b) {
         auto fristIndex = str.find(a);
         return str.substr(fristIndex + 1, str.find(b) - fristIndex - 1);
     }
 
     template <typename Arg>
-    void basic_log(const std::string& pattern, const Arg& arg) {
+    INLINE void basic_log(const std::string& pattern, const Arg& arg) {
         std::string& ptn = const_cast<std::string&>(pattern);
         auto bstart = ptn.find("{");
         Pattern<std::string>::Log(ptn.substr(0, bstart), "");
@@ -203,7 +208,7 @@ namespace Log {
     }
 
     template <typename Arg, typename... Args>
-    void basic_log(const std::string& pattern, const Arg& arg, const Args& ...args) {
+    INLINE void basic_log(const std::string& pattern, const Arg& arg, const Args& ...args) {
         std::string& ptn = const_cast<std::string&>(pattern);
         auto bstart = ptn.find("{");
         Pattern<std::string>::Log(ptn.substr(0, bstart), "");
@@ -215,22 +220,22 @@ namespace Log {
     }
 
     template <typename... Args>
-    void Log(ColorPattern colorPattern, const std::string& pattern, const Args& ...args) {
+    INLINE void Log(ColorPattern colorPattern, const std::string& pattern, const Args& ...args) {
         SetColor(colorPattern);
         basic_log(pattern, args...);
         SetColor();
     }
 
     template <typename... Args>
-    void Log(const std::string& pattern, const Args& ...args) {
+    INLINE void Log(const std::string& pattern, const Args& ...args) {
         basic_log(pattern, args...);
     }
 
-    inline void basic_log(const std::string& pattern) {
+    INLINE void basic_log(const std::string& pattern) {
         Pattern<std::string>::Log(pattern, "");
     }
     
-    inline void Log(ColorPattern colorPattern, const std::string& pattern) {
+    INLINE void Log(ColorPattern colorPattern, const std::string& pattern) {
         SetColor(colorPattern);
         basic_log(pattern);
         SetColor();
@@ -238,7 +243,7 @@ namespace Log {
 
 #define SET_LOG_COLOR_WITH_NAME(name, color)\
         template <typename... Args>\
-        void name(const std::string& pattern, const Args& ...args) {\
+        INLINE void name(const std::string& pattern, const Args& ...args) {\
             Log(color, pattern, args...);\
         }\
 
