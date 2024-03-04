@@ -54,20 +54,10 @@ namespace mfw {
     }
 
     void Application::run() {
-        float start = Time::GetCurrent(), end;
-        i32 fps = 120;
-        float frame = 1.0 / fps;
         while (m_window->isRunning()) {
             Update();
             m_window->update();
             m_window->swapBuffers();
-            end = Time::GetCurrent();
-            float cframe = end - start;
-            if (cframe < frame) {
-                Time::Sleep((frame - cframe) * 1000);
-                end = Time::GetCurrent();
-            }
-            start = end;
         }
     }
 

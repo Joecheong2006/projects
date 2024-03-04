@@ -3,6 +3,7 @@
 #include "Input.h"
 #include "Clock.h"
 #include "OpenglContext.h"
+#include "glad/wgl.h"
 
 #include <windowsx.h>
 
@@ -206,6 +207,10 @@ namespace mfw {
         m_hdc = GetDC(m_hwnd);
 
         LOG_INFO("WINDOW CREATE SUCCESS: {}\n", m_state.title);
+    }
+
+    void WindowsWindow::setVSync(bool enable) { 
+        m_state.isVSync = enable; wglSwapIntervalEXT(1);
     }
 
     void WindowsWindow::update() {

@@ -50,5 +50,5 @@ void main() {
                      step(0.01, distance_to_line(uv, vec2(0), vec2(1, 0))))) * 0.3, value);
 
     //float value = smoothstep(0, 0.4, get_iterate(uv / pow(zoom, zoom) + offset));
-    frag_color = vec4(vec3(value), 0);
+    frag_color = vec4(vec3(value), 1);
 }
