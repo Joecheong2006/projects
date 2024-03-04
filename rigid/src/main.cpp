@@ -1,5 +1,6 @@
 #include <mfw.h>
 #include "Circle.h"
+#include "glm/gtc/matrix_transform.hpp"
 
 static f32 vertex[] = {
      1,  1,
@@ -16,13 +17,14 @@ static u32 index[] = {
 using namespace mfw;
 class DemoSandBox : public Application {
 private:
-    Circle::Manager cm;
+    f32 zoom = 1;
+    f32 offset_x = 0, offset_y = 0;
+    glm::mat4 o;
     VertexArray vao;
     IndexBuffer ibo;
     VertexBuffer vbo;
     ShaderProgram shader;
-    f32 zoom = 1;
-    f32 offset_x = 0, offset_y = 0;
+    Circle::Manager cm;
 
 public:
     DemoSandBox()
@@ -34,21 +36,19 @@ public:
         shader.attachShader(GL_VERTEX_SHADER, "res/shaders/test.vert");
         shader.attachShader(GL_FRAGMENT_SHADER, "res/shaders/test.frag");
         shader.link();
-        vao.unbind();
-        ibo.unbind();
-        vbo.unbind();
-        shader.unbind();
 
-        cm.createCircle(glm::vec2(0), glm::vec3(1), 0.1);
+        glClearColor(0.1, 0.1, 0.1, 0);
 
-        glClearColor(0.1, 0.22, 0.1, 0.1);
+        cm.createCircle(glm::vec2(0), glm::vec3(1), 10);
+        auto window = GetWindow();
+        glm::vec2 ws = glm::vec2(window->width(), window->height()) / 20.f;
+        o = glm::ortho(-ws.x, ws.x, -ws.y, ws.y, -1.0f, 1.0f);
     }
 
     virtual void Update() override {
         f32 frame = 1.0 / 144;
 
         auto window = GetWindow();
-        glViewport(0, 0, window->width(), window->height());
         glClear(GL_COLOR_BUFFER_BIT);
 
         ImGui_ImplOpenGL3_NewFrame();
@@ -64,12 +64,9 @@ public:
         shader.set2f("offset", offset_x, offset_y);
         shader.set1f("time", Time::GetCurrent());
         shader.set1f("zoom", zoom);
-
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-        shader.unbind();
-        vao.unbind();
 
-        cm.renderCircle();
+        cm.renderCircle(o);
 
         if (Input::KeyPress(' ')) {
             window->setCursorPos(window->width() * 0.5, window->height() * 0.5);
@@ -103,6 +100,12 @@ public:
 
     virtual void OnMouseScroll(const MouseScrollEvent& event) override {
         zoom -= event.ydelta * 0.1;
+    }
+
+    virtual void OnWindowResize(const WindowResizeEvent& event) override {
+        glViewport(0, 0, event.width, event.height);
+        glm::vec2 ws = glm::vec2(event.width, event.height) / 20.f;
+        o = glm::ortho(-ws.x, ws.x, -ws.y, ws.y, -1.0f, 1.0f);
     }
 
     ~DemoSandBox() {

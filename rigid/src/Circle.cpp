@@ -31,6 +31,11 @@ namespace mfw {
 
         m_texture.bind();
 
+        m_vao.unbind();
+        m_vbo.unbind();
+        m_shader.unbind();
+        m_texture.unbind();
+
         entities.reserve(MAX_SIZE);
     }
 
@@ -40,7 +45,7 @@ namespace mfw {
         return entities.back();
     }
 
-    void Circle::Manager::renderCircle() {
+    void Circle::Manager::renderCircle(const glm::mat4& o) {
         m_vao.bind();
         m_texture.bind();
         m_shader.bind();
@@ -51,7 +56,7 @@ namespace mfw {
             view = glm::translate(view, glm::vec3(e.m_pos.x, e.m_pos.y, 0));
             view = glm::scale(view, glm::vec3(e.d, e.d, 0));
             m_shader.set3f("color", glm::value_ptr(e.m_color));
-            m_shader.setMat4("view", view);
+            m_shader.setMat4("view", o * view);
             GLCALL(glDrawArrays(GL_TRIANGLES, 0, 6));
         }
         m_texture.unbind();

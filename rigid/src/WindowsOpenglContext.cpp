@@ -108,6 +108,7 @@ namespace mfw {
 
         if (!gladLoaderLoadGL()) {
             LOG_INFO("glad load gl fail");
+            ASSERT(false);
         }
 
         LOG_INFO("OPENGL VERSION: {}\n", glGetString(GL_VERSION));

@@ -6,6 +6,7 @@
 #include "Renderer.h"
 #include "stb_image.h"
 
+
 namespace mfw {
     Application* Application::Instance = CreateApplication();
 
@@ -27,12 +28,7 @@ namespace mfw {
         m_window->setEventCallBack([this](const Event& event) {
                     Eventhandle(event);
                 });
-        eventListener.addEventFunc<WindowCloseEvent>([this](const Event& event) {
-                    WindowClose(static_cast<const WindowCloseEvent&>(event));
-                });
-        eventListener.addEventFunc<CursorMoveEvent>([this](const Event& event) {
-                    CursorMove(static_cast<const CursorMoveEvent&>(event));
-                });
+
         eventListener.addEventFunc<KeyEvent>([this](const Event& event) {
                     InputHandle(static_cast<const KeyEvent&>(event));
                 });
@@ -41,6 +37,15 @@ namespace mfw {
                 });
         eventListener.addEventFunc<MouseScrollEvent>([this](const Event& event) {
                     MouseScrollHandle(static_cast<const MouseScrollEvent&>(event));
+                });
+        eventListener.addEventFunc<WindowResizeEvent>([this](const Event& event) {
+                    WindowResize(static_cast<const WindowResizeEvent&>(event));
+                });
+        eventListener.addEventFunc<WindowCloseEvent>([this](const Event& event) {
+                    WindowClose(static_cast<const WindowCloseEvent&>(event));
+                });
+        eventListener.addEventFunc<CursorMoveEvent>([this](const Event& event) {
+                    CursorMove(static_cast<const CursorMoveEvent&>(event));
                 });
     }
 
@@ -67,11 +72,12 @@ namespace mfw {
     }
 
     void Application::Eventhandle(const Event& event) {
+        eventListener.listen<KeyEvent>(event);
+        eventListener.listen<WindowResizeEvent>(event);
         eventListener.listen<WindowCloseEvent>(event);
         eventListener.listen<MouseButtonEvent>(event);
         eventListener.listen<MouseScrollEvent>(event);
         eventListener.listen<CursorMoveEvent>(event);
-        eventListener.listen<KeyEvent>(event);
     }
 
 }

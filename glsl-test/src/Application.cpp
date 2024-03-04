@@ -95,8 +95,6 @@ Application::Application() {
 
     stbi_set_flip_vertically_on_load(true);
 
-    glEnable(GL_DEPTH_TEST);
-
     GLCALL(glEnable(GL_BLEND));
     GLCALL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
 
@@ -155,7 +153,7 @@ void Application::run() {
 
     while(!glfwWindowShouldClose(m_window))
     {
-        GLCALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+        GLCALL(glClear(GL_COLOR_BUFFER_BIT));
         
         currentShader->bind();
         vao.bind();
