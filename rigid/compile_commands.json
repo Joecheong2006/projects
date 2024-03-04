@@ -1,0 +1,22 @@
+[
+  { 
+    "arguments": [
+      "g++",
+      "-std=c++17",
+      "-Wall",
+      "-Wextra",
+      "-g",
+      "-Ilib/stb_image",
+      "-Ilib/glew",
+      "-Ilib/glm",
+      "-Ilib/glad/include",
+      "-Ilib",
+      "-Isrc",
+      "-Os",
+      "-DDEBUG",
+      "-DUNICODE"
+    ],
+    "directory": "D:/project/rigid",
+    "file": "src/main.cpp"
+  }
+]

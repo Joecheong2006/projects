@@ -97,6 +97,10 @@ public:
         zoom -= event.ydelta * 0.1;
     }
 
+    virtual void OnWindowResize(const WindowResizeEvent& event) override {
+        LOG_EVENT_INFO(event);
+    }
+
     ~DemoSandBox() {
     }
 
