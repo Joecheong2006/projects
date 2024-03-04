@@ -5,8 +5,6 @@
 #include "Renderer.h"
 #include "VertexBuffer.h"
 #include "VertexBufferLayout.h"
-#include "Texture2D.h"
-#include "stb_image.h"
 
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
@@ -87,7 +85,7 @@ struct Insertion : public algorithm {
     virtual void solve() override {
         if (curr >= target_len)
             return;
-        trace = prew;
+        trace = prew - 1;
         if (target[prew] < target[prew - 1]) {
             swap(&target[prew - 1], &target[prew]);
         }
@@ -103,7 +101,7 @@ struct Insertion : public algorithm {
 struct Bubble : public algorithm {
     Bubble(sort_type& sort): algorithm(sort) {
         curr = 0;
-        next = curr;
+        next = curr + 1;
         trace = next;
     }
 
@@ -174,13 +172,6 @@ int main()
     glfwMakeContextCurrent(window);
     gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 
-    stbi_set_flip_vertically_on_load(true);
-
-    glEnable(GL_DEPTH_TEST);
-
-    GLCALL(glEnable(GL_BLEND));
-    GLCALL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
-
     {
         VertexArray vao;
         IndexBuffer ibo(index, sizeof(index));
@@ -193,11 +184,6 @@ int main()
         shader.attachShader(GL_VERTEX_SHADER, "res/shaders/default.vert");
         shader.attachShader(GL_FRAGMENT_SHADER, "res/shaders/default.frag");
         shader.link();
-
-        vao.unbind();
-        ibo.unbind();
-        vbo.unbind();
-        shader.unbind();
 
         glfwSwapInterval(1);
 
@@ -212,7 +198,7 @@ int main()
 
         struct settings new_settings;
 
-        std::vector<int> vec(new_settings.length);
+        sort_type vec(new_settings.length);
         shuffle(vec, 1, new_settings.length);
 
         algorithm* solver = nullptr;
@@ -220,11 +206,11 @@ int main()
 
         while(!glfwWindowShouldClose(window))
         {
-            GLCALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-            vao.bind();
-            shader.bind();
+            GLCALL(glClear(GL_COLOR_BUFFER_BIT));
+            if (solver != nullptr) {
+                vao.bind();
+                shader.bind();
 
-            if (solver) {
                 bool complated = algorithm::complate(solver);
 
                 if (!complated) {
@@ -254,12 +240,11 @@ int main()
             ImGui::Begin("settings");
 
             if (ImGui::Button("start")) {
-                if (solver) {
+                if (solver)
                     delete solver;
-                    std::cout << "hi";
-                }
                 settings = new_settings;
                 vec.resize(settings.length);
+                shuffle(vec, 1, settings.length);
                 switch (get_solution_index((void*)current_solution)) {
                     SET_SOLUTIONS_TO_SOLVER(SOLUTIONS);
                     default:
@@ -267,7 +252,6 @@ int main()
                         assert(false);
                         break;
                 }
-                shuffle(vec, 1, settings.length);
             }
 
             ImGui::SliderInt("length", &new_settings.length, 100, 700);

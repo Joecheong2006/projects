@@ -1,5 +1,5 @@
 CC = g++
-CFLAGS = -std=c++17 -Wall -Wextra -Wpedantic -Wstrict-aliasing -g
+CFLAGS = -std=c++11 -Wall -Wextra -Wpedantic -Wstrict-aliasing -g
 
 SOURCE = src src/**
 LIBRARY = lib/glad/src lib/stb_image
@@ -11,7 +11,7 @@ LIBOBJ = $(wildcard $(patsubst %, %/*.o, $(LIBRARY)))
 DEP = $(OBJ:%.o=%.d)
 
 DLL = lib/glfw/glfw3.dll 
-LIB = $(LIBOBJ) $(DLL) lib/glfw/libglfw3dll.a -lopengl32
+LIB = $(LIBOBJ) $(DLL) lib/glfw/libglfw3dll.a -lopengl32 -lpdh
 
 BIN = bin
 OUT = $(BIN)/main.exe
