@@ -60,53 +60,11 @@ namespace mfw {
     }
 
     void Application::run() {
-        static f32 vertex[] = {
-             1,  1,
-            -1,  1,
-             1, -1,
-            -1, -1,
-        };
-
-        static u32 index[] = {
-            1, 0, 2,
-            1, 3, 2,
-        };
-        f32 zoom = 1;
-        f32 offset_x = 0, offset_y = 0;
-
         float start = Time::GetCurrent(), end;
         i32 fps = 120;
         float frame = 1.0 / fps;
-        VertexArray vao;
-        IndexBuffer ibo(index, 6);
-        VertexBuffer vbo(vertex, sizeof(vertex));
-        ShaderProgram shader;
-        VertexBufferLayout layout;
-        layout.add<f32>(2);
-        vao.applyBufferLayout(layout);
-        shader.attachShader(GL_VERTEX_SHADER, "res/shaders/default.vert");
-        shader.attachShader(GL_FRAGMENT_SHADER, "res/shaders/default.frag");
-        //shader.attachShader(GL_VERTEX_SHADER, "res/shaders/test.vert");
-        //shader.attachShader(GL_FRAGMENT_SHADER, "res/shaders/test.frag");
-        shader.link();
-
         while (m_window->isRunning()) {
-            glClear(GL_COLOR_BUFFER_BIT);
-
-            vao.bind();
-            shader.bind();
-
-            f32 width = m_window->width();
-            f32 height = m_window->height();
-            shader.set2f("resolution", width, height);
-            shader.set2f("offset", offset_x, offset_y);
-            shader.set1f("time", Time::GetCurrent());
-            shader.set1f("zoom", zoom);
-
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
             Update();
-
             m_window->update();
             m_window->swapBuffers();
             end = Time::GetCurrent();
