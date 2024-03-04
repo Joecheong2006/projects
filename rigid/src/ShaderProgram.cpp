@@ -141,11 +141,13 @@ namespace mfw {
 
     i32 ShaderProgram::uniformLocation(const char* name)
     {
-        if(m_uniform_location_cache.find(name) != m_uniform_location_cache.end())
+        if (m_uniform_location_cache.find(name) != m_uniform_location_cache.end())
             return m_uniform_location_cache[name];
         GLCALL(i32 location = glGetUniformLocation(m_id, name));
-        if(location != -1) {
+        if (location != -1) {
             m_uniform_location_cache[name] = location;
+        } else {
+            LOG_INFO("not found uniform\n");
         }
         return location;
     }
