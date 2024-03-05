@@ -21,6 +21,7 @@ namespace mfw {
         public:
             Manager();
             Circle& createCircle(const glm::vec2& pos, const glm::vec3& color, const f32& d);
+            Circle& createCircle(const f32& d);
             void renderCircle(const glm::mat4& o);
             std::vector<Circle> entities;
 

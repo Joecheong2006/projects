@@ -2,7 +2,7 @@
   { 
     "arguments": [
       "g++",
-      "-std=c++17",
+      "-std=c++11",
       "-Wall",
       "-Wextra",
       "-g",
@@ -16,7 +16,7 @@
       "-DDEBUG",
       "-DUNICODE"
     ],
-    "directory": "D:/project/rigid",
+    "directory": "D:/project/rigid2d",
     "file": "src/main.cpp"
   }
 ]

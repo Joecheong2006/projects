@@ -2,87 +2,94 @@
 #include "Circle.h"
 #include "glm/gtc/matrix_transform.hpp"
 
-static f32 vertex[] = {
-     1,  1,
-    -1,  1,
-     1, -1,
-    -1, -1,
-};
+struct Stick {
+    Stick() {}
+    Stick(glm::vec2* p1, glm::vec2* p2, f32 d)
+        : d(d)
+    {
+        p[0] = p1;
+        p[1] = p2;
+    }
 
-static u32 index[] = {
-    1, 0, 2,
-    1, 3, 2,
+    void solve_constraint() {
+        f32 cd = glm::length(*p[0] - *p[1]);
+        if (cd == d)
+            return;
+        glm::vec2 nd = glm::normalize(*p[0] - *p[1]) * (d - cd) * 0.5f;
+        *p[0] += nd;
+        *p[1] -= nd;
+    }
+
+    f32 d;
+    glm::vec2* p[2];
+
 };
 
 using namespace mfw;
 class DemoSandBox : public Application {
 private:
-    f32 zoom = 1;
-    f32 offset_x = 0, offset_y = 0;
     glm::mat4 o;
+    glm::vec2 ws;
     Circle::Manager cm;
-    VertexArray vao;
-    IndexBuffer ibo;
-    VertexBuffer vbo;
-    ShaderProgram shader;
+
+    Stick stick[2];
+    f32 r = 2;
 
 public:
     DemoSandBox()
-        : ibo(index, 6), vbo(vertex, sizeof(vertex))
     {
-        VertexBufferLayout layout;
-        layout.add<f32>(2);
-        vao.applyBufferLayout(layout);
-        shader.attachShader(GL_VERTEX_SHADER, "res/shaders/test.vert");
-        shader.attachShader(GL_FRAGMENT_SHADER, "res/shaders/test.frag");
-        shader.link();
-
-        glClearColor(0, 0, 0, 0);
-
-        cm.createCircle(glm::vec2(0), glm::vec3(1), 10);
         auto window = GetWindow();
-        glm::vec2 ws = glm::vec2(window->width(), window->height()) / 20.f;
+        ws = glm::vec2(window->width(), window->height()) / 60.f;
         o = glm::ortho(-ws.x, ws.x, -ws.y, ws.y, -1.0f, 1.0f);
+
+        cm.createCircle(glm::vec2(0, 0), glm::vec3(1), 0.3);
+        cm.createCircle(glm::vec2(0, r), glm::vec3(0.6), 0.3);
+        cm.createCircle(glm::vec2(0, 2 * r), glm::vec3(0.3), 0.3);
+        stick[0] = Stick(&cm.entities[0].m_pos,
+                         &cm.entities[1].m_pos, r);
+        stick[1] = Stick(&cm.entities[1].m_pos,
+                         &cm.entities[2].m_pos, r);
+
+        glClearColor(0.1, 0.1, 0.1, 0);
     }
 
     virtual void Update() override {
         f32 frame = 1.0 / 144;
 
         auto window = GetWindow();
+        f32 width = window->width(), height = window->height();
+        if (Input::MouseButtonDown(Left)) {
+            f32 mouse_x = Input::GetMouse().first, mouse_y = Input::GetMouse().second;
+            cm.entities[0].m_pos = glm::vec2(mouse_x / 30 - width / 60, height / 60 - mouse_y / 30);
+        }
+
         glClear(GL_COLOR_BUFFER_BIT);
+
+        for (auto& e : cm.entities) {
+            e.add_force(glm::vec2(0, -98.1));
+            e.update(frame);
+        }
+
+        for (auto& e : cm.entities) {
+            if (e.m_pos.y - e.d < -ws.y) {
+                e.m_pos.y += -ws.y - e.m_pos.y + e.d;
+            }
+            if (e.m_pos.x - e.d < -ws.x) {
+                e.m_pos.x += -ws.x - e.m_pos.x + e.d;
+            }
+            if (e.m_pos.x + e.d > ws.x) {
+                e.m_pos.x += ws.x - e.m_pos.x - e.d;
+            }
+        }
+
+        stick[0].solve_constraint();
+        stick[1].solve_constraint();
+
+        cm.renderCircle(o);
 
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
-
-        vao.bind();
-        shader.bind();
-
-        f32 width = window->width();
-        f32 height = window->height();
-        shader.set2f("resolution", width, height);
-        shader.set2f("offset", offset_x, offset_y);
-        shader.set1f("time", Time::GetCurrent());
-        shader.set1f("zoom", zoom);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
-        cm.renderCircle(o);
-
-        if (Input::KeyPress(' ')) {
-            window->setCursorPos(window->width() * 0.5, window->height() * 0.5);
-        }
-        if (Input::KeyPress('W')) {
-            offset_y += frame;
-        }
-        if (Input::KeyPress('A')) {
-            offset_x -= frame;
-        }
-        if (Input::KeyPress('S')) {
-            offset_y -= frame;
-        }
-        if (Input::KeyPress('D')) {
-            offset_x += frame;
-        }
 
         ImGui::Begin("status");
         ImGui::Text("hello, world\n");
@@ -99,12 +106,13 @@ public:
     }
 
     virtual void OnMouseScroll(const MouseScrollEvent& event) override {
-        zoom -= event.ydelta * 0.1;
+        stick[0].d -= event.ydelta * 0.1f;
+        stick[1].d -= event.ydelta * 0.1f;
     }
 
     virtual void OnWindowResize(const WindowResizeEvent& event) override {
         glViewport(0, 0, event.width, event.height);
-        glm::vec2 ws = glm::vec2(event.width, event.height) / 20.f;
+        glm::vec2 ws = glm::vec2(event.width, event.height) / 60.f;
         o = glm::ortho(-ws.x, ws.x, -ws.y, ws.y, -1.0f, 1.0f);
     }
 

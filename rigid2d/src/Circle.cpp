@@ -45,6 +45,12 @@ namespace mfw {
         return entities.back();
     }
 
+    Circle& Circle::Manager::createCircle(const f32& d) {
+        entities.push_back(Circle(glm::vec2(0), glm::vec3(1), d));
+        return entities.back();
+    }
+
+
     void Circle::Manager::renderCircle(const glm::mat4& o) {
         m_vao.bind();
         m_texture.bind();
