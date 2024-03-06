@@ -2,6 +2,7 @@
 #include "Circle.h"
 #include "glm/gtc/matrix_transform.hpp"
 
+using namespace mfw;
 struct Stick {
     Stick() {}
     Stick(glm::vec2* p1, glm::vec2* p2, f32 d)
@@ -11,7 +12,7 @@ struct Stick {
         p[1] = p2;
     }
 
-    void solve_constraint() {
+    void update() {
         f32 cd = glm::length(*p[0] - *p[1]);
         if (cd == d)
             return;
@@ -25,15 +26,72 @@ struct Stick {
 
 };
 
-using namespace mfw;
+struct String {
+    String()
+    {}
+
+    void init_string(i32 node, i32 d)
+    {
+        ASSERT(node > 0);
+        this->node = node;
+        this->d = d;
+        entities.reserve(node + 1);
+        sticks.reserve(node);
+        for (i32 i = 0; i < node; i++) {
+            entities.emplace_back(glm::vec2(0, i * d), glm::vec3((i + 1.0f) / node), 0.4);
+        }
+        for (i32 i = 0; i < node - 1; i++) {
+            sticks.emplace_back(&entities[i].m_pos, &entities[i + 1].m_pos, d);
+        }
+    }
+
+    void init_box(f32 l)
+    {
+        ASSERT(l > 0);
+        this->node = 4;
+        this->d = l;
+        f32 lh = l * 0.5;
+        entities.reserve(4);
+        sticks.reserve(6);
+
+        entities.emplace_back(glm::vec2(lh, lh), glm::vec3(1), 0.4);
+        entities.emplace_back(glm::vec2(lh, -lh), glm::vec3(1), 0.4);
+        entities.emplace_back(glm::vec2(-lh, -lh), glm::vec3(1), 0.4);
+        entities.emplace_back(glm::vec2(-lh, lh), glm::vec3(1), 0.4);
+
+        sticks.emplace_back(&entities[0].m_pos, &entities[1].m_pos, d);
+        sticks.emplace_back(&entities[1].m_pos, &entities[2].m_pos, d);
+        sticks.emplace_back(&entities[2].m_pos, &entities[3].m_pos, d);
+        sticks.emplace_back(&entities[3].m_pos, &entities[0].m_pos, d);
+        sticks.emplace_back(&entities[0].m_pos, &entities[2].m_pos, d);
+        sticks.emplace_back(&entities[1].m_pos, &entities[3].m_pos, d);
+    }
+
+    void init_triangle(f32 l) {
+        this->node = 3;
+        this->d = l;
+    }
+
+    void update() {
+        for (auto& stick : sticks) {
+            stick.update();
+        }
+    }
+
+    std::vector<Circle> entities;
+    std::vector<Stick> sticks;
+    i32 node, d;
+};
+
 class DemoSandBox : public Application {
 private:
     glm::mat4 o;
     glm::vec2 ws;
     Circle::Manager cm;
 
-    Stick stick[2];
-    f32 r = 2;
+    f32 d = 2, r = 0.4;
+    std::vector<String> strings;
+    Circle* holding = nullptr;
 
 public:
     DemoSandBox()
@@ -42,14 +100,10 @@ public:
         ws = glm::vec2(window->width(), window->height()) / 60.f;
         o = glm::ortho(-ws.x, ws.x, -ws.y, ws.y, -1.0f, 1.0f);
 
-        cm.createCircle(glm::vec2(0, 0), glm::vec3(1), 0.3);
-        cm.createCircle(glm::vec2(0, r), glm::vec3(0.6), 0.3);
-        cm.createCircle(glm::vec2(0, 2 * r), glm::vec3(0.3), 0.3);
-        stick[0] = Stick(&cm.entities[0].m_pos,
-                         &cm.entities[1].m_pos, r);
-        stick[1] = Stick(&cm.entities[1].m_pos,
-                         &cm.entities[2].m_pos, r);
-
+        strings.push_back(String());
+        strings.back().init_string(3, d);
+        strings.push_back(String());
+        strings.back().init_box(3);
         glClearColor(0.1, 0.1, 0.1, 0);
     }
 
@@ -59,33 +113,56 @@ public:
         auto window = GetWindow();
         f32 width = window->width(), height = window->height();
         if (Input::MouseButtonDown(Left)) {
-            f32 mouse_x = Input::GetMouse().first, mouse_y = Input::GetMouse().second;
-            cm.entities[0].m_pos = glm::vec2(mouse_x / 30 - width / 60, height / 60 - mouse_y / 30);
+            auto& mouse = Input::GetMouse();
+            glm::vec2 pos = glm::vec2(mouse.first / 30.0f - width / 60, height / 60 - mouse.second / 30.0f);
+            if (holding) {
+                holding->m_pos = pos;
+            } else {
+                for (auto& string : strings) {
+                    for (i32 i = string.entities.size() - 1; i >= 0; i--) {
+                        if (r > glm::length(string.entities[i].m_pos - pos)) {
+                            holding = &string.entities[i];
+                            break;
+                        }
+                    }
+                }
+            }
+        } else {
+            holding = nullptr;
         }
 
         glClear(GL_COLOR_BUFFER_BIT);
 
-        for (auto& e : cm.entities) {
-            e.add_force(glm::vec2(0, -98.1));
-            e.update(frame);
-        }
-
-        for (auto& e : cm.entities) {
-            if (e.m_pos.y - e.d < -ws.y) {
-                e.m_pos.y += -ws.y - e.m_pos.y + e.d;
-            }
-            if (e.m_pos.x - e.d < -ws.x) {
-                e.m_pos.x += -ws.x - e.m_pos.x + e.d;
-            }
-            if (e.m_pos.x + e.d > ws.x) {
-                e.m_pos.x += ws.x - e.m_pos.x - e.d;
+        for (auto& string : strings) {
+            for (auto& e : string.entities) {
+                e.add_force(glm::vec2(0, -98.1));
+                e.update(frame);
             }
         }
 
-        stick[0].solve_constraint();
-        stick[1].solve_constraint();
+        for (auto& string : strings) {
+            for (auto& e : string.entities) {
+                if (e.m_pos.y - e.d < -ws.y) {
+                    e.m_pos.y += -ws.y - e.m_pos.y + e.d;
+                }
+                if (e.m_pos.x - e.d < -ws.x) {
+                    e.m_pos.x += -ws.x - e.m_pos.x + e.d;
+                }
+                if (e.m_pos.x + e.d > ws.x) {
+                    e.m_pos.x += ws.x - e.m_pos.x - e.d;
+                }
+            }
+        }
 
-        cm.renderCircle(o);
+        for (auto& string : strings) {
+            string.update();
+        }
+
+        for (auto& string : strings) {
+            for (auto & e : string.entities) {
+                cm.renderCircle(o, e);
+            }
+        }
 
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplWin32_NewFrame();
@@ -106,8 +183,7 @@ public:
     }
 
     virtual void OnMouseScroll(const MouseScrollEvent& event) override {
-        stick[0].d -= event.ydelta * 0.1f;
-        stick[1].d -= event.ydelta * 0.1f;
+        (void)event;
     }
 
     virtual void OnWindowResize(const WindowResizeEvent& event) override {

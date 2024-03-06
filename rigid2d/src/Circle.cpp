@@ -51,7 +51,7 @@ namespace mfw {
     }
 
 
-    void Circle::Manager::renderCircle(const glm::mat4& o) {
+    void Circle::Manager::renderCircles(const glm::mat4& o) {
         m_vao.bind();
         m_texture.bind();
         m_shader.bind();
@@ -70,8 +70,30 @@ namespace mfw {
         m_vao.unbind();
     }
 
+    void Circle::Manager::renderCircle(const glm::mat4& o, Circle& circle) {
+        m_vao.bind();
+        m_texture.bind();
+        m_shader.bind();
+        m_shader.set1i("tex", 0);
+        glm::mat4 view;
+        view = glm::mat4(1);
+        view = glm::translate(view, glm::vec3(circle.m_pos.x, circle.m_pos.y, 0));
+        view = glm::scale(view, glm::vec3(circle.d, circle.d, 0));
+        m_shader.set3f("color", glm::value_ptr(circle.m_color));
+        m_shader.setMat4("view", o * view);
+        GLCALL(glDrawArrays(GL_TRIANGLES, 0, 6));
+        m_texture.unbind();
+        m_shader.unbind();
+        m_vao.unbind();
+    }
+
     Circle::Circle(const glm::vec2& pos, const glm::vec3& color, const f32& d)
         : Object2D(pos, d * 1.25, color), d(d)
+    {
+    }
+
+    Circle::Circle()
+        : Object2D(glm::vec2(0), 1 * 1.25, glm::vec3(1)), d(1)
     {
     }
 
