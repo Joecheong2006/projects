@@ -1,5 +1,5 @@
 #include "Clock.h"
-#include "mfwlog.h"
+#include "logger.h"
 
 namespace mfw {
     Timer::Timer(const std::string& message)

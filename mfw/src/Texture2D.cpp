@@ -1,7 +1,7 @@
 #include "Texture2D.h"
 #include "stb_image.h"
 #include "Renderer.h"
-#include "OpenglContext.h"
+#include "glad/gl.h"
 
 namespace mfw {
     Texture2D::Texture2D(const char* path)

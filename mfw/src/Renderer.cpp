@@ -1,5 +1,5 @@
 #include "Renderer.h"
-#include "OpenglContext.h"
+#include "glad/gl.h"
 
 namespace mfw {
     void GLClearError()

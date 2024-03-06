@@ -1,0 +1,18 @@
+*** progress
+    - (x) basic windows window class
+
+    - (=) device context
+    --- (x) opengl
+    --- ( ) [DX11]
+
+    - (=) window event
+    --- ( ) keyboard input
+    --- ( ) mouse input
+    --- (=) window states
+
+    - ( ) system clock
+    --- ( ) fps / frame
+    --- ( ) duration check
+
+    - (=) debug log
+

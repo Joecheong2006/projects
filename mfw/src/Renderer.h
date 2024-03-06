@@ -1,7 +1,7 @@
 #pragma once
 
-#include "mfwlog.h"
 #include "util.h"
+#include "logger.h"
 
 namespace mfw {
     void GLClearError();

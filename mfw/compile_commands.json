@@ -2,19 +2,18 @@
   { 
     "arguments": [
       "g++",
-      "-std=c++17",
+      "-std=c++11",
       "-Wall",
       "-Wextra",
       "-g",
       "-Ilib/stb_image",
-      "-Ilib/glew",
       "-Ilib/glm",
       "-Ilib/glad/include",
       "-Ilib",
       "-Isrc",
-      "-Os",
       "-DDEBUG",
-      "-DUNICODE"
+      "-DUNICODE",
+      "-D_UNICODE"
     ],
     "directory": "D:/project/mfw",
     "file": "src/main.cpp"

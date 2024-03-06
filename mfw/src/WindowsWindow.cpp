@@ -210,7 +210,8 @@ namespace mfw {
     }
 
     void WindowsWindow::setVSync(bool enable) { 
-        m_state.isVSync = enable; wglSwapIntervalEXT(1);
+        m_state.isVSync = enable;
+        wglSwapIntervalEXT(enable);
     }
 
     void WindowsWindow::update() {

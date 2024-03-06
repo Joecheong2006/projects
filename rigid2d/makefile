@@ -1,12 +1,10 @@
 CC = g++
 PCH = src/mfwpch.h
-CFLAGS := -std=c++11 -Wall -Wextra -Wpedantic -Wstrict-aliasing -g -include $(PCH) -DDEBUG -DUNICODE -D_UNICODE -flto=auto
-DFLAGS := -DDEBUG -DUNICODE -D_UNICODE
-RFLAGS := -O3 -march=native -flto -fdefer-pop -fmerge-constants -fthread-jumps -floop-optimize -fif-conversion2 -fif-conversion -fcrossjumping -fguess-branch-probability -fcprop-registers -foptimize-sibling-calls -fstrength-reduce -fcse-follow-jumps -fcse-skip-blocks -frerun-cse-after-loop -frerun-loop-opt -fgcse -fgcse-lm -fgcse-sm -fdelete-null-pointer-checks -fexpensive-optimizations -fregmove -fschedule-insns -fschedule-insns2 -fsched-interblock -fsched-spec -fcaller-saves -fpeephole2 -freorder-blocks -freorder-functions -fstrict-aliasing -falign-functions -falign-jumps -falign-loops -falign-labels -finline-functions -frename-registers -DNDEBUG
+CFLAGS := -std=c++11 -Wall -Wextra -Wpedantic -Wstrict-aliasing -g -include $(PCH) -DDEBUG -DUNICODE -D_UNICODE
 SOURCE = src src/**
-LIBRARY = lib/stb_image
-INCLUDE = -Ilib -Ilib/stb_image -Isrc
-LIB = -lopengl32 -lUser32 -lGdi32 -lGlu32 -lShell32 -lWinmm
+LIBRARY = lib/stb_image lib/imgui
+INCLUDE = -Ilib -Ilib/stb_image -Ilib/imgui -Isrc
+LIB = -lopengl32 -lGdi32 -lWinmm -ld3dcompiler -ldwmapi
 
 
 SRC = $(wildcard $(patsubst %, %/*.cpp, $(SOURCE)))
@@ -14,7 +12,7 @@ LIBOBJ = $(wildcard $(patsubst %, %/*.o, $(LIBRARY)))
 OBJ = $(SRC:%.cpp=%.o)
 DEP = $(OBJ:%.o=%.d)
 BIN = bin
-OUT = $(BIN)/rigid.exe
+OUT = $(BIN)/rigid2d.exe
 
 PROCESS_INDEX = -1
 TOTAL_FILES = $(words $(SRC))
@@ -33,19 +31,16 @@ clean:
 
 build:
 	@echo "Compiling library"
-	@cd lib/stb_image && $(CC) -o stb_image.o -c stb_image.cpp
+	@cd lib/stb_image && $(CC) -c stb_image.cpp
+	@cd lib/imgui && $(CC) -c ./*.cpp -flto=auto
 	@$(CC) -x c++-header $(INCLUDE) -o $(PCH).gch -c $(PCH)
 	@echo "Completed"
-
-release: $(eval CFLAGS += $(RFLAGS)) bin $(OBJ)
-	@$(CC) -o $(OUT) $(OBJ) $(LIBOBJ) $(LIB) -mwindows
-	@echo "[100%] Compilation completed"
 
 bin:
 	@mkdir -p $(BIN)
 
 app: bin $(OBJ) 
-	@$(CC) -o $(OUT) $(OBJ) $(IMGUIOBJ) $(LIBOBJ) $(LIB)
+	@$(CC) -o $(OUT) $(OBJ) $(LIBOBJ) $(LIB)
 	@echo "[100%] Compilation completed"
 
 %.o: %.cpp

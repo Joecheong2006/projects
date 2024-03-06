@@ -1,6 +1,6 @@
 #include "ShaderProgram.h"
 
-#include "OpenglContext.h"
+#include "glad/gl.h"
 #include "Renderer.h"
 #include "glm/gtc/type_ptr.hpp"
 

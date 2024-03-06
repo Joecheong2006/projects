@@ -1,7 +1,7 @@
 #include "Texture2D.h"
-#include "Renderer.h"
-#include "OpenglContext.h"
 #include "stb_image.h"
+#include "Renderer.h"
+#include "glad/gl.h"
 
 namespace mfw {
     Texture2D::Texture2D(const char* path)
@@ -22,8 +22,7 @@ namespace mfw {
         GLCALL(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_width, m_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data));
         GLCALL(glGenerateMipmap(GL_TEXTURE_2D));
 
-        if(data)
-            stbi_image_free(data);
+        if(data) stbi_image_free(data);
     }
 
     Texture2D::~Texture2D()

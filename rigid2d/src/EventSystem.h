@@ -2,7 +2,6 @@
 
 #include "util.h"
 #include <mfwlog.h>
-#include <mfwpch.h>
 
 #define LOG_EVENT_INFO(event) LOG_INFO("{}\n", static_cast<const Event&>(event))
 

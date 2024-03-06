@@ -4,8 +4,6 @@
 #include "Input.h"
 #include "Clock.h"
 
-#include "EntryPoint.h"
-
 // for testing
 #include "VertexArray.h"
 #include "VertexBuffer.h"
@@ -13,4 +11,6 @@
 #include "VertexBufferLayout.h"
 #include "ShaderProgram.h"
 #include "Texture2D.h"
+
+#include "EntryPoint.h"
 

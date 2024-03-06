@@ -1,6 +1,6 @@
 #include "VertexBuffer.h"
 #include "Renderer.h"
-#include "OpenglContext.h"
+#include "glad/gl.h"
 
 
 namespace mfw {

@@ -7,14 +7,12 @@
       "-Wextra",
       "-g",
       "-Ilib/stb_image",
-      "-Ilib/glew",
       "-Ilib/glm",
-      "-Ilib/glad/include",
       "-Ilib",
       "-Isrc",
-      "-Os",
       "-DDEBUG",
-      "-DUNICODE"
+      "-DUNICODE",
+      "-D_UNICODE"
     ],
     "directory": "D:/project/rigid2d",
     "file": "src/main.cpp"

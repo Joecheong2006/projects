@@ -1,8 +1,13 @@
 #include <mfw.h>
 #include "Circle.h"
+
+#include "imgui/imgui.h"
+#include "imgui/imgui_impl_opengl3.h"
+#include "imgui/imgui_impl_win32.h"
 #include "glm/gtc/matrix_transform.hpp"
 
 using namespace mfw;
+
 struct Stick {
     Stick() {}
     Stick(glm::vec2* p1, glm::vec2* p2, f32 d)
@@ -63,8 +68,8 @@ struct String {
         sticks.emplace_back(&entities[1].m_pos, &entities[2].m_pos, d);
         sticks.emplace_back(&entities[2].m_pos, &entities[3].m_pos, d);
         sticks.emplace_back(&entities[3].m_pos, &entities[0].m_pos, d);
-        sticks.emplace_back(&entities[0].m_pos, &entities[2].m_pos, d);
-        sticks.emplace_back(&entities[1].m_pos, &entities[3].m_pos, d);
+        sticks.emplace_back(&entities[0].m_pos, &entities[2].m_pos, d * std::sqrt(2.f));
+        sticks.emplace_back(&entities[1].m_pos, &entities[3].m_pos, d * std::sqrt(2.f));
     }
 
     void init_triangle(f32 l) {
@@ -200,3 +205,4 @@ public:
 mfw::Application* mfw::CreateApplication() {
     return new DemoSandBox();
 }
+

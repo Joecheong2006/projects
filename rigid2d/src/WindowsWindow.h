@@ -20,7 +20,7 @@ namespace  mfw {
         inline virtual void setEventCallBack(const std::function<void(const Event&)>& callBackFunction) override {
             m_state.m_callBackFunc = std::move(callBackFunction);
         }
-        inline virtual void setVSync(bool enable) override { m_state.isVSync = enable; }
+        inline virtual void setVSync(bool enable) override;
         inline virtual void* getNativeWindow() override;
         inline virtual void close() override { m_state.isRunning = false; }
         inline virtual void showCursor() override;
