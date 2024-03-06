@@ -6,6 +6,7 @@
 namespace mfw {
     void GLClearError();
     bool GLLogCall(const char* file, i32 line, const char* func);
+
 }
 
 #if defined(DEBUG) || defined(_DEBUG)

@@ -9,6 +9,7 @@ namespace mfw {
 
     public:
         explicit VertexBuffer(const void* data, u32 size);
+        VertexBuffer();
         ~VertexBuffer();
 
         void bind() const;

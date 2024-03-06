@@ -11,22 +11,28 @@
 namespace mfw {
     class Circle : public Object2D, public Collision::Colliable<Circle> {
     public:
-        class Manager {
-            friend class Renderer;
+        static class Renderer {
         private:
             VertexArray m_vao;
             VertexBuffer m_vbo;
             ShaderProgram m_shader;
-            Texture2D m_texture;
-        public:
-            Manager();
-            Circle& createCircle(const glm::vec2& pos, const glm::vec3& color, const f32& d);
-            Circle& createCircle(const f32& d);
-            void renderCircles(const glm::mat4& o);
-            void renderCircle(const glm::mat4& o, Circle& circle);
-            std::vector<Circle> entities;
 
-        };
+        public:
+            Renderer();
+
+            inline void bind() {
+                m_vao.bind();
+                m_shader.bind();
+            }
+
+            inline void unbind() {
+                m_shader.unbind();
+                m_vao.unbind();
+            }
+
+            void renderCircle(const glm::mat4& o, Circle& circle);
+
+        }* renderer;
 
         f32 d;
         Circle();

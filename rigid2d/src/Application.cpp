@@ -13,7 +13,7 @@ namespace mfw {
     {
         {
             START_CLOCK_TIMER("INIT WINDOW");
-            m_window = Window::Create({"demo", 960, 640});
+            m_window = Window::Create({"rigid2d", 960, 640});
         }
         {
             START_CLOCK_TIMER("INIT OPENGL");
