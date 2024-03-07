@@ -5,7 +5,6 @@
 #include "VertexArray.h"
 #include "VertexBuffer.h"
 #include "ShaderProgram.h"
-#include "Texture2D.h"
 #include "Collision.h"
 
 namespace mfw {
@@ -30,7 +29,8 @@ namespace mfw {
                 m_vao.unbind();
             }
 
-            void renderCircle(const glm::mat4& o, Circle& circle);
+            void render(const glm::mat4& o, Circle& circle);
+            void draw(const glm::mat4& o, Circle& circle);
 
         }* renderer;
 

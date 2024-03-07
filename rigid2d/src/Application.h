@@ -12,6 +12,7 @@ namespace mfw {
 
     public:
         static Application* Get() { return Instance; }
+        f32 dt;
 
     protected:
         inline virtual void Update() {}

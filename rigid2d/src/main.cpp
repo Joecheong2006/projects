@@ -1,5 +1,6 @@
 #include <mfw.h>
 #include "Circle.h"
+#include "Stick.h"
 #include "Renderer.h"
 
 #include "imgui/imgui.h"
@@ -8,104 +9,14 @@
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtc/type_ptr.hpp"
 
-#define COLOR(val) ((u32)val >> 24) / 255.0, (((u32)val << 8) >> 24) / 255.0, (((u32)val << 16) >> 24) / 255.0
-
-static f32 r = 0.3f;
-static glm::vec3 node_color = glm::vec3(COLOR(0x8595BD00));
-static f32 bounce = 1.0f;
-static f32 line_width = 0.08f;
-
-static f32 vertexs[] = {
-        -1.0f, -1.0f,
-        1.0f, -1.0f,
-        -1.0f, 1.0f,
-
-        1.0f, 1.0f,
-        -1.0f, 1.0f,
-        1.0f, -1.0f,
-};
-
 using namespace mfw;
-struct Stick {
-    static class Renderer {
-    private:
-        VertexArray m_vao;
-        ShaderProgram m_shader;
-        VertexBufferLayout cube_layout;
-        VertexBuffer m_vbo;
-
-    public:
-        Renderer()
-            : m_vbo(vertexs, sizeof(vertexs))
-        {
-            cube_layout.add<float>(2);
-            m_vao.applyBufferLayout(cube_layout);
-
-            m_shader.attachShader(GL_VERTEX_SHADER, "res/shaders/line.vert");
-            m_shader.attachShader(GL_FRAGMENT_SHADER, "res/shaders/line.frag");
-            m_shader.link();
-
-            m_vao.unbind();
-            m_vbo.unbind();
-            m_shader.unbind();
-        }
-
-        inline void bind() {
-            m_vao.bind();
-            m_shader.bind();
-        }
-
-        inline void unbind() {
-            m_shader.unbind();
-            m_vao.unbind();
-        }
-
-        void render(const glm::mat4& o, const glm::vec2& p1, const glm::vec2& p2, glm::vec3 color, f32 w) {
-            glm::mat4 view = glm::mat4(1);
-            view = glm::translate(view, glm::vec3((p1 + p2) * 0.5f, 0));
-            view = glm::rotate(view, glm::atan((p1.y - p2.y) / (p1.x - p2.x)), glm::vec3(0, 0, 1));
-            view = glm::scale(view, glm::vec3(glm::length(p1 - p2) * 0.5, w, 0));
-            m_shader.set3f("color", glm::value_ptr(color));
-            m_shader.setMat4("view", o * view);
-            GLCALL(glDrawArrays(GL_TRIANGLES, 0, 6));
-        }
-
-    }* renderer;
-
-    Stick() {}
-    Stick(glm::vec2* p1, glm::vec2* p2, f32 d)
-        : d(d)
-    {
-        p[0] = p1;
-        p[1] = p2;
-    }
-
-    void update() {
-        f32 cd = glm::length(*p[0] - *p[1]);
-        if (cd == d)
-            return;
-        //glm::vec2 nd = glm::normalize(*p[0] - *p[1]) * (d - cd) * bounce / cd;
-        glm::vec2 nd = glm::normalize(*p[0] - *p[1]) * (d - cd) * bounce * 0.5f;
-        *p[0] += nd;
-        *p[1] -= nd;
-    }
-
-    inline void render(const glm::mat4& o) {
-        renderer->render(o, *p[0], *p[1], glm::vec3(1), line_width);
-    }
-
-    f32 d;
-    glm::vec2* p[2];
-
-};
-
-Stick::Renderer* Stick::renderer = nullptr;
-
 struct String {
-    String()
+    Stick::Attribute& attri;
+    String(Stick::Attribute& attribute)
+        : attri(attribute)
     {}
 
-    void init_string(i32 node, i32 d)
+    void init_string(i32 node, i32 d, const glm::vec2& pos = glm::vec2(0))
     {
         ASSERT(node > 0);
         this->node = node;
@@ -113,47 +24,47 @@ struct String {
         entities.reserve(node + 1);
         sticks.reserve(node);
         for (i32 i = 0; i < node; i++) {
-            entities.emplace_back(glm::vec2(0, i * d), glm::vec3((i + 1.0f) / node), r);
+            entities.emplace_back(glm::vec2(0, i * d) + pos, glm::vec3((i + 1.0f) / node), attri.node_size);
         }
         for (i32 i = 0; i < node - 1; i++) {
-            sticks.emplace_back(&entities[i].m_pos, &entities[i + 1].m_pos, d);
+            sticks.emplace_back(&entities[i].m_pos, &entities[i + 1].m_pos, d, attri);
         }
     }
 
-    void init_box(f32 l)
+    void init_box(f32 l, const glm::vec2& pos = glm::vec2(0))
     {
         ASSERT(l > 0);
-        this->node = 4;
-        this->d = l;
+        node = 4;
+        d = l;
         f32 lh = l * 0.5;
         entities.reserve(4);
         sticks.reserve(6);
 
-        entities.emplace_back(glm::vec2(lh, lh), node_color, r);
-        entities.emplace_back(glm::vec2(lh, -lh), node_color, r);
-        entities.emplace_back(glm::vec2(-lh, -lh), node_color, r);
-        entities.emplace_back(glm::vec2(-lh, lh), node_color, r);
+        entities.emplace_back(glm::vec2(lh, lh) + pos, attri.node_color, attri.node_size);
+        entities.emplace_back(glm::vec2(lh, -lh) + pos, attri.node_color, attri.node_size);
+        entities.emplace_back(glm::vec2(-lh, -lh) + pos, attri.node_color, attri.node_size);
+        entities.emplace_back(glm::vec2(-lh, lh) + pos, attri.node_color, attri.node_size);
 
-        sticks.emplace_back(&entities[0].m_pos, &entities[1].m_pos, d);
-        sticks.emplace_back(&entities[1].m_pos, &entities[2].m_pos, d);
-        sticks.emplace_back(&entities[2].m_pos, &entities[3].m_pos, d);
-        sticks.emplace_back(&entities[3].m_pos, &entities[0].m_pos, d);
-        sticks.emplace_back(&entities[0].m_pos, &entities[2].m_pos, d * std::sqrt(2.f));
-        sticks.emplace_back(&entities[1].m_pos, &entities[3].m_pos, d * std::sqrt(2.f));
+        sticks.emplace_back(&entities[0].m_pos, &entities[1].m_pos, d, attri);
+        sticks.emplace_back(&entities[1].m_pos, &entities[2].m_pos, d, attri);
+        sticks.emplace_back(&entities[2].m_pos, &entities[3].m_pos, d, attri);
+        sticks.emplace_back(&entities[3].m_pos, &entities[0].m_pos, d, attri);
+        sticks.emplace_back(&entities[0].m_pos, &entities[2].m_pos, d * std::sqrt(2.f), attri);
+        sticks.emplace_back(&entities[1].m_pos, &entities[3].m_pos, d * std::sqrt(2.f), attri);
     }
 
-    void init_triangle(f32 l) {
-        this->node = 3;
-        this->d = sqrt(3.f) * l;
+    void init_triangle(f32 l, const glm::vec2& pos = glm::vec2(0)) {
+        node = 3;
+        d = sqrt(3.0f) * l;
         entities.reserve(3);
         sticks.reserve(3);
-        entities.emplace_back(glm::vec2(0, l), node_color, r);
-        entities.emplace_back(glm::vec2(d, -l) * 0.5f, node_color, r);
-        entities.emplace_back(glm::vec2(-d, -l) * 0.5f, node_color, r);
+        entities.emplace_back(glm::vec2(0, l) + pos, attri.node_color, attri.node_size);
+        entities.emplace_back(glm::vec2(d, -l) * 0.5f + pos, attri.node_color, attri.node_size);
+        entities.emplace_back(glm::vec2(-d, -l) * 0.5f + pos, attri.node_color, attri.node_size);
 
-        sticks.emplace_back(&entities[0].m_pos, &entities[1].m_pos, d);
-        sticks.emplace_back(&entities[1].m_pos, &entities[2].m_pos, d);
-        sticks.emplace_back(&entities[2].m_pos, &entities[0].m_pos, d);
+        sticks.emplace_back(&entities[0].m_pos, &entities[1].m_pos, d, attri);
+        sticks.emplace_back(&entities[1].m_pos, &entities[2].m_pos, d, attri);
+        sticks.emplace_back(&entities[2].m_pos, &entities[0].m_pos, d, attri);
     }
 
     void update() {
@@ -163,11 +74,9 @@ struct String {
     }
 
     void render(const glm::mat4& o) {
-        Stick::renderer->bind();
         for (auto & stick : sticks) {
             stick.render(o);
         }
-        Stick::renderer->unbind();
     }
 
     std::vector<Circle> entities;
@@ -175,15 +84,44 @@ struct String {
     i32 node, d;
 };
 
+class FixPoint {
+public:
+    glm::vec2 pos;
+    Circle* holding;
+    f32 r = 0.35f;
+
+    FixPoint() 
+        : pos(), holding(nullptr)
+    {}
+
+    void fix() {
+        if (holding) {
+            holding->m_pos = pos;
+        }
+    }
+
+    void render(glm::mat4& o) {
+        Stick::renderer->draw(o, pos - glm::vec2(r, 0), pos + glm::vec2(r, 0), glm::vec3(COLOR(0xaf7434)), r);
+    }
+
+};
+
 class DemoSandBox : public Application {
 private:
     glm::mat4 o;
-    glm::vec2 ws;
-    Circle::Renderer cm;
+    glm::mat4 view;
+    glm::mat4 scale;
+
+    glm::vec2 world;
+    f32 world_scale = 60;
 
     f32 d = 2;
     std::vector<String> strings;
     Circle* holding = nullptr;
+    Stick::Attribute attri;
+    FixPoint fix_point;
+
+    i32 sub_step = 1;
 
 public:
     DemoSandBox()
@@ -192,78 +130,75 @@ public:
         Circle::renderer = new Circle::Renderer();
 
         auto window = GetWindow();
-        ws = glm::vec2(window->width(), window->height()) / 60.f;
-        o = glm::ortho(-ws.x, ws.x, -ws.y, ws.y, -1.0f, 1.0f);
+        i32 width = window->width(), height = window->height();
+        world = glm::vec2(width, height) / world_scale;
+        o = glm::ortho(-world.x, world.x, -world.y, world.y, -1.0f, 1.0f);
+        view = glm::mat4(1);
+        scale = glm::mat4(1);
 
-        strings.push_back(String());
-        strings.back().init_string(3, d);
+        strings.push_back(String(attri));
+        strings.back().init_string(3, d * 1.5f);
         
-        strings.push_back(String());
-        strings.back().init_box(3);
+        strings.push_back(String(attri));
+        strings.back().init_box(3, glm::vec2(-6, 0));
 
-        strings.push_back(String());
-        strings.back().init_triangle(2);
+        strings.push_back(String(attri));
+        strings.back().init_triangle(2,  glm::vec2(6, 0));
 
         glClearColor(0.1, 0.1, 0.1, 0);
     }
 
     virtual void Update() override {
-        f32 frame = 1.0 / 144;
+        static f32 frame = 1.0 / 144;
 
-        auto window = GetWindow();
-        f32 width = window->width(), height = window->height();
         glClear(GL_COLOR_BUFFER_BIT);
 
-        for (auto& string : strings) {
-            for (auto& e : string.entities) {
-                e.add_force(glm::vec2(0, -98.1));
-                e.update(frame);
-            }
-        }
-
-        for (auto& string : strings) {
-            for (auto& e : string.entities) {
-                if (e.m_pos.y - e.d < -ws.y) {
-                    e.m_pos.y += -ws.y - e.m_pos.y + e.d;
-                }
-                if (e.m_pos.x - e.d < -ws.x) {
-                    e.m_pos.x += -ws.x - e.m_pos.x + e.d;
-                }
-                if (e.m_pos.x + e.d > ws.x) {
-                    e.m_pos.x += ws.x - e.m_pos.x - e.d;
+        for (i32 i = 0; i < sub_step; i++) {
+            for (auto& string : strings) {
+                for (auto& e : string.entities) {
+                    e.add_force(glm::vec2(0, -98.1 * e.m_mass * 2));
+                    e.update(frame / (f32)sub_step);
                 }
             }
-        }
 
-        if (Input::MouseButtonDown(Left)) {
-            auto& mouse = Input::GetMouse();
-            glm::vec2 pos = glm::vec2(mouse.first / 30.0f - width / 60, height / 60 - mouse.second / 30.0f);
             if (holding) {
-                holding->m_pos = pos;
-            } else {
-                for (auto& string : strings) {
-                    for (i32 i = string.entities.size() - 1; i >= 0; i--) {
-                        if (r > glm::length(string.entities[i].m_pos - pos)) {
-                            holding = &string.entities[i];
-                            break;
-                        }
+                auto window = GetWindow();
+                f32 width = window->width(), height = window->height();
+                auto& mouse = Input::GetMouse();
+                glm::vec4 uv = glm::vec4(mouse.first / width, 1 - mouse.second / height, 0, 0) * 2.0f - 1.0f;
+                glm::vec2 wpos = glm::vec2((view * (uv / o)) / scale);
+                holding->m_pos = wpos;
+            }
+
+            fix_point.fix();
+
+            for (auto& string : strings) {
+                for (auto& e : string.entities) {
+                    if (e.m_pos.y - e.d < -world.y) {
+                        e.m_pos.y += -world.y - e.m_pos.y + e.d;
+                    }
+                    if (e.m_pos.x - e.d < -world.x) {
+                        e.m_pos.x += -world.x - e.m_pos.x + e.d;
+                    }
+                    if (e.m_pos.x + e.d > world.x) {
+                        e.m_pos.x += world.x - e.m_pos.x - e.d;
                     }
                 }
             }
-        } else {
-            holding = nullptr;
+
+            for (auto& string : strings) {
+                string.update();
+            }
         }
 
-        for (auto& string : strings) {
-            string.update();
-        }
+        // --------
+
+        glm::mat4 proj = o * view * scale;
+
+        fix_point.render(proj);
 
         for (auto& string : strings) {
-            string.render(o);
-            Circle::renderer->bind();
-            for (auto& e : string.entities) 
-                cm.renderCircle(o, e);
-            Circle::renderer->unbind();
+            string.render(proj);
         }
 
         ImGui_ImplOpenGL3_NewFrame();
@@ -272,26 +207,19 @@ public:
 
         ImGui::Begin("config");
 
-        //  #8595BD
-        ImGui::SliderFloat("line width", &line_width, 0.02f, 0.3f);
-        ImGui::SliderFloat("bounce", &bounce, 0.1f, 1.0f);
-        if (ImGui::SliderFloat("node size", &r, 0.1f, 0.5f)) {
+        ImGui::SliderFloat("line width", &attri.line_width, 0.02f, 0.3f);
+        ImGui::SliderFloat("bounce", &attri.bounce, 0.0f, 1.0f);
+        if (ImGui::SliderFloat("node size", &attri.node_size, 0.1f, 0.5f)) {
             for (auto& string : strings) {
                 for (auto& e : string.entities) {
-                    e.d = r;
+                    e.d = attri.node_size;
                 }
             }
         }
-        if (ImGui::ColorEdit3("node color", glm::value_ptr(node_color))) {
-            for (auto& string : strings) {
-                for (auto& e : string.entities) {
-                    e.m_color = node_color;
-                }
-            }
-        }
+        ImGui::ColorEdit3("node color", glm::value_ptr(attri.node_color));
+        ImGui::SliderInt("sub step", &sub_step, 1, 100);
 
         ImGui::End();
-
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     }
@@ -302,14 +230,71 @@ public:
         }
     }
 
+    virtual void OnCursorMove(const CursorMoveEvent& event) override {
+        static i32 mx = event.x, my = event.y;
+        if (!holding && Input::KeyPress(VK_CONTROL)) {
+            if (Input::MouseButtonDown(Left)) {
+                view = glm::translate(view, glm::vec3(event.x - mx, my - event.y, 0) * 0.025f);
+            }
+            mx = event.x, my = event.y;
+        }
+    }
+
     virtual void OnMouseScroll(const MouseScrollEvent& event) override {
-        (void)event;
+        if (Input::KeyPress(VK_CONTROL)) {
+            f32 val = 1 - event.ydelta * 0.04f;
+            scale = glm::scale(scale, glm::vec3(val, val, 1));
+        }
+    }
+
+    Circle* find_circle_by_position(glm::vec2 pos) {
+        for (auto& string : strings) {
+            for (i32 i = string.entities.size() - 1; i >= 0; i--) {
+                if (attri.node_size > glm::length(string.entities[i].m_pos - pos)) {
+                    return &string.entities[i];
+                }
+            }
+        }
+        return nullptr;
+    }
+
+    virtual void OnMouseButton(const MouseButtonEvent& event) override {
+        auto window = GetWindow();
+        f32 width = window->width(), height = window->height();
+        auto& mouse = Input::GetMouse();
+        glm::vec4 uv = glm::vec4(mouse.first / width, 1 - mouse.second / height, 0, 0) * 2.0f - 1.0f;
+        glm::vec2 wpos = glm::vec2((view * (uv / o)) / scale);
+
+        if (event.button == MouseButton::Left && event.mode == KeyMode::Down) {
+            if (!holding) {
+                if (glm::length(wpos - fix_point.pos) < fix_point.r) {
+                    holding = fix_point.holding;
+                    fix_point.holding = nullptr;
+                }
+            }
+        }
+        if (event.button == MouseButton::Left && event.mode == KeyMode::Release) {
+            if (holding) {
+                if (glm::length(holding->m_pos - fix_point.pos) < holding->d + fix_point.r) {
+                    fix_point.holding = holding;
+                    holding = nullptr;
+                }
+            }
+        }
+
+        if (!Input::KeyPress(VK_CONTROL) && event.button == MouseButton::Left && event.mode == KeyMode::Down) {
+            if (!holding) {
+                holding = find_circle_by_position(wpos);
+            }
+        } else {
+            holding = nullptr;
+        }
     }
 
     virtual void OnWindowResize(const WindowResizeEvent& event) override {
         glViewport(0, 0, event.width, event.height);
-        glm::vec2 ws = glm::vec2(event.width, event.height) / 60.f;
-        o = glm::ortho(-ws.x, ws.x, -ws.y, ws.y, -1.0f, 1.0f);
+        glm::vec2 world = glm::vec2(event.width, event.height) / world_scale;
+        o = glm::ortho(-world.x, world.x, -world.y, world.y, -1.0f, 1.0f);
     }
 
     ~DemoSandBox() {

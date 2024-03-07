@@ -34,7 +34,7 @@ namespace mfw {
         m_shader.unbind();
     }
 
-    void Circle::Renderer::renderCircle(const glm::mat4& o, Circle& circle) {
+    void Circle::Renderer::render(const glm::mat4& o, Circle& circle) {
         glm::mat4 view = glm::mat4(1);
         view = glm::translate(view, glm::vec3(circle.m_pos.x, circle.m_pos.y, 0));
         view = glm::scale(view, glm::vec3(circle.d, circle.d, 0));
@@ -43,8 +43,14 @@ namespace mfw {
         GLCALL(glDrawArrays(GL_TRIANGLES, 0, 6));
     }
 
+    void Circle::Renderer::draw(const glm::mat4& o, Circle& circle) {
+        bind();
+        render(o, circle);
+        unbind();
+    }
+
     Circle::Circle(const glm::vec2& pos, const glm::vec3& color, const f32& d)
-        : Object2D(pos, d * 1.25, color), d(d)
+        : Object2D(pos, d * 10, color), d(d)
     {
     }
 
