@@ -16,15 +16,15 @@ struct String {
         : attri(attribute)
     {}
 
-    void init_string(i32 node, i32 d, const glm::vec2& pos = glm::vec2(0))
+    void init_string(i32 node, f32 d, const glm::vec2& pos = glm::vec2(0))
     {
         ASSERT(node > 0);
         this->node = node;
         this->d = d;
         entities.reserve(node + 1);
         sticks.reserve(node);
-        for (i32 i = 0; i < node; i++) {
-            entities.emplace_back(glm::vec2(0, i * d) + pos, glm::vec3((i + 1.0f) / node), attri.node_size);
+        for (f32 i = 0; i < node; i++) {
+            entities.emplace_back(glm::vec2(0, i * d) + pos, attri.node_color, attri.node_size);
         }
         for (i32 i = 0; i < node - 1; i++) {
             sticks.emplace_back(&entities[i].m_pos, &entities[i + 1].m_pos, d, attri);
@@ -81,27 +81,28 @@ struct String {
 
     std::vector<Circle> entities;
     std::vector<Stick> sticks;
-    i32 node, d;
+    f32 d;
+    i32 node;
 };
 
 class FixPoint {
 public:
-    glm::vec2 pos;
     Circle* holding;
-    f32 r = 0.35f;
+    Circle point;
+    f32 r = 0.4f;
 
-    FixPoint() 
-        : pos(), holding(nullptr)
+    FixPoint(const glm::vec2& pos = glm::vec2(0))
+        : holding(nullptr), point(pos, glm::vec3(COLOR(0xaf7434)), r)
     {}
 
     void fix() {
         if (holding) {
-            holding->m_pos = pos;
+            holding->m_pos = point.m_pos;
         }
     }
 
     void render(glm::mat4& o) {
-        Stick::renderer->draw(o, pos - glm::vec2(r, 0), pos + glm::vec2(r, 0), glm::vec3(COLOR(0xaf7434)), r);
+        Stick::renderer->draw(o, point.m_pos - glm::vec2(r, 0), point.m_pos + glm::vec2(r, 0), glm::vec3(COLOR(0xaf7434)), r);
     }
 
 };
@@ -116,12 +117,14 @@ private:
     f32 world_scale = 60;
 
     f32 d = 2;
-    std::vector<String> strings;
     Circle* holding = nullptr;
     Stick::Attribute attri;
-    FixPoint fix_point;
+
+    std::vector<String> strings;
+    std::vector<FixPoint> fixPoints;
 
     i32 sub_step = 1;
+    bool gravity = true;
 
 public:
     DemoSandBox()
@@ -138,12 +141,18 @@ public:
 
         strings.push_back(String(attri));
         strings.back().init_string(3, d * 1.5f);
-        
+
+        strings.push_back(String(attri));
+        strings.back().init_string(15, 1.15, glm::vec2(4, 2));
+
         strings.push_back(String(attri));
         strings.back().init_box(3, glm::vec2(-6, 0));
 
         strings.push_back(String(attri));
         strings.back().init_triangle(2,  glm::vec2(6, 0));
+
+        fixPoints.push_back(FixPoint());
+        fixPoints.push_back(FixPoint());
 
         glClearColor(0.1, 0.1, 0.1, 0);
     }
@@ -156,7 +165,9 @@ public:
         for (i32 i = 0; i < sub_step; i++) {
             for (auto& string : strings) {
                 for (auto& e : string.entities) {
-                    e.add_force(glm::vec2(0, -98.1 * e.m_mass * 2));
+                    if (gravity) {
+                        e.add_force(glm::vec2(0, -98.1 * e.m_mass * 2));
+                    }
                     e.update(frame / (f32)sub_step);
                 }
             }
@@ -170,7 +181,9 @@ public:
                 holding->m_pos = wpos;
             }
 
-            fix_point.fix();
+            for (auto& point : fixPoints)  {
+                point.fix();
+            }
 
             for (auto& string : strings) {
                 for (auto& e : string.entities) {
@@ -191,11 +204,13 @@ public:
             }
         }
 
-        // --------
-
         glm::mat4 proj = o * view * scale;
 
-        fix_point.render(proj);
+        Stick::renderer->bind();
+        for (auto& point : fixPoints)  {
+            point.render(proj);
+        }
+        Stick::renderer->unbind();
 
         for (auto& string : strings) {
             string.render(proj);
@@ -207,6 +222,7 @@ public:
 
         ImGui::Begin("config");
 
+        ImGui::Checkbox("gravity", &gravity);
         ImGui::SliderFloat("line width", &attri.line_width, 0.02f, 0.3f);
         ImGui::SliderFloat("bounce", &attri.bounce, 0.0f, 1.0f);
         if (ImGui::SliderFloat("node size", &attri.node_size, 0.1f, 0.5f)) {
@@ -258,6 +274,15 @@ public:
         return nullptr;
     }
 
+    FixPoint* find_fix_point_by_position(glm::vec2 pos) {
+        for (auto& point : fixPoints) {
+            if (point.r > glm::length(point.point.m_pos - pos)) {
+                return &point;
+            }
+        }
+        return nullptr;
+    }
+
     virtual void OnMouseButton(const MouseButtonEvent& event) override {
         auto window = GetWindow();
         f32 width = window->width(), height = window->height();
@@ -265,21 +290,24 @@ public:
         glm::vec4 uv = glm::vec4(mouse.first / width, 1 - mouse.second / height, 0, 0) * 2.0f - 1.0f;
         glm::vec2 wpos = glm::vec2((view * (uv / o)) / scale);
 
-        if (event.button == MouseButton::Left && event.mode == KeyMode::Down) {
-            if (!holding) {
-                if (glm::length(wpos - fix_point.pos) < fix_point.r) {
-                    holding = fix_point.holding;
-                    fix_point.holding = nullptr;
-                }
-            }
-        }
         if (event.button == MouseButton::Left && event.mode == KeyMode::Release) {
             if (holding) {
-                if (glm::length(holding->m_pos - fix_point.pos) < holding->d + fix_point.r) {
-                    fix_point.holding = holding;
+                FixPoint* fix = find_fix_point_by_position(holding->m_pos);
+                if (fix) {
+                    fix->holding = holding;
                     holding = nullptr;
                 }
             }
+        }
+
+        if (event.button == MouseButton::Left && event.mode == KeyMode::Down) {
+            if (!holding) {
+                FixPoint* fix = find_fix_point_by_position(wpos);
+                if (fix) {
+                    holding = fix->holding;
+                    fix->holding = nullptr;
+                }
+            } 
         }
 
         if (!Input::KeyPress(VK_CONTROL) && event.button == MouseButton::Left && event.mode == KeyMode::Down) {
@@ -288,6 +316,15 @@ public:
             }
         } else {
             holding = nullptr;
+        }
+
+        if (Input::MouseButtonDown(MouseButton::Right)) {
+            if (!holding) {
+                FixPoint* fix = find_fix_point_by_position(wpos);
+                if (fix) {
+                    holding = &(fix->point);
+                }
+            }
         }
     }
 

@@ -35,17 +35,6 @@ namespace mfw {
         m_shader.unbind();
     }
 
-    void Stick::Renderer::bind() {
-        m_vao.bind();
-        m_shader.bind();
-    }
-
-    void Stick::Renderer::unbind() {
-        m_vao.unbind();
-        m_shader.unbind();
-    }
-
-
     void Stick::Renderer::render(const glm::mat4& o, const glm::vec2& p1, const glm::vec2& p2, glm::vec3 color, f32 w) {
         glm::mat4 view = glm::mat4(1);
         view = glm::translate(view, glm::vec3((p1 + p2) * 0.5f, 0));
@@ -73,8 +62,8 @@ namespace mfw {
         f32 cd = glm::length(*p[0] - *p[1]);
         if (cd == d)
             return;
-        glm::vec2 nd = glm::normalize(*p[0] - *p[1]) * (d - cd) * attri.bounce / cd;
-        //glm::vec2 nd = glm::normalize(*p[0] - *p[1]) * (d - cd) * 0.5f * attri.bounce;
+        //glm::vec2 nd = glm::normalize(*p[0] - *p[1]) * (d - cd) * attri.bounce / cd;
+        glm::vec2 nd = glm::normalize(*p[0] - *p[1]) * (d - cd) * 0.5f * attri.bounce;
         *p[0] += nd;
         *p[1] -= nd;
     }
@@ -87,6 +76,17 @@ namespace mfw {
         c = Circle(*p[1], attri.node_color, attri.node_size);
         Circle::renderer->render(o, c);
         Circle::renderer->unbind();
+    }
+
+    void Stick::render_node(const glm::mat4& o) {
+        Circle c = Circle(*p[0], attri.node_color, attri.node_size);
+        Circle::renderer->render(o, c);
+        c = Circle(*p[1], attri.node_color, attri.node_size);
+        Circle::renderer->render(o, c);
+    }
+
+    void Stick::render_line(const glm::mat4& o) {
+        renderer->render(o, *p[0], *p[1], glm::vec3(1), attri.line_width);
     }
 
 }
