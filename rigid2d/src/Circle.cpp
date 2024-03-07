@@ -50,12 +50,12 @@ namespace mfw {
     }
 
     Circle::Circle(const glm::vec2& pos, const glm::vec3& color, const f32& d)
-        : Object2D(pos, d * 10, color), d(d)
+        : Object2D(pos, d * 2, color), d(d)
     {
     }
 
     Circle::Circle()
-        : Object2D(glm::vec2(0), 1 * 1.25, glm::vec3(1)), d(1)
+        : Object2D(glm::vec2(0), 1, glm::vec3(1)), d(1)
     {
     }
 

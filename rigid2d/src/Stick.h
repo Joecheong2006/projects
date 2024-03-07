@@ -10,10 +10,13 @@ namespace mfw {
     class Stick {
         public:
         static struct Attribute {
-            glm::vec3 node_color = glm::vec3(COLOR(0x859584));
-            f32 node_size = 0.3;
-            f32 bounce = 1.0f;
-            f32 line_width = 0.08f;
+            glm::vec3 node_color;
+            f32 node_size;
+            f32 bounce;
+            f32 line_width;
+            Attribute()
+                : node_color(glm::vec3(COLOR(0x859584))), node_size(0.3), bounce(1.0), line_width(0.08)
+            {}
         } attribute;
 
         static class Renderer {
@@ -40,7 +43,7 @@ namespace mfw {
 
         }* renderer;
 
-        Stick(glm::vec2* p1, glm::vec2* p2, f32 d, Attribute& attribute = Stick::attribute);
+        Stick(glm::vec2* p1, glm::vec2* p2, f32 d, const Attribute& attribute);
         void update();
         void render(const glm::mat4& o);
         void render_node(const glm::mat4& o);
@@ -48,7 +51,7 @@ namespace mfw {
 
         f32 d;
         glm::vec2* p[2];
-        Attribute& attri;
+        const Attribute& attri;
 
     };
 }

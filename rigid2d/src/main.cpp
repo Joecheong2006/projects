@@ -11,8 +11,8 @@
 
 using namespace mfw;
 struct String {
-    Stick::Attribute& attri;
-    String(Stick::Attribute& attribute)
+    Stick::Attribute attri;
+    String(const Stick::Attribute& attribute)
         : attri(attribute)
     {}
 
@@ -23,7 +23,7 @@ struct String {
         this->d = d;
         entities.reserve(node + 1);
         sticks.reserve(node);
-        for (f32 i = 0; i < node; i++) {
+        for (f32 i = 0; i < entities.capacity(); i++) {
             entities.emplace_back(glm::vec2(0, i * d) + pos, attri.node_color, attri.node_size);
         }
         for (i32 i = 0; i < node - 1; i++) {
@@ -87,22 +87,22 @@ struct String {
 
 class FixPoint {
 public:
-    Circle* holding;
-    Circle point;
+    glm::vec2* holding;
+    glm::vec2 pos;
     f32 r = 0.4f;
 
     FixPoint(const glm::vec2& pos = glm::vec2(0))
-        : holding(nullptr), point(pos, glm::vec3(COLOR(0xaf7434)), r)
+        : holding(nullptr), pos(pos)
     {}
 
     void fix() {
         if (holding) {
-            holding->m_pos = point.m_pos;
+            *holding = pos;
         }
     }
 
     void render(glm::mat4& o) {
-        Stick::renderer->draw(o, point.m_pos - glm::vec2(r, 0), point.m_pos + glm::vec2(r, 0), glm::vec3(COLOR(0xaf7434)), r);
+        Stick::renderer->draw(o, pos - glm::vec2(r, 0), pos + glm::vec2(r, 0), glm::vec3(COLOR(0xaf7434)), r);
     }
 
 };
@@ -117,7 +117,7 @@ private:
     f32 world_scale = 60;
 
     f32 d = 2;
-    Circle* holding = nullptr;
+    glm::vec2* holding = nullptr;
     Stick::Attribute attri;
 
     std::vector<String> strings;
@@ -139,16 +139,17 @@ public:
         view = glm::mat4(1);
         scale = glm::mat4(1);
 
-        strings.push_back(String(attri));
+        strings.reserve(4);
+        strings.emplace_back(attri);
         strings.back().init_string(3, d * 1.5f);
 
-        strings.push_back(String(attri));
-        strings.back().init_string(15, 1.15, glm::vec2(4, 2));
+        strings.emplace_back(attri);
+        strings.back().init_string(5, 1.15, glm::vec2(4, 2));
 
-        strings.push_back(String(attri));
+        strings.emplace_back(attri);
         strings.back().init_box(3, glm::vec2(-6, 0));
 
-        strings.push_back(String(attri));
+        strings.emplace_back(attri);
         strings.back().init_triangle(2,  glm::vec2(6, 0));
 
         fixPoints.push_back(FixPoint());
@@ -166,7 +167,7 @@ public:
             for (auto& string : strings) {
                 for (auto& e : string.entities) {
                     if (gravity) {
-                        e.add_force(glm::vec2(0, -98.1 * e.m_mass * 2));
+                        e.add_force(glm::vec2(0, -98.1));
                     }
                     e.update(frame / (f32)sub_step);
                 }
@@ -178,7 +179,7 @@ public:
                 auto& mouse = Input::GetMouse();
                 glm::vec4 uv = glm::vec4(mouse.first / width, 1 - mouse.second / height, 0, 0) * 2.0f - 1.0f;
                 glm::vec2 wpos = glm::vec2((view * (uv / o)) / scale);
-                holding->m_pos = wpos;
+                *holding = wpos;
             }
 
             for (auto& point : fixPoints)  {
@@ -276,7 +277,7 @@ public:
 
     FixPoint* find_fix_point_by_position(glm::vec2 pos) {
         for (auto& point : fixPoints) {
-            if (point.r > glm::length(point.point.m_pos - pos)) {
+            if (point.r > glm::length(point.pos - pos)) {
                 return &point;
             }
         }
@@ -292,7 +293,7 @@ public:
 
         if (event.button == MouseButton::Left && event.mode == KeyMode::Release) {
             if (holding) {
-                FixPoint* fix = find_fix_point_by_position(holding->m_pos);
+                FixPoint* fix = find_fix_point_by_position(*holding);
                 if (fix) {
                     fix->holding = holding;
                     holding = nullptr;
@@ -312,7 +313,10 @@ public:
 
         if (!Input::KeyPress(VK_CONTROL) && event.button == MouseButton::Left && event.mode == KeyMode::Down) {
             if (!holding) {
-                holding = find_circle_by_position(wpos);
+                Circle* circle = find_circle_by_position(wpos);
+                if (circle) {
+                    holding = &circle->m_pos;
+                }
             }
         } else {
             holding = nullptr;
@@ -322,7 +326,7 @@ public:
             if (!holding) {
                 FixPoint* fix = find_fix_point_by_position(wpos);
                 if (fix) {
-                    holding = &(fix->point);
+                    holding = &fix->pos;
                 }
             }
         }

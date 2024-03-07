@@ -51,7 +51,7 @@ namespace mfw {
         unbind();
     }
 
-    Stick::Stick(glm::vec2* p1, glm::vec2* p2, f32 d, Attribute& attribute)
+    Stick::Stick(glm::vec2* p1, glm::vec2* p2, f32 d, const Attribute& attribute)
         : d(d), attri(attribute)
     {
         p[0] = p1;
@@ -62,7 +62,6 @@ namespace mfw {
         f32 cd = glm::length(*p[0] - *p[1]);
         if (cd == d)
             return;
-        //glm::vec2 nd = glm::normalize(*p[0] - *p[1]) * (d - cd) * attri.bounce / cd;
         glm::vec2 nd = glm::normalize(*p[0] - *p[1]) * (d - cd) * 0.5f * attri.bounce;
         *p[0] += nd;
         *p[1] -= nd;
