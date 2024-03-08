@@ -11,10 +11,20 @@
 
 using namespace mfw;
 struct String {
-    Stick::Attribute attri;
-    String(const Stick::Attribute& attribute)
+    Stick::Attribute& attri;
+    String(Stick::Attribute& attribute = Stick::attribute)
         : attri(attribute)
     {}
+
+    ~String()
+    {
+        for (auto& e : entities) {
+            delete e;
+        }
+        for (auto& e : sticks) {
+            delete e;
+        }
+    }
 
     void init_string(i32 node, f32 d, const glm::vec2& pos = glm::vec2(0))
     {
@@ -24,10 +34,10 @@ struct String {
         entities.reserve(node + 1);
         sticks.reserve(node);
         for (f32 i = 0; i < entities.capacity(); i++) {
-            entities.emplace_back(glm::vec2(0, i * d) + pos, attri.node_color, attri.node_size);
+            entities.emplace_back(new Circle(glm::vec2(0, i * d) + pos, attri.node_color, attri.node_size));
         }
         for (i32 i = 0; i < node - 1; i++) {
-            sticks.emplace_back(&entities[i].m_pos, &entities[i + 1].m_pos, d, attri);
+            sticks.emplace_back(new Stick(&entities[i]->m_pos, &entities[i + 1]->m_pos, d, attri));
         }
     }
 
@@ -40,17 +50,17 @@ struct String {
         entities.reserve(4);
         sticks.reserve(6);
 
-        entities.emplace_back(glm::vec2(lh, lh) + pos, attri.node_color, attri.node_size);
-        entities.emplace_back(glm::vec2(lh, -lh) + pos, attri.node_color, attri.node_size);
-        entities.emplace_back(glm::vec2(-lh, -lh) + pos, attri.node_color, attri.node_size);
-        entities.emplace_back(glm::vec2(-lh, lh) + pos, attri.node_color, attri.node_size);
+        entities.emplace_back(new Circle(glm::vec2(lh, lh) + pos, attri.node_color, attri.node_size));
+        entities.emplace_back(new Circle(glm::vec2(lh, -lh) + pos, attri.node_color, attri.node_size));
+        entities.emplace_back(new Circle(glm::vec2(-lh, -lh) + pos, attri.node_color, attri.node_size));
+        entities.emplace_back(new Circle(glm::vec2(-lh, lh) + pos, attri.node_color, attri.node_size));
 
-        sticks.emplace_back(&entities[0].m_pos, &entities[1].m_pos, d, attri);
-        sticks.emplace_back(&entities[1].m_pos, &entities[2].m_pos, d, attri);
-        sticks.emplace_back(&entities[2].m_pos, &entities[3].m_pos, d, attri);
-        sticks.emplace_back(&entities[3].m_pos, &entities[0].m_pos, d, attri);
-        sticks.emplace_back(&entities[0].m_pos, &entities[2].m_pos, d * std::sqrt(2.f), attri);
-        sticks.emplace_back(&entities[1].m_pos, &entities[3].m_pos, d * std::sqrt(2.f), attri);
+        sticks.emplace_back(new Stick(&entities[0]->m_pos, &entities[1]->m_pos, d, attri));
+        sticks.emplace_back(new Stick(&entities[1]->m_pos, &entities[2]->m_pos, d, attri));
+        sticks.emplace_back(new Stick(&entities[2]->m_pos, &entities[3]->m_pos, d, attri));
+        sticks.emplace_back(new Stick(&entities[3]->m_pos, &entities[0]->m_pos, d, attri));
+        sticks.emplace_back(new Stick(&entities[0]->m_pos, &entities[2]->m_pos, d * std::sqrt(2.f), attri));
+        sticks.emplace_back(new Stick(&entities[1]->m_pos, &entities[3]->m_pos, d * std::sqrt(2.f), attri));
     }
 
     void init_triangle(f32 l, const glm::vec2& pos = glm::vec2(0)) {
@@ -58,29 +68,29 @@ struct String {
         d = sqrt(3.0f) * l;
         entities.reserve(3);
         sticks.reserve(3);
-        entities.emplace_back(glm::vec2(0, l) + pos, attri.node_color, attri.node_size);
-        entities.emplace_back(glm::vec2(d, -l) * 0.5f + pos, attri.node_color, attri.node_size);
-        entities.emplace_back(glm::vec2(-d, -l) * 0.5f + pos, attri.node_color, attri.node_size);
+        entities.emplace_back(new Circle(glm::vec2(0, l) + pos, attri.node_color, attri.node_size));
+        entities.emplace_back(new Circle(glm::vec2(d, -l) * 0.5f + pos, attri.node_color, attri.node_size));
+        entities.emplace_back(new Circle(glm::vec2(-d, -l) * 0.5f + pos, attri.node_color, attri.node_size));
 
-        sticks.emplace_back(&entities[0].m_pos, &entities[1].m_pos, d, attri);
-        sticks.emplace_back(&entities[1].m_pos, &entities[2].m_pos, d, attri);
-        sticks.emplace_back(&entities[2].m_pos, &entities[0].m_pos, d, attri);
+        sticks.emplace_back(new Stick(&entities[0]->m_pos, &entities[1]->m_pos, d, attri));
+        sticks.emplace_back(new Stick(&entities[1]->m_pos, &entities[2]->m_pos, d, attri));
+        sticks.emplace_back(new Stick(&entities[2]->m_pos, &entities[0]->m_pos, d, attri));
     }
 
     void update() {
         for (auto& stick : sticks) {
-            stick.update();
+            stick->update();
         }
     }
 
     void render(const glm::mat4& o) {
         for (auto & stick : sticks) {
-            stick.render(o);
+            stick->render(o);
         }
     }
 
-    std::vector<Circle> entities;
-    std::vector<Stick> sticks;
+    std::vector<Circle*> entities;
+    std::vector<Stick*> sticks;
     f32 d;
     i32 node;
 };
@@ -118,7 +128,7 @@ private:
 
     f32 d = 2;
     glm::vec2* holding = nullptr;
-    Stick::Attribute attri;
+    Stick::Attribute& attri;
 
     std::vector<String> strings;
     std::vector<FixPoint> fixPoints;
@@ -128,6 +138,7 @@ private:
 
 public:
     DemoSandBox()
+        : attri(Stick::attribute)
     {
         Stick::renderer = new Stick::Renderer();
         Circle::renderer = new Circle::Renderer();
@@ -139,7 +150,11 @@ public:
         view = glm::mat4(1);
         scale = glm::mat4(1);
 
-        strings.reserve(4);
+        strings.reserve(5);
+        strings.emplace_back(attri);
+        strings[0].entities.reserve(100);
+        strings[0].sticks.reserve(50);
+
         strings.emplace_back(attri);
         strings.back().init_string(3, d * 1.5f);
 
@@ -167,9 +182,9 @@ public:
             for (auto& string : strings) {
                 for (auto& e : string.entities) {
                     if (gravity) {
-                        e.add_force(glm::vec2(0, -98.1));
+                        e->add_force(glm::vec2(0, -98.1));
                     }
-                    e.update(frame / (f32)sub_step);
+                    e->update(frame / (f32)sub_step);
                 }
             }
 
@@ -188,14 +203,14 @@ public:
 
             for (auto& string : strings) {
                 for (auto& e : string.entities) {
-                    if (e.m_pos.y - e.d < -world.y) {
-                        e.m_pos.y += -world.y - e.m_pos.y + e.d;
+                    if (e->m_pos.y - e->d < -world.y) {
+                        e->m_pos.y += -world.y - e->m_pos.y + e->d;
                     }
-                    if (e.m_pos.x - e.d < -world.x) {
-                        e.m_pos.x += -world.x - e.m_pos.x + e.d;
+                    if (e->m_pos.x - e->d < -world.x) {
+                        e->m_pos.x += -world.x - e->m_pos.x + e->d;
                     }
-                    if (e.m_pos.x + e.d > world.x) {
-                        e.m_pos.x += world.x - e.m_pos.x - e.d;
+                    if (e->m_pos.x + e->d > world.x) {
+                        e->m_pos.x += world.x - e->m_pos.x - e->d;
                     }
                 }
             }
@@ -229,7 +244,7 @@ public:
         if (ImGui::SliderFloat("node size", &attri.node_size, 0.1f, 0.5f)) {
             for (auto& string : strings) {
                 for (auto& e : string.entities) {
-                    e.d = attri.node_size;
+                    e->d = attri.node_size;
                 }
             }
         }
@@ -267,8 +282,8 @@ public:
     Circle* find_circle_by_position(glm::vec2 pos) {
         for (auto& string : strings) {
             for (i32 i = string.entities.size() - 1; i >= 0; i--) {
-                if (attri.node_size > glm::length(string.entities[i].m_pos - pos)) {
-                    return &string.entities[i];
+                if (attri.node_size > glm::length(string.entities[i]->m_pos - pos)) {
+                    return string.entities[i];
                 }
             }
         }

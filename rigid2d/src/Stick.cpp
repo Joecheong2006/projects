@@ -51,7 +51,7 @@ namespace mfw {
         unbind();
     }
 
-    Stick::Stick(glm::vec2* p1, glm::vec2* p2, f32 d, const Attribute& attribute)
+    Stick::Stick(glm::vec2* p1, glm::vec2* p2, f32 d, Attribute& attribute)
         : d(d), attri(attribute)
     {
         p[0] = p1;

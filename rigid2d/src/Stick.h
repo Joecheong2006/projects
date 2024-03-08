@@ -43,7 +43,7 @@ namespace mfw {
 
         }* renderer;
 
-        Stick(glm::vec2* p1, glm::vec2* p2, f32 d, const Attribute& attribute);
+        Stick(glm::vec2* p1, glm::vec2* p2, f32 d, Attribute& attribute = Stick::attribute);
         void update();
         void render(const glm::mat4& o);
         void render_node(const glm::mat4& o);
@@ -51,7 +51,7 @@ namespace mfw {
 
         f32 d;
         glm::vec2* p[2];
-        const Attribute& attri;
+        Attribute& attri;
 
     };
 }
