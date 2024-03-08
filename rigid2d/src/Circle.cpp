@@ -37,7 +37,7 @@ namespace mfw {
     void Circle::Renderer::render(const glm::mat4& o, Circle& circle) {
         glm::mat4 view = glm::mat4(1);
         view = glm::translate(view, glm::vec3(circle.m_pos.x, circle.m_pos.y, 0));
-        view = glm::scale(view, glm::vec3(circle.d, circle.d, 0));
+        view = glm::scale(view, glm::vec3(circle.r, circle.r, 0));
         m_shader.set3f("color", glm::value_ptr(circle.m_color));
         m_shader.setMat4("view", o * view);
         GLCALL(glDrawArrays(GL_TRIANGLES, 0, 6));
@@ -50,23 +50,23 @@ namespace mfw {
     }
 
     Circle::Circle(const glm::vec2& pos, const glm::vec3& color, const f32& d)
-        : Object2D(pos, d * 2, color), d(d)
+        : Object2D(pos, d, color), r(d)
     {
     }
 
     Circle::Circle()
-        : Object2D(glm::vec2(0), 1, glm::vec3(1)), d(1)
+        : Object2D(glm::vec2(0), 1, glm::vec3(1)), r(1)
     {
     }
 
     bool Circle::collide(Circle& c) {
         if(&c == this) return false;
-        return (m_pos.x - c.m_pos.x) * (m_pos.x - c.m_pos.x) + (m_pos.y - c.m_pos.y) * (m_pos.y - c.m_pos.y) < (d + c.d) * (d + c.d);
+        return (m_pos.x - c.m_pos.x) * (m_pos.x - c.m_pos.x) + (m_pos.y - c.m_pos.y) * (m_pos.y - c.m_pos.y) < (r + c.r) * (r + c.r);
     }
 
     void Circle::solveCollision(Circle& c) {
         f32 d = glm::length(m_pos - c.m_pos);
-        glm::vec2 di = 0.5f * (this->d + c.d - d) * (m_pos - c.m_pos) / d;
+        glm::vec2 di = 0.5f * (this->r + c.r - d) * (m_pos - c.m_pos) / d;
         m_pos += di;
         c.m_pos -= di;
     }

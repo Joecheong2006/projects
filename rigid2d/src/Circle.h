@@ -34,7 +34,7 @@ namespace mfw {
 
         }* renderer;
 
-        f32 d;
+        f32 r;
         Circle();
         Circle(const glm::vec2& pos, const glm::vec3& color, const f32& d);
 

@@ -22,6 +22,8 @@ namespace mfw {
             GLCALL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
         }
 
+        m_window->setVSync(true);
+
         stbi_set_flip_vertically_on_load(true);
 
         m_window->setEventCallBack([this](const Event& event) {
@@ -53,14 +55,10 @@ namespace mfw {
     }
 
     void Application::run() {
-        dt = 1.0 / 144;
         while (m_window->isRunning()) {
-            f32 start = Time::GetCurrent();
             Update();
             m_window->update();
             m_window->swapBuffers();
-            f32 end = Time::GetCurrent();
-            dt = (end - start);
         }
     }
 

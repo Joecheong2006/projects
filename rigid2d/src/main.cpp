@@ -11,8 +11,8 @@
 
 using namespace mfw;
 struct String {
-    Stick::Attribute& attri;
-    String(Stick::Attribute& attribute = Stick::attribute)
+    Stick::Attribute attri;
+    String(Stick::Attribute attribute = Stick::attribute)
         : attri(attribute)
     {}
 
@@ -123,12 +123,12 @@ private:
     glm::mat4 view;
     glm::mat4 scale;
 
-    glm::vec2 world;
+    glm::vec2 world = glm::vec2(25, 10);
     f32 world_scale = 60;
 
     f32 d = 2;
     glm::vec2* holding = nullptr;
-    Stick::Attribute& attri;
+    Stick::Attribute attri = Stick::attribute;
 
     std::vector<String> strings;
     std::vector<FixPoint> fixPoints;
@@ -138,39 +138,97 @@ private:
 
 public:
     DemoSandBox()
-        : attri(Stick::attribute)
+        : view(glm::mat4(1)), scale(view)
     {
         Stick::renderer = new Stick::Renderer();
         Circle::renderer = new Circle::Renderer();
 
         auto window = GetWindow();
         i32 width = window->width(), height = window->height();
-        world = glm::vec2(width, height) / world_scale;
+        glm::vec2 world = glm::vec2(width, height) / world_scale;
         o = glm::ortho(-world.x, world.x, -world.y, world.y, -1.0f, 1.0f);
-        view = glm::mat4(1);
-        scale = glm::mat4(1);
 
-        strings.reserve(5);
-        strings.emplace_back(attri);
-        strings[0].entities.reserve(100);
-        strings[0].sticks.reserve(50);
+        view = glm::translate(view, glm::vec3(0, 1, 0));
 
-        strings.emplace_back(attri);
-        strings.back().init_string(3, d * 1.5f);
-
-        strings.emplace_back(attri);
-        strings.back().init_string(5, 1.15, glm::vec2(4, 2));
-
-        strings.emplace_back(attri);
-        strings.back().init_box(3, glm::vec2(-6, 0));
-
-        strings.emplace_back(attri);
-        strings.back().init_triangle(2,  glm::vec2(6, 0));
-
-        fixPoints.push_back(FixPoint());
-        fixPoints.push_back(FixPoint());
+        init_strings();
+        init_fixpoint();
 
         glClearColor(0.1, 0.1, 0.1, 0);
+    }
+
+    void init_strings() {
+        strings.reserve(4);
+
+        strings.emplace_back();
+        strings.back().init_string(3, d * 1.75f, glm::vec2(-1, 2));
+
+        strings.emplace_back();
+        strings.back().init_string(5, 2, glm::vec2(2, 4));
+
+        strings.emplace_back();
+        strings.back().init_box(3, glm::vec2(-6, 2));
+
+        strings.emplace_back();
+        strings.back().init_triangle(2,  glm::vec2(6, 2));
+    }
+
+    void init_fixpoint() {
+        fixPoints.reserve(2);
+        fixPoints.emplace_back(FixPoint(glm::vec2(-3, 1)));
+        fixPoints.emplace_back(FixPoint(glm::vec2(3, 1)));
+    }
+
+    void update_physics(f32 dt) {
+        for (auto& string : strings) {
+            for (auto& e : string.entities) {
+                if (gravity) {
+                    e->add_force(glm::vec2(0, -98.1 * e->m_mass * 1.8));
+                }
+                e->update(dt);
+            }
+        }
+    }
+
+    void update_collision() {
+        if (holding) {
+            auto window = GetWindow();
+            f32 width = window->width(), height = window->height();
+            auto& mouse = Input::GetMouse();
+            glm::vec4 uv = glm::vec4(mouse.first / width, 1 - mouse.second / height, 0, 0) * 2.0f - 1.0f;
+            glm::vec2 wpos = glm::vec2((view * (uv / o)) / scale);
+            *holding = wpos;
+        }
+        for (auto& point : fixPoints)  {
+            point.fix();
+            if (point.pos.y - point.r < -world.y) {
+                point.pos.y += -world.y - point.pos.y + point.r;
+            }
+            if (point.pos.x - point.r < -world.x) {
+                point.pos.x += -world.x - point.pos.x + point.r;
+            }
+            else if (point.pos.x + point.r > world.x) {
+                point.pos.x += world.x - point.pos.x - point.r;
+            }
+        }
+        for (auto& string : strings) {
+            for (auto& e : string.entities) {
+                if (e->m_pos.y - e->r < -world.y) {
+                    e->m_pos.y += -world.y - e->m_pos.y + e->r;
+                }
+                if (e->m_pos.x - e->r < -world.x) {
+                    e->m_pos.x += -world.x - e->m_pos.x + e->r;
+                }
+                else if (e->m_pos.x + e->r > world.x) {
+                    e->m_pos.x += world.x - e->m_pos.x - e->r;
+                }
+            }
+        }
+    }
+
+    void update_constraint() {
+        for (auto& string : strings) {
+            string.update();
+        }
     }
 
     virtual void Update() override {
@@ -179,45 +237,9 @@ public:
         glClear(GL_COLOR_BUFFER_BIT);
 
         for (i32 i = 0; i < sub_step; i++) {
-            for (auto& string : strings) {
-                for (auto& e : string.entities) {
-                    if (gravity) {
-                        e->add_force(glm::vec2(0, -98.1));
-                    }
-                    e->update(frame / (f32)sub_step);
-                }
-            }
-
-            if (holding) {
-                auto window = GetWindow();
-                f32 width = window->width(), height = window->height();
-                auto& mouse = Input::GetMouse();
-                glm::vec4 uv = glm::vec4(mouse.first / width, 1 - mouse.second / height, 0, 0) * 2.0f - 1.0f;
-                glm::vec2 wpos = glm::vec2((view * (uv / o)) / scale);
-                *holding = wpos;
-            }
-
-            for (auto& point : fixPoints)  {
-                point.fix();
-            }
-
-            for (auto& string : strings) {
-                for (auto& e : string.entities) {
-                    if (e->m_pos.y - e->d < -world.y) {
-                        e->m_pos.y += -world.y - e->m_pos.y + e->d;
-                    }
-                    if (e->m_pos.x - e->d < -world.x) {
-                        e->m_pos.x += -world.x - e->m_pos.x + e->d;
-                    }
-                    if (e->m_pos.x + e->d > world.x) {
-                        e->m_pos.x += world.x - e->m_pos.x - e->d;
-                    }
-                }
-            }
-
-            for (auto& string : strings) {
-                string.update();
-            }
+            update_physics(frame / sub_step);
+            update_collision();
+            update_constraint();
         }
 
         glm::mat4 proj = o * view * scale;
@@ -232,6 +254,10 @@ public:
             string.render(proj);
         }
 
+        Stick::renderer->bind();
+        Stick::renderer->draw(proj, glm::vec2(world.x, -world.y) - 0.2f, glm::vec2(-world.x, -world.y) - 0.2f, glm::vec3(1), 0.2);
+        Stick::renderer->unbind();
+
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
@@ -239,17 +265,34 @@ public:
         ImGui::Begin("config");
 
         ImGui::Checkbox("gravity", &gravity);
-        ImGui::SliderFloat("line width", &attri.line_width, 0.02f, 0.3f);
-        ImGui::SliderFloat("bounce", &attri.bounce, 0.0f, 1.0f);
-        if (ImGui::SliderFloat("node size", &attri.node_size, 0.1f, 0.5f)) {
+        ImGui::SliderInt("sub step", &sub_step, 1, 100);
+
+        bool motified = false;
+        motified |= ImGui::SliderFloat("line width", &attri.line_width, 0.02f, 0.3f);
+        motified |= ImGui::SliderFloat("bounce", &attri.bounce, 0.0f, 1.0f);
+        motified |= ImGui::SliderFloat("node size", &attri.node_size, 0.1f, 0.5f);
+        motified |= ImGui::ColorEdit3("node color", glm::value_ptr(attri.node_color));
+
+        if (motified) {
             for (auto& string : strings) {
+                for (auto& stick : string.sticks) {
+                    stick->attri = attri;
+                }
                 for (auto& e : string.entities) {
-                    e->d = attri.node_size;
+                    e->r = attri.node_size;
                 }
             }
         }
-        ImGui::ColorEdit3("node color", glm::value_ptr(attri.node_color));
-        ImGui::SliderInt("sub step", &sub_step, 1, 100);
+
+        if (ImGui::Button("restart")) {
+            strings.clear();
+            init_strings();
+            fixPoints.clear();
+            init_fixpoint();
+            attri = Stick::attribute;
+            gravity = true;
+            sub_step = 1;
+        }
 
         ImGui::End();
         ImGui::Render();
@@ -282,7 +325,7 @@ public:
     Circle* find_circle_by_position(glm::vec2 pos) {
         for (auto& string : strings) {
             for (i32 i = string.entities.size() - 1; i >= 0; i--) {
-                if (attri.node_size > glm::length(string.entities[i]->m_pos - pos)) {
+                if (string.entities[i]->r > glm::length(string.entities[i]->m_pos - pos)) {
                     return string.entities[i];
                 }
             }
