@@ -51,10 +51,15 @@ namespace mfw {
     }
 
     Application::~Application() {
+        OpenglContext::Release();
+        delete Input::Instance;
+        delete Time::Instance;
+        delete OpenglContext::Instance;
         delete m_window;
     }
 
     void Application::run() {
+        Init();
         while (m_window->isRunning()) {
             Update();
             m_window->update();

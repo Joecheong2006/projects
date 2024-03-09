@@ -9,7 +9,9 @@
 
 namespace mfw {
     class OpenglContext {
+        friend class Application;
     public:
+        virtual ~OpenglContext() {}
         static void CreateMorden(Window* window) { Instance->CreateMordenImpl(window); }
         static void CreateOld() { Instance->CreateOldImpl(); }
         static void Release() { Instance->ReleaseImpl(); }

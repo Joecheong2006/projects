@@ -34,6 +34,16 @@ namespace mfw {
         m_shader.unbind();
     }
 
+    void Circle::Renderer::bind() {
+        m_vao.bind();
+        m_shader.bind();
+    }
+
+    void Circle::Renderer::unbind() {
+        m_shader.unbind();
+        m_vao.unbind();
+    }
+
     void Circle::Renderer::render(const glm::mat4& o, Circle& circle) {
         glm::mat4 view = glm::mat4(1);
         view = glm::translate(view, glm::vec3(circle.m_pos.x, circle.m_pos.y, 0));

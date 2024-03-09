@@ -1,5 +1,4 @@
 #include "Object.h"
-#include <iostream>
 
 Object2D::Object2D(const glm::vec2& pos, const f32& mass, const glm::vec3& color) 
     : m_pos(pos), m_opos(pos), m_acceleration(0), m_color(color), m_mass(mass)

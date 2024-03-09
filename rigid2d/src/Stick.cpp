@@ -35,6 +35,16 @@ namespace mfw {
         m_shader.unbind();
     }
 
+    void Stick::Renderer::bind() {
+        m_vao.bind();
+        m_shader.bind();
+    }
+
+    void Stick::Renderer::unbind() {
+        m_vao.unbind();
+        m_shader.unbind();
+    }
+
     void Stick::Renderer::render(const glm::mat4& o, const glm::vec2& p1, const glm::vec2& p2, glm::vec3 color, f32 w) {
         glm::mat4 view = glm::mat4(1);
         view = glm::translate(view, glm::vec3((p1 + p2) * 0.5f, 0));

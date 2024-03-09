@@ -28,16 +28,8 @@ namespace mfw {
         public:
             Renderer();
 
-            inline void bind() {
-                m_vao.bind();
-                m_shader.bind();
-            }
-
-            inline void unbind() {
-                m_vao.unbind();
-                m_shader.unbind();
-            }
-
+            void bind();
+            void unbind();
             void render(const glm::mat4& o, const glm::vec2& p1, const glm::vec2& p2, glm::vec3 color, f32 w);
             void draw(const glm::mat4& o, const glm::vec2& p1, const glm::vec2& p2, glm::vec3 color, f32 w);
 

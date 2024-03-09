@@ -15,6 +15,7 @@ namespace mfw {
         f32 dt;
 
     protected:
+        inline virtual void Init() {}
         inline virtual void Update() {}
         inline virtual void OnInputKey(const KeyEvent& event) { (void)event; }
         inline virtual void OnMouseButton(const MouseButtonEvent& event) { (void)event; }

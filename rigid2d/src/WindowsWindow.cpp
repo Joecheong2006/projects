@@ -75,7 +75,6 @@ namespace mfw {
             } break;
 
         case WM_CHAR: {
-
             } break;
 
         case WM_UNICHAR: {
@@ -96,7 +95,8 @@ namespace mfw {
                 BOOL keyDown = !keyRepeat;
                 BOOL keyRelease = ((flags & KF_UP) == KF_UP);
                 KeyMode mode = static_cast<KeyMode>(keyRepeat + keyDown + keyRelease);
-                keys[key] = mode == KeyMode::Down || mode == KeyMode::Press;
+                keys[key] = mode != Release;
+
                 m_state.m_callBackFunc(KeyEvent(key, scancode, mode));
             } break;
 

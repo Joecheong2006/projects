@@ -1,5 +1,4 @@
-#ifndef _CIRCLE_H
-#define _CIRCLE_H
+#pragma once
 
 #include "Object.h"
 #include "VertexArray.h"
@@ -19,16 +18,8 @@ namespace mfw {
         public:
             Renderer();
 
-            inline void bind() {
-                m_vao.bind();
-                m_shader.bind();
-            }
-
-            inline void unbind() {
-                m_shader.unbind();
-                m_vao.unbind();
-            }
-
+            void bind();
+            void unbind();
             void render(const glm::mat4& o, Circle& circle);
             void draw(const glm::mat4& o, Circle& circle);
 
@@ -44,4 +35,3 @@ namespace mfw {
     };
 }
 
-#endif
