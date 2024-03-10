@@ -12,11 +12,13 @@
 #include "Mesh.h"
 
 #include "Renderer.h"
+#include <thread>
+#include <mutex>
 
 using namespace mfw;
 class SandBox : public Application {
 private:
-    void update() {
+    void update_status() {
         main = GetWindow();
         width = main->width();
         height = main->height();
@@ -25,25 +27,66 @@ private:
         this->mouse.y = mouse.second;
     }
 
+    std::thread update_thread;
+    std::mutex render_mtx;
+    std::mutex update_mtx;
+
 public:
     i32 width, height;
     Window* main = nullptr;
     glm::vec2 mouse;
+    f32 refresh_rate = 144, refresh_frame = 0;
+    const f32 fps = 144;
+    f32 dt = 1.0 / fps;
 
-    SandBox() {
-        Stick::renderer = new Stick::Renderer();
-        Circle::renderer = new Circle::Renderer();
-    }
+    SandBox(): Application("rigid2d", 1080, 720)
+    {}
 
     virtual void Start() override {
-        update();
+        Get()->GetWindow()->setVSync(false);
+        Stick::renderer = new Stick::Renderer();
+        Circle::renderer = new Circle::Renderer();
+        update_status();
+        update_thread = std::thread([this](){
+                static f32 start = Time::GetCurrent(), end = 0;
+                while(main->isRunning()) {
+                    update_mtx.lock();
+                    update_status();
+                    update(dt); 
+                    update_mtx.unlock();
+                    end = Time::GetCurrent() - start;
+                    if (end < 1.0 / fps) {
+                        Time::Sleep((1.0 / fps - end) * 1000);
+                    }
+                    dt = Time::GetCurrent() - start;
+                    start += dt;
+                }
+            });
     };
 
     virtual void Update() override {
-        update();
+        static f32 start = Time::GetCurrent(), end = 0;
+        render_mtx.lock();
+        update_status();
+        render();
+        update_input();
+        main->update();
+        main->swapBuffers();
+        render_mtx.unlock();
+        end = Time::GetCurrent() - start;
+        if (end < 1.0 / refresh_rate) {
+            Time::Sleep((1.0 / refresh_rate - end) * 1000);
+        }
+        refresh_frame = Time::GetCurrent() - start;
+        start = Time::GetCurrent();
     }
 
+    virtual void update(const f32& dt) = 0;
+    virtual void render() = 0;
+    virtual void update_input() = 0;
+
     ~SandBox() {
+        update_thread.join();
         delete Stick::renderer;
         delete Circle::renderer;
     }
@@ -54,6 +97,7 @@ class Rigid2DSimlution : public SandBox {
 private:
     struct Settings {
         i32 sub_step = 1;
+        f32 time_rate = 1.0;
         bool gravity = true;
     } settings;
 
@@ -70,32 +114,38 @@ private:
     glm::mat4 scale;
 
     // world
-    glm::vec2 world = glm::vec2(25, 10);
-    f32 world_scale = 60;
+    glm::vec2 world = glm::vec2(30, 5);
+    f32 world_scale = 40;
+    f32 shift_rate = 0.01 * world_scale / 10;
+    f32 zoom_rate = 0.02 * world_scale / 10;
 
-    glm::vec2* holding = nullptr;
+    Object2D* holding = nullptr;
+    std::vector<Object2D*> preview;
     Stick::Attribute attri = Stick::attribute;
 
-    Circle* first_circle = nullptr;
-    glm::vec2 first_pos;
+    Circle* preview_node = nullptr;
+    FixPoint* preview_fix_point = nullptr;
+    glm::vec2 preview_pos;
 
     std::vector<Mesh*> meshes;
     std::vector<FixPoint*> fixPoints;
 
     Mode mode;
+    f32 sub_dt;
 
 public:
     Rigid2DSimlution()
-        : o(glm::mat4(1)), view(glm::mat4(1)), scale(glm::mat4(1)), mode(Mode::Normal)
-    {}
+        : o(glm::mat4(1)), view(o), scale(o), mode(Mode::Normal)
+    {
+        preview.reserve(16);
+    }
 
     virtual void Start() override {
         SandBox::Start();
 
         glm::vec2 world = glm::vec2(width, height) / world_scale;
         o = glm::ortho(-world.x, world.x, -world.y, world.y, -1.0f, 1.0f);
-
-        view = glm::translate(view, glm::vec3(0, 1, 0));
+        view = glm::translate(view, glm::vec3(0, -8, 0));
 
         InitMeshes();
         InitFixPoints();
@@ -106,35 +156,23 @@ public:
     void InitMeshes() {
         meshes.push_back(new Mesh());
 
-        //meshes.push_back(new Mesh());
-        //InitString(*meshes.back(), 3, 3, glm::vec2(-1.5, 2));
-        //meshes.push_back(new Mesh());
-        //InitString(*meshes.back(), 5, 2, glm::vec2(1.5, 4));
+        meshes.push_back(new Mesh());
+        InitString(*meshes.back(), glm::vec2(-1.5, 2), 3, 4.5);
+        meshes.push_back(new Mesh());
 
         meshes.push_back(new Mesh());
-        InitCircle(*meshes.back(), 2, 3, glm::vec2(0, 0));
+        InitBox(*meshes.back(), glm::vec2(0), 5);
         meshes.push_back(new Mesh());
-        InitCircle(*meshes.back(), 2, 3, glm::vec2(0, 0));
-
-        meshes.push_back(new Mesh());
-        InitCircle(*meshes.back(), 2, 4, glm::vec2(0, 0));
-        meshes.push_back(new Mesh());
-        InitCircle(*meshes.back(), 2, 4, glm::vec2(0, 0));
-
+        InitBox(*meshes.back(), glm::vec2(0), 5);
         return;
-        meshes.push_back(new Mesh());
-        InitBox(*meshes.back(), 1, glm::vec2(-6, 2));
-        meshes.push_back(new Mesh());
-        InitBox(*meshes.back(), 3, glm::vec2(-6, 2));
-        meshes.push_back(new Mesh());
-        InitBox(*meshes.back(), 5, glm::vec2(-6, 2));
 
         meshes.push_back(new Mesh());
-        InitTriangle(*meshes.back(), 1,  glm::vec2(6, 2));
+        InitTriangle(*meshes.back(), glm::vec2(0), 3);
         meshes.push_back(new Mesh());
-        InitTriangle(*meshes.back(), 3,  glm::vec2(6, 2));
+        InitTriangle(*meshes.back(), glm::vec2(0), 3);
+
         meshes.push_back(new Mesh());
-        InitTriangle(*meshes.back(), 5,  glm::vec2(6, 2));
+        InitCircle(*meshes.back(), glm::vec2(0), 3, 12, 3);
     }
 
     void FreeMeshes() {
@@ -146,7 +184,7 @@ public:
 
     void InitFixPoints() {
         for (i32 i = 0; i < 10; i++) {
-            fixPoints.push_back(new FixPoint());
+            fixPoints.push_back(new FixPoint(glm::vec2(0, 15)));
         }
     }
 
@@ -157,24 +195,27 @@ public:
         fixPoints.clear();
     }
 
-    void update_physics(f32 dt) {
+    void update_physics() {
         for (auto& mesh : meshes) {
             for (auto& e : mesh->entities) {
-                e->add_force(glm::vec2(0, -98.1 * e->m_mass * 1.8 * settings.gravity));
-                e->update(dt);
+                e->addForce(glm::vec2(0, 10 * -9.81f * e->m_mass * settings.gravity));
+                e->update(sub_dt);
             }
         }
     }
 
     void wall_collision(Circle* c, const glm::vec2& world) {
         if (c->m_pos.y - c->r < -world.y) {
-            c->m_pos.y += -world.y - c->m_pos.y + c->r;
+            f32 ay = ((-world.y - c->m_pos.y + c->r) - (c->m_pos.y - c->m_opos.y)) / (sub_dt * sub_dt);
+            c->addForce(glm::vec2(0, ay * c->m_mass));
         }
         if (c->m_pos.x - c->r < -world.x) {
-            c->m_pos.x += -world.x - c->m_pos.x + c->r;
+            f32 ax = ((-world.x - c->m_pos.x + c->r) - (c->m_pos.x - c->m_opos.x)) / (sub_dt * sub_dt);
+            c->addForce(glm::vec2(ax * c->m_mass, 0));
         }
         else if (c->m_pos.x + c->r > world.x) {
-            c->m_pos.x += world.x - c->m_pos.x - c->r;
+            f32 ax = ((world.x - c->m_pos.x - c->r) - (c->m_pos.x - c->m_opos.x)) / (sub_dt * sub_dt);
+            c->addForce(glm::vec2(ax * c->m_mass, 0));
         }
     };
 
@@ -182,11 +223,14 @@ public:
         if (holding) {
             glm::vec4 uv = glm::vec4(mouse.x / width, 1 - mouse.y / height, 0, 0) * 2.0f - 1.0f;
             glm::vec2 wpos = glm::vec2((view * (uv / o)) / scale);
-            *holding = wpos;
+            holding->m_pos = wpos;
+            //holding->addForce((wpos - holding->m_pos - (holding->m_pos - holding->m_opos)) / (sub_dt));
         }
         for (auto& point : fixPoints)  {
             point->fix();
-            //wall_collision(reinterpret_cast<Circle*>(&point), world);
+            Circle c = Circle(point->m_pos, glm::vec4(1), point->r);
+            wall_collision(&c, world);
+            point->m_pos = c.m_pos;
         }
         for (auto& mesh : meshes) {
             for (auto& e : mesh->entities) {
@@ -201,20 +245,23 @@ public:
         }
     }
 
-    virtual void Update() override {
-        SandBox::Update();
-        static f32 frame = 1.0 / 144;
-
-        glClear(GL_COLOR_BUFFER_BIT);
-
+    virtual void update(const f32& dt) override {
         if (mode != Mode::Edit) {
-            f32 dt = frame / settings.sub_step;
+            sub_dt = dt * settings.time_rate / settings.sub_step;
             for (i32 i = 0; i < settings.sub_step; i++) {
-                update_physics(dt);
+                update_physics();
                 update_collision();
                 update_constraint();
             }
         }
+
+        if (!Input::KeyPress(' ') && !Input::KeyPress(VK_CONTROL)) {
+            mode = Mode::Normal;
+        }
+    }
+
+    virtual void render() override {
+        glClear(GL_COLOR_BUFFER_BIT);
 
         glm::mat4 proj = o * view * scale;
 
@@ -226,58 +273,81 @@ public:
             mesh->render(proj);
         }
 
-        for (auto& e : meshes[1]->entities) {
-            Circle::renderer->draw(proj, *e);
-        }
+        Stick::renderer->draw(proj, glm::vec2(world.x, -world.y) - 0.2f, glm::vec2(-world.x, -world.y) - 0.2f, glm::vec4(1), 0.2);
+    }
 
-        Stick::renderer->draw(proj, glm::vec2(world.x, -world.y) - 0.2f, glm::vec2(-world.x, -world.y) - 0.2f, glm::vec3(1), 0.2);
-
-        if (!Input::KeyPress(' ') && !Input::KeyPress(VK_CONTROL)) {
-            mode = Mode::Normal;
-        }
-
+    virtual void update_input() override {
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
 
         ImGui::Begin("config");
 
+        ImGui::Text("update rate: %-5.2f", 1.0f / sub_dt);
+        ImGui::Text("refresh rate: %-5.2f", 1.0 / refresh_frame);
+
         ImGui::Checkbox("gravity", &settings.gravity);
-        ImGui::SliderInt("sub step", &settings.sub_step, 1, 20);
+        ImGui::SliderInt("sub step", &settings.sub_step, 1, 80);
+        ImGui::SliderFloat("time rate", &settings.time_rate, 0, 1);
 
         bool motified = false;
-        motified |= ImGui::SliderFloat("line width", &attri.line_width, 0.02f, 0.3f);
-        motified |= ImGui::SliderFloat("bounce", &attri.bounce, 0.0f, 1.0f);
-        motified |= ImGui::SliderFloat("node size", &attri.node_size, 0.1f, 0.5f);
+        motified |= ImGui::SliderFloat("line width", &attri.line_width, 0.01f, 0.3f);
+        motified |= ImGui::SliderFloat("hardness", &attri.hardness, 0.0f, 1.0f);
+        motified |= ImGui::SliderFloat("node size", &attri.node_size, 0.1f, 1);
         motified |= ImGui::ColorEdit3("node color", glm::value_ptr(attri.node_color));
 
         if (motified) {
+            preview.clear();
             for (auto& mesh : meshes) {
                 for (auto& stick : mesh->sticks) {
-                    stick->attri = attri;
-                }
-                for (auto& e : mesh->entities) {
-                    e->r = attri.node_size;
+                    stick->setAttribute(attri);
                 }
             }
         }
 
         ImGui::Text("sticks: %d", GetSticksCount());
 
-        if (ImGui::Button("reset")) {
+        if (ImGui::Button("restart")) {
             FreeMeshes();
             InitMeshes();
             FreeFixPoints();
             InitFixPoints();
             attri = Stick::attribute;
-            settings.gravity = true;
-            settings.sub_step = 1;
             mode = Mode::Normal;
+        }
+
+        if (ImGui::Button("reset")) {
+            settings = Settings();
         }
 
         ImGui::End();
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+        if (mode != Mode::Action) {
+            glm::vec4 uv = glm::vec4(mouse.x / width, 1 - mouse.y / height, 0, 0) * 2.0f - 1.0f;
+            glm::vec2 wpos = glm::vec2((view * (uv / o)) / scale);
+            std::vector<Circle*> circles = FindCirclesByPosition(wpos);
+            if (!circles.empty()) {
+                if (!preview.empty()) {
+                    for (auto& prev : preview) {
+                        prev->m_color = attri.node_color;
+                    }
+                    preview.clear();
+                }
+                for (auto& circle : circles) {
+                    preview.emplace_back(circle);
+                }
+                for (auto& circle : circles) {
+                    circle->m_color = glm::vec4(COLOR(0x577E7B), 0);
+                }
+            }
+            else if (!preview.empty()) {
+                for (auto& prev : preview) {
+                    prev->m_color = attri.node_color;
+                }
+            }
+        }
     }
 
     i32 GetSticksCount() {
@@ -298,6 +368,9 @@ public:
                 mode = Mode::Edit;
             }
             if (event.key == ' ' && event.mode == Down && !holding) {
+                for (auto& prev : preview) {
+                    prev->m_color = attri.node_color;
+                }
                 mode = Mode::Action;
             }
             return;
@@ -309,17 +382,30 @@ public:
         static i32 mx = event.x, my = event.y;
         if (mode == Mode::Action) {
             if (Input::MouseButtonDown(Left)) {
-                view = glm::translate(view, glm::vec3(event.x - mx, my - event.y, 0) * 0.025f);
+                view = glm::translate(view, glm::vec3(event.x - mx, my - event.y, 0) * shift_rate);
             }
             mx = event.x, my = event.y;
-        }
+            return;
+        } 
     }
 
     virtual void OnMouseScroll(const MouseScrollEvent& event) override {
         if (mode == Mode::Action) {
-            f32 val = 1 - event.ydelta * 0.04f;
+            f32 val = 1 + event.ydelta * zoom_rate;
             scale = glm::scale(scale, glm::vec3(val, val, 1));
         }
+    }
+
+    std::vector<Circle*> FindCirclesByPosition(const glm::vec2& pos) {
+        std::vector<Circle*> result;
+        for (auto& mesh : meshes) {
+            for (auto& e : mesh->entities) {
+                if (e->r > glm::length(e->m_pos - pos)) {
+                    result.push_back(e);
+                }
+            }
+        }
+        return result;
     }
 
     Circle* FindCircleByPosition(const glm::vec2& pos) {
@@ -335,7 +421,7 @@ public:
 
     FixPoint* FindFixPointByPosition(const glm::vec2& pos) {
         for (auto& point : fixPoints) {
-            if (point->r > glm::length(point->pos - pos)) {
+            if (point->r > glm::length(point->m_pos - pos)) {
                 return point;
             }
         }
@@ -352,47 +438,79 @@ public:
         else if (mode == Mode::Normal) {
             OnNormal(event, wpos);
         }
-
     }
 
     void OnEdit(const MouseButtonEvent& event, const glm::vec2& wpos) {
         if (event.button == MouseButton::Left && event.mode == KeyMode::Down) {
-            first_circle = FindCircleByPosition(wpos);
-            if (!first_circle) {
-                first_pos = wpos;
+            preview_node = FindCircleByPosition(wpos);
+            preview_fix_point = FindFixPointByPosition(wpos);
+            if (!preview_node) {
+                preview_pos = wpos;
             }
         } else if (event.button == MouseButton::Left && event.mode == KeyMode::Release) {
-            Circle* second_circle = FindCircleByPosition(wpos);
+            Circle* second_node = FindCircleByPosition(wpos);
+            FixPoint* fixPoint = FindFixPointByPosition(wpos);
 
-            if (first_circle && second_circle) {
-                f32 d = glm::length(first_circle->m_pos - second_circle->m_pos);
-                meshes[0]->sticks.push_back(new Stick(&first_circle->m_pos, &second_circle->m_pos, d, attri));
+            if (preview_node && second_node) {
+                if (preview_node == second_node) {
+                    return;
+                }
+                f32 d = glm::length(preview_node->m_pos - second_node->m_pos);
+                meshes[0]->sticks.push_back(new Stick(preview_node, second_node, d, attri));
             }
-            else if (first_circle && second_circle == nullptr) {
-                f32 d = glm::length(first_circle->m_pos - wpos);
-                meshes[0]->entities.push_back(new Circle(wpos, glm::vec3(0, 0, 1), attri.node_size));
-                meshes[0]->sticks.push_back(new Stick(&first_circle->m_pos, &meshes[0]->entities.back()->m_pos, d, attri));
+            else if (preview_node && second_node == nullptr) {
+                f32 d = glm::length(preview_node->m_pos - wpos);
+                meshes[0]->entities.push_back(new Circle(wpos, attri.node_color, attri.node_size));
+                meshes[0]->sticks.push_back(new Stick(preview_node, meshes[0]->entities.back(), d, attri));
+                if (fixPoint) {
+                    fixPoint->holding = static_cast<Object2D*>(meshes[0]->entities.back());
+                    meshes[0]->sticks.back()->d = glm::length(fixPoint->m_pos - preview_node->m_pos);
+                }
             }
-            else if (first_circle == nullptr && second_circle) {
-                f32 d = glm::length(first_pos - second_circle->m_pos);
-                meshes[0]->entities.push_back(new Circle(first_pos, glm::vec3(0, 0, 1), attri.node_size));
-                meshes[0]->sticks.push_back(new Stick(&meshes[0]->entities.back()->m_pos, &second_circle->m_pos, d, attri));
+            else if (preview_node == nullptr && second_node) {
+                f32 d = glm::length(preview_pos - second_node->m_pos);
+                meshes[0]->entities.push_back(new Circle(preview_pos, attri.node_color, attri.node_size));
+                meshes[0]->sticks.push_back(new Stick(meshes[0]->entities.back(), second_node, d, attri));
+                if (preview_fix_point) {
+                    preview_fix_point->holding = static_cast<Object2D*>(meshes[0]->entities.back());
+                    meshes[0]->sticks.back()->d = glm::length(preview_fix_point->m_pos - second_node->m_pos);
+                }
             }
             else {
-                auto first = new Circle(first_pos, glm::vec3(0, 0, 1), attri.node_size);
+                if (preview_pos == wpos) {
+                    return;
+                }
+                f32 d = glm::length(preview_pos - wpos);
+                if (d < attri.node_size * 2) {
+                    return;
+                }
+                auto first = new Circle(preview_pos, attri.node_color, attri.node_size);
                 meshes[0]->entities.push_back(first);
-                auto second = new Circle(wpos, glm::vec3(0, 0, 1), attri.node_size);
-                f32 d = glm::length(first->m_pos - second->m_pos);
+                auto second = new Circle(wpos, attri.node_color, attri.node_size);
                 meshes[0]->entities.push_back(second);
-                meshes[0]->sticks.push_back(new Stick(&first->m_pos, &second->m_pos, d, attri));
+                meshes[0]->sticks.push_back(new Stick(first, second, d, attri));
+                if (fixPoint && preview_fix_point) {
+                    fixPoint->holding = static_cast<Object2D*>(second);
+                    preview_fix_point->holding = static_cast<Object2D*>(first);
+                    meshes[0]->sticks.back()->d = glm::length(fixPoint->m_pos - preview_fix_point->m_pos);
+                }
+                else if (preview_fix_point) {
+                    preview_fix_point->holding = static_cast<Object2D*>(first);
+                    meshes[0]->sticks.back()->d = glm::length(preview_fix_point->m_pos - wpos);
+                }
+                else if (fixPoint) {
+                    fixPoint->holding = static_cast<Object2D*>(second);
+                    meshes[0]->sticks.back()->d = glm::length(fixPoint->m_pos - preview_node->m_pos);
+                }
             }
+
         }
     }
 
     void OnNormal(const MouseButtonEvent& event, const glm::vec2& wpos) {
         if (event.button == MouseButton::Left && event.mode == KeyMode::Release) {
             if (holding) {
-                FixPoint* fix = FindFixPointByPosition(*holding);
+                FixPoint* fix = FindFixPointByPosition(holding->m_pos);
                 if (fix) {
                     fix->holding = holding;
                     holding = nullptr;
@@ -409,7 +527,7 @@ public:
                 }
                 Circle* circle = FindCircleByPosition(wpos);
                 if (circle) {
-                    holding = &circle->m_pos;
+                    holding = static_cast<Object2D*>(circle);
                 }
             }
         } else {
@@ -421,7 +539,7 @@ public:
             if (!holding) {
                 FixPoint* fix = FindFixPointByPosition(wpos);
                 if (fix) {
-                    holding = &fix->pos;
+                    holding = fix;
                 }
             }
         }

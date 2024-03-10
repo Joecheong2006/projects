@@ -169,9 +169,8 @@ namespace mfw {
     }
 
     WindowsWindow::WindowsWindow(const WindowState& state)
-        : keys{}, mouse{}
+        : m_state(state), keys{}, mouse{}
     {
-        m_state = state;
         registerWindowClass();
         createWindowsWindow();
         ShowWindow(m_hwnd, SW_NORMAL);
@@ -206,7 +205,7 @@ namespace mfw {
 
         m_hdc = GetDC(m_hwnd);
 
-        LOG_INFO("WINDOW CREATE SUCCESS: {}\n", m_state.title);
+        LOG_INFO("WINDOW CREATE SUCCESS\n");
     }
 
     void WindowsWindow::setVSync(bool enable) { 
@@ -259,7 +258,7 @@ namespace mfw {
             DestroyWindow(m_hwnd);
             m_hwnd = nullptr;
         }
-        LOG_INFO("WINDOW CLOSE SUCCESS: {}\n", m_state.title);
+        LOG_INFO("WINDOW CLOSE SUCCESS\n");
     }
 
 }

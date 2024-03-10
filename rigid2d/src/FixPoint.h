@@ -2,18 +2,21 @@
 
 #include "util.h"
 #include "glm/glm.hpp"
+#include "Object.h"
 
 namespace mfw {
-    class FixPoint {
+    class FixPoint : public Object2D {
     public:
-        glm::vec2* holding;
-        glm::vec2 pos;
-        f32 r = 0.3f;
+        Object2D* holding;
+        f32 r = 0.5f;
 
         explicit FixPoint(const glm::vec2& pos = glm::vec2(0));
 
         void fix();
         void render(glm::mat4& o);
+
+    private:
+        void update(const f32& frame) override { (void)frame; }
 
     };
 

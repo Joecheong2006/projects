@@ -9,11 +9,11 @@
 namespace mfw {
     Application* Application::Instance = CreateApplication();
 
-    Application::Application()
+    Application::Application(const std::string& title, i32 width, i32 height)
     {
         {
             START_CLOCK_TIMER("INIT WINDOW");
-            m_window = Window::Create({"rigid2d", 960, 640});
+            m_window = Window::Create({title, 100, 100, width, height});
         }
         {
             START_CLOCK_TIMER("INIT OPENGL");
@@ -62,8 +62,8 @@ namespace mfw {
         Start();
         while (m_window->isRunning()) {
             Update();
-            m_window->update();
-            m_window->swapBuffers();
+            ///m_window->update();
+            ///m_window->swapBuffers();
         }
     }
 

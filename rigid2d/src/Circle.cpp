@@ -18,28 +18,32 @@ namespace mfw {
     Circle::Renderer* Circle::renderer = nullptr;
 
     Circle::Renderer::Renderer()
-        : m_vao(), m_vbo(vertexs, sizeof(vertexs)), m_shader()
+        : m_vao(), m_vbo(vertexs, sizeof(vertexs)), m_shader(), m_texture("res/images/circle.png")
     {
         VertexBufferLayout cube_layout;
-        cube_layout.add<float>(2);
-        cube_layout.add<float>(2);
+        cube_layout.add<f32>(2);
+        cube_layout.add<f32>(2);
         m_vao.applyBufferLayout(cube_layout);
 
-        m_shader.attachShader(GL_VERTEX_SHADER, "res/shaders/circle.vert");
-        m_shader.attachShader(GL_FRAGMENT_SHADER, "res/shaders/circle.frag");
+        m_shader.attachShader(GL_VERTEX_SHADER, "res/shaders/texture.vert");
+        m_shader.attachShader(GL_FRAGMENT_SHADER, "res/shaders/texture.frag");
         m_shader.link();
+        m_texture.bind();
 
         m_vao.unbind();
         m_vbo.unbind();
         m_shader.unbind();
+        m_texture.unbind();
     }
 
     void Circle::Renderer::bind() {
-        m_vao.bind();
+        m_texture.bind();
         m_shader.bind();
+        m_vao.bind();
     }
 
     void Circle::Renderer::unbind() {
+        m_texture.unbind();
         m_shader.unbind();
         m_vao.unbind();
     }
@@ -47,8 +51,9 @@ namespace mfw {
     void Circle::Renderer::render(const glm::mat4& o, Circle& circle) {
         glm::mat4 view = glm::mat4(1);
         view = glm::translate(view, glm::vec3(circle.m_pos.x, circle.m_pos.y, 0));
-        view = glm::scale(view, glm::vec3(circle.r, circle.r, 0));
-        m_shader.set3f("color", glm::value_ptr(circle.m_color));
+        view = glm::scale(view, glm::vec3(circle.r, circle.r, 1));
+        m_shader.set1i("tex", 0);
+        m_shader.set4f("color", circle.m_color);
         m_shader.setMat4("view", o * view);
         GLCALL(glDrawArrays(GL_TRIANGLES, 0, 6));
     }
@@ -59,15 +64,13 @@ namespace mfw {
         unbind();
     }
 
-    Circle::Circle(const glm::vec2& pos, const glm::vec3& color, const f32& d)
+    Circle::Circle(const glm::vec2& pos, const glm::vec4& color, const f32& d)
         : Object2D(pos, d, color), r(d)
-    {
-    }
+    {}
 
     Circle::Circle()
-        : Object2D(glm::vec2(0), 1, glm::vec3(1)), r(1)
-    {
-    }
+        : Object2D(glm::vec2(0), 1, glm::vec4(1)), r(1)
+    {}
 
     bool Circle::collide(Circle& c) {
         if(&c == this) return false;

@@ -15,14 +15,13 @@ namespace mfw {
         std::vector<Circle*> entities;
         std::vector<Stick*> sticks;
         i32 node;
-        f32 d;
 
     };
 
-    void InitString(Mesh& mesh, i32 node, f32 d, const glm::vec2& pos = glm::vec2(0));
-    void InitBox(Mesh& mesh, f32 l, const glm::vec2& pos = glm::vec2(0));
-    void InitTriangle(Mesh& mesh, f32 l, const glm::vec2& pos = glm::vec2(0));
-    void InitCircle(Mesh& mesh, f32 r, i32 n, const glm::vec2& pos = glm::vec2(0));
+    void InitString(Mesh& mesh, const glm::vec2& pos, i32 node, f32 d);
+    void InitBox(Mesh& mesh, const glm::vec2& pos, f32 l);
+    void InitTriangle(Mesh& mesh, const glm::vec2& pos, f32 l);
+    void InitCircle(Mesh& mesh, const glm::vec2& pos, f32 r, i32 n, i32 nstep = 1);
 
 }
 

@@ -4,7 +4,7 @@
 namespace mfw {
     class Application {
     public:
-        Application();
+        Application(const std::string& title, i32 width, i32 height);
         virtual ~Application();
         void run();
 
