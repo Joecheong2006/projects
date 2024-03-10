@@ -4,7 +4,9 @@
 
 namespace mfw {
     class Time {
+        friend class Application;
     public:
+        virtual ~Time() {}
         inline static f64 GetCurrent() { return Instance->GetCurrentImpl(); }
         inline static void Sleep(f32 millisecond) { Instance->SleepImpl(millisecond); }
 

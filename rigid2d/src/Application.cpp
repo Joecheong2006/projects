@@ -59,7 +59,7 @@ namespace mfw {
     }
 
     void Application::run() {
-        Init();
+        Start();
         while (m_window->isRunning()) {
             Update();
             m_window->update();

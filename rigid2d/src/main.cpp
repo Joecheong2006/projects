@@ -35,7 +35,7 @@ public:
         Circle::renderer = new Circle::Renderer();
     }
 
-    virtual void Init() override {
+    virtual void Start() override {
         update();
     };
 
@@ -89,8 +89,8 @@ public:
         : o(glm::mat4(1)), view(glm::mat4(1)), scale(glm::mat4(1)), mode(Mode::Normal)
     {}
 
-    virtual void Init() override {
-        SandBox::Init();
+    virtual void Start() override {
+        SandBox::Start();
 
         glm::vec2 world = glm::vec2(width, height) / world_scale;
         o = glm::ortho(-world.x, world.x, -world.y, world.y, -1.0f, 1.0f);

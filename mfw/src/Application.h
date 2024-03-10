@@ -14,6 +14,7 @@ namespace mfw {
         static Application* Get() { return Instance; }
 
     protected:
+        inline virtual void Start() {}
         inline virtual void Update() {}
         inline virtual void OnInputKey(const KeyEvent& event) { (void)event; }
         inline virtual void OnMouseButton(const MouseButtonEvent& event) { (void)event; }

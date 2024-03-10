@@ -4,7 +4,6 @@ uniform vec2 resolution;
 uniform vec2 offset;
 uniform float time;
 uniform float zoom;
-in vec2 texture_coord;
 
 #define PI 3.1415f
 
@@ -38,10 +37,6 @@ float get_iterate(vec2 c) {
 
 
 void main() {
-    vec3 color = vec3(1);
-    float r = 1 - smoothstep(0.85, 0.9, length(texture_coord * 2 - 1));
-    frag_color = vec4(vec3(r * color), r);
-    return;
     vec2 uv = offset + (gl_FragCoord.xy / resolution - 0.5) * 4 * vec2(1, resolution.y / resolution.x);
     uv = uv * zoom * 4;
 

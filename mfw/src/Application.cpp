@@ -24,6 +24,8 @@ namespace mfw {
 
         stbi_set_flip_vertically_on_load(true);
 
+        m_window->setVSync(true);
+
         m_window->setEventCallBack([this](const Event& event) {
                     Eventhandle(event);
                 });
@@ -49,10 +51,15 @@ namespace mfw {
     }
 
     Application::~Application() {
+        OpenglContext::Release();
+        delete Input::Instance;
+        delete Time::Instance;
+        delete OpenglContext::Instance;
         delete m_window;
     }
 
     void Application::run() {
+        Start();
         while (m_window->isRunning()) {
             Update();
             m_window->update();

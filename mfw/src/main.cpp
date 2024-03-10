@@ -16,20 +16,11 @@ static u32 index[] = {
     1, 3, 2,
 };
 
-static f32 vertexs[] = {
-        -1.0f, -1.0f, 0.0, 0.0,
-        1.0f, -1.0f,  1.0, 0.0,
-        -1.0f, 1.0f,  0.0, 1.0,
-
-        1.0f, 1.0f,   1.0, 1.0,
-        -1.0f, 1.0f,  1.0, 0.0,
-        1.0f, -1.0f,  0.0, 1.0,
-};
-
 using namespace mfw;
 class DemoSandBox : public Application {
 private:
     VertexArray vao;
+    IndexBuffer ibo;
     VertexBuffer vbo;
     ShaderProgram shader;
     f32 zoom = 1;
@@ -37,16 +28,18 @@ private:
 
 public:
     DemoSandBox()
-        : vbo(vertexs, sizeof(vertexs))
-    {
+        : ibo(index, 6), vbo(vertex, sizeof(vertex))
+    {}
+
+    virtual void Start() override {
         VertexBufferLayout layout;
-        layout.add<f32>(2);
         layout.add<f32>(2);
         vao.applyBufferLayout(layout);
         shader.attachShader(GL_VERTEX_SHADER, "res/shaders/test.vert");
         shader.attachShader(GL_FRAGMENT_SHADER, "res/shaders/test.frag");
         shader.link();
         vao.unbind();
+        ibo.unbind();
         vbo.unbind();
         shader.unbind();
 
@@ -72,8 +65,7 @@ public:
         shader.set1f("time", Time::GetCurrent());
         shader.set1f("zoom", zoom);
 
-        //glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
         f32 frame = 1.0 / 144;
 
