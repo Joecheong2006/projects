@@ -12,8 +12,6 @@
 #include "Mesh.h"
 
 #include "Renderer.h"
-#include <thread>
-#include <mutex>
 
 using namespace mfw;
 class SandBox : public Application {
@@ -27,52 +25,32 @@ private:
         this->mouse.y = mouse.second;
     }
 
-    std::thread update_thread;
-    std::mutex render_mtx;
-    std::mutex update_mtx;
-
 public:
     i32 width, height;
     Window* main = nullptr;
     glm::vec2 mouse;
-    f32 refresh_rate = 144, refresh_frame = 0;
-    const f32 fps = 144;
-    f32 dt = 1.0 / fps;
+    const f32 refresh_rate = 144, fps = refresh_rate;
+    f32 refresh_frame = 0;
 
-    SandBox(): Application("rigid2d", 1080, 720)
-    {}
+    SandBox(): Application("rigid2d", 1104, 720)
+    {
+    }
 
     virtual void Start() override {
         Get()->GetWindow()->setVSync(false);
         Stick::renderer = new Stick::Renderer();
         Circle::renderer = new Circle::Renderer();
         update_status();
-        update_thread = std::thread([this](){
-                static f32 start = Time::GetCurrent(), end = 0;
-                while(main->isRunning()) {
-                    update_mtx.lock();
-                    update_status();
-                    update(dt); 
-                    update_mtx.unlock();
-                    end = Time::GetCurrent() - start;
-                    if (end < 1.0 / fps) {
-                        Time::Sleep((1.0 / fps - end) * 1000);
-                    }
-                    dt = Time::GetCurrent() - start;
-                    start += dt;
-                }
-            });
     };
 
     virtual void Update() override {
         static f32 start = Time::GetCurrent(), end = 0;
-        render_mtx.lock();
         update_status();
+        update(1.0 / fps); 
         render();
         update_input();
         main->update();
         main->swapBuffers();
-        render_mtx.unlock();
         end = Time::GetCurrent() - start;
         if (end < 1.0 / refresh_rate) {
             Time::Sleep((1.0 / refresh_rate - end) * 1000);
@@ -81,12 +59,11 @@ public:
         start = Time::GetCurrent();
     }
 
-    virtual void update(const f32& dt) = 0;
+    virtual void update(const f64& dt) = 0;
     virtual void render() = 0;
     virtual void update_input() = 0;
 
     ~SandBox() {
-        update_thread.join();
         delete Stick::renderer;
         delete Circle::renderer;
     }
@@ -114,10 +91,10 @@ private:
     glm::mat4 scale;
 
     // world
-    glm::vec2 world = glm::vec2(30, 5);
-    f32 world_scale = 40;
+    glm::vec2 world = glm::vec2(35, 5);
+    f32 world_scale = 45;
     f32 shift_rate = 0.01 * world_scale / 10;
-    f32 zoom_rate = 0.02 * world_scale / 10;
+    f32 zoom_rate = 0.01 * world_scale / 10;
 
     Object2D* holding = nullptr;
     std::vector<Object2D*> preview;
@@ -125,13 +102,13 @@ private:
 
     Circle* preview_node = nullptr;
     FixPoint* preview_fix_point = nullptr;
-    glm::vec2 preview_pos;
+    glm::dvec2 preview_pos;
 
     std::vector<Mesh*> meshes;
     std::vector<FixPoint*> fixPoints;
 
     Mode mode;
-    f32 sub_dt;
+    f64 sub_dt;
 
 public:
     Rigid2DSimlution()
@@ -157,22 +134,19 @@ public:
         meshes.push_back(new Mesh());
 
         meshes.push_back(new Mesh());
-        InitString(*meshes.back(), glm::vec2(-1.5, 2), 3, 4.5);
+        InitString(*meshes.back(), glm::vec2(-1.5, 2), 3, 5);
         meshes.push_back(new Mesh());
 
         meshes.push_back(new Mesh());
-        InitBox(*meshes.back(), glm::vec2(0), 5);
+        InitBox(*meshes.back(), glm::vec2(-4, 0), 5);
         meshes.push_back(new Mesh());
-        InitBox(*meshes.back(), glm::vec2(0), 5);
+        InitBox(*meshes.back(), glm::vec2(4, 0), 5);
         return;
 
         meshes.push_back(new Mesh());
         InitTriangle(*meshes.back(), glm::vec2(0), 3);
         meshes.push_back(new Mesh());
         InitTriangle(*meshes.back(), glm::vec2(0), 3);
-
-        meshes.push_back(new Mesh());
-        InitCircle(*meshes.back(), glm::vec2(0), 3, 12, 3);
     }
 
     void FreeMeshes() {
@@ -222,9 +196,7 @@ public:
     void update_collision() {
         if (holding) {
             glm::vec4 uv = glm::vec4(mouse.x / width, 1 - mouse.y / height, 0, 0) * 2.0f - 1.0f;
-            glm::vec2 wpos = glm::vec2((view * (uv / o)) / scale);
-            holding->m_pos = wpos;
-            //holding->addForce((wpos - holding->m_pos - (holding->m_pos - holding->m_opos)) / (sub_dt));
+            holding->m_pos = glm::vec2((view * (uv / o)) / scale);
         }
         for (auto& point : fixPoints)  {
             point->fix();
@@ -241,13 +213,15 @@ public:
 
     void update_constraint() {
         for (auto& mesh : meshes) {
-            mesh->update();
+            for (auto& stick : mesh->sticks) {
+                stick->update(sub_dt);
+            }
         }
     }
 
-    virtual void update(const f32& dt) override {
+    virtual void update(const f64& dt) override {
         if (mode != Mode::Edit) {
-            sub_dt = dt * settings.time_rate / settings.sub_step;
+            sub_dt = dt * (f64)settings.time_rate / settings.sub_step;
             for (i32 i = 0; i < settings.sub_step; i++) {
                 update_physics();
                 update_collision();
@@ -270,7 +244,9 @@ public:
         }
 
         for (auto& mesh : meshes) {
-            mesh->render(proj);
+            for (auto& stick : mesh->sticks) {
+                stick->render(proj);
+            }
         }
 
         Stick::renderer->draw(proj, glm::vec2(world.x, -world.y) - 0.2f, glm::vec2(-world.x, -world.y) - 0.2f, glm::vec4(1), 0.2);
@@ -283,16 +259,16 @@ public:
 
         ImGui::Begin("config");
 
-        ImGui::Text("update rate: %-5.2f", 1.0f / sub_dt);
-        ImGui::Text("refresh rate: %-5.2f", 1.0 / refresh_frame);
+        ImGui::Text("update fps: %-5.2f, update time: %g", 1.0f / sub_dt, sub_dt);
+        ImGui::Text("refresh fps: %-5.2f", 1.0 / refresh_frame);
 
         ImGui::Checkbox("gravity", &settings.gravity);
-        ImGui::SliderInt("sub step", &settings.sub_step, 1, 80);
         ImGui::SliderFloat("time rate", &settings.time_rate, 0, 1);
+        ImGui::SliderInt("sub step", &settings.sub_step, 1, 100);
 
         bool motified = false;
-        motified |= ImGui::SliderFloat("line width", &attri.line_width, 0.01f, 0.3f);
         motified |= ImGui::SliderFloat("hardness", &attri.hardness, 0.0f, 1.0f);
+        motified |= ImGui::SliderFloat("line width", &attri.line_width, 0.01f, 0.3f);
         motified |= ImGui::SliderFloat("node size", &attri.node_size, 0.1f, 1);
         motified |= ImGui::ColorEdit3("node color", glm::value_ptr(attri.node_color));
 
@@ -339,7 +315,7 @@ public:
                     preview.emplace_back(circle);
                 }
                 for (auto& circle : circles) {
-                    circle->m_color = glm::vec4(COLOR(0x577E7B), 0);
+                    circle->m_color = glm::vec4(COLOR(0x5D627E), 0);
                 }
             }
             else if (!preview.empty()) {
@@ -400,7 +376,7 @@ public:
         std::vector<Circle*> result;
         for (auto& mesh : meshes) {
             for (auto& e : mesh->entities) {
-                if (e->r > glm::length(e->m_pos - pos)) {
+                if (e->r > glm::length((const glm::vec2&)e->m_pos - pos)) {
                     result.push_back(e);
                 }
             }
@@ -411,7 +387,7 @@ public:
     Circle* FindCircleByPosition(const glm::vec2& pos) {
         for (auto& mesh : meshes) {
             for (auto& e : mesh->entities) {
-                if (e->r > glm::length(e->m_pos - pos)) {
+                if (e->r > glm::length((const glm::vec2&)e->m_pos - pos)) {
                     return e;
                 }
             }
@@ -421,7 +397,7 @@ public:
 
     FixPoint* FindFixPointByPosition(const glm::vec2& pos) {
         for (auto& point : fixPoints) {
-            if (point->r > glm::length(point->m_pos - pos)) {
+            if (point->r > glm::length((const glm::vec2&)point->m_pos - pos)) {
                 return point;
             }
         }
@@ -429,8 +405,8 @@ public:
     }
 
     virtual void OnMouseButton(const MouseButtonEvent& event) override {
-        glm::vec4 uv = glm::vec4(mouse.x / width, 1 - mouse.y / height, 0, 0) * 2.0f - 1.0f;
-        glm::vec2 wpos = glm::vec2((view * (uv / o)) / scale);
+        glm::dvec4 uv = glm::dvec4(mouse.x / width, 1 - mouse.y / height, 0, 0) * 2.0 - 1.0;
+        glm::dvec2 wpos = glm::dvec2((view * (uv / o)) / scale);
 
         if (mode == Mode::Edit) {
             OnEdit(event, wpos);
@@ -440,7 +416,7 @@ public:
         }
     }
 
-    void OnEdit(const MouseButtonEvent& event, const glm::vec2& wpos) {
+    void OnEdit(const MouseButtonEvent& event, const glm::dvec2& wpos) {
         if (event.button == MouseButton::Left && event.mode == KeyMode::Down) {
             preview_node = FindCircleByPosition(wpos);
             preview_fix_point = FindFixPointByPosition(wpos);
@@ -455,11 +431,11 @@ public:
                 if (preview_node == second_node) {
                     return;
                 }
-                f32 d = glm::length(preview_node->m_pos - second_node->m_pos);
+                f64 d = glm::length(preview_node->m_pos - second_node->m_pos);
                 meshes[0]->sticks.push_back(new Stick(preview_node, second_node, d, attri));
             }
             else if (preview_node && second_node == nullptr) {
-                f32 d = glm::length(preview_node->m_pos - wpos);
+                f64 d = glm::length(preview_node->m_pos - wpos);
                 meshes[0]->entities.push_back(new Circle(wpos, attri.node_color, attri.node_size));
                 meshes[0]->sticks.push_back(new Stick(preview_node, meshes[0]->entities.back(), d, attri));
                 if (fixPoint) {
@@ -468,7 +444,7 @@ public:
                 }
             }
             else if (preview_node == nullptr && second_node) {
-                f32 d = glm::length(preview_pos - second_node->m_pos);
+                f64 d = glm::length(preview_pos - second_node->m_pos);
                 meshes[0]->entities.push_back(new Circle(preview_pos, attri.node_color, attri.node_size));
                 meshes[0]->sticks.push_back(new Stick(meshes[0]->entities.back(), second_node, d, attri));
                 if (preview_fix_point) {
@@ -517,6 +493,15 @@ public:
                 }
             }
         }
+        if (event.button == MouseButton::Right && event.mode == KeyMode::Down) {
+            if (!holding) {
+                FixPoint* fix = FindFixPointByPosition(wpos);
+                if (fix) {
+                    holding = fix;
+                    return;
+                }
+            }
+        }
 
         if (event.button == MouseButton::Left && event.mode == KeyMode::Down) {
             if (!holding) {
@@ -525,6 +510,11 @@ public:
                     holding = fix->holding;
                     fix->holding = nullptr;
                 }
+            }
+        }
+
+        if (event.button == MouseButton::Left && event.mode == KeyMode::Down) {
+            if (!holding) {
                 Circle* circle = FindCircleByPosition(wpos);
                 if (circle) {
                     holding = static_cast<Object2D*>(circle);
@@ -532,16 +522,6 @@ public:
             }
         } else {
             holding = nullptr;
-        }
-
-        // move fixpoint
-        if (event.button == MouseButton::Right && event.mode == KeyMode::Down) {
-            if (!holding) {
-                FixPoint* fix = FindFixPointByPosition(wpos);
-                if (fix) {
-                    holding = fix;
-                }
-            }
         }
     }
 

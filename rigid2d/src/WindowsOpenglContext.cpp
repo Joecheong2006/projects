@@ -89,7 +89,7 @@ namespace mfw {
 
         int pixelFormat;
         unsigned int numFormats;
-        wglChoosePixelFormatARB(w->m_hdc, attribList, nullptr, 1, &pixelFormat, &numFormats);
+        wglChoosePixelFormatARB(w->m_hdc, attribList, NULL, 1, &pixelFormat, &numFormats);
 
         PIXELFORMATDESCRIPTOR pfd;
         SetPixelFormat(w->m_hdc, pixelFormat, &pfd);
@@ -98,16 +98,16 @@ namespace mfw {
             WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
             WGL_CONTEXT_MINOR_VERSION_ARB, 3,
             WGL_CONTEXT_PROFILE_MASK_ARB,  WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
-            WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
+            //WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
             0
         };
 
-        HGLRC shareHglrc = nullptr;
-        w->m_hglrc = wglCreateContextAttribsARB(w->m_hdc, shareHglrc, contextAttribList);
-        wglMakeContextCurrentARB(w->m_hdc, w->m_hdc, w->m_hglrc);
+        w->m_hglrc = wglCreateContextAttribsARB(w->m_hdc, 0, contextAttribList);
+        //wglMakeContextCurrentARB(w->m_hdc, w->m_hdc, w->m_hglrc);
+        wglMakeCurrent(w->m_hdc, w->m_hglrc);
 
         if (!gladLoaderLoadGL()) {
-            LOG_INFO("glad load gl fail");
+            LOG_INFO("glad load gl failed\n");
         }
 
         LOG_INFO("OPENGL VERSION: {}\n", glGetString(GL_VERSION));

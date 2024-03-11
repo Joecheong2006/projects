@@ -78,7 +78,7 @@ namespace mfw {
     }
 
     void Circle::solveCollision(Circle& c) {
-        f32 d = glm::length(m_pos - c.m_pos);
+        f64 d = glm::length(m_pos - c.m_pos);
         glm::vec2 di = 0.5f * (this->r + c.r - d) * (m_pos - c.m_pos) / d;
         m_pos += di;
         c.m_pos -= di;

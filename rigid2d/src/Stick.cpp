@@ -74,11 +74,9 @@ namespace mfw {
         p[1] = p2;
     }
 
-    void Stick::update() {
-        f32 cd = glm::length(p[0]->m_pos - p[1]->m_pos);
-        if (cd == d)
-            return;
-        glm::vec2 nd = glm::normalize(p[0]->m_pos - p[1]->m_pos) * (d - cd) * 0.5f * attri.hardness;
+    void Stick::update(const f64& dt) {
+        f64 cd = glm::length(p[0]->m_pos - p[1]->m_pos);
+        glm::dvec2 nd = glm::normalize(p[0]->m_pos - p[1]->m_pos) * (d - cd) * 0.5 * (double)attri.hardness;
         p[0]->m_pos += nd;
         p[1]->m_pos -= nd;
     }

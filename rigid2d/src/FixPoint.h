@@ -8,7 +8,7 @@ namespace mfw {
     class FixPoint : public Object2D {
     public:
         Object2D* holding;
-        f32 r = 0.5f;
+        f32 r = 0.6;
 
         explicit FixPoint(const glm::vec2& pos = glm::vec2(0));
 
@@ -16,7 +16,7 @@ namespace mfw {
         void render(glm::mat4& o);
 
     private:
-        void update(const f32& frame) override { (void)frame; }
+        void update(const f64& frame) override { (void)frame; }
 
     };
 

@@ -20,29 +20,6 @@ namespace mfw {
         }
     }
 
-    void Mesh::update() {
-        for (auto& stick : sticks) {
-            stick->update();
-        }
-    }
-
-    void Mesh::render(const glm::mat4& o) {
-        for (auto & stick : sticks) {
-            stick->render(o);
-        }
-        return;
-        Stick::renderer->bind();
-        for (auto & stick : sticks) {
-            stick->render_line(o);
-        }
-        Stick::renderer->unbind();
-        Circle::renderer->bind();
-        for (auto & stick : sticks) {
-            stick->render_node(o);
-        }
-        Circle::renderer->unbind();
-    }
-
     void InitString(Mesh& mesh, const glm::vec2& pos, i32 node, f32 d)
     {
         ASSERT(node > 0);

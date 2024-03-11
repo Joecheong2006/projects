@@ -13,6 +13,6 @@ namespace mfw {
     }
 
     void FixPoint::render(glm::mat4& o) {
-        Stick::renderer->draw(o, m_pos - glm::vec2(r, 0), m_pos + glm::vec2(r, 0), glm::vec4(COLOR(0xaf7434), 1), r);
+        Stick::renderer->draw(o, m_pos - glm::dvec2(r, 0), m_pos + glm::dvec2(r, 0), glm::vec4(COLOR(0xaf7434), 1), r);
     }
 }

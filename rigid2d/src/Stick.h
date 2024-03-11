@@ -13,7 +13,7 @@ namespace mfw {
             f32 hardness;
             f32 line_width;
             Attribute()
-                : node_color(glm::vec4(COLOR(0x859584), 0)), node_size(0.4), hardness(0.9), line_width(0.12)
+                : node_color(glm::vec4(COLOR(0x858AA6), 0)), node_size(0.4), hardness(1.0), line_width(0.12)
             {}
         } attribute;
 
@@ -35,7 +35,7 @@ namespace mfw {
         }* renderer;
 
         Stick(Circle* p1, Circle* p2, f32 d, const Attribute& attribute = Stick::attribute);
-        void update();
+        void update(const f64& dt);
         void render(const glm::mat4& o);
         void render_node(const glm::mat4& o);
         void render_line(const glm::mat4& o);

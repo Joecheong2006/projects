@@ -9,9 +9,6 @@ namespace mfw {
         Mesh(Stick::Attribute attribute = Stick::attribute);
         ~Mesh();
 
-        void update();
-        void render(const glm::mat4& o);
-
         std::vector<Circle*> entities;
         std::vector<Stick*> sticks;
         i32 node;
