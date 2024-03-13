@@ -2,8 +2,8 @@
 #include "Stick.h"
 
 namespace mfw {
-    FixPoint::FixPoint(const glm::vec2& pos)
-        : Object2D(pos, 0, glm::vec4(1)), holding(nullptr)
+    FixPoint::FixPoint(f32 r, const glm::vec2& pos)
+        : Object2D(pos, 0, glm::vec4(1)), holding(nullptr), r(r * 0.1)
     {}
 
     void FixPoint::fix() {

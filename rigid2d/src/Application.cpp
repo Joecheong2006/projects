@@ -68,8 +68,8 @@ namespace mfw {
         Start();
         while (m_window->isRunning()) {
             Update();
-            ///m_window->update();
-            ///m_window->swapBuffers();
+            m_window->update();
+            m_window->swapBuffers();
         }
     }
 

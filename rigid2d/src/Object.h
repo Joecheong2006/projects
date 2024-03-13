@@ -1,5 +1,4 @@
-#ifndef _OBJECT_H
-#define _OBJECT_H
+#pragma once
 
 #include "glm/glm.hpp"
 #include "util.h"
@@ -13,11 +12,7 @@ public:
     Object2D(const glm::dvec2& pos, const f64& mass, const glm::dvec4& color);
     virtual ~Object2D() {};
     virtual void update(const f64& dt);
-
-    inline void addForce(const glm::dvec2& force) {
-        m_acceleration += force / m_mass;
-    }
+    void addForce(const glm::dvec2& force);
 
 };
 
-#endif

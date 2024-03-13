@@ -13,11 +13,15 @@
 
 #include "Renderer.h"
 
+const glm::vec3 red = glm::vec3(COLOR(0xff0000));
+const glm::vec3 green = glm::vec3(COLOR(0x00ff00));
+const glm::vec3 blue = glm::vec3(COLOR(0x0000ff));
+
 using namespace mfw;
 class SandBox : public Application {
 private:
     void update_status() {
-        main = GetWindow();
+        Window* main = GetWindow();
         width = main->width();
         height = main->height();
         auto& mouse = Input::GetMouse();
@@ -27,7 +31,6 @@ private:
 
 public:
     i32 width, height;
-    Window* main = nullptr;
     glm::vec2 mouse;
     const f32 refresh_rate = 144, fps = refresh_rate;
     f32 refresh_frame = 0;
@@ -48,8 +51,6 @@ public:
         update(1.0 / fps); 
         render();
         update_input();
-        main->update();
-        main->swapBuffers();
         end = Time::GetCurrent() - start;
         if (end < 1.0 / refresh_rate) {
             Time::Sleep((1.0 / refresh_rate - end) * 1000);
@@ -74,7 +75,8 @@ private:
     struct Settings {
         i32 sub_step = 5;
         f32 time_rate = 1.0;
-        bool gravity = true;
+        i32 gravity_factor = 2;
+        bool gravity = true, world_view = true, velocity_view = false;
     } settings;
 
     enum Mode {
@@ -90,10 +92,14 @@ private:
     glm::mat4 scale;
 
     // world
-    glm::vec2 world = glm::vec2(35, 5);
-    f32 world_scale = 45;
-    f32 shift_rate = 0.01 * world_scale / 10;
-    f32 zoom_rate = 0.01 * world_scale / 10;
+    glm::vec2 world = glm::vec2(5, 2);
+    f32 world_scale = 2.4;
+    f32 shift_rate = 0.002 * world_scale;
+    f32 zoom_rate = 0.01 * world_scale;
+    glm::mat4 worldProjection;
+
+    std::vector<Mesh*> meshes;
+    std::vector<FixPoint*> fixPoints;
 
     Object2D* holding = nullptr;
     std::vector<Object2D*> preview;
@@ -103,11 +109,9 @@ private:
     FixPoint* preview_fix_point = nullptr;
     glm::dvec2 preview_pos;
 
-    std::vector<Mesh*> meshes;
-    std::vector<FixPoint*> fixPoints;
-
     Mode mode;
     f64 sub_dt;
+    f32 unitScale = 0.1f;
 
 public:
     Rigid2DSimlution()
@@ -117,42 +121,40 @@ public:
     virtual void Start() override {
         SandBox::Start();
 
-        glm::vec2 world = glm::vec2(width, height) / world_scale;
-        o = glm::ortho(-world.x, world.x, -world.y, world.y, -1.0f, 1.0f);
-        view = glm::translate(view, glm::vec3(0, -8, 0));
+        SetWorldProjection(glm::vec2(width, height));
+        o = worldProjection;
 
         preview.reserve(16);
 
         SetDefaultStickAttribute();
-        InitMeshes();
-        InitFixPoints();
+        InitializeFixPoints();
+        InitializeMeshes();
 
         glClearColor(0.1, 0.1, 0.1, 1);
     }
 
-    void InitMeshes() {
-        meshes.push_back(new Mesh(attri));
-
-        meshes.push_back(new Mesh(attri));
-        InitString(meshes.back(), glm::vec2(-1, 2), 5, 3);
-        meshes.push_back(new Mesh(attri));
-
-        meshes.push_back(new Mesh(attri));
-        InitBox(meshes.back(), glm::vec2(-4, 0), 5);
-        meshes.push_back(new Mesh(attri));
-        InitBox(meshes.back(), glm::vec2(4, 0), 5);
-
-        meshes.push_back(new Mesh(attri));
-        InitTriangle(meshes.back(), glm::vec2(0), 3);
-        meshes.push_back(new Mesh(attri));
-        InitTriangle(meshes.back(), glm::vec2(0), 3);
-    }
-
     void SetDefaultStickAttribute() {
         attri.node_color = glm::vec4(glm::vec4(COLOR(0x858AA6), 0));
-        attri.node_size = 0.4;
+        attri.node_size = 0.6 * unitScale;
+        attri.line_width = 0.16 * unitScale;
         attri.hardness = 1;
-        attri.line_width = 0.1;
+    }
+
+    void InitializeMeshes() {
+        meshes.push_back(new Mesh(attri));
+
+        meshes.push_back(new Mesh(attri));
+        InitString(meshes.back(), glm::vec2(-2, 4) * unitScale, 7 * unitScale, 3);
+
+        meshes.push_back(new Mesh(attri));
+        InitBox(meshes.back(), glm::vec2(-4, 0) * unitScale, 7 * unitScale);
+        meshes.push_back(new Mesh(attri));
+        InitBox(meshes.back(), glm::vec2(4, 0) * unitScale, 7 * unitScale);
+
+        meshes.push_back(new Mesh(attri));
+        InitTriangle(meshes.back(), glm::vec2(0), 5 * unitScale);
+        meshes.push_back(new Mesh(attri));
+        InitTriangle(meshes.back(), glm::vec2(0), 5 * unitScale);
     }
 
     void FreeMeshes() {
@@ -162,9 +164,9 @@ public:
         meshes.clear();
     }
 
-    void InitFixPoints() {
+    void InitializeFixPoints() {
         for (i32 i = 0; i < 10; i++) {
-            fixPoints.push_back(new FixPoint(glm::vec2(0, 15)));
+            fixPoints.push_back(new FixPoint(8 * unitScale, glm::vec2(0, 8) * unitScale));
         }
     }
 
@@ -175,6 +177,11 @@ public:
         fixPoints.clear();
     }
 
+    void SetWorldProjection(glm::vec2 view) {
+        glm::vec2 world = world_scale * glm::vec2(view.x, view.y) / view.y;
+        worldProjection = glm::ortho(-world.x, world.x, -world.y, world.y, -1.0f, 1.0f);
+    }
+
     glm::dvec2 MouseToWorldCoord(glm::vec2 mouse) {
         glm::vec4 uv = glm::vec4(mouse.x / width, 1 - mouse.y / height, 0, 0) * 2.0f - 1.0f;
         return view * ((uv / o) / scale);
@@ -183,7 +190,7 @@ public:
     void update_physics() {
         for (auto& mesh : meshes) {
             for (auto& e : mesh->entities) {
-                e->addForce(glm::vec2(0, 10 * -9.81f * e->m_mass * settings.gravity));
+                e->addForce(glm::vec2(0, -9.81f * e->m_mass * settings.gravity * settings.gravity_factor));
                 e->update(sub_dt);
             }
         }
@@ -205,15 +212,6 @@ public:
     };
 
     void update_collision() {
-        if (holding) {
-            holding->m_pos = MouseToWorldCoord(mouse);
-        }
-        for (auto& point : fixPoints)  {
-            point->fix();
-            Circle c = Circle(point->m_pos, glm::vec4(1), point->r);
-            wall_collision(&c, world);
-            point->m_pos = c.m_pos;
-        }
         for (auto& mesh : meshes) {
             for (auto& e : mesh->entities) {
                 wall_collision(e, world);
@@ -222,6 +220,12 @@ public:
     }
 
     void update_constraint() {
+        if (holding) {
+            holding->m_pos = MouseToWorldCoord(mouse);
+        }
+        for (auto& point : fixPoints)  {
+            point->fix();
+        }
         for (auto& mesh : meshes) {
             for (auto& stick : mesh->sticks) {
                 stick->update(sub_dt);
@@ -249,17 +253,29 @@ public:
 
         glm::mat4 proj = o * scale * view;
 
-        for (auto& fixPoint : fixPoints) {
-            fixPoint->render(proj);
+        if (settings.world_view) {
+            for (auto& fixPoint : fixPoints) {
+                fixPoint->render(proj);
+            }
+
+            for (auto& mesh : meshes) {
+                for (auto& stick : mesh->sticks) {
+                    stick->render(proj);
+                }
+            }
+
+            Stick::renderer->draw(proj, glm::vec2(world.x, -world.y) - 0.2f * unitScale, glm::vec2(-world.x, -world.y) - 0.2f * unitScale, glm::vec4(1), 0.2 * unitScale);
         }
 
-        for (auto& mesh : meshes) {
-            for (auto& stick : mesh->sticks) {
-                stick->render(proj);
+        if (settings.velocity_view) {
+            for (auto& mesh : meshes) {
+                for (auto& e : mesh->entities) {
+                    glm::dvec2 v = (e->m_pos - e->m_opos) / sub_dt;
+                    Stick::renderer->draw(proj, e->m_pos, e->m_pos + v * 0.06, red, 0.05 * unitScale);
+                }
             }
         }
 
-        Stick::renderer->draw(proj, glm::vec2(world.x, -world.y) - 0.2f, glm::vec2(-world.x, -world.y) - 0.2f, glm::vec4(1), 0.2);
     }
 
     virtual void update_input() override {
@@ -273,13 +289,16 @@ public:
         ImGui::Text("refresh fps: %-5.2f", 1.0 / refresh_frame);
 
         ImGui::Checkbox("gravity", &settings.gravity);
+        ImGui::Checkbox("world view", &settings.world_view);
+        ImGui::Checkbox("velocity view", &settings.velocity_view);
+        ImGui::SliderInt("gravity factor", &settings.gravity_factor, 1, 5);
         ImGui::SliderFloat("time rate", &settings.time_rate, 0, 1);
         ImGui::SliderInt("sub step", &settings.sub_step, 1, 100);
 
         bool motified = false;
-        motified |= ImGui::SliderFloat("hardness", &attri.hardness, 0.0f, 1.0f);
-        motified |= ImGui::SliderFloat("line width", &attri.line_width, 0.01f, 0.3f);
-        motified |= ImGui::SliderFloat("node size", &attri.node_size, 0.1f, 1);
+        motified |= ImGui::SliderFloat("hardness", &attri.hardness, 0.1f, 1.0f);
+        motified |= ImGui::SliderFloat("line width", &attri.line_width, 0.01f * unitScale, 0.3f * unitScale);
+        motified |= ImGui::SliderFloat("node size", &attri.node_size, 0.1f * unitScale, 1 * unitScale);
         motified |= ImGui::ColorEdit3("node color", glm::value_ptr(attri.node_color));
 
         if (motified) {
@@ -295,10 +314,11 @@ public:
 
         if (ImGui::Button("restart")) {
             FreeMeshes();
-            InitMeshes();
+            InitializeMeshes();
             FreeFixPoints();
-            InitFixPoints();
+            InitializeFixPoints();
             SetDefaultStickAttribute();
+            preview.clear();
             mode = Mode::Normal;
         }
 
@@ -522,8 +542,8 @@ public:
 
     virtual void OnWindowResize(const WindowResizeEvent& event) override {
         glViewport(0, 0, event.width, event.height);
-        glm::vec2 world = glm::vec2(event.width, event.height) / world_scale;
-        o = glm::ortho(-world.x, world.x, -world.y, world.y, -1.0f, 1.0f);
+        SetWorldProjection(glm::vec2(event.width, event.height));
+        o = worldProjection;
     }
 
     ~Rigid2DSimlution() {
@@ -538,11 +558,7 @@ namespace Log {
     struct Pattern<glm::vec2> {
         static void Log(const glm::vec2& value, const std::string& format) {
             (void)format;
-            Pattern<char>::Log('[', "");
-            Pattern<f32>::Log(value.x, "");
-            Pattern<const char*>::Log(", ", "");
-            Pattern<f32>::Log(value.y, "");
-            Pattern<char>::Log(']', "");
+            LOG_INFO("[{}, {}]", value.x, value.y);
         }
     };
 

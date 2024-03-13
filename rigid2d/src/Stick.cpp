@@ -60,7 +60,18 @@ namespace mfw {
         GLCALL(glDrawArrays(GL_TRIANGLES, 0, 6));
     }
 
+    void Stick::Renderer::render(const glm::mat4& o, const glm::vec2& p1, const glm::vec2& p2, glm::vec3 color, f32 w) {
+        glm::vec4 c4 = glm::vec4(color, 1);
+        render(o, p1, p2, c4, w);
+    }
+
     void Stick::Renderer::draw(const glm::mat4& o, const glm::vec2& p1, const glm::vec2& p2, glm::vec4 color, f32 w) {
+        bind();
+        render(o, p1, p2, color, w);
+        unbind();
+    }
+
+    void Stick::Renderer::draw(const glm::mat4& o, const glm::vec2& p1, const glm::vec2& p2, glm::vec3 color, f32 w) {
         bind();
         render(o, p1, p2, color, w);
         unbind();

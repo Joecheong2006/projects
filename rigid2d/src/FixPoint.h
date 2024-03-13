@@ -8,9 +8,9 @@ namespace mfw {
     class FixPoint : public Object2D {
     public:
         Object2D* holding;
-        f32 r = 0.6;
+        f32 r;
 
-        explicit FixPoint(const glm::vec2& pos = glm::vec2(0));
+        explicit FixPoint(f32 r, const glm::vec2& pos = glm::vec2(0));
 
         void fix();
         void render(glm::mat4& o);

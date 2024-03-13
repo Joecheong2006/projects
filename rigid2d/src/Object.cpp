@@ -5,6 +5,10 @@ Object2D::Object2D(const glm::dvec2& pos, const f64& mass, const glm::dvec4& col
     : m_pos(pos), m_opos(pos), m_acceleration(0), m_color(color), m_mass(mass)
 {}
 
+void Object2D::addForce(const glm::dvec2& force) {
+    m_acceleration += force / m_mass;
+}
+
 void Object2D::update(const f64& dt) {
     glm::dvec2 s = (m_pos - m_opos);
     m_opos = m_pos;

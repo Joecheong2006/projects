@@ -27,7 +27,9 @@ namespace mfw {
             void bind();
             void unbind();
             void render(const glm::mat4& o, const glm::vec2& p1, const glm::vec2& p2, glm::vec4 color, f32 w);
+            void render(const glm::mat4& o, const glm::vec2& p1, const glm::vec2& p2, glm::vec3 color, f32 w);
             void draw(const glm::mat4& o, const glm::vec2& p1, const glm::vec2& p2, glm::vec4 color, f32 w);
+            void draw(const glm::mat4& o, const glm::vec2& p1, const glm::vec2& p2, glm::vec3 color, f32 w);
 
         }* renderer;
 
