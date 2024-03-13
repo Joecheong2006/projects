@@ -25,6 +25,9 @@ all: bin app
 run:
 	@./$(OUT)
 
+debug:
+	@gdb -q "$(OUT)" --eval-command=run --eval-command=exit;\
+
 clean:
 	@rm -rf $(OBJ) $(DEP) $(BIN)
 	@echo Cleaned
@@ -32,7 +35,7 @@ clean:
 build:
 	@echo "Compiling library"
 	@cd lib/stb_image && $(CC) -c stb_image.cpp
-	@cd lib/imgui && $(CC) -c ./*.cpp
+	@cd lib/imgui && $(CC) -std=c++11 -c ./*.cpp
 	@$(CC) -x c++-header $(INCLUDE) -o $(PCH).gch -c $(PCH)
 	@echo "Completed"
 

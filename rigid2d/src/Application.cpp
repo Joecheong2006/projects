@@ -48,6 +48,12 @@ namespace mfw {
         eventListener.addEventFunc<CursorMoveEvent>([this](const Event& event) {
                     CursorMove(static_cast<const CursorMoveEvent&>(event));
                 });
+        eventListener.addEventFunc<WindowFocusEvent>([this](const Event& event) {
+                    LOG_INFO("{}\n", event);
+                });
+        eventListener.addEventFunc<WindowNotFocusEvent>([this](const Event& event) {
+                    LOG_INFO("{}\n", event);
+                });
     }
 
     Application::~Application() {
@@ -74,6 +80,8 @@ namespace mfw {
         eventListener.listen<MouseButtonEvent>(event);
         eventListener.listen<MouseScrollEvent>(event);
         eventListener.listen<CursorMoveEvent>(event);
+        eventListener.listen<WindowFocusEvent>(event);
+        eventListener.listen<WindowNotFocusEvent>(event);
     }
 
 }

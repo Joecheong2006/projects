@@ -33,8 +33,7 @@ public:
     f32 refresh_frame = 0;
 
     SandBox(): Application("rigid2d", 1104, 720)
-    {
-    }
+    {}
 
     virtual void Start() override {
         Get()->GetWindow()->setVSync(false);
@@ -73,7 +72,7 @@ public:
 class Rigid2DSimlution : public SandBox {
 private:
     struct Settings {
-        i32 sub_step = 1;
+        i32 sub_step = 5;
         f32 time_rate = 1.0;
         bool gravity = true;
     } settings;
@@ -98,7 +97,7 @@ private:
 
     Object2D* holding = nullptr;
     std::vector<Object2D*> preview;
-    Stick::Attribute attri = Stick::attribute;
+    Stick::Attribute attri;
 
     Circle* preview_node = nullptr;
     FixPoint* preview_fix_point = nullptr;
@@ -113,9 +112,7 @@ private:
 public:
     Rigid2DSimlution()
         : o(glm::mat4(1)), view(o), scale(o), mode(Mode::Normal)
-    {
-        preview.reserve(16);
-    }
+    {}
 
     virtual void Start() override {
         SandBox::Start();
@@ -124,29 +121,38 @@ public:
         o = glm::ortho(-world.x, world.x, -world.y, world.y, -1.0f, 1.0f);
         view = glm::translate(view, glm::vec3(0, -8, 0));
 
+        preview.reserve(16);
+
+        SetDefaultStickAttribute();
         InitMeshes();
         InitFixPoints();
 
-        glClearColor(0.1, 0.1, 0.1, 0);
+        glClearColor(0.1, 0.1, 0.1, 1);
     }
 
     void InitMeshes() {
-        meshes.push_back(new Mesh());
+        meshes.push_back(new Mesh(attri));
 
-        meshes.push_back(new Mesh());
-        InitString(*meshes.back(), glm::vec2(-1.5, 2), 3, 5);
-        meshes.push_back(new Mesh());
+        meshes.push_back(new Mesh(attri));
+        InitString(meshes.back(), glm::vec2(-1, 2), 5, 3);
+        meshes.push_back(new Mesh(attri));
 
-        meshes.push_back(new Mesh());
-        InitBox(*meshes.back(), glm::vec2(-4, 0), 5);
-        meshes.push_back(new Mesh());
-        InitBox(*meshes.back(), glm::vec2(4, 0), 5);
-        return;
+        meshes.push_back(new Mesh(attri));
+        InitBox(meshes.back(), glm::vec2(-4, 0), 5);
+        meshes.push_back(new Mesh(attri));
+        InitBox(meshes.back(), glm::vec2(4, 0), 5);
 
-        meshes.push_back(new Mesh());
-        InitTriangle(*meshes.back(), glm::vec2(0), 3);
-        meshes.push_back(new Mesh());
-        InitTriangle(*meshes.back(), glm::vec2(0), 3);
+        meshes.push_back(new Mesh(attri));
+        InitTriangle(meshes.back(), glm::vec2(0), 3);
+        meshes.push_back(new Mesh(attri));
+        InitTriangle(meshes.back(), glm::vec2(0), 3);
+    }
+
+    void SetDefaultStickAttribute() {
+        attri.node_color = glm::vec4(glm::vec4(COLOR(0x858AA6), 0));
+        attri.node_size = 0.4;
+        attri.hardness = 1;
+        attri.line_width = 0.1;
     }
 
     void FreeMeshes() {
@@ -167,6 +173,11 @@ public:
             delete fixPoint;
         }
         fixPoints.clear();
+    }
+
+    glm::dvec2 MouseToWorldCoord(glm::vec2 mouse) {
+        glm::vec4 uv = glm::vec4(mouse.x / width, 1 - mouse.y / height, 0, 0) * 2.0f - 1.0f;
+        return view * ((uv / o) / scale);
     }
 
     void update_physics() {
@@ -195,8 +206,7 @@ public:
 
     void update_collision() {
         if (holding) {
-            glm::vec4 uv = glm::vec4(mouse.x / width, 1 - mouse.y / height, 0, 0) * 2.0f - 1.0f;
-            holding->m_pos = glm::vec2((view * (uv / o)) / scale);
+            holding->m_pos = MouseToWorldCoord(mouse);
         }
         for (auto& point : fixPoints)  {
             point->fix();
@@ -237,7 +247,7 @@ public:
     virtual void render() override {
         glClear(GL_COLOR_BUFFER_BIT);
 
-        glm::mat4 proj = o * view * scale;
+        glm::mat4 proj = o * scale * view;
 
         for (auto& fixPoint : fixPoints) {
             fixPoint->render(proj);
@@ -259,7 +269,7 @@ public:
 
         ImGui::Begin("config");
 
-        ImGui::Text("update fps: %-5.2f, update time: %g", 1.0f / sub_dt, sub_dt);
+        ImGui::Text("update fps: %-5.2f", 1.0f / sub_dt);
         ImGui::Text("refresh fps: %-5.2f", 1.0 / refresh_frame);
 
         ImGui::Checkbox("gravity", &settings.gravity);
@@ -288,7 +298,7 @@ public:
             InitMeshes();
             FreeFixPoints();
             InitFixPoints();
-            attri = Stick::attribute;
+            SetDefaultStickAttribute();
             mode = Mode::Normal;
         }
 
@@ -301,26 +311,17 @@ public:
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         if (mode != Mode::Action) {
-            glm::vec4 uv = glm::vec4(mouse.x / width, 1 - mouse.y / height, 0, 0) * 2.0f - 1.0f;
-            glm::vec2 wpos = glm::vec2((view * (uv / o)) / scale);
-            std::vector<Circle*> circles = FindCirclesByPosition(wpos);
+            glm::vec2 wpos = MouseToWorldCoord(mouse);
+            auto circles = FindCirclesByPosition(wpos);
+            for (auto& prev : preview) {
+                prev->m_color = attri.node_color;
+            }
             if (!circles.empty()) {
-                if (!preview.empty()) {
-                    for (auto& prev : preview) {
-                        prev->m_color = attri.node_color;
-                    }
-                    preview.clear();
-                }
                 for (auto& circle : circles) {
                     preview.emplace_back(circle);
                 }
                 for (auto& circle : circles) {
                     circle->m_color = glm::vec4(COLOR(0x5D627E), 0);
-                }
-            }
-            else if (!preview.empty()) {
-                for (auto& prev : preview) {
-                    prev->m_color = attri.node_color;
                 }
             }
         }
@@ -355,14 +356,11 @@ public:
     }
 
     virtual void OnCursorMove(const CursorMoveEvent& event) override {
-        static i32 mx = event.x, my = event.y;
-        if (mode == Mode::Action) {
-            if (Input::MouseButtonDown(Left)) {
-                view = glm::translate(view, glm::vec3(event.x - mx, my - event.y, 0) * shift_rate);
-            }
-            mx = event.x, my = event.y;
-            return;
-        } 
+        static glm::vec2 m = glm::vec2(event.x, event.y);
+        if (mode == Mode::Action && Input::MouseButtonDown(Left)) {
+            view = glm::translate(view, glm::vec3(event.x - m.x, m.y - event.y, 0) * shift_rate);
+        }
+        m = glm::vec2(event.x, event.y);
     }
 
     virtual void OnMouseScroll(const MouseScrollEvent& event) override {
@@ -405,14 +403,17 @@ public:
     }
 
     virtual void OnMouseButton(const MouseButtonEvent& event) override {
-        glm::dvec4 uv = glm::dvec4(mouse.x / width, 1 - mouse.y / height, 0, 0) * 2.0 - 1.0;
-        glm::dvec2 wpos = glm::dvec2((view * (uv / o)) / scale);
+        glm::dvec2 wpos = MouseToWorldCoord(mouse);
 
-        if (mode == Mode::Edit) {
-            OnEdit(event, wpos);
-        }
-        else if (mode == Mode::Normal) {
-            OnNormal(event, wpos);
+        switch (mode) {
+            case Mode::Normal:
+                OnNormal(event, wpos);
+                break;
+            case Mode::Edit:
+                OnEdit(event, wpos);
+                break;
+            default:
+                break;
         }
     }
 
@@ -493,15 +494,6 @@ public:
                 }
             }
         }
-        if (event.button == MouseButton::Right && event.mode == KeyMode::Down) {
-            if (!holding) {
-                FixPoint* fix = FindFixPointByPosition(wpos);
-                if (fix) {
-                    holding = fix;
-                    return;
-                }
-            }
-        }
 
         if (event.button == MouseButton::Left && event.mode == KeyMode::Down) {
             if (!holding) {
@@ -515,13 +507,16 @@ public:
 
         if (event.button == MouseButton::Left && event.mode == KeyMode::Down) {
             if (!holding) {
-                Circle* circle = FindCircleByPosition(wpos);
-                if (circle) {
-                    holding = static_cast<Object2D*>(circle);
-                }
+                holding = FindCircleByPosition(wpos);
             }
         } else {
             holding = nullptr;
+        }
+
+        if (event.button == MouseButton::Right && event.mode == KeyMode::Down) {
+            if (!holding) {
+                holding = FindFixPointByPosition(wpos);
+            }
         }
     }
 

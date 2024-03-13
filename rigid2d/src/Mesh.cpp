@@ -6,7 +6,7 @@
 
 namespace mfw {
 
-    Mesh::Mesh(Stick::Attribute attribute)
+    Mesh::Mesh(const Stick::Attribute& attribute)
         : attri(attribute)
     {}
 
@@ -20,14 +20,14 @@ namespace mfw {
         }
     }
 
-    void InitString(Mesh& mesh, const glm::vec2& pos, i32 node, f32 d)
+    void InitString(Mesh* mesh, const glm::vec2& pos, f32 d, i32 node)
     {
         ASSERT(node > 0);
-        mesh.node = node;
+        mesh->node = node;
 
-        auto& entities = mesh.entities;
-        auto& sticks = mesh.sticks;
-        auto& attri = mesh.attri;
+        auto& entities = mesh->entities;
+        auto& sticks = mesh->sticks;
+        auto& attri = mesh->attri;
 
         entities.reserve(node + 1);
         sticks.reserve(node);
@@ -41,24 +41,24 @@ namespace mfw {
         }
     }
 
-    void InitBox(Mesh& mesh, const glm::vec2& pos, f32 l)
+    void InitBox(Mesh* mesh, const glm::vec2& pos, f32 l)
     {
         ASSERT(l > 0);
         InitCircle(mesh, pos, sqrt(2.0f) * l * 0.5, 4);
     }
 
 
-    void InitTriangle(Mesh& mesh, const glm::vec2& pos, f32 l) {
+    void InitTriangle(Mesh* mesh, const glm::vec2& pos, f32 l) {
         InitCircle(mesh, pos, l, 3);
     }
 
-    void InitCircle(Mesh& mesh, const glm::vec2& pos, f32 r, i32 n, i32 nstep) {
+    void InitCircle(Mesh* mesh, const glm::vec2& pos, f32 r, i32 n, i32 nstep) {
         ASSERT(r > 0 && n > 2 && nstep > 0);
         static const f32 pi = 3.14159265359;
-        mesh.node = n;
-        auto& entities = mesh.entities;
-        auto& sticks = mesh.sticks;
-        auto& attri = mesh.attri;
+        mesh->node = n;
+        auto& entities = mesh->entities;
+        auto& sticks = mesh->sticks;
+        auto& attri = mesh->attri;
 
         f32 ri = 2 * pi / n;
 

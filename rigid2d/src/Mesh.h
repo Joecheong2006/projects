@@ -6,7 +6,7 @@ namespace mfw {
     class Circle;
     struct Mesh {
         Stick::Attribute attri;
-        Mesh(Stick::Attribute attribute = Stick::attribute);
+        Mesh(const Stick::Attribute& attribute);
         ~Mesh();
 
         std::vector<Circle*> entities;
@@ -15,10 +15,10 @@ namespace mfw {
 
     };
 
-    void InitString(Mesh& mesh, const glm::vec2& pos, i32 node, f32 d);
-    void InitBox(Mesh& mesh, const glm::vec2& pos, f32 l);
-    void InitTriangle(Mesh& mesh, const glm::vec2& pos, f32 l);
-    void InitCircle(Mesh& mesh, const glm::vec2& pos, f32 r, i32 n, i32 nstep = 1);
+    void InitString(Mesh* mesh, const glm::vec2& pos, f32 d, i32 node);
+    void InitBox(Mesh* mesh, const glm::vec2& pos, f32 l);
+    void InitTriangle(Mesh* mesh, const glm::vec2& pos, f32 l);
+    void InitCircle(Mesh* mesh, const glm::vec2& pos, f32 r, i32 n, i32 nstep = 1);
 
 }
 

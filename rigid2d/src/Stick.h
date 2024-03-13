@@ -7,15 +7,12 @@
 namespace mfw {
     class Stick {
         public:
-        static struct Attribute {
+        struct Attribute {
             glm::vec4 node_color;
             f32 node_size;
             f32 hardness;
             f32 line_width;
-            Attribute()
-                : node_color(glm::vec4(COLOR(0x858AA6), 0)), node_size(0.4), hardness(1.0), line_width(0.12)
-            {}
-        } attribute;
+        };
 
         static class Renderer {
         private:
@@ -34,7 +31,7 @@ namespace mfw {
 
         }* renderer;
 
-        Stick(Circle* p1, Circle* p2, f32 d, const Attribute& attribute = Stick::attribute);
+        Stick(Circle* p1, Circle* p2, f32 d, const Attribute& attribute);
         void update(const f64& dt);
         void render(const glm::mat4& o);
         void render_node(const glm::mat4& o);

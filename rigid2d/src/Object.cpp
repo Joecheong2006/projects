@@ -6,9 +6,9 @@ Object2D::Object2D(const glm::dvec2& pos, const f64& mass, const glm::dvec4& col
 {}
 
 void Object2D::update(const f64& dt) {
-    auto s = (m_pos - m_opos);
+    glm::dvec2 s = (m_pos - m_opos);
     m_opos = m_pos;
     m_pos += s + m_acceleration * dt * dt * 0.5;
-    //m_acceleration = ((m_pos - m_opos) - s) / dt;
-    m_acceleration = glm::dvec2(0);
+    m_acceleration = ((m_pos - m_opos) - s) / dt;
+    //m_acceleration = glm::vec2(0);
 }

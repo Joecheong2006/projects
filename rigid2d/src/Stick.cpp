@@ -17,7 +17,6 @@ static f32 vertexs[] = {
 
 namespace mfw {
     Stick::Renderer* Stick::renderer = nullptr;
-    Stick::Attribute Stick::attribute;
 
     Stick::Renderer::Renderer()
         : m_vbo(vertexs, sizeof(vertexs)), m_texture("res/images/square.png")
@@ -76,7 +75,7 @@ namespace mfw {
 
     void Stick::update(const f64& dt) {
         f64 cd = glm::length(p[0]->m_pos - p[1]->m_pos);
-        glm::dvec2 nd = glm::normalize(p[0]->m_pos - p[1]->m_pos) * (d - cd) * 0.5 * (double)attri.hardness;
+        glm::dvec2 nd = glm::normalize(p[0]->m_pos - p[1]->m_pos) * (d - cd) * 0.5;
         p[0]->m_pos += nd;
         p[1]->m_pos -= nd;
     }
