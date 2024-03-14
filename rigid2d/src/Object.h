@@ -5,7 +5,7 @@
 
 class Object2D {
 public:
-    glm::dvec2 m_pos, m_opos, m_velocity, m_acceleration;
+    glm::dvec2 m_pos, m_opos, m_velocity, m_acceleration, m_force;
     glm::dvec4 m_color;
     f64 m_mass;
 

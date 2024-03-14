@@ -6,12 +6,7 @@
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtc/type_ptr.hpp"
 
-#include "Circle.h"
-#include "Stick.h"
-#include "FixPoint.h"
-#include "Mesh.h"
-
-#include "Renderer.h"
+#include "World.h"
 
 const glm::vec3 red = glm::vec3(COLOR(0xff0000));
 const glm::vec3 green = glm::vec3(COLOR(0x00ff00));
@@ -75,8 +70,10 @@ private:
     struct Settings {
         i32 sub_step = 5;
         f32 time_rate = 1.0;
-        i32 gravity_factor = 2;
-        bool gravity = true, world_view = true, velocity_view = false;
+        bool gravity = true,
+             world_view = true,
+             velocity_view = false,
+             acceleration_view = false;
     } settings;
 
     enum Mode {
@@ -91,15 +88,16 @@ private:
     glm::mat4 view;
     glm::mat4 scale;
 
+    Mode mode;
+    f64 sub_dt;
+    glm::vec2 catch_offset;
+    f32 unitScale = 0.1f;
+
     // world
-    glm::vec2 world = glm::vec2(5, 2);
-    f32 world_scale = 2.4;
+    f32 world_scale = 1.2;
     f32 shift_rate = 0.002 * world_scale;
     f32 zoom_rate = 0.01 * world_scale;
-    glm::mat4 worldProjection;
-
-    std::vector<Mesh*> meshes;
-    std::vector<FixPoint*> fixPoints;
+    World world;
 
     Object2D* holding = nullptr;
     std::vector<Object2D*> preview;
@@ -109,23 +107,17 @@ private:
     FixPoint* preview_fix_point = nullptr;
     glm::dvec2 preview_pos;
 
-    Mode mode;
-    f64 sub_dt;
-    f32 unitScale = 0.1f;
-
 public:
     Rigid2DSimlution()
-        : o(glm::mat4(1)), view(o), scale(o), mode(Mode::Normal)
+        : o(glm::mat4(1)), view(o), scale(o), mode(Mode::Normal), world(glm::vec2(5, 1))
     {}
 
     virtual void Start() override {
         SandBox::Start();
 
         SetWorldProjection(glm::vec2(width, height));
-        o = worldProjection;
 
         preview.reserve(16);
-
         SetDefaultStickAttribute();
         InitializeFixPoints();
         InitializeMeshes();
@@ -135,29 +127,31 @@ public:
 
     void SetDefaultStickAttribute() {
         attri.node_color = glm::vec4(glm::vec4(COLOR(0x858AA6), 0));
-        attri.node_size = 0.6 * unitScale;
-        attri.line_width = 0.16 * unitScale;
+        attri.node_size = 0.3 * unitScale;
+        attri.line_width = 0.10 * unitScale;
         attri.hardness = 1;
     }
 
     void InitializeMeshes() {
+        auto& meshes = world.getObjectContainer<Mesh>();
         meshes.push_back(new Mesh(attri));
 
         meshes.push_back(new Mesh(attri));
-        InitString(meshes.back(), glm::vec2(-2, 4) * unitScale, 7 * unitScale, 3);
+        InitString(meshes.back(), glm::vec2(-2, 4) * unitScale, 4 * unitScale, 2);
 
         meshes.push_back(new Mesh(attri));
-        InitBox(meshes.back(), glm::vec2(-4, 0) * unitScale, 7 * unitScale);
+        InitBox(meshes.back(), glm::vec2(-4, 0) * unitScale, 4 * unitScale);
         meshes.push_back(new Mesh(attri));
-        InitBox(meshes.back(), glm::vec2(4, 0) * unitScale, 7 * unitScale);
+        InitBox(meshes.back(), glm::vec2(4, 0) * unitScale, 4 * unitScale);
 
         meshes.push_back(new Mesh(attri));
-        InitTriangle(meshes.back(), glm::vec2(0), 5 * unitScale);
+        InitTriangle(meshes.back(), glm::vec2(0), 3 * unitScale);
         meshes.push_back(new Mesh(attri));
-        InitTriangle(meshes.back(), glm::vec2(0), 5 * unitScale);
+        InitTriangle(meshes.back(), glm::vec2(0), 3 * unitScale);
     }
 
     void FreeMeshes() {
+        auto& meshes = world.getObjectContainer<Mesh>();
         for (auto& mesh : meshes){
             delete mesh;
         }
@@ -165,12 +159,14 @@ public:
     }
 
     void InitializeFixPoints() {
+        auto& fixPoints = world.getObjectContainer<FixPoint>();
         for (i32 i = 0; i < 10; i++) {
-            fixPoints.push_back(new FixPoint(8 * unitScale, glm::vec2(0, 8) * unitScale));
+            fixPoints.push_back(new FixPoint(5 * unitScale, glm::vec2(0, 8) * unitScale));
         }
     }
 
     void FreeFixPoints() {
+        auto& fixPoints = world.getObjectContainer<FixPoint>();
         for (auto& fixPoint : fixPoints){
             delete fixPoint;
         }
@@ -179,7 +175,7 @@ public:
 
     void SetWorldProjection(glm::vec2 view) {
         glm::vec2 world = world_scale * glm::vec2(view.x, view.y) / view.y;
-        worldProjection = glm::ortho(-world.x, world.x, -world.y, world.y, -1.0f, 1.0f);
+        o = glm::ortho(-world.x, world.x, -world.y, world.y, -1.0f, 1.0f);
     }
 
     glm::dvec2 MouseToWorldCoord(glm::vec2 mouse) {
@@ -187,59 +183,15 @@ public:
         return view * ((uv / o) / scale);
     }
 
-    void update_physics() {
-        for (auto& mesh : meshes) {
-            for (auto& e : mesh->entities) {
-                e->addForce(glm::vec2(0, -9.81f * e->m_mass * settings.gravity * settings.gravity_factor));
-                e->update(sub_dt);
-            }
-        }
-    }
-
-    void wall_collision(Circle* c, const glm::vec2& world) {
-        if (c->m_pos.y - c->r < -world.y) {
-            f32 ay = ((-world.y - c->m_pos.y + c->r) - (c->m_pos.y - c->m_opos.y)) / (sub_dt * sub_dt);
-            c->addForce(glm::vec2(0, ay * c->m_mass));
-        }
-        if (c->m_pos.x - c->r < -world.x) {
-            f32 ax = ((-world.x - c->m_pos.x + c->r) - (c->m_pos.x - c->m_opos.x)) / (sub_dt * sub_dt);
-            c->addForce(glm::vec2(ax * c->m_mass, 0));
-        }
-        else if (c->m_pos.x + c->r > world.x) {
-            f32 ax = ((world.x - c->m_pos.x - c->r) - (c->m_pos.x - c->m_opos.x)) / (sub_dt * sub_dt);
-            c->addForce(glm::vec2(ax * c->m_mass, 0));
-        }
-    };
-
-    void update_collision() {
-        for (auto& mesh : meshes) {
-            for (auto& e : mesh->entities) {
-                wall_collision(e, world);
-            }
-        }
-    }
-
-    void update_constraint() {
-        if (holding) {
-            holding->m_pos = MouseToWorldCoord(mouse);
-        }
-        for (auto& point : fixPoints)  {
-            point->fix();
-        }
-        for (auto& mesh : meshes) {
-            for (auto& stick : mesh->sticks) {
-                stick->update(sub_dt);
-            }
-        }
-    }
-
     virtual void update(const f64& dt) override {
         if (mode != Mode::Edit) {
             sub_dt = dt * (f64)settings.time_rate / settings.sub_step;
             for (i32 i = 0; i < settings.sub_step; i++) {
-                update_physics();
-                update_collision();
-                update_constraint();
+                world.update(sub_dt);
+                if (holding) {
+                    glm::vec2 wpos = MouseToWorldCoord(mouse);
+                    holding->m_pos = wpos - catch_offset;
+                }
             }
         }
 
@@ -253,25 +205,25 @@ public:
 
         glm::mat4 proj = o * scale * view;
 
+        auto& meshes = world.getObjectContainer<Mesh>();
         if (settings.world_view) {
-            for (auto& fixPoint : fixPoints) {
-                fixPoint->render(proj);
-            }
-
-            for (auto& mesh : meshes) {
-                for (auto& stick : mesh->sticks) {
-                    stick->render(proj);
-                }
-            }
-
-            Stick::renderer->draw(proj, glm::vec2(world.x, -world.y) - 0.2f * unitScale, glm::vec2(-world.x, -world.y) - 0.2f * unitScale, glm::vec4(1), 0.2 * unitScale);
+            world.render(proj);
+            Stick::renderer->draw(proj, glm::vec2(world.size.x, -world.size.y) - 0.2f * unitScale, glm::vec2(-world.size.x, -world.size.y) - 0.2f * unitScale, glm::vec4(1), 0.2 * unitScale);
         }
 
-        if (settings.velocity_view) {
+        if (settings.velocity_view || settings.acceleration_view) {
             for (auto& mesh : meshes) {
                 for (auto& e : mesh->entities) {
-                    glm::dvec2 v = (e->m_pos - e->m_opos) / sub_dt;
-                    Stick::renderer->draw(proj, e->m_pos, e->m_pos + v * 0.06, red, 0.05 * unitScale);
+                    if (settings.velocity_view) {
+                        Stick::renderer->draw(proj, e->m_pos, e->m_pos + e->m_velocity * 0.08, red, 0.05 * unitScale);  
+                    } 
+                    if (settings.acceleration_view) {
+                        glm::dvec2 a = ((e->m_pos - e->m_opos) / sub_dt - e->m_velocity) / sub_dt;
+                        if (glm::length(a) > 1) {
+                            a = glm::normalize(a);
+                        }
+                        Stick::renderer->draw(proj, e->m_pos, e->m_pos + a * 0.13, blue, 0.05 * unitScale);
+                    }
                 }
             }
         }
@@ -291,8 +243,8 @@ public:
         ImGui::Checkbox("gravity", &settings.gravity);
         ImGui::Checkbox("world view", &settings.world_view);
         ImGui::Checkbox("velocity view", &settings.velocity_view);
-        ImGui::SliderInt("gravity factor", &settings.gravity_factor, 1, 5);
-        ImGui::SliderFloat("time rate", &settings.time_rate, 0, 1);
+        ImGui::Checkbox("acceleration view", &settings.acceleration_view);
+        ImGui::SliderFloat("time rate", &settings.time_rate, 0.1, 1);
         ImGui::SliderInt("sub step", &settings.sub_step, 1, 100);
 
         bool motified = false;
@@ -303,6 +255,7 @@ public:
 
         if (motified) {
             preview.clear();
+            auto& meshes = world.getObjectContainer<Mesh>();
             for (auto& mesh : meshes) {
                 for (auto& stick : mesh->sticks) {
                     stick->setAttribute(attri);
@@ -332,7 +285,7 @@ public:
 
         if (mode != Mode::Action) {
             glm::vec2 wpos = MouseToWorldCoord(mouse);
-            auto circles = FindCirclesByPosition(wpos);
+            auto circles = world.findCirclesByPosition(wpos);
             for (auto& prev : preview) {
                 prev->m_color = attri.node_color;
             }
@@ -349,6 +302,7 @@ public:
 
     i32 GetSticksCount() {
         i32 result = 0;
+        auto& meshes = world.getObjectContainer<Mesh>();
         for (auto& mesh : meshes) {
             result += mesh->sticks.size();
         }
@@ -390,30 +344,8 @@ public:
         }
     }
 
-    std::vector<Circle*> FindCirclesByPosition(const glm::vec2& pos) {
-        std::vector<Circle*> result;
-        for (auto& mesh : meshes) {
-            for (auto& e : mesh->entities) {
-                if (e->r > glm::length((const glm::vec2&)e->m_pos - pos)) {
-                    result.push_back(e);
-                }
-            }
-        }
-        return result;
-    }
-
-    Circle* FindCircleByPosition(const glm::vec2& pos) {
-        for (auto& mesh : meshes) {
-            for (auto& e : mesh->entities) {
-                if (e->r > glm::length((const glm::vec2&)e->m_pos - pos)) {
-                    return e;
-                }
-            }
-        }
-        return nullptr;
-    }
-
     FixPoint* FindFixPointByPosition(const glm::vec2& pos) {
+        auto& fixPoints = world.getObjectContainer<FixPoint>();
         for (auto& point : fixPoints) {
             if (point->r > glm::length((const glm::vec2&)point->m_pos - pos)) {
                 return point;
@@ -439,13 +371,14 @@ public:
 
     void OnEdit(const MouseButtonEvent& event, const glm::dvec2& wpos) {
         if (event.button == MouseButton::Left && event.mode == KeyMode::Down) {
-            preview_node = FindCircleByPosition(wpos);
+            preview_node = world.findCircleByPosition(wpos);
             preview_fix_point = FindFixPointByPosition(wpos);
             if (!preview_node) {
                 preview_pos = wpos;
             }
         } else if (event.button == MouseButton::Left && event.mode == KeyMode::Release) {
-            Circle* second_node = FindCircleByPosition(wpos);
+            auto& meshes = world.getObjectContainer<Mesh>();
+            Circle* second_node = world.findCircleByPosition(wpos);
             FixPoint* fixPoint = FindFixPointByPosition(wpos);
 
             if (preview_node && second_node) {
@@ -475,6 +408,7 @@ public:
             }
             else {
                 if (preview_pos == wpos) {
+                    meshes[0]->entities.push_back(new Circle(preview_pos, attri.node_color, attri.node_size));
                     return;
                 }
                 f32 d = glm::length(preview_pos - wpos);
@@ -527,7 +461,10 @@ public:
 
         if (event.button == MouseButton::Left && event.mode == KeyMode::Down) {
             if (!holding) {
-                holding = FindCircleByPosition(wpos);
+                holding = world.findCircleByPosition(wpos);
+                if (holding) {
+                    catch_offset = wpos - (glm::vec2)holding->m_pos;
+                }
             }
         } else {
             holding = nullptr;
@@ -543,7 +480,6 @@ public:
     virtual void OnWindowResize(const WindowResizeEvent& event) override {
         glViewport(0, 0, event.width, event.height);
         SetWorldProjection(glm::vec2(event.width, event.height));
-        o = worldProjection;
     }
 
     ~Rigid2DSimlution() {
