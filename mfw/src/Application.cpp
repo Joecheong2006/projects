@@ -61,8 +61,8 @@ namespace mfw {
     void Application::run() {
         Start();
         while (m_window->isRunning()) {
-            Update();
             m_window->update();
+            Update();
             m_window->swapBuffers();
         }
     }

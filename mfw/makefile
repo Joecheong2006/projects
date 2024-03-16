@@ -25,6 +25,9 @@ all: bin app
 run:
 	@./$(OUT)
 
+debug:
+	@gdb -q "$(OUT)" --eval-command=run --eval-command=exit;
+
 clean:
 	@rm -rf $(OBJ) $(DEP) $(BIN)
 	@echo Cleaned

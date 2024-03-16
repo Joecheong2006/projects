@@ -20,16 +20,28 @@ namespace mfw {
 
     class Timer {
     public:
-        Timer(const std::string& message);
         Timer();
         ~Timer();
 
+        f32 getDuration();
+        void log();
+
+    private:
+        f64 duration, start;
+
+    };
+    
+    class Clock {
     private:
         const std::string message;
-        std::chrono::time_point<std::chrono::system_clock, std::chrono::duration<i64, std::ratio<1, 1000000000>>> start;
+        Timer timer;
+
+    public:
+        Clock(const std::string& message);
+        ~Clock();
 
     };
 }
 
-#define START_CLOCK_TIMER(message) mfw::Timer __timer(message)
+#define START_CLOCK_TIMER(message) mfw::Clock __duration(message)
 
