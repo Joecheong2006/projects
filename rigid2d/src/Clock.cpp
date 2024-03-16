@@ -2,22 +2,28 @@
 #include "logger.h"
 
 namespace mfw {
-    Timer::Timer(const std::string& message)
-        : message(std::move(message))
-    {
-        start = std::chrono::system_clock::now();
-    }
-
     Timer::Timer()
-        : message("")
     {
-        start = std::chrono::system_clock::now();
+        start = Time::GetCurrent();
     }
 
     Timer::~Timer() {
-        auto end = std::chrono::system_clock::now();
-        std::chrono::duration<float> duration = end - start;
-        LOG_INFO("[{}][{}ms]\n", message, duration.count() * 1000);
+        duration = getDuration();
+    }
+
+    f32 Timer::getDuration() {
+        return Time::GetCurrent() - start;
+    }
+
+    void Timer::log() {
+    }
+
+    Clock::Clock(const std::string& message)
+        : message(message)
+    {}
+
+    Clock::~Clock() {
+        LOG_INFO("[{}][{}ms]\n", message, timer.getDuration());
     }
 
 }

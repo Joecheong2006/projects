@@ -12,8 +12,6 @@ namespace mfw {
         GLCALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER));	
         GLCALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER));
 
-        GLCALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
-        GLCALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
         GLCALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR));
         GLCALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
 
@@ -27,7 +25,9 @@ namespace mfw {
 
     Texture2D::~Texture2D()
     {
-        GLCALL(glDeleteTextures(1, &m_id));
+        if (m_id) {
+            release();
+        }
     }
 
     void Texture2D::bind(u32 slot) const
@@ -39,6 +39,11 @@ namespace mfw {
     void Texture2D::unbind() const
     {
         GLCALL(glBindTexture(GL_TEXTURE_2D, 0));
+
+    }
+    void Texture2D::release() {
+        GLCALL(glDeleteTextures(1, &m_id));
+        m_id = 0;
     }
 }
 

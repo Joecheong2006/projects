@@ -15,6 +15,7 @@ namespace mfw {
 
         void bind(u32 slot = 0) const;
         void unbind() const;
+        void release();
 
         inline i32 width() { return m_width; }
         inline i32 height() { return m_height; }

@@ -21,7 +21,7 @@ namespace mfw {
             GLCALL(glEnable(GL_BLEND));
             GLCALL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
         }
-
+        
         m_window->setVSync(true);
 
         stbi_set_flip_vertically_on_load(true);
@@ -67,8 +67,8 @@ namespace mfw {
     void Application::run() {
         Start();
         while (m_window->isRunning()) {
-            Update();
             m_window->update();
+            Update();
             m_window->swapBuffers();
         }
     }

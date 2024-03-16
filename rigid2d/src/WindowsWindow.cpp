@@ -196,7 +196,8 @@ namespace mfw {
                 windowClassName,
                 m_state.title.c_str(),
                 WS_OVERLAPPEDWINDOW,
-                0, 0, m_state.width, m_state.height,
+                (GetSystemMetrics(SM_CXSCREEN) - m_state.width) / 2, (GetSystemMetrics(SM_CYSCREEN) - m_state.height) / 2,
+                m_state.width, m_state.height,
                 NULL,
                 NULL,
                 GetModuleHandle(NULL),
@@ -235,7 +236,7 @@ namespace mfw {
 
     void WindowsWindow::processMessage() {
         MSG msg{};
-        while(PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
+        while(PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
