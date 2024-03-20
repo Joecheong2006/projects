@@ -1,5 +1,5 @@
 #pragma once
-#include "Object.h"
+#include "util.h"
 
 #define SET_CONSTRAINT_NORMAL_BEHAVIOUR(type) \
     static ConstraintType GetType() {\

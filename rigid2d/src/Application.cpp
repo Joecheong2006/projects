@@ -49,7 +49,7 @@ namespace mfw {
                     CursorMove(static_cast<const CursorMoveEvent&>(event));
                 });
         eventListener.addEventFunc<WindowFocusEvent>([this](const Event& event) {
-                    LOG_INFO("{}\n", event);
+                    WindowFocus(static_cast<const WindowFocusEvent&>(event));
                 });
         eventListener.addEventFunc<WindowNotFocusEvent>([this](const Event& event) {
                     LOG_INFO("{}\n", event);
@@ -69,7 +69,7 @@ namespace mfw {
         while (m_window->isRunning()) {
             m_window->update();
             Update();
-            m_window->swapBuffers();
+            //m_window->swapBuffers();
         }
     }
 

@@ -1,6 +1,6 @@
 CC = g++
 PCH = src/mfwpch.h
-CFLAGS := -std=c++11 -Wall -Wextra -Wpedantic -Wstrict-aliasing -g -include $(PCH) -DDEBUG -DUNICODE -D_UNICODE
+CFLAGS := -std=c++11 -Wall -Wextra -Wpedantic -Wstrict-aliasing -g -include $(PCH) -DDEBUG -DUNICODE -Os
 SOURCE = src src/**
 LIBRARY = lib/stb_image lib/imgui
 INCLUDE = -Ilib -Ilib/stb_image -Ilib/imgui -Isrc

@@ -1,5 +1,6 @@
 #include "VertexBuffer.h"
 #include "Renderer.h"
+#include "mfwlog.h"
 #include "glad/gl.h"
 
 

@@ -1,8 +1,23 @@
 #pragma once
 
+#include "logger.h"
 #if defined(DEBUG) || defined(_DEBUG)
 #include <mfwpch.h>
-#include "logger.h"
+
+#define ASSERT(x) \
+    if(!(x)) __debugbreak();
+#define LOG_TRACE(...) \
+    Log::Trace(__VA_ARGS__);
+#define LOG_DEBUG(...) \
+    Log::Debug(__VA_ARGS__);
+#define LOG_INFO(...) \
+    Log::Info(__VA_ARGS__);
+#define LOG_WARN(...) \
+    Log::Warn(__VA_ARGS__);
+#define LOG_ERROR(...) \
+    Log::Error(__VA_ARGS__);
+#define LOG_FATAL(...) \
+    Log::Fatal(__VA_ARGS__);
 
 namespace Log {
     template <typename T>
@@ -23,7 +38,11 @@ namespace Log {
 
 #else
 #define ASSERT(x)
-#define MFW_LOG_INFO(format, ...)
-#define MFW_LOG_INFOLN(format, ...)
+#define LOG_TRACE(...)
+#define LOG_DEBUG(...)
+#define LOG_INFO(...)
+#define LOG_WARN(...)
+#define LOG_ERROR(...)
+#define LOG_FATAL(...)
 #endif
 

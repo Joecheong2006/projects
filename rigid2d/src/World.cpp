@@ -14,24 +14,21 @@ void World::clear() {
         for (auto& object : container.second) {
             delete object;
         }
-        container.second.clear();
     }
-    objectContainers.clear();
+    objectContainers = {};
     for (auto& container : constraintContainers) {
         for (auto& constraint : container.second) {
             delete constraint;
         }
-        container.second.clear();
     }
-    constraintContainers.clear();
+    constraintContainers = {};
 }
 
 void World::update(const f64& dt) {
     for (auto& container : objectContainers) {
         for (auto& object : container.second) {
-            object->addForce(gravity * object->m_mass);
             object->update(dt);
-            object->m_acceleration *= 0.6;
+            object->addForce(gravity * object->m_mass);
         }
     }
     for (auto& containter : constraintContainers) {

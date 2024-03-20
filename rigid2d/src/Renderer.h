@@ -1,7 +1,6 @@
 #pragma once
 
 #include "util.h"
-#include "logger.h"
 #include "glm/glm.hpp"
 
 #include "VertexArray.h"
@@ -10,6 +9,10 @@
 #include "Texture2D.h"
 
 #define COLOR(val) ((u32)val >> 16) / 255.0, (((u32)val << 16) >> 24) / 255.0, (((u32)val << 24) >> 24) / 255.0
+
+const glm::vec3 red = glm::vec3(COLOR(0xff0000));
+const glm::vec3 green = glm::vec3(COLOR(0x00ff00));
+const glm::vec3 blue = glm::vec3(COLOR(0x0000ff));
 
 class Circle;
 namespace mfw {
@@ -42,10 +45,11 @@ namespace mfw {
 }
 
 #if defined(DEBUG) || defined(_DEBUG)
-#define GLCALL(x) mfw::GLClearError(); \
+#define GLCALL(x)\
+    mfw::GLClearError();\
     x;\
     ASSERT(mfw::GLLogCall(__FILE__, __LINE__, #x))
 #else
-#define GLCALL(x)
+#define GLCALL(x) x
 #endif
 

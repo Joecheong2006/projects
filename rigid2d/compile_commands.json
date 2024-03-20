@@ -11,8 +11,7 @@
       "-Ilib",
       "-Isrc",
       "-DDEBUG",
-      "-DUNICODE",
-      "-D_UNICODE"
+      "-DUNICODE"
     ],
     "directory": "D:/project/rigid2d",
     "file": "src/main.cpp"

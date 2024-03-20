@@ -18,5 +18,7 @@ public:
 
     Object* target[2];
     f32 d;
+    f64 hardness = 1;
+    glm::vec3 color;
     
 };

@@ -1,6 +1,7 @@
 #include "IndexBuffer.h"
 #include "Renderer.h"
 #include "glad/gl.h"
+#include "mfwlog.h"
 
 namespace mfw {
     IndexBuffer::IndexBuffer(const u32* data, u32 count)

@@ -2,6 +2,7 @@
 
 #include "glad/gl.h"
 #include "Renderer.h"
+#include "mfwlog.h"
 #include "glm/gtc/type_ptr.hpp"
 
 namespace mfw {

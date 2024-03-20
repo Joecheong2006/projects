@@ -15,23 +15,25 @@ public:
     glm::vec2 size;
     glm::dvec2 gravity;
 
+    World() {}
     explicit World(glm::vec2 size, glm::dvec2 gravity = glm::dvec2(0, -9.81));
-
     ~World();
     
     void clear();
     void update(const f64& dt);
 
-    template <typename T>
-    inline T* addObject(T* object) {
-        objectContainers[T::GetType()].push_back(object);
-        return object;
+    template <typename T, typename... Args>
+    inline T* addObject(const Args& ...args) {
+        T* result = new T(args...);
+        objectContainers[T::GetType()].push_back(result);
+        return result;
     }
 
-    template <typename T>
-    inline T* addConstraint(T* object) {
-        constraintContainers[T::GetType()].push_back(object);
-        return object;
+    template <typename T, typename... Args>
+    inline T* addConstraint(const Args& ...args) {
+        T* result = new T(args...);
+        constraintContainers[T::GetType()].push_back(result);
+        return result;
     }
 
     template <typename T>
@@ -42,6 +44,7 @@ public:
     template <typename T>
     inline ConstraintContainer& getConstraint() {
         return constraintContainers[T::GetType()];
+         
     }
 
 };

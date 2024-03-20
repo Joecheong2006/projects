@@ -1,6 +1,7 @@
 #include "Texture2D.h"
 #include "stb_image.h"
 #include "Renderer.h"
+#include "mfwlog.h"
 #include "glad/gl.h"
 
 namespace mfw {
