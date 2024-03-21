@@ -3,7 +3,6 @@
 
 class TestScene : public Scene {
 public:
-    f32 unitScale = 0.2;
     TestScene();
 
     virtual void update(const f64& dt) override;

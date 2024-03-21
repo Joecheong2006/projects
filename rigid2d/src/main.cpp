@@ -63,7 +63,7 @@ public:
 class Simluation : public SandBox {
 private:
     struct Settings {
-        i32 sub_step = 5;
+        i32 sub_step = 500;
         bool pause = false,
              gravity = true,
              world_view = true,
@@ -80,7 +80,6 @@ private:
 
     f64 sub_dt;
     glm::vec2 catch_offset;
-    f32 unitScale = 0.2f;
 
     Object* holding = nullptr;
     std::vector<Object*> preview;
@@ -88,10 +87,10 @@ private:
     mfw::Renderer renderer;
 
     // world
-    f32 world_scale = 16 * unitScale;
-    f32 shift_rate = 0.001 * world_scale;
-    f32 zoom_rate = 0.01 * world_scale;
-    f32 zoom = 1;
+    f32 world_scale;
+    f32 shift_rate;
+    f32 zoom_rate;
+    f32 zoom;
 
     Scene* scene = new TestScene();
 
@@ -99,6 +98,10 @@ public:
     Simluation()
         : mode(Mode::Normal)
     {
+        world_scale = 10 * scene->unitScale;
+        shift_rate = 0.001 * world_scale;
+        zoom_rate = 0.01 * world_scale;
+        zoom = 1;
     }
 
     virtual void Start() override {
@@ -175,6 +178,7 @@ public:
             scene->render(renderer);
         }
 
+        auto& unitScale = scene->unitScale;
         if (settings.velocity_view || settings.acceleration_view) {
             auto& objects = scene->world.getObjects<Circle>();
             for (auto& obj : objects) {
@@ -218,8 +222,10 @@ public:
 
         ImGui::Begin("config");
 
+        auto& unitScale = scene->unitScale;
         ImGui::Text("SF:%d", (i32)(1.0 / sub_dt));
         ImGui::Text("ST[ms]:%.2g", 1000.0 * update_frame);
+        ImGui::Text("RT[ms]:%.2g", 1000.0 * render_frame);
         ImGui::Text("FPS:%5.1f", 1.0 / frame);
         ImGui::Text("objects:%d", GetObjectsCount());
         ImGui::Text("unit:%gcm", unitScale * 100);

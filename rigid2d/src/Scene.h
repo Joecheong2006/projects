@@ -13,8 +13,10 @@ struct Scene {
     virtual void update(const f64& dt) = 0;
     virtual void render(mfw::Renderer& renderer) = 0;
     virtual void reset() = 0;
+
     World world;
     Camera camera;
+    f32 unitScale = 0.35;
 
     struct Attribute {
         glm::vec4 node_color;
