@@ -18,9 +18,9 @@ TestScene::TestScene() {
 void TestScene::reset() {
     world.clear();
     SetDefaultStickAttribute();
-    //InitializePointConstraint();
-    SetupDoublePendulum(30, 4);
-    //SetupRotateBox();
+    //SetupDoublePendulum(30, 4);
+    InitializePointConstraint();
+    SetupRotateBox();
 }
 
 void TestScene::update(const f64& dt) {
@@ -50,20 +50,22 @@ void TestScene::render(mfw::Renderer& renderer) {
     }
 
     auto& circles = world.getObjects<Circle>();
+
     for (auto& obj : circles) {
         const Circle* circle = static_cast<Circle*>(obj);
         circle->render(proj, renderer);
     }
 
     {
-        static const i32 max = 90;
-        static const f32 scale = 0.06;
-        static std::list<glm::vec2> positions_trace;
+        static const i32 max = 200;
+        static const f32 scale = 0.05;
+        static std::list<glm::vec2> positions_trace{};
 
         if ((i32)positions_trace.size() >= max) {
             positions_trace.pop_front();
         }
         positions_trace.push_back(circles.back()->m_pos);
+
         f32 i = 0;
         for (auto iter = positions_trace.begin(); iter != positions_trace.end();) {
             const glm::vec2 p1 = *iter;
@@ -73,8 +75,10 @@ void TestScene::render(mfw::Renderer& renderer) {
             const glm::vec2 p2 = *iter;
             const glm::vec3 trace = glm::vec3(COLOR(0xc73e3e)), background = glm::vec3(COLOR(0x191919));
             const glm::vec3 color = (trace - background) * (i++ / positions_trace.size()) + background;
-            renderer.renderCircle(proj, { p2, color, scale * unitScale * ((i + 10.0f) / positions_trace.size()) });
-            renderer.renderRactangle(proj, p1, p2, color, scale * unitScale * ((i + 10.0f) / positions_trace.size()));
+            const f32 t = scale * unitScale * ((i + 30.0f) / positions_trace.size());
+            renderer.renderCircle(proj, { p1, color, t });
+            renderer.renderCircle(proj, { p2, color, t });
+            renderer.renderRactangle(proj, p1, p2, color, t);
         }
     }
 
@@ -93,7 +97,7 @@ void TestScene::SetupDoublePendulum(f64 angle, f64 d) {
     world.addConstraint<DistanceConstraint>(p2, p3, d * unitScale);
     AddFixPointConstraint(world, glm::vec2(), attri.node_size * 1.5)
         ->target = p1;
-    p3->m_mass = 3;
+    p3->m_mass = 2;
     p3->r = p3->m_mass * unitScale * 0.2;
 }
 
@@ -127,7 +131,7 @@ void TestScene::InitializePointConstraint() {
 
 void TestScene::SetDefaultStickAttribute() {
     attri.node_color = glm::vec4(glm::vec4(COLOR(0x858AA6), 0));
-    attri.node_size = 0.35 * unitScale;
+    attri.node_size = 0.24 * unitScale;
     attri.line_width = 0.08 * unitScale;
     attri.hardness = 1;
 }

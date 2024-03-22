@@ -8,5 +8,6 @@ in vec2 texture_coord;
 void main()
 {
     vec2 uv = (texture_coord) * 2 - 1;
-    frag_color = vec4(color, smoothstep(0, 0.095, 1 - length(uv)));
+    float a = smoothstep(0, 0.07, 1 - length(uv));
+    frag_color = vec4(color, a);
 };

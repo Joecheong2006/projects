@@ -108,6 +108,14 @@ public:
         SandBox::Start();
         preview.reserve(16);
         SetWorldProjection(glm::vec2(width, height));
+
+        i32 sub_step = 500;
+        bool pause = false,
+             gravity = true,
+             world_view = true,
+             velocity_view = false,
+             acceleration_view = false;
+
         glClearColor(0.1, 0.1, 0.1, 1);
     }
 
@@ -117,19 +125,19 @@ public:
     }
 
     void wall_collision(f64 dt, Circle* c, const glm::vec2& world) {
-        static f64 bounce = 0.3;
+        static f64 bounce = 0.5;
         glm::vec2 a{}, s{};
         if (c->m_pos.y - c->r < -world.y) {
             s.y = -world.y - c->m_pos.y + c->r;
-            a.y = (c->m_velocity.y * -bounce - c->m_ovelocity.y) / dt;
+            a.y = (c->m_velocity.y * (-bounce  - 1)) / dt;
         }
         if (c->m_pos.x - c->r < -world.x) {
             s.x = -world.x - c->m_pos.x + c->r;
-            a.x = (c->m_velocity.x * -bounce - c->m_ovelocity.x) / dt;
+            a.x = (c->m_velocity.x * (-bounce - 1)) / dt;
         }
         else if (c->m_pos.x + c->r > world.x) {
             s.x = world.x - c->m_pos.x - c->r;
-            a.x = (c->m_velocity.x * -bounce - c->m_ovelocity.x) / dt;
+            a.x = (c->m_velocity.x * (-bounce - 1)) / dt;
         }
         c->m_pos += s;
         c->m_acceleration += a;
@@ -184,14 +192,14 @@ public:
             for (auto& obj : objects) {
                 if (settings.acceleration_view) {
                     glm::dvec2 a = (obj->m_velocity - obj->m_ovelocity) / (sub_dt * 30.0);
-                    a = obj->m_acceleration / 30.0;
+                    //a = obj->m_acceleration / 20.0;
                     renderer.renderRactangle(proj, obj->m_pos,
-                            obj->m_pos + a * (f64)unitScale, glm::vec3(COLOR(0x2a8de5)), 0.05 * unitScale);
+                            obj->m_pos + a * (f64)unitScale, blue, 0.02 * unitScale);
                 }
                 if (settings.velocity_view) {
                     glm::dvec2 v = obj->m_velocity / 6.0;
                     renderer.renderRactangle(proj, obj->m_pos, 
-                            obj->m_pos + v * (f64)unitScale, glm::vec3(COLOR(0xc73e3e)), 0.05 * unitScale);
+                            obj->m_pos + v * (f64)unitScale, red, 0.02 * unitScale);
                 }
             }
         }
@@ -229,33 +237,33 @@ public:
         ImGui::Text("FPS:%5.1f", 1.0 / frame);
         ImGui::Text("objects:%d", GetObjectsCount());
         ImGui::Text("unit:%gcm", unitScale * 100);
+        ImGui::Text("Step:%d", settings.sub_step);
 
         ImGui::Checkbox("pause", &settings.pause);
         ImGui::Checkbox("gravity", &settings.gravity);
         ImGui::Checkbox("world view", &settings.world_view);
         ImGui::Checkbox("velocity view", &settings.velocity_view);
         ImGui::Checkbox("acceleration view", &settings.acceleration_view);
-        ImGui::SliderInt("sub step", &settings.sub_step, 1, 1000);
 
         bool motified = false;
         auto& attri = scene->attri;
-        motified |= ImGui::SliderFloat("hardness", &attri.hardness, 0.01f, 1.0f);
-        motified |= ImGui::SliderFloat("line width", &attri.line_width, 0.01f * unitScale, 0.3f * unitScale);
-        motified |= ImGui::SliderFloat("node size", &attri.node_size, 0.1f * unitScale, 1 * unitScale);
-        motified |= ImGui::ColorEdit3("node color", glm::value_ptr(attri.node_color));
-
-        if (motified) {
-            preview.clear();
-            for (auto& obj : scene->world.getObjects<Circle>()) {
-                Circle* circle = static_cast<Circle*>(obj);
-                circle->m_color = attri.node_color;
-                circle->r = attri.node_size;
-            }
-            for (auto& obj : scene->world.getConstraint<DistanceConstraint>()) {
-                DistanceConstraint* dc = static_cast<DistanceConstraint*>(obj);
-                dc->hardness = attri.hardness;
-            }
-        }
+        // motified |= ImGui::SliderFloat("hardness", &attri.hardness, 0.01f, 1.0f);
+        // motified |= ImGui::SliderFloat("line width", &attri.line_width, 0.01f * unitScale, 0.3f * unitScale);
+        // motified |= ImGui::SliderFloat("node size", &attri.node_size, 0.1f * unitScale, 1 * unitScale);
+        // motified |= ImGui::ColorEdit3("node color", glm::value_ptr(attri.node_color));
+        //
+        // if (motified) {
+        //     preview.clear();
+        //     for (auto& obj : scene->world.getObjects<Circle>()) {
+        //         Circle* circle = static_cast<Circle*>(obj);
+        //         circle->m_color = attri.node_color;
+        //         circle->r = attri.node_size;
+        //     }
+        //     for (auto& obj : scene->world.getConstraint<DistanceConstraint>()) {
+        //         DistanceConstraint* dc = static_cast<DistanceConstraint*>(obj);
+        //         dc->hardness = attri.hardness;
+        //     }
+        // }
 
         if (ImGui::Button("restart")) {
             scene->reset();

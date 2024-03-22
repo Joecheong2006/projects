@@ -68,7 +68,8 @@ PointConstraint* Scene::AddHorizontalPointConstraint(World& world, const glm::dv
                     if (pc->target) {
                         pc->self.m_pos.x = pc->target->m_pos.x;
                         pc->target->m_pos.y = pc->self.m_pos.y;
-                        pc->target->m_acceleration.y = {};
+                        pc->target->m_acceleration.y = 0;
+                        pc->target->m_velocity.y = 0;
                     }
                 });
     result->self = Object(pos, 0, glm::vec3(COLOR(0x3c4467)));
@@ -81,6 +82,7 @@ PointConstraint* Scene::AddFixPointConstraint(World& world, const glm::dvec2& po
                     if (pc->target) {
                         pc->target->m_pos = pc->self.m_pos;
                         pc->target->m_acceleration = {};
+                        pc->target->m_velocity = {};
                     }
                 });
     result->self = Object(pos, 0, glm::vec3(COLOR(0x486577)));
