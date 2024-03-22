@@ -1,4 +1,4 @@
-#include "TestScene.h"
+#include "DemoSimluation.h"
 
 #include "DistanceConstraint.h"
 #include "PointConstraint.h"
@@ -10,24 +10,64 @@
 #include "Application.h"
 #include <list>
 
-TestScene::TestScene() {
+Simluation* Simluation::Instance = new DemoSimluation();
+
+void wall_collision(f64 dt, Circle* c, const glm::vec2& world) {
+    static f64 bounce = 0.5;
+    glm::vec2 a{}, s{};
+    if (c->m_pos.y - c->r < -world.y) {
+        s.y = -world.y - c->m_pos.y + c->r;
+        a.y = (c->m_velocity.y * (-bounce  - 1)) / dt;
+    }
+    if (c->m_pos.x - c->r < -world.x) {
+        s.x = -world.x - c->m_pos.x + c->r;
+        a.x = (c->m_velocity.x * (-bounce - 1)) / dt;
+    }
+    else if (c->m_pos.x + c->r > world.x) {
+        s.x = world.x - c->m_pos.x - c->r;
+        a.x = (c->m_velocity.x * (-bounce - 1)) / dt;
+    }
+    c->m_pos += s;
+    c->m_acceleration += a;
+};
+
+DemoSimluation::DemoSimluation()
+    : Simluation("Double Pendulum")
+{
     world = World(glm::vec2(30, 14) * unitScale);
     reset();
 }
 
-void TestScene::reset() {
+void DemoSimluation::reset() {
     world.clear();
-    SetDefaultStickAttribute();
-    //SetupDoublePendulum(30, 4);
-    InitializePointConstraint();
-    SetupRotateBox();
+
+    attri.node_color = glm::vec4(glm::vec4(COLOR(0x858AA6), 0));
+    attri.node_size = 0.24 * unitScale;
+    attri.line_width = 0.08 * unitScale;
+    attri.hardness = 1;
+
+    addDoublePendulum(30, 4);
+
+    for (i32 i = 0; i < 4; i++) {
+        addFixPointConstraint(world, glm::vec2(-4, 4) * unitScale, attri.node_size * 1.5);
+    }
+    for (i32 i = 0; i < 4; i++) {
+        addHorizontalPointConstraint(world, glm::vec2(4, 4) * unitScale, attri.node_size * 1.5);
+    }
+
+    // InitializePointConstraint();
+    // SetupRotateBox();
 }
 
-void TestScene::update(const f64& dt) {
+void DemoSimluation::update(const f64& dt) {
     (void)dt;
+    world.update(dt);
+    for (auto& obj : world.getObjects<Circle>()) {
+        wall_collision(dt, static_cast<Circle*>(obj), world.size);
+    }
 }
 
-void TestScene::render(mfw::Renderer& renderer) {
+void DemoSimluation::render(mfw::Renderer& renderer) {
     glm::mat4 proj = camera.getProjection();
     for (auto& obj : world.getConstraint<PointConstraint>()) {
         const PointConstraint* point = static_cast<PointConstraint*>(obj);
@@ -40,7 +80,7 @@ void TestScene::render(mfw::Renderer& renderer) {
 
         continue;
         const glm::dvec2 a = dc->target[0]->m_pos, b = dc->target[1]->m_pos;
-        const glm::dvec2 m = mouseToWorldCoord(mfw::Application::Get()->GetWindow());
+        const glm::dvec2 m = mouseToWorldCoord();
         const f64 d = glm::dot(b - a, m - a) / glm::length(b - a);
         const glm::dvec2 p = glm::normalize(b - a) * glm::clamp(d, 0.0, glm::length(b - a));
         glm::dvec2 offset = glm::normalize(m - a - p) * (f64)(attri.node_size * 0.5);
@@ -84,55 +124,5 @@ void TestScene::render(mfw::Renderer& renderer) {
 
     renderer.renderRactangle(proj, glm::vec2(world.size.x, -world.size.y) - 0.2f * unitScale, glm::vec2(-world.size.x, -world.size.y) - 0.2f * unitScale, glm::vec4(1), 0.2 * unitScale);
 
-}
-
-void TestScene::SetupDoublePendulum(f64 angle, f64 d) {
-    f64 r = angle * 3.14 / 180;
-    glm::dvec2 direction = glm::normalize(glm::dvec2(cos(r), sin(r))) * d * (f64)unitScale;
-
-    auto p1 = world.addObject<Circle>(glm::vec2(), attri.node_color, attri.node_size);
-    auto p2 = world.addObject<Circle>(direction, attri.node_color, attri.node_size);
-    auto p3 = world.addObject<Circle>(direction * 2.0, attri.node_color, attri.node_size);
-    world.addConstraint<DistanceConstraint>(p1, p2, d * unitScale);
-    world.addConstraint<DistanceConstraint>(p2, p3, d * unitScale);
-    AddFixPointConstraint(world, glm::vec2(), attri.node_size * 1.5)
-        ->target = p1;
-    p3->m_mass = 2;
-    p3->r = p3->m_mass * unitScale * 0.2;
-}
-
-void TestScene::SetupRotateBox() {
-    InitBox(world, glm::vec2(), 5 * unitScale);
-    auto& boxCenter = world.getObjects<Circle>().back();
-    auto& c1 = world.getObjects<Circle>()[0];
-    auto& c2 = world.getObjects<Circle>()[2];
-    AddFixPointConstraint(world, glm::vec2(), attri.node_size * 1.5)
-        ->target = boxCenter;
-
-    auto h1 = AddHorizontalPointConstraint(world, glm::vec2(9, 0) * unitScale, attri.node_size * 1.5);
-    auto h2 = AddHorizontalPointConstraint(world, glm::vec2(-9, 0) * unitScale, attri.node_size * 1.5);
-    auto p1 = world.addObject<Circle>(h1->self.m_pos, attri.node_color, attri.node_size);
-    auto p2 = world.addObject<Circle>(h2->self.m_pos, attri.node_color, attri.node_size);
-    f64 l = glm::length(p1->m_pos - c1->m_pos);
-    world.addConstraint<DistanceConstraint>(c1, p1, l);
-    world.addConstraint<DistanceConstraint>(c2, p2, l);
-    h1->target = p1;
-    h2->target = p2;
-}
-
-void TestScene::InitializePointConstraint() {
-    for (i32 i = 0; i < 4; i++) {
-        AddFixPointConstraint(world, glm::vec2(-4, 4) * unitScale, attri.node_size * 1.5);
-    }
-    for (i32 i = 0; i < 4; i++) {
-        AddHorizontalPointConstraint(world, glm::vec2(4, 4) * unitScale, attri.node_size * 1.5);
-    }
-}
-
-void TestScene::SetDefaultStickAttribute() {
-    attri.node_color = glm::vec4(glm::vec4(COLOR(0x858AA6), 0));
-    attri.node_size = 0.24 * unitScale;
-    attri.line_width = 0.08 * unitScale;
-    attri.hardness = 1;
 }
 

@@ -1,4 +1,4 @@
-#include "Scene.h"
+#include "Simluation.h"
 
 #include "DistanceConstraint.h"
 #include "PointConstraint.h"
@@ -8,7 +8,7 @@
 #include "Input.h"
 #include "Application.h"
 
-void Scene::InitString(World& world, const glm::vec2& pos, u32 node, f32 length) {
+void Simluation::addString(const glm::vec2& pos, u32 node, f32 length) {
     ASSERT(node > 0);
 
     auto& circles = world.getObjects<Circle>();
@@ -23,7 +23,7 @@ void Scene::InitString(World& world, const glm::vec2& pos, u32 node, f32 length)
     }
 }
 
-void Scene::InitCircle(World& world, const glm::vec2& pos, i32 n, f32 r, i32 nstep) {
+void Simluation::addCircle(const glm::vec2& pos, i32 n, f32 r, i32 nstep) {
     ASSERT(r > 0 && n > 2 && nstep > 0);
     static const f32 pi = 3.14159265359f;
 
@@ -51,18 +51,52 @@ void Scene::InitCircle(World& world, const glm::vec2& pos, i32 n, f32 r, i32 nst
     }
 }
 
-void Scene::InitBox(World& mesh, const glm::vec2& pos, f32 l)
+void Simluation::addBox(const glm::vec2& pos, f32 l)
 {
     ASSERT(l > 0);
-    InitCircle(mesh, pos, 4, sqrt(2.0f) * l * 0.5);
+    addCircle(pos, 4, sqrt(2.0f) * l * 0.5);
 }
 
-void Scene::InitTriangle(World& mesh, const glm::vec2& pos, f32 l) {
+void Simluation::addTriangle(const glm::vec2& pos, f32 l) {
     ASSERT(l > 0);
-    InitCircle(mesh, pos, 3, l);
+    addCircle(pos, 3, l);
 }
 
-PointConstraint* Scene::AddHorizontalPointConstraint(World& world, const glm::dvec2& pos, f32 r) {
+void Simluation::addDoublePendulum(f64 angle, f64 d) {
+    f64 r = angle * 3.14 / 180;
+    glm::dvec2 direction = glm::normalize(glm::dvec2(cos(r), sin(r))) * d * (f64)unitScale;
+
+    auto p1 = world.addObject<Circle>(glm::vec2(), attri.node_color, attri.node_size);
+    auto p2 = world.addObject<Circle>(direction, attri.node_color, attri.node_size);
+    auto p3 = world.addObject<Circle>(direction * 2.0, attri.node_color, attri.node_size);
+    world.addConstraint<DistanceConstraint>(p1, p2, d * unitScale);
+    world.addConstraint<DistanceConstraint>(p2, p3, d * unitScale);
+    addFixPointConstraint(world, glm::vec2(), attri.node_size * 1.5)
+        ->target = p1;
+    p3->m_mass = 2;
+    p3->r = p3->m_mass * unitScale * 0.2;
+}
+
+void Simluation::SetupRotateBox() {
+    addBox(glm::vec2(), 5 * unitScale);
+    auto& boxCenter = world.getObjects<Circle>().back();
+    auto& c1 = world.getObjects<Circle>()[0];
+    auto& c2 = world.getObjects<Circle>()[2];
+    addFixPointConstraint(world, glm::vec2(), attri.node_size * 1.5)
+        ->target = boxCenter;
+
+    auto h1 = addHorizontalPointConstraint(world, glm::vec2(9, 0) * unitScale, attri.node_size * 1.5);
+    auto h2 = addHorizontalPointConstraint(world, glm::vec2(-9, 0) * unitScale, attri.node_size * 1.5);
+    auto p1 = world.addObject<Circle>(h1->self.m_pos, attri.node_color, attri.node_size);
+    auto p2 = world.addObject<Circle>(h2->self.m_pos, attri.node_color, attri.node_size);
+    f64 l = glm::length(p1->m_pos - c1->m_pos);
+    world.addConstraint<DistanceConstraint>(c1, p1, l);
+    world.addConstraint<DistanceConstraint>(c2, p2, l);
+    h1->target = p1;
+    h2->target = p2;
+}
+
+PointConstraint* Simluation::addHorizontalPointConstraint(World& world, const glm::dvec2& pos, f32 r) {
     auto result = world.addConstraint<PointConstraint>(r, [](const f64& dt, PointConstraint* pc) {
                     (void) dt;
                     if (pc->target) {
@@ -76,7 +110,7 @@ PointConstraint* Scene::AddHorizontalPointConstraint(World& world, const glm::dv
     return result;
 }
 
-PointConstraint* Scene::AddFixPointConstraint(World& world, const glm::dvec2& pos, f32 r) {
+PointConstraint* Simluation::addFixPointConstraint(World& world, const glm::dvec2& pos, f32 r) {
     auto result = world.addConstraint<PointConstraint>(r, [](const f64& dt, PointConstraint* pc) {
                     (void) dt;
                     if (pc->target) {
@@ -89,7 +123,8 @@ PointConstraint* Scene::AddFixPointConstraint(World& world, const glm::dvec2& po
     return result;
 }
 
-glm::dvec2 Scene::mouseToWorldCoord(mfw::Window* main) {
+glm::dvec2 Simluation::mouseToWorldCoord() {
+    mfw::Window* main = mfw::Application::Get()->GetWindow();
     auto& mouse = mfw::Input::GetMouse();
     f32 width = main->width(), height = main->height();
     glm::vec4 uv = glm::vec4(mouse.first / width, 1 - mouse.second / height, 0, 0) * 2.0f - 1.0f;

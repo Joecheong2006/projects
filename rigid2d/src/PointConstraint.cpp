@@ -1,5 +1,7 @@
 #include "PointConstraint.h"
+
 #include "Renderer.h"
+#include "Circle.h"
 
 PointConstraint::PointConstraint(f32 d, std::function<void(const f64& dt, PointConstraint* pc)> update)
     : update(update), d(d), target(nullptr)

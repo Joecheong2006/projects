@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Constraint.h"
-#include "Circle.h"
+#include "Object.h"
 #include "util.h"
 #include <mfwpch.h>
 
