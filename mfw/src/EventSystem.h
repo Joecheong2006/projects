@@ -1,7 +1,7 @@
 #pragma once
 
 #include "util.h"
-#include <mfwlog.h>
+#include "mfwlog.h"
 
 #define LOG_EVENT_INFO(event) LOG_INFO("{}\n", static_cast<const Event&>(event))
 

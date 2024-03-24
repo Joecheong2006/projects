@@ -11,6 +11,7 @@
 #include "DistanceConstraint.h"
 #include "Simluation.h"
 #include "Circle.h"
+#include "DemoSimluation.h"
 
 using namespace mfw;
 
@@ -24,7 +25,7 @@ namespace Log {
     };
 }
 
-static Simluation* simu;
+static Simluation* simu = new DemoSimluation();
 
 std::vector<Circle*> FindCirclesByPosition(const glm::vec2& pos) {
     std::vector<Circle*> result;
@@ -77,7 +78,6 @@ void PhysicsEmulator::UpdateStatus() {
 PhysicsEmulator::PhysicsEmulator()
     : Application("rigid2d", 1440, 960), mode(Mode::Normal)
 {
-    simu = Simluation::Instance;
     ASSERT(simu != nullptr);
 
     world_scale = 10 * simu->unitScale;
@@ -86,14 +86,19 @@ PhysicsEmulator::PhysicsEmulator()
     zoom = 1;
 }
 
+PhysicsEmulator::~PhysicsEmulator() {
+    if (simu)
+        delete simu;
+}
+
 void PhysicsEmulator::Start() {
-    UpdateStatus();
     GetWindow()->setVSync(true);
+    UpdateStatus();
 
     preview.reserve(16);
     SetWorldProjection(glm::vec2(width, height));
 
-    settings.sub_step = 500;
+    settings.sub_step = 100;
     settings.pause = false,
     settings.gravity = true,
     settings.world_view = true,
@@ -101,6 +106,17 @@ void PhysicsEmulator::Start() {
     settings.acceleration_view = false;
 
     glClearColor(0.1, 0.1, 0.1, 1);
+}
+
+void PhysicsEmulator::Update() {
+    static f64 start = Time::GetCurrent();
+    UpdateStatus();
+    update(1.0 / fps); 
+    render();
+    renderImgui();
+    frame = Time::GetCurrent() - start;
+    start += frame;
+    // printf("%g\n", frame * 1000.0);
 }
 
 void PhysicsEmulator::SetWorldProjection(glm::vec2 view) {
@@ -184,7 +200,18 @@ void PhysicsEmulator::renderImgui() {
     ImGui::Text("SF:%d", (i32)(1.0 / sub_dt));
     ImGui::Text("ST[ms]:%.2g", 1000.0 * update_frame);
     ImGui::Text("RT[ms]:%.2g", 1000.0 * render_frame);
-    ImGui::Text("FPS:%5.1f", 1.0 / frame);
+
+    {
+        static f32 fps = 0, averCount = 0, averFps = 1.0 / frame, averTake = int(this->fps / 15);
+        fps += 1.0f / frame;
+        if (++averCount >= averTake) {
+            averFps = fps / averTake;
+            fps = 0;
+            averCount = 0;
+        }
+        ImGui::Text("FPS:%5.2f", averFps);
+    }
+
     ImGui::Text("objects:%d", GetObjectsCount());
     ImGui::Text("unit:%gcm", unitScale * 100);
     ImGui::Text("Step:%d", settings.sub_step);
@@ -222,18 +249,6 @@ void PhysicsEmulator::renderImgui() {
             circle->m_color = glm::vec4(COLOR(0x5D627E), 0);
         }
     }
-}
-
-void PhysicsEmulator::Update() {
-    static f64 start = Time::GetCurrent();
-    UpdateStatus();
-    update(1.0 / fps); 
-    render();
-    renderImgui();
-    GetWindow()->swapBuffers();
-    frame = Time::GetCurrent() - start;
-    start += frame;
-    // printf("%g\n", frame * 1000.0);
 }
 
 void PhysicsEmulator::OnInputKey(const KeyEvent& event) {
@@ -313,12 +328,12 @@ void PhysicsEmulator::OnEdit(const MouseButtonEvent& event, const glm::dvec2& wp
                 return;
             }
             f64 d = glm::length(preview_node->m_pos - second_node->m_pos);
-            simu->world.addConstraint<DistanceConstraint>(preview_node, second_node, d);
+            simu->world.addConstraint<DistanceConstraint>(preview_node, second_node, d, attri.line_width);
         }
         else if (preview_node && second_node == nullptr) {
             f64 d = glm::length(preview_node->m_pos - wpos);
             auto p = simu->world.addObject<Circle>(wpos, attri.node_color, attri.node_size);
-            auto dc = simu->world.addConstraint<DistanceConstraint>(preview_node, p, d);
+            auto dc = simu->world.addConstraint<DistanceConstraint>(preview_node, p, d, attri.line_width);
 
             p->m_color = attri.node_color;
             p->r = attri.node_size;
@@ -331,7 +346,7 @@ void PhysicsEmulator::OnEdit(const MouseButtonEvent& event, const glm::dvec2& wp
         else if (preview_node == nullptr && second_node) {
             f64 d = glm::length(preview_pos - second_node->m_pos);
             auto p = simu->world.addObject<Circle>(preview_pos, attri.node_color, attri.node_size);
-            auto dc = simu->world.addConstraint<DistanceConstraint>(p, second_node, d);
+            auto dc = simu->world.addConstraint<DistanceConstraint>(p, second_node, d, attri.line_width);
 
             p->m_color = attri.node_color;
             p->r = attri.node_size;
@@ -353,7 +368,7 @@ void PhysicsEmulator::OnEdit(const MouseButtonEvent& event, const glm::dvec2& wp
 
             auto p1 = simu->world.addObject<Circle>(preview_pos, attri.node_color, attri.node_size);
             auto p2 = simu->world.addObject<Circle>(wpos, attri.node_color, attri.node_size);
-            auto dc = simu->world.addConstraint<DistanceConstraint>(p1, p2, d);
+            auto dc = simu->world.addConstraint<DistanceConstraint>(p1, p2, d, attri.line_width);
 
             p1->m_color = attri.node_color;
             p1->r = attri.node_size;

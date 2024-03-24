@@ -8,8 +8,6 @@ namespace mfw {
 };
 class PointConstraint;
 struct Simluation {
-    static Simluation* Instance;
-
     Simluation(const std::string& name): name(name) {}
     virtual ~Simluation() {}
     virtual void update(const f64& dt) = 0;
@@ -18,7 +16,7 @@ struct Simluation {
 
     World world;
     Camera camera;
-    f32 unitScale = 0.35;
+    f32 unitScale = 0.35f;
     std::string name;
 
     struct Attribute {
@@ -39,5 +37,6 @@ struct Simluation {
 
     PointConstraint* addHorizontalPointConstraint(World& world, const glm::dvec2& pos, f32 r);
     PointConstraint* addFixPointConstraint(World& world, const glm::dvec2& pos, f32 r);
+    void addTracer(World& world, Object* target);
 
 };

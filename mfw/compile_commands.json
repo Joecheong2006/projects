@@ -2,7 +2,7 @@
   { 
     "arguments": [
       "g++",
-      "-std=c++11",
+      "-std=c++17",
       "-Wall",
       "-Wextra",
       "-g",
@@ -13,7 +13,6 @@
       "-Isrc",
       "-DDEBUG",
       "-DUNICODE",
-      "-D_UNICODE"
     ],
     "directory": "D:/project/mfw",
     "file": "src/main.cpp"

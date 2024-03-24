@@ -4,20 +4,13 @@
 #if defined(DEBUG) || defined(_DEBUG)
 #include <mfwpch.h>
 
-#define ASSERT(x) \
-    if(!(x)) __debugbreak();
-#define LOG_TRACE(...) \
-    Log::Trace(__VA_ARGS__);
-#define LOG_DEBUG(...) \
-    Log::Debug(__VA_ARGS__);
-#define LOG_INFO(...) \
-    Log::Info(__VA_ARGS__);
-#define LOG_WARN(...) \
-    Log::Warn(__VA_ARGS__);
-#define LOG_ERROR(...) \
-    Log::Error(__VA_ARGS__);
-#define LOG_FATAL(...) \
-    Log::Fatal(__VA_ARGS__);
+#define ASSERT(x) if(!(x)) __debugbreak();
+#define LOG_TRACE(...) Log::Trace(__VA_ARGS__);
+#define LOG_DEBUG(...) Log::Debug(__VA_ARGS__);
+#define LOG_INFO(...) Log::Info(__VA_ARGS__);
+#define LOG_WARN(...) Log::Warn(__VA_ARGS__);
+#define LOG_ERROR(...) Log::Error(__VA_ARGS__);
+#define LOG_FATAL(...) Log::Fatal(__VA_ARGS__);
 
 namespace Log {
     template <typename T>
@@ -37,12 +30,14 @@ namespace Log {
 }
 
 #else
-#define ASSERT(x)
-#define LOG_TRACE(...)
-#define LOG_DEBUG(...)
-#define LOG_INFO(...)
-#define LOG_WARN(...)
-#define LOG_ERROR(...)
-#define LOG_FATAL(...)
+#include "map.h"
+#define TOVOID(x) (void)(x);
+#define ASSERT(x) TOVOID(x)
+#define LOG_TRACE(...) MAP(TOVOID, __VA_ARGS__)
+#define LOG_DEBUG(...) MAP(TOVOID, __VA_ARGS__)
+#define LOG_INFO(...) MAP(TOVOID, __VA_ARGS__)
+#define LOG_WARN(...) MAP(TOVOID, __VA_ARGS__)
+#define LOG_ERROR(...) MAP(TOVOID, __VA_ARGS__)
+#define LOG_FATAL(...) MAP(TOVOID, __VA_ARGS__)
 #endif
 

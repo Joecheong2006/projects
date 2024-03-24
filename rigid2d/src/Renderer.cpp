@@ -99,15 +99,15 @@ namespace mfw {
     }
 
     void Renderer::clear() {
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
 
     void Renderer::renderRactangle(const glm::mat4& proj, const glm::vec2& p1, const glm::vec2& p2, glm::vec3 color, f32 w) {
         glm::mat4 view = glm::mat4(1);
         view = glm::translate(view, glm::vec3((p1 + p2) * 0.5f, 0));
         view = glm::rotate(view, glm::atan((p1.y - p2.y) / (p1.x - p2.x)), glm::vec3(0, 0, 1));
-        view = glm::scale(view, glm::vec3(glm::length(p1 - p2) * 0.5, w, 0));
-#if 0
+        view = glm::scale(view, glm::vec3(glm::length(p1 - p2) * 0.5, w, 1));
+#if 1
         lineRenderer->m_texture.bind();
         lineRenderer->m_shader.bind();
         lineRenderer->m_vao.bind();
@@ -128,7 +128,7 @@ namespace mfw {
         view = glm::translate(view, glm::vec3(circle.m_pos.x, circle.m_pos.y, 0));
         view = glm::scale(view, glm::vec3(circle.r, circle.r, 1));
 
-#if 1
+#if 0
         circleRenderer->m_texture.bind();
         circleRenderer->m_shader.bind();
         circleRenderer->m_vao.bind();
@@ -150,7 +150,7 @@ namespace mfw {
         view = glm::translate(view, glm::vec3(circle->m_pos.x, circle->m_pos.y, 0));
         view = glm::scale(view, glm::vec3(circle->r, circle->r, 1));
 
-#if 1
+#if 0
         circleRenderer->m_texture.bind();
         circleRenderer->m_shader.bind();
         circleRenderer->m_vao.bind();

@@ -3,6 +3,10 @@
 #include "WindowsWindow.h"
 #include "mfwlog.h"
 
+#include "imgui/imgui.h"
+#include "imgui/imgui_impl_opengl3.h"
+#include "imgui/imgui_impl_win32.h"
+
 #define GLAD_GL_IMPLEMENTATION
 #define GLAD_WGL_IMPLEMENTATION
 #include "glad/wgl.h"

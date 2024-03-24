@@ -1,5 +1,5 @@
 #include "Clock.h"
-#include "logger.h"
+#include "mfwlog.h"
 
 namespace mfw {
     Timer::Timer()

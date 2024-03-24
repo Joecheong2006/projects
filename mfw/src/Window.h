@@ -1,9 +1,9 @@
 #pragma once
 
-#include "WindowEvent.h"
-#include "InputEvent.h"
+#include "util.h"
 
 namespace mfw {
+    class Event;
     struct WindowState {
         WindowState()
             : isRunning(false), isVSync(false)

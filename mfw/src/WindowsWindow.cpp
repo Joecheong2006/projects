@@ -1,11 +1,13 @@
 #include "WindowsWindow.h"
 
+#include "WindowEvent.h"
 #include "Input.h"
-#include "Clock.h"
 #include "OpenglContext.h"
 #include "glad/wgl.h"
 
-#include <windowsx.h>
+#include "imgui/imgui.h"
+#include "imgui/imgui_impl_opengl3.h"
+#include "imgui/imgui_impl_win32.h"
 
 #define GETLOWORD(l) ((i16) (((i64) (l)) & 0xffff))
 #define GETHIWORD(l) ((i16) ((((i64) (l)) >> 16) & 0xffff))
@@ -206,8 +208,6 @@ namespace mfw {
                 );
 
         m_hdc = GetDC(m_hwnd);
-
-        LOG_INFO("WINDOW CREATE SUCCESS: {}\n", m_state.title);
     }
 
     void WindowsWindow::setVSync(bool enable) { 
@@ -260,7 +260,6 @@ namespace mfw {
             DestroyWindow(m_hwnd);
             m_hwnd = nullptr;
         }
-        LOG_INFO("WINDOW CLOSE SUCCESS: {}\n", m_state.title);
     }
 
 }

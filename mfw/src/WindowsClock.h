@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Clock.h"
-#include <windows.h>
 
 namespace mfw {
     class WindowsTime : public Time {

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "util.h"
-#include "logger.h"
+#include "mfwlog.h"
 
 namespace mfw {
     void GLClearError();
@@ -13,6 +13,6 @@ namespace mfw {
     x;\
     ASSERT(mfw::GLLogCall(__FILE__, __LINE__, #x))
 #else
-#define GLCALL(x)
+#define GLCALL(x) x
 #endif
 

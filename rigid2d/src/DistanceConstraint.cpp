@@ -1,8 +1,8 @@
 #include "DistanceConstraint.h"
 #include "Renderer.h"
 
-DistanceConstraint::DistanceConstraint(Object* t1, Object* t2, f32 d)
-    : d(d), color(0.95)
+DistanceConstraint::DistanceConstraint(Object* t1, Object* t2, f32 d, f32 w)
+    : d(d), w(w), color(0.95)
 {
     target[0] = t1;
     target[1] = t2;
@@ -23,7 +23,7 @@ void DistanceConstraint::solve(f64 dt) {
 #endif
 }
 
-void DistanceConstraint::render(const glm::mat4& proj, mfw::Renderer& renderer, f32 w) const {
+void DistanceConstraint::render(const glm::mat4& proj, mfw::Renderer& renderer) {
     renderer.renderRactangle(proj, target[0]->m_pos, target[1]->m_pos, color, w);
 }
 

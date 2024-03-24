@@ -1,6 +1,7 @@
 #pragma once
 
 #include "OpenglContext.h"
+#include "WindowsWindow.h"
 
 namespace mfw {
     void GLClearError();

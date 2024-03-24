@@ -5,6 +5,8 @@
 #include "OpenglContext.h"
 #include "Renderer.h"
 #include "stb_image.h"
+#include "InputEvent.h"
+#include "WindowEvent.h"
 
 namespace mfw {
     Application* Application::Instance = CreateApplication();

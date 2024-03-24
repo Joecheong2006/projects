@@ -11,7 +11,7 @@ namespace mfw {
 
 class PointConstraint: public Constraint {
 private:
-    std::function<void(const f64& dt, PointConstraint* pc)> update;
+    std::function<void(const f64& dt, PointConstraint* pc)> onUpdate;
 
 public:
     SET_CONSTRAINT_NORMAL_BEHAVIOUR(ConstraintType::Point);
@@ -19,11 +19,12 @@ public:
     PointConstraint(f32 d, std::function<void(const f64& dt, PointConstraint* pc)> update);
 
     virtual void solve(f64 dt) override;
-    void render(const glm::mat4& proj, mfw::Renderer& renderer) const;
+    virtual void render(const glm::mat4& proj, mfw::Renderer& renderer) override;
 
     f32 d;
     Object* target;
     Object self;
+    std::function<void(const glm::mat4& proj, mfw::Renderer& renderer, PointConstraint* pc)> onRender;
     
 };
 

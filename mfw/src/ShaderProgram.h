@@ -2,7 +2,6 @@
 
 #include "util.h"
 #include "glm/glm.hpp"
-#include <mfwpch.h>
 
 namespace mfw {
     class ShaderProgram

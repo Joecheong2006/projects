@@ -1,8 +1,6 @@
 #pragma once
 
-#include <stdio.h>
-#include <string>
-#include <cstdint>
+#include "mfwpch.h"
 
 #define INLINE inline __attribute((always_inline))
 
@@ -255,20 +253,4 @@ SET_LOG_COLOR_WITH_NAME(Error, ColorPattern::Magenta);
 SET_LOG_COLOR_WITH_NAME(Fatal, ColorPattern::Red);
 
 }
-
-
-#define ASSERT(x) \
-    if(!(x)) __debugbreak();
-#define LOG_TRACE(...) \
-    Log::Trace(__VA_ARGS__);
-#define LOG_DEBUG(...) \
-    Log::Debug(__VA_ARGS__);
-#define LOG_INFO(...) \
-    Log::Info(__VA_ARGS__);
-#define LOG_WARN(...) \
-    Log::Warn(__VA_ARGS__);
-#define LOG_ERROR(...) \
-    Log::Error(__VA_ARGS__);
-#define LOG_FATAL(...) \
-    Log::Fatal(__VA_ARGS__);
 

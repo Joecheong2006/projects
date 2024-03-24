@@ -1,7 +1,15 @@
 #pragma once
 #include "Window.h"
+#include "EventSystem.h"
 
 namespace mfw {
+    class WindowResizeEvent;
+    class WindowCloseEvent;
+    class CursorMoveEvent;
+    class KeyEvent;
+    class MouseButtonEvent;
+    class MouseScrollEvent;
+
     class Application {
     public:
         Application();

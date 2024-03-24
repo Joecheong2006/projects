@@ -1,5 +1,5 @@
 #include "WindowsClock.h"
-#include <mfwlog.h>
+#include "mfwlog.h"
 
 #include <mmsystem.h>
 

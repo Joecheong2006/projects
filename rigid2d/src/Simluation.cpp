@@ -7,6 +7,7 @@
 #include "mfwlog.h"
 #include "Input.h"
 #include "Application.h"
+#include <list>
 
 void Simluation::addString(const glm::vec2& pos, u32 node, f32 length) {
     ASSERT(node > 0);
@@ -19,7 +20,7 @@ void Simluation::addString(const glm::vec2& pos, u32 node, f32 length) {
         circles.push_back(new Circle(glm::vec2(0, -i * length) + pos, attri.node_color, attri.node_size));
     }
     for (u32 i = 0; i < node - 1; i++) {
-        dcs.emplace_back(new DistanceConstraint(circles[first + i], circles[first + i + 1], length));
+        dcs.push_back(new DistanceConstraint(circles[first + i], circles[first + i + 1], length, attri.line_width));
     }
 }
 
@@ -40,13 +41,13 @@ void Simluation::addCircle(const glm::vec2& pos, i32 n, f32 r, i32 nstep) {
     circles.push_back(new Circle(glm::vec2(0) + pos, attri.node_color, attri.node_size));
 
     for (i32 i = 0; i < n; i++) {
-        dcs.push_back(new DistanceConstraint(circles[first + i], circles[first + n], r));
+        dcs.push_back(new DistanceConstraint(circles[first + i], circles[first + n], r, attri.line_width));
     }
 
     for (i32 step = 1; step <= nstep; step++) {
         f32 nlen = glm::length(r * glm::vec2(sin(0) - sin(ri * step), cos(0) - cos(ri * step)));
         for (i32 i = 0; i < n; i++) {
-            dcs.push_back(new DistanceConstraint(circles[first + i], circles[first + (i + step) % n], nlen));
+            dcs.push_back(new DistanceConstraint(circles[first + i], circles[first + (i + step) % n], nlen, attri.line_width));
         }
     }
 }
@@ -69,8 +70,8 @@ void Simluation::addDoublePendulum(f64 angle, f64 d) {
     auto p1 = world.addObject<Circle>(glm::vec2(), attri.node_color, attri.node_size);
     auto p2 = world.addObject<Circle>(direction, attri.node_color, attri.node_size);
     auto p3 = world.addObject<Circle>(direction * 2.0, attri.node_color, attri.node_size);
-    world.addConstraint<DistanceConstraint>(p1, p2, d * unitScale);
-    world.addConstraint<DistanceConstraint>(p2, p3, d * unitScale);
+    world.addConstraint<DistanceConstraint>(p1, p2, d * unitScale, attri.line_width);
+    world.addConstraint<DistanceConstraint>(p2, p3, d * unitScale, attri.line_width);
     addFixPointConstraint(world, glm::vec2(), attri.node_size * 1.5)
         ->target = p1;
     p3->m_mass = 2;
@@ -79,9 +80,12 @@ void Simluation::addDoublePendulum(f64 angle, f64 d) {
 
 void Simluation::SetupRotateBox() {
     addBox(glm::vec2(), 5 * unitScale);
-    auto& boxCenter = world.getObjects<Circle>().back();
-    auto& c1 = world.getObjects<Circle>()[0];
-    auto& c2 = world.getObjects<Circle>()[2];
+
+    auto& circles = world.getObjects<Circle>();
+    i32 len = circles.size();
+    auto boxCenter = circles.back();
+    auto c1 = circles[len - 3];
+    auto c2 = circles[len - 5];
     addFixPointConstraint(world, glm::vec2(), attri.node_size * 1.5)
         ->target = boxCenter;
 
@@ -90,8 +94,8 @@ void Simluation::SetupRotateBox() {
     auto p1 = world.addObject<Circle>(h1->self.m_pos, attri.node_color, attri.node_size);
     auto p2 = world.addObject<Circle>(h2->self.m_pos, attri.node_color, attri.node_size);
     f64 l = glm::length(p1->m_pos - c1->m_pos);
-    world.addConstraint<DistanceConstraint>(c1, p1, l);
-    world.addConstraint<DistanceConstraint>(c2, p2, l);
+    world.addConstraint<DistanceConstraint>(c1, p1, l, attri.line_width);
+    world.addConstraint<DistanceConstraint>(c2, p2, l, attri.line_width);
     h1->target = p1;
     h2->target = p2;
 }
@@ -121,6 +125,41 @@ PointConstraint* Simluation::addFixPointConstraint(World& world, const glm::dvec
                 });
     result->self = Object(pos, 0, glm::vec3(COLOR(0x486577)));
     return result;
+}
+
+void Simluation::addTracer(World& world, Object* target) {
+    auto result = world.addConstraint<PointConstraint>(0, [](const f64& dt, PointConstraint* pc) {
+                    (void) dt; (void)pc;
+                });
+
+    result->target = target;
+    result->onRender = [=](const glm::mat4& proj, mfw::Renderer& renderer, PointConstraint* pc) {
+        static const i32 max = 300;
+        static const f32 maxScale = 0.17 * unitScale,
+                         minScale = 0.02 * unitScale,
+                         dr = 0.68f;
+        static std::list<glm::vec2> positions_trace;
+
+        if ((i32)positions_trace.size() == max) {
+            positions_trace.pop_front();
+        }
+        positions_trace.push_back(pc->target->m_pos);
+
+        f32 i = 0;
+        for (auto iter = positions_trace.begin();;) {
+            const glm::vec2 p1 = *(iter++);
+            if (iter == positions_trace.end())
+                break;
+            const glm::vec2 p2 = *iter;
+            const glm::vec3 trace = glm::vec3(COLOR(0xc73e3e)), background = glm::vec3(COLOR(0x191919));
+            const glm::vec3 color = (trace - background) * (i++ / positions_trace.size()) + background;
+            f32 t = maxScale * ((i) / positions_trace.size());
+            t = glm::clamp(t - maxScale * dr, minScale, maxScale);
+            renderer.renderCircle(proj, { p1, color, t });
+            renderer.renderCircle(proj, { p2, color, t });
+            renderer.renderRactangle(proj, p1, p2, color, t);
+        }
+    };
 }
 
 glm::dvec2 Simluation::mouseToWorldCoord() {

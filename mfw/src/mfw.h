@@ -2,6 +2,8 @@
 
 #include "Application.h"
 #include "Input.h"
+#include "InputEvent.h"
+#include "WindowEvent.h"
 #include "Clock.h"
 
 // for testing

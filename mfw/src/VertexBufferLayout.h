@@ -2,7 +2,7 @@
 
 #include "util.h"
 #include "glad/gl.h"
-#include <mfwlog.h>
+#include "mfwlog.h"
 
 namespace mfw {
     struct VertexBufferElement

@@ -9,7 +9,7 @@ Circle::Circle()
     : Object(glm::vec2(0), 1, glm::vec4(1)), r(1)
 {}
 
-void Circle::render(const glm::mat4& proj, mfw::Renderer& renderer) const {
+void Circle::render(const glm::mat4& proj, mfw::Renderer& renderer) {
     renderer.renderCircle(proj, this);
 }
 

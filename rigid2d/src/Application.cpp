@@ -69,7 +69,7 @@ namespace mfw {
         while (m_window->isRunning()) {
             m_window->update();
             Update();
-            //m_window->swapBuffers();
+            m_window->swapBuffers();
         }
     }
 

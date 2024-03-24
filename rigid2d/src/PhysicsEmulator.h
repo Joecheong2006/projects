@@ -54,6 +54,7 @@ private:
 
 public:
     PhysicsEmulator();
+    ~PhysicsEmulator();
     virtual void Start() override;
     virtual void Update() override;
     virtual void OnInputKey(const mfw::KeyEvent& event) override;

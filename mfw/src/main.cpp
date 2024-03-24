@@ -1,4 +1,4 @@
-#include <mfw.h>
+#include "mfw.h"
 
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_opengl3.h"
@@ -29,9 +29,7 @@ private:
 public:
     DemoSandBox()
         : ibo(index, 6), vbo(vertex, sizeof(vertex))
-    {}
-
-    virtual void Start() override {
+    {
         VertexBufferLayout layout;
         layout.add<f32>(2);
         vao.applyBufferLayout(layout);
@@ -44,6 +42,10 @@ public:
         shader.unbind();
 
         glClearColor(0.1, 0.22, 0.1, 1);
+    }
+
+    virtual void Start() override {
+        GetWindow()->setVSync(true);
     }
 
     virtual void Update() override {

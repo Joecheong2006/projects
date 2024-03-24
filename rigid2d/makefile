@@ -1,7 +1,7 @@
 CC = g++
 PCH = src/mfwpch.h
-CFLAGS := -std=c++11 -Wall -Wextra -Wpedantic -Wstrict-aliasing -g -include $(PCH) -DDEBUG -DUNICODE -Os
-SOURCE = src src/**
+CFLAGS := -std=c++11 -Wall -Wextra -Wpedantic -Wstrict-aliasing -g -include $(PCH) -DDEBUG -DUNICODE -O3
+SOURCE = src src/** src/**/**
 LIBRARY = lib/stb_image lib/imgui
 INCLUDE = -Ilib -Ilib/stb_image -Ilib/imgui -Isrc
 LIB = -lopengl32 -lGdi32 -lWinmm -ld3dcompiler -ldwmapi
@@ -35,7 +35,7 @@ clean:
 build:
 	@echo "Compiling library"
 	@cd lib/stb_image && $(CC) -c stb_image.cpp
-	@cd lib/imgui && $(CC) -std=c++11 -c ./*.cpp
+	@cd lib/imgui && $(CC) -O3 -c ./*.cpp
 	@$(CC) -x c++-header $(INCLUDE) -o $(PCH).gch -c $(PCH)
 	@echo "Completed"
 

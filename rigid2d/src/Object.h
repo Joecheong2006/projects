@@ -17,6 +17,10 @@ enum class ObjectType {
     None
 };
 
+namespace mfw {
+    class Renderer;
+};
+
 class Object {
 public:
     glm::dvec2 m_pos, m_opos, m_velocity, m_ovelocity, m_acceleration;
@@ -31,6 +35,7 @@ public:
 
     virtual inline ObjectType getType() { return ObjectType::None; };
     virtual void update(const f64& dt);
+    virtual void render(const glm::mat4& proj, mfw::Renderer& renderer) { (void)proj; (void)renderer; }
 
 };
 
