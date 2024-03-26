@@ -135,9 +135,9 @@ void Simluation::addTracer(World& world, Object* target) {
     result->target = target;
     result->onRender = [=](const glm::mat4& proj, mfw::Renderer& renderer, PointConstraint* pc) {
         static const i32 max = 300;
-        static const f32 maxScale = 0.17 * unitScale,
+        static const f32 maxScale = 0.18 * unitScale,
                          minScale = 0.02 * unitScale,
-                         dr = 0.68f;
+                         dr = 0.65f;
         static std::list<glm::vec2> positions_trace;
 
         if ((i32)positions_trace.size() == max) {
