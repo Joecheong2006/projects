@@ -45,6 +45,7 @@ void DemoSimluation::reset() {
 
     addDoublePendulum(30, 4);
     addTracer(world, world.getObjects<Circle>().back());
+    return;
 
     for (i32 i = 0; i < 4; i++) {
         addFixPointConstraint(world, glm::vec2(-4, 4) * unitScale, attri.node_size * 1.5);
@@ -68,6 +69,11 @@ void DemoSimluation::render(mfw::Renderer& renderer) {
     for (auto& obj : world.getConstraint<PointConstraint>()) {
         obj->render(proj, renderer);
     }
+
+    // auto& object = world.getConstraint<PointConstraint>();
+    // for (i32 i = 0; i < (i32)object.size() - 1; ++i) {
+    //     object[i]->render(proj, renderer);
+    // }
 
     for (auto& obj : world.getConstraint<DistanceConstraint>()) {
         obj->render(proj, renderer);

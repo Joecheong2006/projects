@@ -1,5 +1,5 @@
 #include "Texture2D.h"
-#include "stb_image.h"
+#include "stb_image/stb_image.h"
 #include "mfwlog.h"
 #include "Renderer.h"
 #include "glad/gl.h"

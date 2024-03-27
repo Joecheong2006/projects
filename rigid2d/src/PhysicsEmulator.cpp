@@ -98,7 +98,7 @@ void PhysicsEmulator::Start() {
     preview.reserve(16);
     SetWorldProjection(glm::vec2(width, height));
 
-    settings.sub_step = 100;
+    settings.sub_step = 1000;
     settings.pause = false,
     settings.gravity = true,
     settings.world_view = true,

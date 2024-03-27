@@ -4,7 +4,7 @@
 #include "Clock.h"
 #include "OpenglContext.h"
 #include "Renderer.h"
-#include "stb_image.h"
+#include "stb_image/stb_image.h"
 
 namespace mfw {
     Application* Application::Instance = CreateApplication();

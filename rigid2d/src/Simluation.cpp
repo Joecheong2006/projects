@@ -134,7 +134,7 @@ void Simluation::addTracer(World& world, Object* target) {
 
     result->target = target;
     result->onRender = [=](const glm::mat4& proj, mfw::Renderer& renderer, PointConstraint* pc) {
-        static const i32 max = 300;
+        static const i32 max = 130;
         static const f32 maxScale = 0.18 * unitScale,
                          minScale = 0.02 * unitScale,
                          dr = 0.65f;
