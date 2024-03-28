@@ -7,16 +7,17 @@ namespace mfw {
     class Window;
 };
 class PointConstraint;
-struct Simluation {
-    Simluation(const std::string& name): name(name) {}
-    virtual ~Simluation() {}
-    virtual void update(const f64& dt) = 0;
-    virtual void render(mfw::Renderer& renderer) = 0;
-    virtual void reset() = 0;
+struct Simulation {
+    Simulation(const std::string& name): name(name) {}
+    virtual ~Simulation() {}
+    virtual void update(const f64& dt);
+    virtual void render(mfw::Renderer& renderer);
+
+    std::function<void()> initialize;
 
     World world;
     Camera camera;
-    f32 unitScale = 0.35f;
+    f32 unitScale = 0;
     std::string name;
 
     struct Attribute {

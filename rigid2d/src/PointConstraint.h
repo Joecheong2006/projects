@@ -3,7 +3,7 @@
 #include "Constraint.h"
 #include "Object.h"
 #include "util.h"
-#include <mfwpch.h>
+#include "mfwpch.h"
 
 namespace mfw {
     class Renderer;

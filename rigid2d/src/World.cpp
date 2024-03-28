@@ -38,3 +38,16 @@ void World::update(const f64& dt) {
     }
 }
 
+void World::render(const glm::mat4& proj, mfw::Renderer& renderer) {
+    for (auto& containter : constraintContainers) {
+        for (auto& constraint : containter.second) {
+            constraint->render(proj, renderer);
+        }
+    }
+    for (auto& container : objectContainers) {
+        for (auto& object : container.second) {
+            object->render(proj, renderer);
+        }
+    }
+}
+

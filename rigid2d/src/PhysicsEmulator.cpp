@@ -9,11 +9,7 @@
 #include "glm/gtc/type_ptr.hpp"
 
 #include "DistanceConstraint.h"
-#include "Simluation.h"
 #include "Circle.h"
-#include "DemoSimluation.h"
-
-using namespace mfw;
 
 namespace Log {
     template <>
@@ -25,11 +21,11 @@ namespace Log {
     };
 }
 
-static Simluation* simu = new DemoSimluation();
+Simulation* PhysicsEmulator::simu = nullptr;
 
 std::vector<Circle*> FindCirclesByPosition(const glm::vec2& pos) {
     std::vector<Circle*> result;
-    for (auto& obj : simu->world.getObjects<Circle>()) {
+    for (auto& obj : PhysicsEmulator::simu->world.getObjects<Circle>()) {
         auto circle = static_cast<Circle*>(obj);
         if (circle->r > glm::length((const glm::vec2&)circle->m_pos - pos)) {
             result.push_back(circle);
@@ -39,7 +35,7 @@ std::vector<Circle*> FindCirclesByPosition(const glm::vec2& pos) {
 }
 
 PointConstraint* FindPointConstraintByPosition(const glm::vec2& pos) {
-    auto& objects = simu->world.getConstraint<PointConstraint>();
+    auto& objects = PhysicsEmulator::simu->world.getConstraint<PointConstraint>();
     for (auto& obj : objects) {
         auto point = static_cast<PointConstraint*>(obj);
         if (point->d > glm::length((glm::vec2)point->self.m_pos - pos)) {
@@ -50,7 +46,7 @@ PointConstraint* FindPointConstraintByPosition(const glm::vec2& pos) {
 }
 
 Circle* FindCircleByPosition(const glm::vec2& pos) {
-    auto& objects = simu->world.getObjects<Circle>();
+    auto& objects = PhysicsEmulator::simu->world.getObjects<Circle>();
     for (auto& obj : objects) {
         auto point = static_cast<Circle*>(obj);
         if (point->r > glm::length((const glm::vec2&)point->m_pos - pos)) {
@@ -61,11 +57,12 @@ Circle* FindCircleByPosition(const glm::vec2& pos) {
 }
 
 i32 GetObjectsCount() {
-    auto& dc = simu->world.getConstraint<DistanceConstraint>();
-    auto& circles = simu->world.getObjects<Circle>();
+    auto& dc = PhysicsEmulator::simu->world.getConstraint<DistanceConstraint>();
+    auto& circles = PhysicsEmulator::simu->world.getObjects<Circle>();
     return dc.size() + circles.size();
 }
 
+using namespace mfw;
 void PhysicsEmulator::UpdateStatus() {
     mfw::Window* main = GetWindow();
     width = main->width();
@@ -75,9 +72,10 @@ void PhysicsEmulator::UpdateStatus() {
     this->mouse.y = mouse.second;
 }
 
-PhysicsEmulator::PhysicsEmulator()
+PhysicsEmulator::PhysicsEmulator(Simulation* simluation)
     : Application("rigid2d", 1440, 960), mode(Mode::Normal)
 {
+    simu = simluation;
     ASSERT(simu != nullptr);
 
     world_scale = 10 * simu->unitScale;
@@ -87,13 +85,16 @@ PhysicsEmulator::PhysicsEmulator()
 }
 
 PhysicsEmulator::~PhysicsEmulator() {
-    if (simu)
+    if (simu) {
         delete simu;
+    }
 }
 
 void PhysicsEmulator::Start() {
-    GetWindow()->setVSync(true);
+    GetWindow()->setVSync(false);
     UpdateStatus();
+
+    simu->initialize();
 
     preview.reserve(16);
     SetWorldProjection(glm::vec2(width, height));
@@ -115,8 +116,12 @@ void PhysicsEmulator::Update() {
     render();
     renderImgui();
     frame = Time::GetCurrent() - start;
+    if (frame < 1.0 / fps) {
+        Time::Sleep((1.0 / fps - frame) * 1000);
+        frame = Time::GetCurrent() - start;
+    }
     start += frame;
-    // printf("%g\n", frame * 1000.0);
+    printf("%g\n", frame * 1000.0);
 }
 
 void PhysicsEmulator::SetWorldProjection(glm::vec2 view) {
@@ -224,7 +229,8 @@ void PhysicsEmulator::renderImgui() {
 
     auto& attri = simu->attri;
     if (ImGui::Button("restart")) {
-        simu->reset();
+        simu->world.clear();
+        simu->initialize();
         preview.clear();
         mode = Mode::Normal;
     }

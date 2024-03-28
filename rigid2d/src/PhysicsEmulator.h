@@ -3,6 +3,7 @@
 #include "Renderer.h"
 #include "Object.h"
 #include "PointConstraint.h"
+#include "Simulation.h"
 
 class PhysicsEmulator : public mfw::Application {
 private:
@@ -53,7 +54,7 @@ private:
     void OnNormal(const mfw::MouseButtonEvent& event, const glm::vec2& wpos);
 
 public:
-    PhysicsEmulator();
+    PhysicsEmulator(Simulation* simluation);
     ~PhysicsEmulator();
     virtual void Start() override;
     virtual void Update() override;
@@ -63,6 +64,8 @@ public:
     virtual void OnMouseButton(const mfw::MouseButtonEvent& event) override;
     virtual void OnWindowResize(const mfw::WindowResizeEvent& event) override;
     virtual void OnWindowFocus(const mfw::WindowFocusEvent& event) override;
+
+    static Simulation* simu;
 
 };
 

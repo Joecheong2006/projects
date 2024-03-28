@@ -21,6 +21,7 @@ public:
     
     void clear();
     void update(const f64& dt);
+    void render(const glm::mat4& proj, mfw::Renderer& renderer);
 
     template <typename T, typename... Args>
     inline T* addObject(const Args& ...args) {

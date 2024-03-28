@@ -1,4 +1,4 @@
-#include "Simluation.h"
+#include "Simulation.h"
 
 #include "DistanceConstraint.h"
 #include "PointConstraint.h"
@@ -9,7 +9,14 @@
 #include "Application.h"
 #include <list>
 
-void Simluation::addString(const glm::vec2& pos, u32 node, f32 length) {
+void Simulation::update(const f64& dt) {
+    world.update(dt);
+}
+void Simulation::render(mfw::Renderer& renderer) {
+    world.render(camera.getProjection(), renderer);
+}
+
+void Simulation::addString(const glm::vec2& pos, u32 node, f32 length) {
     ASSERT(node > 0);
 
     auto& circles = world.getObjects<Circle>();
@@ -24,7 +31,7 @@ void Simluation::addString(const glm::vec2& pos, u32 node, f32 length) {
     }
 }
 
-void Simluation::addCircle(const glm::vec2& pos, i32 n, f32 r, i32 nstep) {
+void Simulation::addCircle(const glm::vec2& pos, i32 n, f32 r, i32 nstep) {
     ASSERT(r > 0 && n > 2 && nstep > 0);
     static const f32 pi = 3.14159265359f;
 
@@ -52,18 +59,18 @@ void Simluation::addCircle(const glm::vec2& pos, i32 n, f32 r, i32 nstep) {
     }
 }
 
-void Simluation::addBox(const glm::vec2& pos, f32 l)
+void Simulation::addBox(const glm::vec2& pos, f32 l)
 {
     ASSERT(l > 0);
     addCircle(pos, 4, sqrt(2.0f) * l * 0.5);
 }
 
-void Simluation::addTriangle(const glm::vec2& pos, f32 l) {
+void Simulation::addTriangle(const glm::vec2& pos, f32 l) {
     ASSERT(l > 0);
     addCircle(pos, 3, l);
 }
 
-void Simluation::addDoublePendulum(f64 angle, f64 d) {
+void Simulation::addDoublePendulum(f64 angle, f64 d) {
     f64 r = angle * 3.14 / 180;
     glm::dvec2 direction = glm::normalize(glm::dvec2(cos(r), sin(r))) * d * (f64)unitScale;
 
@@ -78,7 +85,7 @@ void Simluation::addDoublePendulum(f64 angle, f64 d) {
     p3->r = p3->m_mass * unitScale * 0.2;
 }
 
-void Simluation::SetupRotateBox() {
+void Simulation::SetupRotateBox() {
     addBox(glm::vec2(), 5 * unitScale);
 
     auto& circles = world.getObjects<Circle>();
@@ -100,7 +107,7 @@ void Simluation::SetupRotateBox() {
     h2->target = p2;
 }
 
-PointConstraint* Simluation::addHorizontalPointConstraint(World& world, const glm::dvec2& pos, f32 r) {
+PointConstraint* Simulation::addHorizontalPointConstraint(World& world, const glm::dvec2& pos, f32 r) {
     auto result = world.addConstraint<PointConstraint>(r, [](const f64& dt, PointConstraint* pc) {
                     (void) dt;
                     if (pc->target) {
@@ -114,7 +121,7 @@ PointConstraint* Simluation::addHorizontalPointConstraint(World& world, const gl
     return result;
 }
 
-PointConstraint* Simluation::addFixPointConstraint(World& world, const glm::dvec2& pos, f32 r) {
+PointConstraint* Simulation::addFixPointConstraint(World& world, const glm::dvec2& pos, f32 r) {
     auto result = world.addConstraint<PointConstraint>(r, [](const f64& dt, PointConstraint* pc) {
                     (void) dt;
                     if (pc->target) {
@@ -127,7 +134,7 @@ PointConstraint* Simluation::addFixPointConstraint(World& world, const glm::dvec
     return result;
 }
 
-void Simluation::addTracer(World& world, Object* target) {
+void Simulation::addTracer(World& world, Object* target) {
     auto result = world.addConstraint<PointConstraint>(0, [](const f64& dt, PointConstraint* pc) {
                     (void) dt; (void)pc;
                 });
@@ -162,7 +169,7 @@ void Simluation::addTracer(World& world, Object* target) {
     };
 }
 
-glm::dvec2 Simluation::mouseToWorldCoord() {
+glm::dvec2 Simulation::mouseToWorldCoord() {
     mfw::Window* main = mfw::Application::Get()->GetWindow();
     auto& mouse = mfw::Input::GetMouse();
     f32 width = main->width(), height = main->height();

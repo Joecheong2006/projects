@@ -1,4 +1,4 @@
-#include "DemoSimluation.h"
+#include "DemoSimulation.h"
 
 #include "DistanceConstraint.h"
 #include "PointConstraint.h"
@@ -28,35 +28,27 @@ void wall_collision(f64 dt, Circle* c, const glm::vec2& world) {
     c->m_acceleration += a;
 };
 
-DemoSimluation::DemoSimluation()
-    : Simluation("Double Pendulum")
+DemoSimulation::DemoSimulation()
+    : Simulation("Demo")
 {
-    world = World(glm::vec2(30, 14) * unitScale);
-    reset();
-}
-
-void DemoSimluation::reset() {
-    world.clear();
-
+    unitScale = 0.35f;
+    world = World(glm::vec2(30, 12) * unitScale);
     attri.node_color = glm::vec4(glm::vec4(COLOR(0x858AA6), 0));
     attri.node_size = 0.24 * unitScale;
     attri.line_width = 0.08 * unitScale;
     attri.hardness = 1;
-
-    addDoublePendulum(30, 4);
-    addTracer(world, world.getObjects<Circle>().back());
-    return;
-
-    for (i32 i = 0; i < 4; i++) {
-        addFixPointConstraint(world, glm::vec2(-4, 4) * unitScale, attri.node_size * 1.5);
-    }
-    for (i32 i = 0; i < 4; i++) {
-        addHorizontalPointConstraint(world, glm::vec2(4, 4) * unitScale, attri.node_size * 1.5);
-    }
-    SetupRotateBox();
+    initialize = [this]() {
+        for (i32 i = 0; i < 4; i++) {
+            addFixPointConstraint(world, glm::vec2(-4, 4) * unitScale, attri.node_size * 1.5);
+        }
+        for (i32 i = 0; i < 4; i++) {
+            addHorizontalPointConstraint(world, glm::vec2(4, 4) * unitScale, attri.node_size * 1.5);
+        }
+        SetupRotateBox();
+    };
 }
 
-void DemoSimluation::update(const f64& dt) {
+void DemoSimulation::update(const f64& dt) {
     (void)dt;
     world.update(dt);
     for (auto& obj : world.getObjects<Circle>()) {
@@ -64,21 +56,20 @@ void DemoSimluation::update(const f64& dt) {
     }
 }
 
-void DemoSimluation::render(mfw::Renderer& renderer) {
+void DemoSimulation::render(mfw::Renderer& renderer) {
     glm::mat4 proj = camera.getProjection();
     for (auto& obj : world.getConstraint<PointConstraint>()) {
         obj->render(proj, renderer);
     }
 
-    // auto& object = world.getConstraint<PointConstraint>();
-    // for (i32 i = 0; i < (i32)object.size() - 1; ++i) {
-    //     object[i]->render(proj, renderer);
-    // }
+    auto& object = world.getConstraint<PointConstraint>();
+    for (i32 i = 0; i < (i32)object.size() - 1; ++i) {
+        object[i]->render(proj, renderer);
+    }
 
     for (auto& obj : world.getConstraint<DistanceConstraint>()) {
         obj->render(proj, renderer);
 
-        continue;
         DistanceConstraint* dc = static_cast<DistanceConstraint*>(obj);
         const glm::dvec2 a = dc->target[0]->m_pos, b = dc->target[1]->m_pos;
         const glm::dvec2 m = mouseToWorldCoord();
@@ -95,8 +86,6 @@ void DemoSimluation::render(mfw::Renderer& renderer) {
     for (auto& obj : circles) {
         obj->render(proj, renderer);
     }
-
-    // world.getConstraint<PointConstraint>().back()->render(proj, renderer);
 
     renderer.renderRactangle(proj, glm::vec2(world.size.x, -world.size.y) - 0.2f * unitScale, glm::vec2(-world.size.x, -world.size.y) - 0.2f * unitScale, glm::vec4(1), 0.2 * unitScale);
 
