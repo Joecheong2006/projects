@@ -160,10 +160,10 @@ void Simulation::addTracer(World& world, Object* target) {
             const glm::vec2 p2 = *iter;
             const glm::vec3 trace = glm::vec3(COLOR(0xc73e3e)), background = glm::vec3(COLOR(0x191919));
             const glm::vec3 color = (trace - background) * (i++ / positions_trace.size()) + background;
-            f32 t = maxScale * ((i) / positions_trace.size());
+            f32 t = maxScale * (i / positions_trace.size());
             t = glm::clamp(t - maxScale * dr, minScale, maxScale);
-            renderer.renderCircle(proj, { p1, color, t });
             renderer.renderCircle(proj, { p2, color, t });
+            renderer.renderCircle(proj, { p1, color, t });
             renderer.renderRactangle(proj, p1, p2, color, t);
         }
     };

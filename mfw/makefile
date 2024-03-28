@@ -11,8 +11,7 @@ SRC = $(wildcard $(patsubst %, %/*.cpp, $(SOURCE)))
 LIBOBJ = $(wildcard $(patsubst %, %/*.o, $(LIBRARY))) 
 OBJ = $(SRC:%.cpp=%.o)
 DEP = $(OBJ:%.o=%.d)
-BIN = bin
-OUT = $(BIN)/mfw_demo.exe
+OUT = mfw.dll
 
 PROCESS_INDEX = -1
 TOTAL_FILES = $(words $(SRC))
@@ -20,7 +19,7 @@ PROCESS_PERCENTAGE = 0
 
 .PHONY: all clean
 
-all: bin app
+all: app
 
 run:
 	@./$(OUT)
@@ -29,7 +28,7 @@ debug:
 	@gdb -q "$(OUT)" --eval-command=run --eval-command=exit;
 
 clean:
-	@rm -rf $(OBJ) $(DEP) $(BIN)
+	@rm -rf $(OBJ) $(DEP)
 	@echo Cleaned
 
 build:
@@ -39,10 +38,11 @@ build:
 	@$(CC) -x c++-header $(INCLUDE) -o $(PCH).gch -c $(PCH)
 	@echo "Completed"
 
-bin:
-	@mkdir -p $(BIN)
+dll: $(OBJ) 
+	@$(CC) -shared -o $(OUT) $(OBJ) $(LIBOBJ) $(LIB)
+	@echo "[100%] Compilation completed"
 
-app: bin $(OBJ) 
+app: $(OBJ) 
 	@$(CC) -o $(OUT) $(OBJ) $(LIBOBJ) $(LIB)
 	@echo "[100%] Compilation completed"
 

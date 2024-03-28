@@ -9,10 +9,12 @@
 #include "WindowEvent.h"
 
 namespace mfw {
-    Application* Application::Instance = CreateApplication();
+    Application* Application::Instance = nullptr;
 
     Application::Application()
     {
+        ASSERT(Instance == nullptr);
+        Instance = this;
         {
             START_CLOCK_TIMER("INIT WINDOW");
             m_window = Window::Create({"demo", 960, 640});
