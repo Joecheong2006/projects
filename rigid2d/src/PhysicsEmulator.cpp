@@ -7,6 +7,7 @@
 #include "imgui/imgui_impl_win32.h"
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtc/type_ptr.hpp"
+#include "imgui/implot.h"
 
 #include "DistanceConstraint.h"
 #include "Circle.h"
@@ -88,10 +89,12 @@ PhysicsEmulator::~PhysicsEmulator() {
     if (simu) {
         delete simu;
     }
+    ImPlot::DestroyContext();
 }
 
 void PhysicsEmulator::Start() {
-    GetWindow()->setVSync(false);
+    ImPlot::CreateContext();
+    GetWindow()->setVSync(true);
     UpdateStatus();
 
     simu->initialize();
@@ -99,7 +102,7 @@ void PhysicsEmulator::Start() {
     preview.reserve(16);
     SetWorldProjection(glm::vec2(width, height));
 
-    settings.sub_step = 1000;
+    settings.sub_step = 500;
     settings.pause = false,
     settings.gravity = true,
     settings.world_view = true,
@@ -109,6 +112,39 @@ void PhysicsEmulator::Start() {
     glClearColor(0.1, 0.1, 0.1, 1);
 }
 
+#include <list>
+static std::list<f32> frameSamples(100);
+
+void plotFramesDelay() {
+    std::vector<f32> samples;
+    ImGui::BeginChild("ChildL", ImVec2(ImGui::GetWindowContentRegionWidth(), ImGui::GetWindowContentRegionWidth() * 0.2), false, ImGuiWindowFlags_NoTitleBar);
+    ImGui::Text("Frame[ms]:\n%f", frameSamples.front());
+    ImGui::SameLine();
+    ImPlot::StyleColorsDark();
+    auto& style = ImPlot::GetStyle();
+    style.PlotPadding = {};
+    style.PlotMinSize = {};
+    style.LineWeight = 3;
+    if (ImPlot::BeginPlot("##Filter", { -1, -1 })) {
+        ImPlot::SetupAxis(ImAxis_Y1, "", ImPlotAxisFlags_NoTickLabels | ImPlotAxisFlags_NoGridLines | ImPlotAxisFlags_NoTickMarks);
+        ImPlot::SetupAxis(ImAxis_X1, "", ImPlotAxisFlags_NoTickLabels | ImPlotAxisFlags_NoGridLines | ImPlotAxisFlags_NoTickMarks);
+        ImPlot::SetupAxisLimits(ImAxis_X1, 0, 100);
+        ImPlot::SetupAxisLimits(ImAxis_Y1, 0, 3000 / 144.0);
+        ImPlot::SetupAxisLimitsConstraints(ImAxis_X1, 0, 100);
+        ImPlot::SetupAxisLimitsConstraints(ImAxis_Y1, 0, 3000.0 / 144);
+        for (auto& frame : frameSamples) {
+            samples.push_back(frame);
+        }
+        ImPlot::SetNextFillStyle({ COLOR(0x9ba8e2), 0.7 });
+        ImPlot::PlotShaded("", samples.data(), samples.size());
+
+        ImPlot::PushStyleColor(ImPlotCol_Line, { COLOR(0xb1bfff), 1 });
+        ImPlot::PlotLine("", samples.data(), samples.size());
+        ImPlot::EndPlot();
+    }
+    ImGui::EndChild();
+}
+
 void PhysicsEmulator::Update() {
     static f64 start = Time::GetCurrent();
     UpdateStatus();
@@ -116,12 +152,17 @@ void PhysicsEmulator::Update() {
     render();
     renderImgui();
     frame = Time::GetCurrent() - start;
-    if (frame < 1.0 / fps) {
-        Time::Sleep((1.0 / fps - frame) * 1000);
-        frame = Time::GetCurrent() - start;
+    static f32 plot_aver = 0, plot_val = 0, plot_count = 1, count = 0;
+    plot_val += (frame) * 1000;
+    if (++count == plot_count) {
+        count = 0;
+        plot_aver = plot_val / plot_count;
+        plot_val = 0;
     }
+    frameSamples.push_back(plot_aver);
+    frameSamples.pop_front();
     start += frame;
-    printf("%g\n", frame * 1000.0);
+    // printf("%g\n", frame * 1000.0);
 }
 
 void PhysicsEmulator::SetWorldProjection(glm::vec2 view) {
@@ -193,56 +234,67 @@ void PhysicsEmulator::render() {
     render_frame = timer.getDuration();
 }
 
+void renderStatus() {
+}
+
 void PhysicsEmulator::renderImgui() {
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplWin32_NewFrame();
     ImGui::NewFrame();
 
-    ImGui::Begin("config");
+    ImGui::Begin(simu->name.c_str());
 
-    auto& unitScale = simu->unitScale;
-    ImGui::Text("%s", simu->name.c_str());
-    ImGui::Text("SF:%d", (i32)(1.0 / sub_dt));
-    ImGui::Text("ST[ms]:%.2g", 1000.0 * update_frame);
-    ImGui::Text("RT[ms]:%.2g", 1000.0 * render_frame);
+    ImGui::BeginTabBar("hi");
+    if (ImGui::BeginTabItem("config")) {
+        auto& unitScale = simu->unitScale;
+        ImGui::Text("objects:%d", GetObjectsCount());
+        ImGui::Text("unit:%gcm", unitScale * 100);
+        ImGui::Text("Step:%d", settings.sub_step);
 
-    {
-        static f32 fps = 0, averCount = 0, averFps = 1.0 / frame, averTake = int(this->fps / 15);
-        fps += 1.0f / frame;
-        if (++averCount >= averTake) {
-            averFps = fps / averTake;
-            fps = 0;
-            averCount = 0;
+        ImGui::Checkbox("pause", &settings.pause);
+        ImGui::Checkbox("gravity", &settings.gravity);
+        ImGui::Checkbox("world view", &settings.world_view);
+        ImGui::Checkbox("velocity view", &settings.velocity_view);
+        ImGui::Checkbox("acceleration view", &settings.acceleration_view);
+
+        if (ImGui::Button("restart")) {
+            simu->world.clear();
+            simu->initialize();
+            preview.clear();
+            mode = Mode::Normal;
         }
-        ImGui::Text("FPS:%5.2f", averFps);
+        ImGui::EndTabItem();
     }
 
-    ImGui::Text("objects:%d", GetObjectsCount());
-    ImGui::Text("unit:%gcm", unitScale * 100);
-    ImGui::Text("Step:%d", settings.sub_step);
+    if (ImGui::BeginTabItem("status")) {
+        ImGui::Text("SF:%-5d", (i32)(1.0 / sub_dt));
+        ImGui::SameLine();
+        ImGui::Text("ST[ms]:%-5.2g", 1000.0 * update_frame);
+        ImGui::SameLine();
+        ImGui::Text("RT[ms]:%-5.2g", 1000.0 * render_frame);
 
-    ImGui::Checkbox("pause", &settings.pause);
-    ImGui::Checkbox("gravity", &settings.gravity);
-    ImGui::Checkbox("world view", &settings.world_view);
-    ImGui::Checkbox("velocity view", &settings.velocity_view);
-    ImGui::Checkbox("acceleration view", &settings.acceleration_view);
+        {
+            static f32 fps = 0, averCount = 0, averFps = 1.0 / frame, averTake = int(this->fps / 15);
+            fps += 1.0f / frame;
+            if (++averCount >= averTake) {
+                averFps = fps / averTake;
+                fps = 0;
+                averCount = 0;
+            }
+            ImGui::Text("FPS:%5.2f", averFps);
+        }
 
-    auto& attri = simu->attri;
-    if (ImGui::Button("restart")) {
-        simu->world.clear();
-        simu->initialize();
-        preview.clear();
-        mode = Mode::Normal;
+        plotFramesDelay();
+        ImGui::EndTabItem();
     }
 
-    if (ImGui::Button("reset")) {
-        settings = Settings();
-    }
+    ImGui::EndTabBar();
 
     ImGui::End();
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
+    auto& attri = simu->attri;
     if (mode != Mode::Action) {
         auto objects = FindCirclesByPosition(simu->mouseToWorldCoord());
         for (auto& prev : preview) {
