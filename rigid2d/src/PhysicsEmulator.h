@@ -8,7 +8,7 @@
 class PhysicsEmulator : public mfw::Application {
 private:
     struct Settings {
-        i32 sub_step = 500;
+        i32 sub_step = 10000;
         bool pause = false,
              gravity = true,
              world_view = true,
@@ -49,6 +49,7 @@ private:
     void update(const f64& dt);
     void render();
     void renderImgui();
+    void restart();
 
     void OnEdit(const mfw::MouseButtonEvent& event, const glm::dvec2& wpos);
     void OnNormal(const mfw::MouseButtonEvent& event, const glm::vec2& wpos);

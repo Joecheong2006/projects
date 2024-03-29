@@ -2,11 +2,11 @@ FLAGS :=
 DEFINE := 
 
 CC = g++
-PCH = src/mfwpch.h
+PCH = include/mfwpch.h
 CFLAGS := $(FLAGS) -include $(PCH) -DUNICODE $(DEFINE)
 SOURCE = src src/**
 LIBRARY = lib/stb_image lib/imgui
-INCLUDE = -Ilib
+INCLUDE = -Ilib -Iinclude
 LIB = -lopengl32 -lGdi32 -lWinmm -ld3dcompiler -ldwmapi
 
 SRC = $(wildcard $(patsubst %, %/*.cpp, $(SOURCE)))
@@ -21,7 +21,7 @@ PROCESS_PERCENTAGE = 0
 
 .PHONY: all clean
 
-all: app
+all:
 
 clean:
 	@rm -rf $(OBJ) $(DEP)
@@ -46,9 +46,9 @@ app: $(OBJ)
 	@$(CC) $(CFLAGS) $(INCLUDE) -o $@ -c $< -MMD
 
 win_release:
-	@make -j -s DEFINE="" FLAGS="-std=c++17 -O2"
+	@make app -j -s DEFINE="" FLAGS="-std=c++17 -O2"
 
 win_debug:
-	@make -j -s DEFINE="-DDEBUG" FLAGS="-std=c++17 -Wall -Wextra -Wpedantic -Wstrict-aliasing -g"
+	@make app -j -s DEFINE="-DDEBUG" FLAGS="-std=c++17 -Wall -Wextra -Wpedantic -Wstrict-aliasing -g"
 
 -include $(DEP)

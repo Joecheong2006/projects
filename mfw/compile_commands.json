@@ -10,7 +10,7 @@
       "-Ilib/glm",
       "-Ilib/glad/include",
       "-Ilib",
-      "-Isrc",
+      "-Iinclude",
       "-DDEBUG",
       "-DUNICODE"
     ],

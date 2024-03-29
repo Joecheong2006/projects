@@ -79,7 +79,7 @@ PhysicsEmulator::PhysicsEmulator(Simulation* simluation)
     simu = simluation;
     ASSERT(simu != nullptr);
 
-    world_scale = 10 * simu->unitScale;
+    world_scale = 9 * simu->unitScale;
     shift_rate = 0.001 * world_scale;
     zoom_rate = 0.01 * world_scale;
     zoom = 1;
@@ -102,14 +102,13 @@ void PhysicsEmulator::Start() {
     preview.reserve(16);
     SetWorldProjection(glm::vec2(width, height));
 
-    settings.sub_step = 500;
     settings.pause = false,
     settings.gravity = true,
     settings.world_view = true,
     settings.velocity_view = false,
     settings.acceleration_view = false;
 
-    glClearColor(0.1, 0.1, 0.1, 1);
+    glClearColor(COLOR(0x121414), 1);
 }
 
 #include <list>
@@ -176,8 +175,10 @@ void PhysicsEmulator::ApplyUserInputToScene() {
         holding->m_pos = wpos - (glm::dvec2)catch_offset;
         return;
     }
-    f64 k = (f64)settings.sub_step * 80;
-    holding->addForce((wpos - (glm::dvec2)catch_offset - holding->m_pos) * k);
+    f64 k = (f64)settings.sub_step * 20;
+    auto n = glm::normalize(wpos - holding->m_pos);
+    f64 strengh = glm::length(wpos - holding->m_pos);
+    holding->addForce(glm::pow(strengh, 2) * n * k);
 }
 
 void PhysicsEmulator::update(const f64& dt) {
@@ -214,13 +215,13 @@ void PhysicsEmulator::render() {
         for (auto& obj : objects) {
             if (settings.acceleration_view) {
                 glm::dvec2 a = (obj->m_velocity - obj->m_ovelocity) / (sub_dt * 20.0);
-                //a = obj->m_acceleration / 20.0;
-                renderer.renderRactangle(proj, obj->m_pos,
+                a = obj->m_acceleration / 20.0;
+                renderer.renderLine(proj, obj->m_pos,
                         obj->m_pos + a * (f64)unitScale, blue, 0.02 * unitScale);
             }
             if (settings.velocity_view) {
                 glm::dvec2 v = obj->m_velocity / 6.0;
-                renderer.renderRactangle(proj, obj->m_pos, 
+                renderer.renderLine(proj, obj->m_pos, 
                         obj->m_pos + v * (f64)unitScale, red, 0.02 * unitScale);
             }
         }
@@ -228,13 +229,10 @@ void PhysicsEmulator::render() {
 
     if (holding) {
         const glm::dvec2 m = simu->mouseToWorldCoord();
-        renderer.renderRactangle(proj, m, holding->m_pos, glm::vec3(COLOR(0xb92c2c)), 0.1 * unitScale);
+        renderer.renderLine(proj, m, holding->m_pos, glm::vec3(COLOR(0xb92c2c)), 0.1 * unitScale);
     }
 
     render_frame = timer.getDuration();
-}
-
-void renderStatus() {
 }
 
 void PhysicsEmulator::renderImgui() {
@@ -258,10 +256,7 @@ void PhysicsEmulator::renderImgui() {
         ImGui::Checkbox("acceleration view", &settings.acceleration_view);
 
         if (ImGui::Button("restart")) {
-            simu->world.clear();
-            simu->initialize();
-            preview.clear();
-            mode = Mode::Normal;
+            restart();
         }
         ImGui::EndTabItem();
     }
@@ -309,9 +304,20 @@ void PhysicsEmulator::renderImgui() {
     }
 }
 
+void PhysicsEmulator::restart() {
+    simu->world.clear();
+    simu->initialize();
+    preview.clear();
+    mode = Mode::Normal;
+}
+
 void PhysicsEmulator::OnInputKey(const KeyEvent& event) {
     if (event.key == VK_ESCAPE && event.mode == KeyMode::Down) {
         Terminate();
+    }
+
+    if (event.key == 'R' && event.mode == KeyMode::Down) {
+        restart();
     }
 
     if (event.key == 'S' && event.mode == KeyMode::Down) {
@@ -333,6 +339,13 @@ void PhysicsEmulator::OnInputKey(const KeyEvent& event) {
         }
     }
 
+    auto* main = GetWindow();
+
+    static bool fullScreen = false;
+    if (event.key == 'F' && event.mode == KeyMode::Down) {
+        fullScreen = !fullScreen;
+        main->setFullScreen(fullScreen);
+    }
 }
 
 void PhysicsEmulator::OnCursorMove(const CursorMoveEvent& event) {

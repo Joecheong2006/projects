@@ -62,8 +62,7 @@ namespace mfw {
                 PWINDOWPOS pos = (PWINDOWPOS)lparam;
                 m_state.x = pos->x;
                 m_state.y = pos->y;
-                LOG_INFO("{} {}\n", pos->x, pos->y);
-                //m_state.m_callBackFunc(WindowMoveEvent(m_state.x, m_state.y));
+                m_state.m_callBackFunc(WindowMoveEvent(m_state.x, m_state.y));
             } break;
 
         case WM_SIZE: {
@@ -257,7 +256,7 @@ namespace mfw {
             SetWindowLongPtr(m_hwnd, GWL_EXSTYLE, WS_EX_APPWINDOW | WS_EX_TOPMOST);
             SetWindowLongPtr(m_hwnd, GWL_STYLE, WS_POPUP | WS_VISIBLE);
                 
-            SetWindowPos(m_hwnd, HWND_TOPMOST, 0, 0, fullscreenWidth, fullscreenHeight, SWP_SHOWWINDOW);
+            SetWindowPos(m_hwnd, HWND_TOP, 0, 0, fullscreenWidth, fullscreenHeight, SWP_SHOWWINDOW);
             isChangeSuccessful = ChangeDisplaySettings(&fullscreenSettings, CDS_FULLSCREEN) == DISP_CHANGE_SUCCESSFUL;
         }
         else {
@@ -279,11 +278,11 @@ namespace mfw {
     }
 
     void WindowsWindow::setPosition(i32 x, i32 y) {
-        SetWindowPos(m_hwnd, HWND_TOPMOST, x, y, m_state.width, m_state.height, SWP_SHOWWINDOW);
+        SetWindowPos(m_hwnd, HWND_TOP, x, y, m_state.width, m_state.height, SWP_SHOWWINDOW);
     }
 
     void WindowsWindow::setSize(i32 width, i32 height) {
-        SetWindowPos(m_hwnd, HWND_TOPMOST, m_state.x, m_state.y, width, height, SWP_SHOWWINDOW);
+        SetWindowPos(m_hwnd, HWND_TOP, m_state.x, m_state.y, width, height, SWP_SHOWWINDOW);
     }
 
     void WindowsWindow::processMessage() {

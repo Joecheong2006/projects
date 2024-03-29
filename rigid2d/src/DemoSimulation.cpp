@@ -31,13 +31,16 @@ void wall_collision(f64 dt, Circle* c, const glm::vec2& world) {
 DemoSimulation::DemoSimulation()
     : Simulation("Demo")
 {
-    unitScale = 0.35f;
+    unitScale = 0.4f;
     world = World(glm::vec2(30, 12) * unitScale);
     attri.node_color = glm::vec4(glm::vec4(COLOR(0x858AA6), 0));
-    attri.node_size = 0.24 * unitScale;
-    attri.line_width = 0.08 * unitScale;
+    attri.node_size = 0.17 * unitScale;
+    attri.line_width = 0.12 * unitScale;
     attri.hardness = 1;
     initialize = [this]() {
+        addDoublePendulum(30, 3.5);
+        addTracer(world, world.getObjects<Circle>().back(), 300);
+        return;
         for (i32 i = 0; i < 4; i++) {
             addFixPointConstraint(world, glm::vec2(-4, 4) * unitScale, attri.node_size * 1.5);
         }
@@ -45,6 +48,8 @@ DemoSimulation::DemoSimulation()
             addHorizontalPointConstraint(world, glm::vec2(4, 4) * unitScale, attri.node_size * 1.5);
         }
         SetupRotateBox();
+        addTriangle(glm::vec2(), 1);
+        addBox(glm::vec2(), 1);
     };
 }
 
@@ -70,6 +75,7 @@ void DemoSimulation::render(mfw::Renderer& renderer) {
     for (auto& obj : world.getConstraint<DistanceConstraint>()) {
         obj->render(proj, renderer);
 
+        continue;
         DistanceConstraint* dc = static_cast<DistanceConstraint*>(obj);
         const glm::dvec2 a = dc->target[0]->m_pos, b = dc->target[1]->m_pos;
         const glm::dvec2 m = mouseToWorldCoord();
@@ -77,7 +83,7 @@ void DemoSimulation::render(mfw::Renderer& renderer) {
         const glm::dvec2 p = glm::normalize(b - a) * glm::clamp(d, 0.0, glm::length(b - a));
         glm::dvec2 offset = glm::normalize(m - a - p) * (f64)(attri.node_size * 0.5);
         offset = {};
-        renderer.renderRactangle(proj, m, a + p + offset,
+        renderer.renderLine(proj, m, a + p + offset,
                 red + glm::vec3(glm::length(a + p + offset - m)), 0.03 * unitScale);
     }
 
@@ -86,6 +92,8 @@ void DemoSimulation::render(mfw::Renderer& renderer) {
     for (auto& obj : circles) {
         obj->render(proj, renderer);
     }
+
+    object.back()->render(proj, renderer);
 
     renderer.renderRactangle(proj, glm::vec2(world.size.x, -world.size.y) - 0.2f * unitScale, glm::vec2(-world.size.x, -world.size.y) - 0.2f * unitScale, glm::vec4(1), 0.2 * unitScale);
 

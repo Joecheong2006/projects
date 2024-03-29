@@ -11,5 +11,6 @@ Circle::Circle()
 
 void Circle::render(const glm::mat4& proj, mfw::Renderer& renderer) {
     renderer.renderCircle(proj, this);
+    renderer.renderRing(proj, m_pos, r, 0.1 / (r * 10), glm::vec4(0, 0, 0, 1));
 }
 

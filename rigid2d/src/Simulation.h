@@ -38,6 +38,6 @@ struct Simulation {
 
     PointConstraint* addHorizontalPointConstraint(World& world, const glm::dvec2& pos, f32 r);
     PointConstraint* addFixPointConstraint(World& world, const glm::dvec2& pos, f32 r);
-    void addTracer(World& world, Object* target);
+    void addTracer(World& world, Object* target, i32 samples = 120);
 
 };

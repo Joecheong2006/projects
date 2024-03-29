@@ -38,8 +38,8 @@ namespace mfw {
         return true;
     }
 
-    ImageRenderer::ImageRenderer(const char* path)
-        : m_vbo(vertexs, sizeof(vertexs)), m_texture(path)
+    ImageRenderer::ImageRenderer(const char* path, i32 wrap, i32 filter)
+        : m_vbo(vertexs, sizeof(vertexs)), m_texture(path, wrap, filter, filter)
     {
         VertexBufferLayout cube_layout;
         cube_layout.add<f32>(2);
@@ -57,7 +57,7 @@ namespace mfw {
         m_texture.unbind();
     }
 
-    ImageRenderer *circleRenderer, *lineRenderer;
+    ImageRenderer *iCircleRenderer, *iLineRenderer, *iRingRenderer;
 
     class ShaderRenderer {
     public:
@@ -81,27 +81,31 @@ namespace mfw {
             m_shader.unbind();
         }
 
-    }* renderer, *crenderer;
+    }* renderer, *crenderer, *ringRenderer;
 
     Renderer::Renderer() {
-        circleRenderer = new ImageRenderer("res/images/circle.png");
-        lineRenderer = new ImageRenderer("res/images/square.png");
+        iCircleRenderer = new ImageRenderer("res/images/circle.png", GL_CLAMP_TO_EDGE, GL_LINEAR_MIPMAP_LINEAR);
+        iLineRenderer = new ImageRenderer("res/images/square.png", GL_CLAMP_TO_EDGE, GL_LINEAR_MIPMAP_LINEAR);
+        iRingRenderer = new ImageRenderer("res/images/ring.png", GL_CLAMP_TO_EDGE, GL_LINEAR_MIPMAP_LINEAR);
         renderer = new ShaderRenderer("res/shaders/square.vert", "res/shaders/square.frag");
         crenderer = new ShaderRenderer("res/shaders/circle.vert", "res/shaders/circle.frag");
+        ringRenderer = new ShaderRenderer("res/shaders/ring.vert", "res/shaders/ring.frag");
     }
 
     Renderer::~Renderer() {
-        delete circleRenderer;
-        delete lineRenderer;
+        delete iCircleRenderer;
+        delete iLineRenderer;
+        delete iRingRenderer;
         delete renderer;
         delete crenderer;
+        delete ringRenderer;
     }
 
     void Renderer::clear() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
 
-    void Renderer::renderRactangle(const glm::mat4& proj, const glm::vec2& p1, const glm::vec2& p2, glm::vec3 color, f32 w) {
+    void Renderer::renderLine(const glm::mat4& proj, const glm::vec2& p1, const glm::vec2& p2, glm::vec3 color, f32 w) {
         renderRactangle(proj, p1, p2, glm::vec4(color, 1), w);
     }
 
@@ -111,12 +115,12 @@ namespace mfw {
         view = glm::rotate(view, glm::atan((p1.y - p2.y) / (p1.x - p2.x)), glm::vec3(0, 0, 1));
         view = glm::scale(view, glm::vec3(glm::length(p1 - p2) * 0.5, w, 1));
 #if 1
-        lineRenderer->m_texture.bind();
-        lineRenderer->m_shader.bind();
-        lineRenderer->m_vao.bind();
-        lineRenderer->m_shader.set1i("tex", 0);
-        lineRenderer->m_shader.set4f("color", color);
-        lineRenderer->m_shader.setMat4("view", proj * view);
+        iLineRenderer->m_texture.bind();
+        iLineRenderer->m_shader.bind();
+        iLineRenderer->m_vao.bind();
+        iLineRenderer->m_shader.set1i("tex", 0);
+        iLineRenderer->m_shader.set4f("color", color);
+        iLineRenderer->m_shader.setMat4("view", proj * view);
 #else
         renderer->m_shader.bind();
         renderer->m_vao.bind();
@@ -187,6 +191,29 @@ namespace mfw {
         crenderer->m_vao.bind();
         crenderer->m_shader.set4f("color", color);
         crenderer->m_shader.setMat4("view", proj * view);
+#endif
+
+        GLCALL(glDrawArrays(GL_TRIANGLES, 0, 6));
+    }
+
+    void Renderer::renderRing(const glm::mat4& proj, const glm::vec2& p, f32 r, f32 width, glm::vec4 color) {
+        glm::mat4 view = glm::mat4(1);
+        view = glm::translate(view, glm::vec3(p.x, p.y, 0));
+        view = glm::scale(view, glm::vec3(r, r, 0));
+
+#if 0
+        iRingRenderer->m_texture.bind();
+        iRingRenderer->m_shader.bind();
+        iRingRenderer->m_vao.bind();
+        iRingRenderer->m_shader.set1i("tex", 0);
+        iRingRenderer->m_shader.set4f("color", color);
+        iRingRenderer->m_shader.setMat4("view", proj * view);
+#else
+        ringRenderer->m_shader.bind();
+        ringRenderer->m_vao.bind();
+        ringRenderer->m_shader.set1f("width", width);
+        ringRenderer->m_shader.set4f("color", color);
+        ringRenderer->m_shader.setMat4("view", proj * view);
 #endif
 
         GLCALL(glDrawArrays(GL_TRIANGLES, 0, 6));

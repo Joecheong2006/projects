@@ -1,7 +1,7 @@
 CC = g++
 CFLAGS := -std=c++17 -Wall -Wextra -Wpedantic -Wstrict-aliasing -g -DDEBUG
 SOURCE = src src/**
-INCLUDE = -I../lib -I../src
+INCLUDE = -I../lib -I../include
 LIB = bin/mfw.dll
 
 SRC = $(wildcard $(patsubst %, %/*.cpp, $(SOURCE)))

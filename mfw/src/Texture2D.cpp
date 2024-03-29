@@ -4,18 +4,18 @@
 #include "glad/gl.h"
 
 namespace mfw {
-    Texture2D::Texture2D(const char* path)
-    {
+    Texture2D::Texture2D(const char* path): Texture2D(path, GL_CLAMP_TO_EDGE, GL_LINEAR, GL_LINEAR)
+    {}
+
+    Texture2D::Texture2D(const char* path, i32 wrap, i32 min_filter, i32 mag_filer) {
         GLCALL(glGenTextures(1, &m_id));
         GLCALL(glBindTexture(GL_TEXTURE_2D, m_id));
 
-        GLCALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER));	
-        GLCALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER));
-        // GLCALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
-        // GLCALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
+        GLCALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap));
+        GLCALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap));	
 
-        GLCALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR));
-        GLCALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+        GLCALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter));
+        GLCALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filer));
 
         unsigned char *data = stbi_load(path, &m_width, &m_height, &m_bpp, 0);
 

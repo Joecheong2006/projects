@@ -74,6 +74,7 @@ public:
         if (Input::KeyPress(' ')) {
             window->setCursorPos(window->width() * 0.5, window->height() * 0.5);
         }
+
         if (Input::KeyPress('W')) {
             offset_y += frame;
         }
@@ -105,14 +106,6 @@ public:
         if (event.key == 'F' && event.mode == KeyMode::Down) {
             fullScreen = !fullScreen;
             main->setFullScreen(fullScreen);
-        }
-
-        static bool control = false;
-        if (event.key == 'F' && event.mode == KeyMode::Down) {
-            control = true;
-        }
-        else if (event.key == 'F' && event.mode == KeyMode::Release) {
-            control = false;
         }
     }
 

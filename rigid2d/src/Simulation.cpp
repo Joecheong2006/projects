@@ -81,8 +81,10 @@ void Simulation::addDoublePendulum(f64 angle, f64 d) {
     world.addConstraint<DistanceConstraint>(p2, p3, d * unitScale, attri.line_width);
     addFixPointConstraint(world, glm::vec2(), attri.node_size * 1.5)
         ->target = p1;
-    p3->m_mass = 2;
-    p3->r = p3->m_mass * unitScale * 0.2;
+    // p2->m_mass = 0.3f;
+    // p2->r = p2->m_mass * unitScale;
+    p3->m_mass = 0.3f;
+    p3->r = p3->m_mass * unitScale;
 }
 
 void Simulation::SetupRotateBox() {
@@ -134,17 +136,17 @@ PointConstraint* Simulation::addFixPointConstraint(World& world, const glm::dvec
     return result;
 }
 
-void Simulation::addTracer(World& world, Object* target) {
+void Simulation::addTracer(World& world, Object* target, i32 samples) {
     auto result = world.addConstraint<PointConstraint>(0, [](const f64& dt, PointConstraint* pc) {
                     (void) dt; (void)pc;
                 });
 
     result->target = target;
     result->onRender = [=](const glm::mat4& proj, mfw::Renderer& renderer, PointConstraint* pc) {
-        static const i32 max = 120;
-        static const f32 maxScale = 0.18 * unitScale,
-                         minScale = 0.03 * unitScale,
-                         dr = 0.62f;
+        static const i32 max = samples;
+        static const f32 maxScale = 0.16 * unitScale,
+                         minScale = 0.02 * unitScale,
+                         dr = 0.65f;
         static std::list<glm::vec2> positions_trace;
 
         if ((i32)positions_trace.size() == max) {
@@ -162,9 +164,9 @@ void Simulation::addTracer(World& world, Object* target) {
             const glm::vec3 color = (trace - background) * (i++ / positions_trace.size()) + background;
             f32 t = maxScale * (i / positions_trace.size());
             t = glm::clamp(t - maxScale * dr, minScale, maxScale);
-            renderer.renderCircle(proj, { p2, color, t });
-            renderer.renderCircle(proj, { p1, color, t });
-            renderer.renderRactangle(proj, p1, p2, color, t);
+            renderer.renderCircle(proj, { p2, color, t * 0.95f });
+            renderer.renderCircle(proj, { p1, color, t * 0.95f });
+            renderer.renderLine(proj, p1, p2, color, t);
         }
     };
 }
