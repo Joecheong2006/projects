@@ -1,8 +1,8 @@
 CC = g++
-PCH = ../include/mfwpch.h
-CFLAGS := -std=c++17 -Wall -Wextra -Wpedantic -Wstrict-aliasing -g -include $(PCH) -DDEBUG -DUNICODE
+PCH = ../src/mfwpch.h
+CFLAGS := -std=c++17 -Wall -Wextra -Wpedantic -Wstrict-aliasing -g -DDEBUG -DUNICODE
 SOURCE = src src/**
-INCLUDE = -I../lib -I../include
+INCLUDE = -I../lib -I../src
 LIB = -lmingw32 -lopengl32 -lGdi32 -lWinmm -ld3dcompiler -ldwmapi bin/mfw.dll
 
 

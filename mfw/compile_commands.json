@@ -12,7 +12,7 @@
       "-Ilib",
       "-Isrc",
       "-DDEBUG",
-      "-DUNICODE",
+      "-DUNICODE"
     ],
     "directory": "D:/project/mfw",
     "file": "src/main.cpp"

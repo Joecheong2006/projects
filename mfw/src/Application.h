@@ -9,6 +9,8 @@ namespace mfw {
     class KeyEvent;
     class MouseButtonEvent;
     class MouseScrollEvent;
+    class WindowFocusEvent;
+    class WindowNotFocusEvent;
 
     class Application {
     public:
@@ -30,6 +32,8 @@ namespace mfw {
         inline virtual void OnWindowResize(const WindowResizeEvent& event) { (void)event; }
         inline virtual void OnWindowClose(const WindowCloseEvent& event) { (void)event; }
         inline virtual void OnCursorMove(const CursorMoveEvent& event) { (void)event; }
+        inline virtual void OnWindowFocus(const WindowFocusEvent& event) { (void)event; }
+        inline virtual void OnWindowNotFocus(const WindowNotFocusEvent& event) { (void)event; }
 
         void Terminate() { m_window->close(); }
 
@@ -41,6 +45,8 @@ namespace mfw {
         inline void WindowResize(const WindowResizeEvent& event) { OnWindowResize(event); }
         inline void WindowClose(const WindowCloseEvent& event) { OnWindowClose(event); }
         inline void CursorMove(const CursorMoveEvent& event) { OnCursorMove(event); }
+        inline void WindowFocus(const WindowFocusEvent& event) { OnWindowFocus(event); }
+        inline void WindowNotFocus(const WindowNotFocusEvent& event) { OnWindowNotFocus(event); }
 
         Window* m_window;
         EventListener eventListener;
