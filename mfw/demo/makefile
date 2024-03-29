@@ -1,9 +1,8 @@
 CC = g++
-PCH = ../src/mfwpch.h
+PCH = ../include/mfwpch.h
 CFLAGS := -std=c++17 -Wall -Wextra -Wpedantic -Wstrict-aliasing -g -include $(PCH) -DDEBUG -DUNICODE
 SOURCE = src src/**
-# LIBRARY = ../lib/stb_image ../lib/imgui ../src
-INCLUDE = -I../lib -I../lib/stb_image -I../lib/imgui -I../src
+INCLUDE = -I../lib -I../include
 LIB = -lmingw32 -lopengl32 -lGdi32 -lWinmm -ld3dcompiler -ldwmapi bin/mfw.dll
 
 
@@ -29,12 +28,12 @@ debug:
 	@gdb -q "$(OUT)" --eval-command=run --eval-command=exit;
 
 clean:
-	@rm -rf $(OBJ) $(DEP) $(BIN)
+	@rm -rf $(OBJ) $(DEP)
 	@echo Cleaned
 
 build: bin
-	@cd ../ && make dll -j
-	@mv ../mfw.dll bin/mfw.dll
+	@cd ../ && make clean -s && make win_release -s
+	@cp ../mfw.dll bin/mfw.dll
 
 bin:
 	@mkdir -p $(BIN)

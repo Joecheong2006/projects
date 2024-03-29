@@ -1,11 +1,13 @@
+FLAGS := 
+DEFINE := 
+
 CC = g++
-PCH = src/mfwpch.h
-CFLAGS := -std=c++17 -Wall -Wextra -Wpedantic -Wstrict-aliasing -g -include $(PCH) -DDEBUG -DUNICODE
+PCH = include/mfwpch.h
+CFLAGS := $(FLAGS) -include $(PCH) -DUNICODE $(DEFINE)
 SOURCE = src src/**
 LIBRARY = lib/stb_image lib/imgui
-INCLUDE = -Ilib -Ilib/stb_image -Ilib/imgui
+INCLUDE = -Ilib -Iinclude
 LIB = -lmingw32 -lopengl32 -lGdi32 -lWinmm -ld3dcompiler -ldwmapi
-
 
 SRC = $(wildcard $(patsubst %, %/*.cpp, $(SOURCE)))
 LIBOBJ = $(wildcard $(patsubst %, %/*.o, $(LIBRARY))) 
@@ -21,12 +23,6 @@ PROCESS_PERCENTAGE = 0
 
 all: app
 
-run:
-	@./$(OUT)
-
-debug:
-	@gdb -q "$(OUT)" --eval-command=run --eval-command=exit;
-
 clean:
 	@rm -rf $(OBJ) $(DEP)
 	@echo Cleaned
@@ -36,14 +32,10 @@ build:
 	@cd lib/stb_image && $(CC) -c stb_image.cpp
 	@cd lib/imgui && $(CC) -c -O3 ./*.cpp
 	@$(CC) -x c++-header $(INCLUDE) -o $(PCH).gch -c $(PCH)
-	@echo "Completed"
-
-dll: $(OBJ) 
-	@$(CC) -shared -o $(OUT) $(OBJ) $(LIBOBJ) $(LIB)
-	@echo "[100%] Compilation completed"
+	@echo "Complete"
 
 app: $(OBJ) 
-	@$(CC) -o $(OUT) $(OBJ) $(LIBOBJ) $(LIB)
+	@$(CC) -shared -o $(OUT) $(OBJ) $(LIBOBJ) $(LIB)
 	@echo "[100%] Compilation completed"
 
 %.o: %.cpp
@@ -52,5 +44,11 @@ app: $(OBJ)
 	$(eval PROCESS_PERCENTAGE := $(shell echo "$$(($(PROCESS_PERCENTAGE) / $(TOTAL_FILES)))"))
 	@echo "[$(PROCESS_PERCENTAGE)%] $<"
 	@$(CC) $(CFLAGS) $(INCLUDE) -o $@ -c $< -MMD
+
+win_release:
+	@make -j -s DEFINE="" FLAGS="-std=c++17 -O2"
+
+win_debug:
+	@make -j -s DEFINE="-DDEBUG" FLAGS="-std=c++17 -Wall -Wextra -Wpedantic -Wstrict-aliasing -g"
 
 -include $(DEP)

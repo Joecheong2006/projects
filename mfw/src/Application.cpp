@@ -4,7 +4,7 @@
 #include "Clock.h"
 #include "OpenglContext.h"
 #include "Renderer.h"
-#include "stb_image.h"
+#include "stb_image/stb_image.h"
 #include "InputEvent.h"
 #include "WindowEvent.h"
 
