@@ -64,6 +64,7 @@ public:
     virtual void OnMouseButton(const mfw::MouseButtonEvent& event) override;
     virtual void OnWindowResize(const mfw::WindowResizeEvent& event) override;
     virtual void OnWindowFocus(const mfw::WindowFocusEvent& event) override;
+    virtual void OnWindowNotFocus(const mfw::WindowNotFocusEvent& event) override;
 
     static Simulation* simu;
 

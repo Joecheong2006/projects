@@ -30,7 +30,7 @@ clean:
 build:
 	@echo "Compiling library"
 	@cd lib/stb_image && $(CC) -c stb_image.cpp
-	@cd lib/imgui && $(CC) -c -O3 ./*.cpp
+	@cd lib/imgui && $(CC) -c -O2 ./*.cpp
 	@$(CC) -x c++-header $(INCLUDE) -o $(PCH).gch -c $(PCH)
 	@echo "Complete"
 

@@ -74,7 +74,7 @@ void PhysicsEmulator::UpdateStatus() {
 }
 
 PhysicsEmulator::PhysicsEmulator(Simulation* simluation)
-    : Application("rigid2d", 1440, 960), mode(Mode::Normal)
+    : Application(simluation->name, 1440, 960), mode(Mode::Normal)
 {
     simu = simluation;
     ASSERT(simu != nullptr);
@@ -242,9 +242,9 @@ void PhysicsEmulator::renderImgui() {
     ImGui_ImplWin32_NewFrame();
     ImGui::NewFrame();
 
-    ImGui::Begin(simu->name.c_str());
+    ImGui::Begin("info");
 
-    ImGui::BeginTabBar("hi");
+    ImGui::BeginTabBar("tabBar");
     if (ImGui::BeginTabItem("config")) {
         auto& unitScale = simu->unitScale;
         ImGui::Text("objects:%d", GetObjectsCount());
@@ -495,6 +495,11 @@ void PhysicsEmulator::OnWindowResize(const WindowResizeEvent& event) {
 }
 
 void PhysicsEmulator::OnWindowFocus(const WindowFocusEvent& event) {
+    (void)event;
+    mode = Mode::Normal;
+}
+
+void PhysicsEmulator::OnWindowNotFocus(const mfw::WindowNotFocusEvent& event) {
     (void)event;
     mode = Mode::Normal;
 }

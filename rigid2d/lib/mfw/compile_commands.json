@@ -1,0 +1,20 @@
+[
+  { 
+    "arguments": [
+      "g++",
+      "-std=c++17",
+      "-Wall",
+      "-Wextra",
+      "-g",
+      "-Ilib/stb_image",
+      "-Ilib/glm",
+      "-Ilib/glad/include",
+      "-Ilib",
+      "-Isrc",
+      "-DDEBUG",
+      "-DUNICODE"
+    ],
+    "directory": "D:/project/mfw",
+    "file": "src/main.cpp"
+  }
+]

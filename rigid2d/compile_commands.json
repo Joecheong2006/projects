@@ -2,16 +2,14 @@
   { 
     "arguments": [
       "g++",
-      "-std=c++11",
+      "-std=c++17",
       "-Wall",
       "-Wextra",
+      "-Wpedantic",
+      "-Wstrict-aliasing",
       "-g",
-      "-Ilib/stb_image",
-      "-Ilib/glm",
-      "-Ilib",
-      "-Isrc",
-      "-DDEBUG",
-      "-DUNICODE"
+      "-O3",
+      "-Ilib/mfw"
     ],
     "directory": "D:/project/rigid2d",
     "file": "src/main.cpp"

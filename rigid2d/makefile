@@ -1,18 +1,14 @@
 CC = g++
-PCH = src/mfwpch.h
-CFLAGS := -std=c++17 -Wall -Wextra -Wpedantic -Wstrict-aliasing -g -include $(PCH) -DDEBUG -DUNICODE
-# CFLAGS := -std=c++17 -include $(PCH) -DUNICODE -O2
-SOURCE = src src/** src/**/**
-LIBRARY = lib/stb_image lib/imgui
-INCLUDE = -Ilib -Isrc
-LIB = -lopengl32 -lGdi32 -lWinmm -ld3dcompiler -ldwmapi
-
+CFLAGS := -std=c++17 -Wall -Wextra -Wpedantic -Wstrict-aliasing -g
+SOURCE = src src/**
+INCLUDE = -Ilib/mfw
 
 SRC = $(wildcard $(patsubst %, %/*.cpp, $(SOURCE)))
 LIBOBJ = $(wildcard $(patsubst %, %/*.o, $(LIBRARY))) 
 OBJ = $(SRC:%.cpp=%.o)
 DEP = $(OBJ:%.o=%.d)
 BIN = bin
+LIB = $(BIN)/mfw.dll
 OUT = $(BIN)/rigid2d.exe
 
 PROCESS_INDEX = -1
@@ -27,7 +23,7 @@ run:
 	@./$(OUT)
 
 debug:
-	@gdb -q "$(OUT)" --eval-command=run --eval-command=exit;
+	@gdb -q $(OUT) --eval-command=run --eval-command=exit
 
 clean:
 	@rm -rf $(OBJ) $(DEP) $(BIN)
@@ -35,13 +31,11 @@ clean:
 
 build:
 	@echo "Compiling library"
-	@cd lib/stb_image && $(CC) -c stb_image.cpp
-	@cd lib/imgui && $(CC) -O3 -c ./*.cpp
-	@$(CC) -x c++-header $(INCLUDE) -o $(PCH).gch -c $(PCH)
 	@echo "Completed"
 
 bin:
 	@mkdir -p $(BIN)
+	@cp lib/mfw/mfw.dll $(BIN)/mfw.dll
 
 app: bin $(OBJ) 
 	@$(CC) -o $(OUT) $(OBJ) $(LIBOBJ) $(LIB)
