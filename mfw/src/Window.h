@@ -39,6 +39,9 @@ namespace mfw {
         virtual void hideCursor() = 0;
         virtual void setCursorPos(const u32 x, const u32 y) = 0;
         virtual void swapBuffers() = 0;
+        virtual void setFullScreen(bool enable) = 0;
+        virtual void setPosition(i32 x, i32 y) = 0;
+        virtual void setSize(i32 width, i32 height) = 0;
 
         static Window* Create(const WindowState& state);
 

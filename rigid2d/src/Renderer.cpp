@@ -110,7 +110,7 @@ namespace mfw {
         view = glm::translate(view, glm::vec3((p1 + p2) * 0.5f, 0));
         view = glm::rotate(view, glm::atan((p1.y - p2.y) / (p1.x - p2.x)), glm::vec3(0, 0, 1));
         view = glm::scale(view, glm::vec3(glm::length(p1 - p2) * 0.5, w, 1));
-#if 0
+#if 1
         lineRenderer->m_texture.bind();
         lineRenderer->m_shader.bind();
         lineRenderer->m_vao.bind();

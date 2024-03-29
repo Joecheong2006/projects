@@ -26,12 +26,15 @@ namespace  mfw {
             m_state.m_callBackFunc = std::move(callBackFunction);
         }
         inline virtual void setVSync(bool enable) override;
-        inline virtual void* getNativeWindow() override;
+        inline virtual void* getNativeWindow() override { return this; }
         inline virtual void close() override { m_state.isRunning = false; }
-        inline virtual void showCursor() override;
-        inline virtual void hideCursor() override;
-        inline virtual void setCursorPos(u32 x, u32 y) override;
+        virtual void showCursor() override;
+        virtual void hideCursor() override;
+        virtual void setCursorPos(u32 x, u32 y) override;
         inline virtual void swapBuffers() override { SwapBuffers(m_hdc); }
+        virtual void setFullScreen(bool enable) override;
+        virtual void setPosition(i32 x, i32 y) override;
+        virtual void setSize(i32 width, i32 height) override;
         virtual void update() override;
 
     private:

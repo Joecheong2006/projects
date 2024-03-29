@@ -1,5 +1,5 @@
 CC = g++
-CFLAGS := -std=c++17 -Wall -Wextra -Wpedantic -Wstrict-aliasing -g
+CFLAGS := -std=c++17 -Wall -Wextra -Wpedantic -Wstrict-aliasing -g -DDEBUG
 SOURCE = src src/**
 INCLUDE = -I../lib -I../src
 LIB = bin/mfw.dll
@@ -29,7 +29,7 @@ clean:
 	@echo Cleaned
 
 build: bin
-	@cd ../ && make clean -s && make win_debug -s
+	@cd ../ && make win_debug -s
 	@cp ../mfw.dll bin/mfw.dll
 
 bin:

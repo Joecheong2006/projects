@@ -99,6 +99,21 @@ public:
         if (event.key == VK_ESCAPE && event.mode == KeyMode::Down) {
             Terminate();
         }
+        auto* main = GetWindow();
+
+        static bool fullScreen = false;
+        if (event.key == 'F' && event.mode == KeyMode::Down) {
+            fullScreen = !fullScreen;
+            main->setFullScreen(fullScreen);
+        }
+
+        static bool control = false;
+        if (event.key == 'F' && event.mode == KeyMode::Down) {
+            control = true;
+        }
+        else if (event.key == 'F' && event.mode == KeyMode::Release) {
+            control = false;
+        }
     }
 
     virtual void OnMouseScroll(const MouseScrollEvent& event) override {
