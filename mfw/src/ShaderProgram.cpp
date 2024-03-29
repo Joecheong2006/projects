@@ -60,11 +60,25 @@ namespace mfw {
         }
     }
 
+    void ShaderProgram::set4f(const char* name, const glm::vec4& v) {
+        i32 id = uniformLocation(name);
+        if (id != -1) {
+            GLCALL(glUniform4f(uniformLocation(name), v.x, v.y, v.z, v.w));
+        }
+    }
+
     void ShaderProgram::set3f(const char* name, f32 v0, f32 v1, f32 v2)
     {
         i32 id = uniformLocation(name);
         if (id != -1) {
             GLCALL(glUniform3f(uniformLocation(name), v0, v1, v2));
+        }
+    }
+
+    void ShaderProgram::set3f(const char* name, const glm::vec3& v) {
+        i32 id = uniformLocation(name);
+        if (id != -1) {
+            GLCALL(glUniform3f(uniformLocation(name), v.x, v.y, v.z));
         }
     }
 

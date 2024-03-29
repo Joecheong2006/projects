@@ -1,13 +1,10 @@
 CC = g++
-PCH = ../src/mfwpch.h
-CFLAGS := -std=c++17 -Wall -Wextra -Wpedantic -Wstrict-aliasing -g -DDEBUG -DUNICODE
+CFLAGS := -std=c++17 -Wall -Wextra -Wpedantic -Wstrict-aliasing -g
 SOURCE = src src/**
 INCLUDE = -I../lib -I../src
-LIB = -lmingw32 -lopengl32 -lGdi32 -lWinmm -ld3dcompiler -ldwmapi bin/mfw.dll
-
+LIB = bin/mfw.dll
 
 SRC = $(wildcard $(patsubst %, %/*.cpp, $(SOURCE)))
-LIBOBJ = $(wildcard $(patsubst %, %/*.o, $(LIBRARY))) 
 OBJ = $(SRC:%.cpp=%.o)
 DEP = $(OBJ:%.o=%.d)
 BIN = bin
@@ -32,14 +29,14 @@ clean:
 	@echo Cleaned
 
 build: bin
-	@cd ../ && make clean -s && make win_release -s
+	@cd ../ && make clean -s && make win_debug -s
 	@cp ../mfw.dll bin/mfw.dll
 
 bin:
 	@mkdir -p $(BIN)
 
 app: bin $(OBJ) 
-	@$(CC) -o $(OUT) $(OBJ) $(LIBOBJ) $(LIB)
+	@$(CC) -o $(OUT) $(OBJ) $(LIB)
 	@echo "[100%] Compilation completed"
 
 %.o: %.cpp

@@ -11,13 +11,16 @@
 namespace mfw {
     Application* Application::Instance = nullptr;
 
-    Application::Application()
+    Application::Application(): Application("app", 960, 640)
+    {}
+
+    Application::Application(const std::string& title, i32 width, i32 height)
     {
         ASSERT(Instance == nullptr);
         Instance = this;
         {
             START_CLOCK_TIMER("INIT WINDOW");
-            m_window = Window::Create({"demo", 960, 640});
+            m_window = Window::Create({title, 100, 100, width, height});
         }
         {
             START_CLOCK_TIMER("INIT OPENGL");
@@ -26,9 +29,9 @@ namespace mfw {
             GLCALL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
         }
 
-        stbi_set_flip_vertically_on_load(true);
-
         m_window->setVSync(true);
+
+        stbi_set_flip_vertically_on_load(true);
 
         m_window->setEventCallBack([this](const Event& event) {
                     Eventhandle(event);

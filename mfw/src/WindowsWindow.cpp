@@ -171,9 +171,8 @@ namespace mfw {
     }
 
     WindowsWindow::WindowsWindow(const WindowState& state)
-        : keys{}, mouse{}
+        : m_state(state), keys{}, mouse{}
     {
-        m_state = state;
         registerWindowClass();
         createWindowsWindow();
         ShowWindow(m_hwnd, SW_NORMAL);
@@ -237,7 +236,7 @@ namespace mfw {
 
     void WindowsWindow::processMessage() {
         MSG msg{};
-        while(PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
+        while(PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }

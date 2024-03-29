@@ -28,7 +28,7 @@ private:
 
 public:
     DemoSandBox()
-        : ibo(index, 6), vbo(vertex, sizeof(vertex))
+        : Application("demo", 960, 640), ibo(index, 6), vbo(vertex, sizeof(vertex))
     {
         VertexBufferLayout layout;
         layout.add<f32>(2);
