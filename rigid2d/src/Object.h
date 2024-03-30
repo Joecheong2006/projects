@@ -26,6 +26,7 @@ public:
     glm::dvec2 m_pos, m_opos, m_velocity, m_ovelocity, m_acceleration;
     glm::dvec3 m_color;
     f64 m_mass;
+    bool display = true;
 
     Object() {}
     Object(const glm::dvec3& color): m_color(color) {}

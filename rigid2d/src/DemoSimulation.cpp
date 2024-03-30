@@ -38,16 +38,16 @@ DemoSimulation::DemoSimulation()
     attri.line_width = 0.12 * unitScale;
     attri.hardness = 1;
     initialize = [this]() {
-        addDoublePendulum(30, 3.5);
+        // addString(glm::vec2(0), 3, 1);
+        addDoublePendulum(30, 3);
         addTracer(world, world.getObjects<Circle>().back(), 300);
-        return;
         for (i32 i = 0; i < 4; i++) {
             addFixPointConstraint(world, glm::vec2(-4, 4) * unitScale, attri.node_size * 1.5);
         }
         for (i32 i = 0; i < 4; i++) {
             addHorizontalPointConstraint(world, glm::vec2(4, 4) * unitScale, attri.node_size * 1.5);
         }
-        SetupRotateBox();
+        // SetupRotateBox();
         addTriangle(glm::vec2(), 1);
         addBox(glm::vec2(), 1);
     };

@@ -1,5 +1,6 @@
 #include "DistanceConstraint.h"
 #include "Renderer.h"
+#include "Circle.h"
 
 DistanceConstraint::DistanceConstraint(Object* t1, Object* t2, f32 d, f32 w)
     : d(d), w(w), color(COLOR(0xe2e2e2))
@@ -24,12 +25,22 @@ void DistanceConstraint::solve(f64 dt) {
 }
 
 void DistanceConstraint::render(const glm::mat4& proj, mfw::Renderer& renderer) {
-    renderer.renderLine(proj, target[0]->m_pos, target[1]->m_pos, color, w);
+    renderer.renderCircle(proj, target[0]->m_pos, w, glm::vec4(color, 1));
+    renderer.renderRingI(proj, target[0]->m_pos, w, glm::vec4(0, 0, 0, 1));
+    renderer.renderCircle(proj, target[1]->m_pos, w, glm::vec4(color, 1));
+    renderer.renderRingI(proj, target[1]->m_pos, w, glm::vec4(0, 0, 0, 1));
+
+    f64 linew = 0.9;
+    renderer.renderLine(proj, target[0]->m_pos, target[1]->m_pos, color, w * linew);
+
+    renderer.renderCircle(proj, target[0]->m_pos, w * 0.2, glm::vec4(0, 0, 0, 1));
+    renderer.renderCircle(proj, target[1]->m_pos, w * 0.2, glm::vec4(0, 0, 0, 1));
+
     glm::dvec2 ab = target[0]->m_pos - target[1]->m_pos;
     glm::dvec2 normal = glm::normalize(glm::dvec2(-ab.y, ab.x));
-    renderer.renderLine(proj, target[0]->m_pos + normal * (f64)w * 0.93,
-                                   target[1]->m_pos + normal * (f64)w * 0.93, glm::vec3(0), w * 0.17);
-    renderer.renderLine(proj, target[0]->m_pos - normal * (f64)w * 0.93,
-                                   target[1]->m_pos - normal * (f64)w * 0.93, glm::vec3(0), w * 0.17);
+    renderer.renderLine(proj, target[0]->m_pos + normal * (f64)w * linew,
+                                   target[1]->m_pos + normal * (f64)w * linew, glm::vec3(0), w * (1 - linew));
+    renderer.renderLine(proj, target[0]->m_pos - normal * (f64)w * linew,
+                                   target[1]->m_pos - normal * (f64)w * linew, glm::vec3(0), w * (1 - linew));
 }
 

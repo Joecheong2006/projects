@@ -8,7 +8,7 @@
 class PhysicsEmulator : public mfw::Application {
 private:
     struct Settings {
-        i32 sub_step = 10000;
+        i32 sub_step = 100;
         bool pause = false,
              gravity = true,
              world_view = true,

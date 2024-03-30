@@ -172,7 +172,7 @@ void PhysicsEmulator::SetWorldProjection(glm::vec2 view) {
 void PhysicsEmulator::ApplyUserInputToScene() {
     glm::dvec2 wpos = simu->mouseToWorldCoord();
     if (holding->getType() == ObjectType::None) {
-        holding->m_pos = wpos - (glm::dvec2)catch_offset;
+        holding->m_pos = wpos;
         return;
     }
     f64 k = (f64)settings.sub_step * 20;
@@ -262,11 +262,11 @@ void PhysicsEmulator::renderImgui() {
     }
 
     if (ImGui::BeginTabItem("status")) {
-        ImGui::Text("SF:%-5d", (i32)(1.0 / sub_dt));
+        ImGui::Text("SF:%-6d", (i32)(1.0 / sub_dt));
         ImGui::SameLine();
-        ImGui::Text("ST[ms]:%-5.2g", 1000.0 * update_frame);
+        ImGui::Text("ST[ms]:%-6.2g", 1000.0 * update_frame);
         ImGui::SameLine();
-        ImGui::Text("RT[ms]:%-5.2g", 1000.0 * render_frame);
+        ImGui::Text("RT[ms]:%-6.2g", 1000.0 * render_frame);
 
         {
             static f32 fps = 0, averCount = 0, averFps = 1.0 / frame, averTake = int(this->fps / 15);
@@ -447,8 +447,8 @@ void PhysicsEmulator::OnEdit(const MouseButtonEvent& event, const glm::dvec2& wp
             p2->r = attri.node_size;
 
             if (point && preview_fix_point) {
-                point->target = static_cast<Object*>(p1);
-                preview_fix_point->target = static_cast<Object*>(p2);
+                point->target = static_cast<Object*>(p2);
+                preview_fix_point->target = static_cast<Object*>(p1);
                 dc->d = glm::length(point->self.m_pos - preview_fix_point->self.m_pos);
             }
             else if (preview_fix_point) {
@@ -457,7 +457,7 @@ void PhysicsEmulator::OnEdit(const MouseButtonEvent& event, const glm::dvec2& wp
             }
             else if (point) {
                 point->target = static_cast<Object*>(p2);
-                //dc->d = (f32)glm::length(point->self.m_pos - preview_node->m_pos);
+                dc->d = (f32)glm::length(point->self.m_pos - preview_node->m_pos);
             }
         }
 

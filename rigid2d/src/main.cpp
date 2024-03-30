@@ -8,7 +8,6 @@ mfw::Application* mfw::CreateApplication() {
     sim->unitScale = 0.35f;
     sim->world = World(glm::vec2(30, 12) * sim->unitScale);
     sim->attri.node_color = glm::vec4(COLOR(0xe2e2e2), 0);
-    // sim->attri.node_color = glm::vec4(0.9, 0.9,0.9, 0);
     sim->attri.node_size = 0.18 * sim->unitScale;
     sim->attri.line_width = 0.12 * sim->unitScale;
     sim->attri.hardness = 1;

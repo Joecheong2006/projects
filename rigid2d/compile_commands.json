@@ -9,6 +9,7 @@
       "-Wstrict-aliasing",
       "-g",
       "-O2",
+      "-DDEBUG",
       "-Ilib/mfw"
     ],
     "directory": "D:/project/rigid2d",

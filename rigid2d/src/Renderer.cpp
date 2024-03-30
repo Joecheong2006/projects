@@ -86,7 +86,7 @@ namespace mfw {
     Renderer::Renderer() {
         iCircleRenderer = new ImageRenderer("res/images/circle.png", GL_CLAMP_TO_EDGE, GL_LINEAR_MIPMAP_LINEAR);
         iLineRenderer = new ImageRenderer("res/images/square.png", GL_CLAMP_TO_EDGE, GL_LINEAR_MIPMAP_LINEAR);
-        iRingRenderer = new ImageRenderer("res/images/ring.png", GL_CLAMP_TO_EDGE, GL_LINEAR_MIPMAP_LINEAR);
+        iRingRenderer = new ImageRenderer("res/images/ring.png", GL_CLAMP_TO_EDGE, GL_LINEAR_MIPMAP_NEAREST);
         renderer = new ShaderRenderer("res/shaders/square.vert", "res/shaders/square.frag");
         crenderer = new ShaderRenderer("res/shaders/circle.vert", "res/shaders/circle.frag");
         ringRenderer = new ShaderRenderer("res/shaders/ring.vert", "res/shaders/ring.frag");
@@ -201,21 +201,25 @@ namespace mfw {
         view = glm::translate(view, glm::vec3(p.x, p.y, 0));
         view = glm::scale(view, glm::vec3(r, r, 0));
 
-#if 0
+        ringRenderer->m_shader.bind();
+        ringRenderer->m_vao.bind();
+        ringRenderer->m_shader.set1f("width", width);
+        ringRenderer->m_shader.set4f("color", color);
+        ringRenderer->m_shader.setMat4("view", proj * view);
+        GLCALL(glDrawArrays(GL_TRIANGLES, 0, 6));
+    }
+
+    void Renderer::renderRingI(const glm::mat4& proj, const glm::vec2& p, f32 r, glm::vec4 color) {
+        glm::mat4 view = glm::mat4(1);
+        view = glm::translate(view, glm::vec3(p.x, p.y, 0));
+        view = glm::scale(view, glm::vec3(r, r, 0));
+
         iRingRenderer->m_texture.bind();
         iRingRenderer->m_shader.bind();
         iRingRenderer->m_vao.bind();
         iRingRenderer->m_shader.set1i("tex", 0);
         iRingRenderer->m_shader.set4f("color", color);
         iRingRenderer->m_shader.setMat4("view", proj * view);
-#else
-        ringRenderer->m_shader.bind();
-        ringRenderer->m_vao.bind();
-        ringRenderer->m_shader.set1f("width", width);
-        ringRenderer->m_shader.set4f("color", color);
-        ringRenderer->m_shader.setMat4("view", proj * view);
-#endif
-
         GLCALL(glDrawArrays(GL_TRIANGLES, 0, 6));
     }
 

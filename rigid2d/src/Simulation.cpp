@@ -20,14 +20,13 @@ void Simulation::addString(const glm::vec2& pos, u32 node, f32 length) {
     ASSERT(node > 0);
 
     auto& circles = world.getObjects<Circle>();
-    auto& dcs = world.getConstraint<DistanceConstraint>();
     u32 first = circles.size();
 
     for (f32 i = 0; i < node; i++) {
-        circles.push_back(new Circle(glm::vec2(0, -i * length) + pos, attri.node_color, attri.node_size));
+        world.addObject<Circle>(glm::vec2(0, -i * length), attri.node_color, attri.node_size);
     }
     for (u32 i = 0; i < node - 1; i++) {
-        dcs.push_back(new DistanceConstraint(circles[first + i], circles[first + i + 1], length, attri.line_width));
+        world.addConstraint<DistanceConstraint>(circles[first + i], circles[first + i + 1], length, attri.line_width);
     }
 }
 
@@ -36,25 +35,26 @@ void Simulation::addCircle(const glm::vec2& pos, i32 n, f32 r, i32 nstep) {
     static const f32 pi = 3.14159265359f;
 
     auto& circles = world.getObjects<Circle>();
-    auto& dcs = world.getConstraint<DistanceConstraint>();
     u32 first = circles.size();
 
     f32 ri = 2 * pi / n;
 
     for (i32 i = 0; i < n; i++) {
         f32 a = ri * i;
-        circles.push_back(new Circle(r * glm::vec2(sin(a), cos(a)) + pos, attri.node_color, attri.node_size));
+        world.addObject<Circle>(r * glm::vec2(sin(a), cos(a)) + pos, attri.node_color, attri.node_size);
+        circles.back()->display = false;
     }
-    circles.push_back(new Circle(glm::vec2(0) + pos, attri.node_color, attri.node_size));
+    world.addObject<Circle>(glm::vec2(0) + pos, attri.node_color, attri.node_size);
+    circles.back()->display = false;
 
     for (i32 i = 0; i < n; i++) {
-        dcs.push_back(new DistanceConstraint(circles[first + i], circles[first + n], r, attri.line_width));
+        world.addConstraint<DistanceConstraint>(circles[first + i], circles[first + n], r, attri.line_width);
     }
 
     for (i32 step = 1; step <= nstep; step++) {
         f32 nlen = glm::length(r * glm::vec2(sin(0) - sin(ri * step), cos(0) - cos(ri * step)));
         for (i32 i = 0; i < n; i++) {
-            dcs.push_back(new DistanceConstraint(circles[first + i], circles[first + (i + step) % n], nlen, attri.line_width));
+            world.addConstraint<DistanceConstraint>(circles[first + i], circles[first + (i + step) % n], nlen, attri.line_width);
         }
     }
 }
@@ -81,8 +81,6 @@ void Simulation::addDoublePendulum(f64 angle, f64 d) {
     world.addConstraint<DistanceConstraint>(p2, p3, d * unitScale, attri.line_width);
     addFixPointConstraint(world, glm::vec2(), attri.node_size * 1.5)
         ->target = p1;
-    // p2->m_mass = 0.3f;
-    // p2->r = p2->m_mass * unitScale;
     p3->m_mass = 0.3f;
     p3->r = p3->m_mass * unitScale;
 }
@@ -152,9 +150,9 @@ void Simulation::addTracer(World& world, Object* target, i32 samples) {
     result->target = target;
     result->onRender = [=](const glm::mat4& proj, mfw::Renderer& renderer, PointConstraint* pc) {
         static const i32 max = samples;
-        static const f32 maxScale = 0.15 * unitScale,
+        static const f32 maxScale = 0.1 * unitScale,
                          minScale = 0.015 * unitScale,
-                         dr = 0.65f;
+                         dr = 0.6f;
         static std::list<glm::vec2> positions_trace;
 
         if ((i32)positions_trace.size() == max) {
@@ -172,8 +170,8 @@ void Simulation::addTracer(World& world, Object* target, i32 samples) {
             const glm::vec3 color = (trace - background) * (i++ / positions_trace.size()) + background;
             f32 t = maxScale * (i / positions_trace.size());
             t = glm::clamp(t - maxScale * dr, minScale, maxScale);
-            renderer.renderCircle(proj, { p2, color, t * 0.95f });
-            renderer.renderCircle(proj, { p1, color, t * 0.95f });
+            renderer.renderCircle(proj, { p2, color, t });
+            renderer.renderCircle(proj, { p1, color, t });
             renderer.renderLine(proj, p1, p2, color, t);
         }
     };
