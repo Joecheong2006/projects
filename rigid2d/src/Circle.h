@@ -8,7 +8,7 @@ namespace mfw {
 
 class Circle : public Object {
 public:
-    SET_OBJECT_NORMAL_BEHAVIOUR(ObjectType::Circle);
+    GENERATE_OBJECT_IDENTIFIER();
 
     f32 r;
     Circle();

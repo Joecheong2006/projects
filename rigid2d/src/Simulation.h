@@ -36,8 +36,8 @@ struct Simulation {
     void addDoublePendulum(f64 angle, f64 d);
     void SetupRotateBox();
 
-    PointConstraint* addHorizontalPointConstraint(World& world, const glm::dvec2& pos, f32 r);
-    PointConstraint* addFixPointConstraint(World& world, const glm::dvec2& pos, f32 r);
+    PointConstraint* addHorizontalPointConstraint(const glm::dvec2& pos, f32 r);
+    PointConstraint* addFixPointConstraint(const glm::dvec2& pos, f32 r);
     void addTracer(World& world, Object* target, i32 samples = 120);
 
 };

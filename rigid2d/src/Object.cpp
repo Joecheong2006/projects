@@ -1,6 +1,8 @@
 #include "Object.h"
 #include "logger.h"
 
+i32 ObjectTypeIdGenerator::current;
+
 Object::Object(const glm::dvec2& pos, const f64& mass, const glm::dvec3& color) 
     : m_pos(pos), m_opos(pos), m_velocity(0), m_ovelocity(0), m_acceleration(0), m_color(color), m_mass(mass)
 {}

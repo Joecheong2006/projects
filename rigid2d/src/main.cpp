@@ -1,6 +1,5 @@
 #include "PhysicsEmulator.h"
 #include "DemoSimulation.h"
-#include "Circle.h"
 
 mfw::Application* mfw::CreateApplication() {
 #if 0
@@ -20,6 +19,14 @@ mfw::Application* mfw::CreateApplication() {
 #else
     DemoSimulation* sim = new DemoSimulation();
 #endif
-    return new PhysicsEmulator(sim);
+
+    PhysicsEmulator* emulator = new PhysicsEmulator(sim);
+    emulator->world_scale = 7 * sim->unitScale;
+    emulator->shift_rate = 0.001 * emulator->world_scale;
+    emulator->zoom_rate = 0.01 * emulator->world_scale;
+
+    emulator->settings.sub_step = 100;
+
+    return emulator;
 }
 

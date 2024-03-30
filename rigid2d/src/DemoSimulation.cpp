@@ -34,22 +34,22 @@ DemoSimulation::DemoSimulation()
     unitScale = 0.4f;
     world = World(glm::vec2(30, 12) * unitScale);
     attri.node_color = glm::vec4(glm::vec4(COLOR(0x858AA6), 0));
-    attri.node_size = 0.17 * unitScale;
+    attri.node_size = 0.2 * unitScale;
     attri.line_width = 0.12 * unitScale;
     attri.hardness = 1;
+
     initialize = [this]() {
-        // addString(glm::vec2(0), 3, 1);
         addDoublePendulum(30, 3);
         addTracer(world, world.getObjects<Circle>().back(), 300);
         for (i32 i = 0; i < 4; i++) {
-            addFixPointConstraint(world, glm::vec2(-4, 4) * unitScale, attri.node_size * 1.5);
+            addFixPointConstraint(glm::vec2(-4, 4) * unitScale, attri.node_size * 1.7);
         }
         for (i32 i = 0; i < 4; i++) {
-            addHorizontalPointConstraint(world, glm::vec2(4, 4) * unitScale, attri.node_size * 1.5);
+            addHorizontalPointConstraint(glm::vec2(4, 4) * unitScale, attri.node_size * 1.7);
         }
-        // SetupRotateBox();
-        addTriangle(glm::vec2(), 1);
-        addBox(glm::vec2(), 1);
+        SetupRotateBox();
+        addTriangle(glm::vec2(), 2 * unitScale);
+        addBox(glm::vec2(), 2 * unitScale);
     };
 }
 
@@ -67,8 +67,6 @@ void DemoSimulation::render(mfw::Renderer& renderer) {
     world.render(proj, renderer);
 
     for (auto& obj : world.getConstraint<DistanceConstraint>()) {
-        obj->render(proj, renderer);
-
         continue;
         DistanceConstraint* dc = static_cast<DistanceConstraint*>(obj);
         const glm::dvec2 a = dc->target[0]->m_pos, b = dc->target[1]->m_pos;

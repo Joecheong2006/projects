@@ -8,8 +8,8 @@ class World {
     using ObjectContainer = std::vector<Object*>;
     using ConstraintContainer = std::vector<Constraint*>;
 private:
-    std::unordered_map<ObjectType, ObjectContainer> objectContainers;
-    std::unordered_map<ConstraintType, ConstraintContainer> constraintContainers;
+    std::vector<ObjectContainer> objectContainers;
+    std::vector<ConstraintContainer> constraintContainers;
 
 public:
     glm::vec2 size;
@@ -26,25 +26,31 @@ public:
     template <typename T, typename... Args>
     inline T* addObject(const Args& ...args) {
         T* result = new T(args...);
-        objectContainers[T::GetType()].push_back(result);
+        if (T::GetTypeId() + 1 > (i32)objectContainers.size()) {
+            objectContainers.resize(T::GetTypeId() + 1);
+        }
+        objectContainers[T::GetTypeId()].push_back(result);
         return result;
     }
 
     template <typename T, typename... Args>
     inline T* addConstraint(const Args& ...args) {
         T* result = new T(args...);
-        constraintContainers[T::GetType()].push_back(result);
+        if (T::GetTypeId() + 1 > (i32)constraintContainers.size()) {
+            constraintContainers.resize(T::GetTypeId() + 1);
+        }
+        constraintContainers[T::GetTypeId()].push_back(result);
         return result;
     }
 
-    template <typename T>
+    template <typename T> [[nodiscard]]
     inline ObjectContainer& getObjects() {
-        return objectContainers[T::GetType()];
+        return objectContainers[T::GetTypeId()];
     }
 
-    template <typename T>
+    template <typename T> [[nodiscard]]
     inline ConstraintContainer& getConstraint() {
-        return constraintContainers[T::GetType()];
+        return constraintContainers[T::GetTypeId()];
          
     }
 

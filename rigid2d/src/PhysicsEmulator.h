@@ -7,15 +7,6 @@
 
 class PhysicsEmulator : public mfw::Application {
 private:
-    struct Settings {
-        i32 sub_step = 100;
-        bool pause = false,
-             gravity = true,
-             world_view = true,
-             velocity_view = false,
-             acceleration_view = false;
-    } settings;
-
     enum Mode {
         Normal,
         Action,
@@ -31,14 +22,9 @@ private:
 
     mfw::Renderer renderer;
 
-    // world
-    f32 world_scale;
-    f32 shift_rate;
-    f32 zoom_rate;
-    f32 zoom;
-
     void UpdateStatus();
 
+    // window status
     i32 width, height;
     glm::vec2 mouse;
     const f64 refresh_rate = 144, fps = refresh_rate;
@@ -67,7 +53,20 @@ public:
     virtual void OnWindowFocus(const mfw::WindowFocusEvent& event) override;
     virtual void OnWindowNotFocus(const mfw::WindowNotFocusEvent& event) override;
 
-    static Simulation* simu;
+    f32 world_scale = 0;
+    f32 shift_rate;
+    f32 zoom_rate;
+
+    struct Settings {
+        i32 sub_step = 100;
+        bool pause = false,
+             gravity = true,
+             world_view = true,
+             velocity_view = false,
+             acceleration_view = false;
+    } settings;
+
+    static Simulation* sim;
 
 };
 

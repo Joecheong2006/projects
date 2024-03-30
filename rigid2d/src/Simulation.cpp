@@ -17,16 +17,13 @@ void Simulation::render(mfw::Renderer& renderer) {
 }
 
 void Simulation::addString(const glm::vec2& pos, u32 node, f32 length) {
-    ASSERT(node > 0);
+    ASSERT(node > 1);
 
-    auto& circles = world.getObjects<Circle>();
-    u32 first = circles.size();
-
-    for (f32 i = 0; i < node; i++) {
-        world.addObject<Circle>(glm::vec2(0, -i * length), attri.node_color, attri.node_size);
-    }
-    for (u32 i = 0; i < node - 1; i++) {
-        world.addConstraint<DistanceConstraint>(circles[first + i], circles[first + i + 1], length, attri.line_width);
+    Object* p1 = world.addObject<Circle>(glm::vec2(0, 0) + pos, attri.node_color, attri.node_size);
+    for (f32 i = 1; i < node; i++) {
+        Object* p2 = world.addObject<Circle>(glm::vec2(0, -i * length) + pos, attri.node_color, attri.node_size);
+        world.addConstraint<DistanceConstraint>(p1, p2, length, attri.line_width);
+        p1 = p2;
     }
 }
 
@@ -45,7 +42,7 @@ void Simulation::addCircle(const glm::vec2& pos, i32 n, f32 r, i32 nstep) {
             ->display = false;
     }
     world.addObject<Circle>(glm::vec2(0) + pos, attri.node_color, attri.node_size)
-            ->display = false;
+        ->display = false;
 
     for (i32 i = 0; i < n; i++) {
         world.addConstraint<DistanceConstraint>(circles[first + i], circles[first + n], r, attri.line_width);
@@ -79,25 +76,25 @@ void Simulation::addDoublePendulum(f64 angle, f64 d) {
     auto p3 = world.addObject<Circle>(direction * 2.0, attri.node_color, attri.node_size);
     world.addConstraint<DistanceConstraint>(p1, p2, d * unitScale, attri.line_width);
     world.addConstraint<DistanceConstraint>(p2, p3, d * unitScale, attri.line_width);
-    addFixPointConstraint(world, glm::vec2(), attri.node_size * 1.5)
+    addFixPointConstraint(glm::vec2(), attri.node_size * 1.5)
         ->target = p1;
     p3->m_mass = 0.3f;
     p3->r = p3->m_mass * unitScale;
 }
 
 void Simulation::SetupRotateBox() {
-    addBox(glm::vec2(), 5 * unitScale);
+    addBox(glm::vec2(), 3 * unitScale);
 
     auto& circles = world.getObjects<Circle>();
     i32 len = circles.size();
     auto boxCenter = circles.back();
     auto c1 = circles[len - 3];
     auto c2 = circles[len - 5];
-    addFixPointConstraint(world, glm::vec2(), attri.node_size * 1.5)
+    addFixPointConstraint(glm::vec2(), attri.node_size * 1.5)
         ->target = boxCenter;
 
-    auto h1 = addHorizontalPointConstraint(world, glm::vec2(9, 0) * unitScale, attri.node_size * 1.5);
-    auto h2 = addHorizontalPointConstraint(world, glm::vec2(-9, 0) * unitScale, attri.node_size * 1.5);
+    auto h1 = addHorizontalPointConstraint(glm::vec2(6, 0) * unitScale, attri.node_size * 1.5);
+    auto h2 = addHorizontalPointConstraint(glm::vec2(-6, 0) * unitScale, attri.node_size * 1.5);
     auto p1 = world.addObject<Circle>(h1->self.m_pos, attri.node_color, attri.node_size);
     auto p2 = world.addObject<Circle>(h2->self.m_pos, attri.node_color, attri.node_size);
     f64 l = glm::length(p1->m_pos - c1->m_pos);
@@ -107,7 +104,7 @@ void Simulation::SetupRotateBox() {
     h2->target = p2;
 }
 
-PointConstraint* Simulation::addHorizontalPointConstraint(World& world, const glm::dvec2& pos, f32 r) {
+PointConstraint* Simulation::addHorizontalPointConstraint(const glm::dvec2& pos, f32 r) {
     auto result = world.addConstraint<PointConstraint>(r, [](const f64& dt, PointConstraint* pc) {
                     (void) dt;
                     if (pc->target) {
@@ -125,7 +122,7 @@ PointConstraint* Simulation::addHorizontalPointConstraint(World& world, const gl
     return result;
 }
 
-PointConstraint* Simulation::addFixPointConstraint(World& world, const glm::dvec2& pos, f32 r) {
+PointConstraint* Simulation::addFixPointConstraint(const glm::dvec2& pos, f32 r) {
     auto result = world.addConstraint<PointConstraint>(r, [](const f64& dt, PointConstraint* pc) {
                     (void) dt;
                     if (pc->target) {

@@ -10,7 +10,7 @@ namespace mfw {
 class Attribute;
 class DistanceConstraint : public Constraint {
 public:
-    SET_CONSTRAINT_NORMAL_BEHAVIOUR(ConstraintType::Distance);
+    GENERATE_CONSTRAINT_IDENTIFIER();
 
     DistanceConstraint(Object* t1, Object* t2, f32 d, f32 w);
     virtual void solve(f64 dt) override;

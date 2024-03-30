@@ -14,7 +14,7 @@ private:
     std::function<void(const f64& dt, PointConstraint* pc)> onUpdate;
 
 public:
-    SET_CONSTRAINT_NORMAL_BEHAVIOUR(ConstraintType::Point);
+    GENERATE_CONSTRAINT_IDENTIFIER();
 
     PointConstraint(f32 d, std::function<void(const f64& dt, PointConstraint* pc)> update);
 

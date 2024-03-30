@@ -3,19 +3,29 @@
 #include "glm/glm.hpp"
 #include "util.h"
 
-#define SET_OBJECT_NORMAL_BEHAVIOUR(type) \
-    static ObjectType GetType() {\
-        return type;\
-    }\
-    virtual inline ObjectType getType() override {\
-        return type;\
+class ObjectTypeIdGenerator {
+private:
+    static i32 current;
+
+public:
+    static inline i32 GenerateId() {
+        return current++;
     }
 
-enum class ObjectType {
-    Circle,
-    Ractangle,
-    None
+    static inline i32 GetCurrent() {
+        return current;
+    }
+
 };
+
+#define GENERATE_OBJECT_IDENTIFIER()\
+    static inline i32 GetTypeId() {\
+        static i32 id = ObjectTypeIdGenerator::GenerateId();\
+        return id;\
+    }\
+    virtual inline i32 getTypeId() const override {\
+        return GetTypeId();\
+    }\
 
 namespace mfw {
     class Renderer;
@@ -34,7 +44,7 @@ public:
     virtual ~Object() {}
     void addForce(const glm::dvec2& force);
 
-    virtual inline ObjectType getType() { return ObjectType::None; };
+    virtual inline i32 getTypeId() const { return -1; };
     virtual void update(const f64& dt);
     virtual void render(const glm::mat4& proj, mfw::Renderer& renderer) { (void)proj; (void)renderer; }
 

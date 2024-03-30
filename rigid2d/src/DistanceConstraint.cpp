@@ -3,7 +3,7 @@
 #include "Circle.h"
 
 DistanceConstraint::DistanceConstraint(Object* t1, Object* t2, f32 d, f32 w)
-    : d(d), w(w), color(COLOR(0xe2e2e2))
+    : d(d), w(w), color(COLOR(0xefefef))
 {
     target[0] = t1;
     target[1] = t2;
