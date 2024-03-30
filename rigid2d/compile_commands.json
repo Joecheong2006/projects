@@ -8,7 +8,7 @@
       "-Wpedantic",
       "-Wstrict-aliasing",
       "-g",
-      "-O3",
+      "-O2",
       "-Ilib/mfw"
     ],
     "directory": "D:/project/rigid2d",

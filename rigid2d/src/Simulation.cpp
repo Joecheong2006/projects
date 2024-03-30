@@ -119,6 +119,10 @@ PointConstraint* Simulation::addHorizontalPointConstraint(World& world, const gl
                         pc->target->m_velocity.y = 0;
                     }
                 });
+    result->onRender = [=](const glm::mat4& proj, mfw::Renderer& renderer, PointConstraint* pc) {
+        Circle(pc->self.m_pos, pc->self.m_color, pc->d).render(proj, renderer);
+    };
+
     result->self = Object(pos, 0, glm::vec3(COLOR(0x3c4467)));
     return result;
 }
@@ -132,6 +136,10 @@ PointConstraint* Simulation::addFixPointConstraint(World& world, const glm::dvec
                         pc->target->m_velocity = {};
                     }
                 });
+    result->onRender = [=](const glm::mat4& proj, mfw::Renderer& renderer, PointConstraint* pc) {
+        Circle(pc->self.m_pos, pc->self.m_color, pc->d).render(proj, renderer);
+    };
+
     result->self = Object(pos, 0, glm::vec3(COLOR(0x486577)));
     return result;
 }
@@ -144,8 +152,8 @@ void Simulation::addTracer(World& world, Object* target, i32 samples) {
     result->target = target;
     result->onRender = [=](const glm::mat4& proj, mfw::Renderer& renderer, PointConstraint* pc) {
         static const i32 max = samples;
-        static const f32 maxScale = 0.16 * unitScale,
-                         minScale = 0.02 * unitScale,
+        static const f32 maxScale = 0.15 * unitScale,
+                         minScale = 0.015 * unitScale,
                          dr = 0.65f;
         static std::list<glm::vec2> positions_trace;
 

@@ -225,12 +225,8 @@ namespace mfw {
         processMessage();
     }
 
-    void WindowsWindow::showCursor() {
-        ShowCursor(true);
-    }
-
-    void WindowsWindow::hideCursor() {
-        ShowCursor(false);
+    void WindowsWindow::showCursor(bool show) {
+        ShowCursor(show);
     }
 
     void WindowsWindow::setCursorPos(const u32 x, const u32 y) {

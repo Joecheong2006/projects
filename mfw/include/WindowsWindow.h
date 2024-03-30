@@ -28,8 +28,7 @@ namespace  mfw {
         inline virtual void setVSync(bool enable) override;
         inline virtual void* getNativeWindow() override { return this; }
         inline virtual void close() override { m_state.isRunning = false; }
-        virtual void showCursor() override;
-        virtual void hideCursor() override;
+        virtual void showCursor(bool show = true) override;
         virtual void setCursorPos(u32 x, u32 y) override;
         inline virtual void swapBuffers() override { SwapBuffers(m_hdc); }
         virtual void setFullScreen(bool enable) override;

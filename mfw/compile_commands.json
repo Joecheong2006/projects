@@ -11,10 +11,11 @@
       "-Ilib/glad/include",
       "-Ilib",
       "-Iinclude",
+      "-Isrc",
       "-DDEBUG",
       "-DUNICODE"
     ],
     "directory": "D:/project/mfw",
-    "file": "src/main.cpp"
+    "file": "demo/src/main.cpp"
   }
 ]

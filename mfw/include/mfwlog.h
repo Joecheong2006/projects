@@ -29,13 +29,14 @@ namespace Log {
 
 #else
 #include "map.h"
-#define TOVOID(x) (void)(x);
-#define ASSERT(x) TOVOID(x)
-#define LOG_TRACE(...) MAP(TOVOID, __VA_ARGS__)
-#define LOG_DEBUG(...) MAP(TOVOID, __VA_ARGS__)
-#define LOG_INFO(...) MAP(TOVOID, __VA_ARGS__)
-#define LOG_WARN(...) MAP(TOVOID, __VA_ARGS__)
-#define LOG_ERROR(...) MAP(TOVOID, __VA_ARGS__)
-#define LOG_FATAL(...) MAP(TOVOID, __VA_ARGS__)
+#define _VOID(x) (void)(x);
+#define TOVOID(...) MAP(_VOID, __VA_ARGS__)
+#define ASSERT(x) _VOID(x)
+#define LOG_TRACE(...) TOVOID(__VA_ARGS__)
+#define LOG_DEBUG(...) TOVOID(__VA_ARGS__)
+#define LOG_INFO(...)  TOVOID(__VA_ARGS__)
+#define LOG_WARN(...)  TOVOID(__VA_ARGS__)
+#define LOG_ERROR(...) TOVOID(__VA_ARGS__)
+#define LOG_FATAL(...) TOVOID(__VA_ARGS__)
 #endif
 
