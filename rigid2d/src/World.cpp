@@ -46,7 +46,9 @@ void World::render(const glm::mat4& proj, mfw::Renderer& renderer) {
     }
     for (auto& container : objectContainers) {
         for (auto& object : container.second) {
-            object->render(proj, renderer);
+            if (object->display) {
+                object->render(proj, renderer);
+            }
         }
     }
 }

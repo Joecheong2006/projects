@@ -41,11 +41,11 @@ void Simulation::addCircle(const glm::vec2& pos, i32 n, f32 r, i32 nstep) {
 
     for (i32 i = 0; i < n; i++) {
         f32 a = ri * i;
-        world.addObject<Circle>(r * glm::vec2(sin(a), cos(a)) + pos, attri.node_color, attri.node_size);
-        circles.back()->display = false;
+        world.addObject<Circle>(r * glm::vec2(sin(a), cos(a)) + pos, attri.node_color, attri.node_size)
+            ->display = false;
     }
-    world.addObject<Circle>(glm::vec2(0) + pos, attri.node_color, attri.node_size);
-    circles.back()->display = false;
+    world.addObject<Circle>(glm::vec2(0) + pos, attri.node_color, attri.node_size)
+            ->display = false;
 
     for (i32 i = 0; i < n; i++) {
         world.addConstraint<DistanceConstraint>(circles[first + i], circles[first + n], r, attri.line_width);

@@ -63,14 +63,8 @@ void DemoSimulation::update(const f64& dt) {
 
 void DemoSimulation::render(mfw::Renderer& renderer) {
     glm::mat4 proj = camera.getProjection();
-    for (auto& obj : world.getConstraint<PointConstraint>()) {
-        obj->render(proj, renderer);
-    }
 
-    auto& object = world.getConstraint<PointConstraint>();
-    for (i32 i = 0; i < (i32)object.size() - 1; ++i) {
-        object[i]->render(proj, renderer);
-    }
+    world.render(proj, renderer);
 
     for (auto& obj : world.getConstraint<DistanceConstraint>()) {
         obj->render(proj, renderer);
@@ -86,14 +80,6 @@ void DemoSimulation::render(mfw::Renderer& renderer) {
         renderer.renderLine(proj, m, a + p + offset,
                 red + glm::vec3(glm::length(a + p + offset - m)), 0.03 * unitScale);
     }
-
-    auto& circles = world.getObjects<Circle>();
-
-    for (auto& obj : circles) {
-        obj->render(proj, renderer);
-    }
-
-    object.back()->render(proj, renderer);
 
     renderer.renderRactangle(proj, glm::vec2(world.size.x, -world.size.y) - 0.2f * unitScale, glm::vec2(-world.size.x, -world.size.y) - 0.2f * unitScale, glm::vec4(1), 0.2 * unitScale);
 
