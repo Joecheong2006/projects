@@ -1,5 +1,6 @@
 #include "Circle.h"
 #include "Renderer.h"
+#include "PhysicsEmulator.h"
 
 Circle::Circle(const glm::vec2& pos, const glm::vec3& color, const f32& d)
     : Object(pos, d, color), r(d)
@@ -10,7 +11,7 @@ Circle::Circle()
 {}
 
 void Circle::draw(const glm::mat4& proj, mfw::Renderer& renderer) {
-    renderer.renderCircle(proj, this);
-    renderer.renderRing(proj, m_pos, r, 0.13, glm::vec4(0, 0, 0, 1));
+    renderer.renderCircle(proj, m_pos, r, glm::vec4(0, 0, 0, 1));
+    renderer.renderCircle(proj, m_pos, r - PhysicsEmulator::sim->unitScale * 0.03, glm::vec4(m_color, 1));
 }
 

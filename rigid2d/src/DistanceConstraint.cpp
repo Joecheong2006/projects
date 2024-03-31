@@ -1,6 +1,7 @@
 #include "DistanceConstraint.h"
 #include "Renderer.h"
 #include "Circle.h"
+#include "PhysicsEmulator.h"
 
 DistanceConstraint::DistanceConstraint(Object* t1, Object* t2, f32 d, f32 w)
     : d(d), w(w), color(COLOR(0xefefef))
@@ -9,7 +10,7 @@ DistanceConstraint::DistanceConstraint(Object* t1, Object* t2, f32 d, f32 w)
     target[1] = t2;
 }
 
-void DistanceConstraint::solve(f64 dt) {
+void DistanceConstraint::solve(const f64& dt) {
     (void)dt;
     f64 cd = glm::length(target[0]->m_pos - target[1]->m_pos);
     glm::dvec2 nd = glm::normalize(target[0]->m_pos - target[1]->m_pos) * (d - cd) * 0.5 * hardness;
@@ -17,30 +18,26 @@ void DistanceConstraint::solve(f64 dt) {
     target[0]->m_pos += nd; 
     target[1]->m_pos -= nd; 
 #if 1
-    //target[0]->m_velocity += (nd / dt);
-    //target[1]->m_velocity -= (nd / dt);
-    target[0]->m_acceleration += (nd / dt) / dt;
-    target[1]->m_acceleration -= (nd / dt) / dt;
+    target[0]->m_velocity += (nd / dt);
+    target[1]->m_velocity -= (nd / dt);
+    // target[0]->m_acceleration += (nd / dt) / dt;
+    // target[1]->m_acceleration -= (nd / dt) / dt;
 #endif
 }
 
 void DistanceConstraint::draw(const glm::mat4& proj, mfw::Renderer& renderer) {
-    renderer.renderCircle(proj, target[0]->m_pos, w, glm::vec4(color, 1));
-    renderer.renderRingI(proj, target[0]->m_pos, w, glm::vec4(0, 0, 0, 1));
-    renderer.renderCircle(proj, target[1]->m_pos, w, glm::vec4(color, 1));
-    renderer.renderRingI(proj, target[1]->m_pos, w, glm::vec4(0, 0, 0, 1));
+    renderer.renderCircleI(proj, target[0]->m_pos, w, glm::vec4(0, 0, 0, 1));
+    renderer.renderCircleI(proj, target[0]->m_pos,
+            w - PhysicsEmulator::sim->unitScale * 0.03, glm::vec4(color, 1));
+    renderer.renderCircleI(proj, target[1]->m_pos, w, glm::vec4(0, 0, 0, 1));
+    renderer.renderCircleI(proj, target[1]->m_pos,
+            w - PhysicsEmulator::sim->unitScale * 0.03, glm::vec4(color, 1));
 
-    f64 linew = 0.9;
-    renderer.renderLine(proj, target[0]->m_pos, target[1]->m_pos, color, w * linew);
+    renderer.renderLineI(proj, target[0]->m_pos, target[1]->m_pos, glm::vec3(0), w);
+    renderer.renderLineI(proj, target[0]->m_pos, target[1]->m_pos, color,
+            w - PhysicsEmulator::sim->unitScale * 0.03);
 
     renderer.renderCircleI(proj, target[0]->m_pos, w * 0.3, glm::vec4(0, 0, 0, 1));
     renderer.renderCircleI(proj, target[1]->m_pos, w * 0.3, glm::vec4(0, 0, 0, 1));
-
-    glm::dvec2 ab = target[0]->m_pos - target[1]->m_pos;
-    glm::dvec2 normal = glm::normalize(glm::dvec2(-ab.y, ab.x));
-    renderer.renderLine(proj, target[0]->m_pos + normal * (f64)w * linew,
-                                   target[1]->m_pos + normal * (f64)w * linew, glm::vec3(0), w * (1 - linew));
-    renderer.renderLine(proj, target[0]->m_pos - normal * (f64)w * linew,
-                                   target[1]->m_pos - normal * (f64)w * linew, glm::vec3(0), w * (1 - linew));
 }
 

@@ -3,8 +3,9 @@
 #include "Constraint.h"
 #include "Object.h"
 #include <mfwpch.h>
+#include <mfwlog.h>
 
-enum class RenderLayer {
+enum class RenderLayer : i32 {
     Level1 = 0,
     Level2,
     Level3,
@@ -13,6 +14,14 @@ enum class RenderLayer {
     Level6,
     Level7,
     Level8,
+    Level9,
+    Level10,
+    Level11,
+    Level12,
+    Level13,
+    Level14,
+    Level15,
+    Level16,
 };
 
 class World {

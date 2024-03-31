@@ -2,7 +2,6 @@
 
 #include "Renderer.h"
 #include "Object.h"
-#include "PointConstraint.h"
 #include "Simulation.h"
 
 class PhysicsEmulator : public mfw::Application {

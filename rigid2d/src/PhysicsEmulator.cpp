@@ -11,6 +11,7 @@
 #include "imgui/implot.h"
 
 #include "DistanceConstraint.h"
+#include "PointConstraint.h"
 #include "Circle.h"
 
 namespace Log {
@@ -202,7 +203,6 @@ void PhysicsEmulator::render() {
         for (auto& obj : objects) {
             if (settings.acceleration_view) {
                 glm::dvec2 a = (obj->m_velocity - obj->m_ovelocity) / (sub_dt * 20.0);
-                a = obj->m_acceleration / 20.0;
                 renderer.renderLine(proj, obj->m_pos,
                         obj->m_pos + a * (f64)unitScale, blue, 0.02 * unitScale);
             }

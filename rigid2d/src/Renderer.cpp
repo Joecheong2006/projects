@@ -84,9 +84,9 @@ namespace mfw {
     }* renderer, *crenderer, *ringRenderer;
 
     Renderer::Renderer() {
-        iCircleRenderer = new ImageRenderer("res/images/circle.png", GL_CLAMP_TO_EDGE, GL_LINEAR_MIPMAP_LINEAR);
-        iLineRenderer = new ImageRenderer("res/images/square.png", GL_CLAMP_TO_EDGE, GL_LINEAR_MIPMAP_LINEAR);
-        iRingRenderer = new ImageRenderer("res/images/ring.png", GL_CLAMP_TO_EDGE, GL_LINEAR_MIPMAP_NEAREST);
+        iCircleRenderer = new ImageRenderer("res/images/circle.png", GL_CLAMP_TO_EDGE, GL_LINEAR);
+        iLineRenderer = new ImageRenderer("res/images/square.png", GL_CLAMP_TO_EDGE, GL_LINEAR);
+        iRingRenderer = new ImageRenderer("res/images/ring.png", GL_CLAMP_TO_EDGE, GL_LINEAR);
         renderer = new ShaderRenderer("res/shaders/square.vert", "res/shaders/square.frag");
         crenderer = new ShaderRenderer("res/shaders/circle.vert", "res/shaders/circle.frag");
         ringRenderer = new ShaderRenderer("res/shaders/ring.vert", "res/shaders/ring.frag");

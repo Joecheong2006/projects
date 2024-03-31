@@ -43,7 +43,7 @@ public:
 
     virtual inline i32 getTypeId() const { return -1; };
     virtual inline const char* getTypeName() const { return "None"; };
-    virtual void solve(f64 dt) = 0;
+    virtual void solve(const f64& dt) = 0;
 
 };
 

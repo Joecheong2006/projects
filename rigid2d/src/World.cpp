@@ -41,8 +41,8 @@ void World::update(const f64& dt) {
 }
 
 void World::render(const glm::mat4& proj, mfw::Renderer& renderer) {
-    for (size_t i = 0; i < renderLayers.size(); ++i) {
-        for (auto& object : renderLayers[i]) {
+    for (auto& layer : renderLayers) {
+        for (auto& object : layer) {
             if (object->drawEnable) {
                 object->draw(proj, renderer);
             }

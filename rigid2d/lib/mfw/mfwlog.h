@@ -1,10 +1,10 @@
 #pragma once
 
+#include "logger.h"
 #include "map.h"
 #define _VOID(x) (void)(x);
 #define TOVOID(...) MAP(_VOID, __VA_ARGS__)
 
-#include "logger.h"
 #if defined(DEBUG) || defined(_DEBUG)
 #define ASSERT(x) if(!(x)) __debugbreak();
 #define LOG_TRACE(...) Log::Trace(__VA_ARGS__);
