@@ -30,31 +30,11 @@ void wall_collision(f64 dt, Circle* c, const glm::vec2& world) {
 };
 
 DemoSimulation::DemoSimulation()
-    : Simulation("Demo", 
-            0.4f,
-            {
-                glm::vec4(COLOR(0x858AA6), 1),
-                0.06f,
-                0.05f,
-            })
+    : Simulation("Demo", 0.4f)
 {
+    f32 unitScale = getWorldScale();
+    attri.node_color = glm::vec4(COLOR(0x858AA6), 1);
     world = World(glm::vec2(30, 12) * unitScale);
-
-    initialize = [this]() {
-        world.setObjectLayer<DistanceConstraint>(RenderLayer::Level2);
-        world.setObjectLayer<Circle>(RenderLayer::Level3);
-        world.setObjectLayer<Tracer>(RenderLayer::Level4);
-
-        for (i32 i = 0; i < 4; i++) {
-            ::addFixPointConstraint(this, glm::vec2(-4, 4) * unitScale);
-        }
-        for (i32 i = 0; i < 4; i++) {
-            ::addHorizontalPointConstraint(this, glm::vec2(4, 4) * unitScale);
-        }
-        ::SetupRotateBox(this);
-        ::addTriangle(this, glm::vec2(), 2 * unitScale);
-        ::addBox(this, glm::vec2(), 2 * unitScale);
-    };
 }
 
 void DemoSimulation::update(const f64& dt) {
@@ -70,6 +50,7 @@ void DemoSimulation::render(mfw::Renderer& renderer) {
 
     world.render(proj, renderer);
 
+    f32 unitScale = getWorldScale();
     for (auto& obj : world.getConstraint<DistanceConstraint>()) {
         continue;
         DistanceConstraint* dc = static_cast<DistanceConstraint*>(obj);

@@ -1,7 +1,7 @@
 #include "DistanceConstraint.h"
 #include "Renderer.h"
 #include "Circle.h"
-#include "PhysicsEmulator.h"
+#include "Simulation.h"
 
 DistanceConstraint::DistanceConstraint(Object* t1, Object* t2, f32 d, f32 w)
     : d(d), w(w), color(COLOR(0xefefef))
@@ -26,16 +26,18 @@ void DistanceConstraint::solve(const f64& dt) {
 }
 
 void DistanceConstraint::draw(const glm::mat4& proj, mfw::Renderer& renderer) {
+    f32 worldScale = Simulation::Get()->getWorldScale();
+
     renderer.renderCircleI(proj, target[0]->m_pos, w, glm::vec4(0, 0, 0, 1));
     renderer.renderCircleI(proj, target[0]->m_pos,
-            w - PhysicsEmulator::sim->unitScale * 0.03, glm::vec4(color, 1));
+            w - worldScale * 0.03, glm::vec4(color, 1));
     renderer.renderCircleI(proj, target[1]->m_pos, w, glm::vec4(0, 0, 0, 1));
     renderer.renderCircleI(proj, target[1]->m_pos,
-            w - PhysicsEmulator::sim->unitScale * 0.03, glm::vec4(color, 1));
+            w - worldScale * 0.03, glm::vec4(color, 1));
 
     renderer.renderLineI(proj, target[0]->m_pos, target[1]->m_pos, glm::vec3(0), w);
     renderer.renderLineI(proj, target[0]->m_pos, target[1]->m_pos, color,
-            w - PhysicsEmulator::sim->unitScale * 0.03);
+            w - worldScale * 0.03);
 
     renderer.renderCircleI(proj, target[0]->m_pos, w * 0.3, glm::vec4(0, 0, 0, 1));
     renderer.renderCircleI(proj, target[1]->m_pos, w * 0.3, glm::vec4(0, 0, 0, 1));

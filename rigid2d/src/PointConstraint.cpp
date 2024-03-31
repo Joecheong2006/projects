@@ -1,7 +1,7 @@
 #include "PointConstraint.h"
-#include "PhysicsEmulator.h"
+#include "Simulation.h"
 
 PointConstraint::PointConstraint()
-    : d(PhysicsEmulator::sim->attri.node_size * 1.7), target(nullptr)
+    : d(Simulation::Get()->attri.node_size * 1.7), target(nullptr)
 {}
 

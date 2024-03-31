@@ -1,7 +1,7 @@
 #pragma once
 
 #include "util.h"
-#include "Render.h"
+#include "Drawable.h"
 
 class ObjectTypeIdGenerator {
 private:

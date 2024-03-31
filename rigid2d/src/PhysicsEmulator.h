@@ -2,7 +2,6 @@
 
 #include "Renderer.h"
 #include "Object.h"
-#include "Simulation.h"
 
 class PhysicsEmulator : public mfw::Application {
 private:
@@ -40,7 +39,7 @@ private:
     void OnNormal(const mfw::MouseButtonEvent& event, const glm::vec2& wpos);
 
 public:
-    PhysicsEmulator(Simulation* simluation);
+    PhysicsEmulator();
     ~PhysicsEmulator();
     virtual void Start() override;
     virtual void Update() override;
@@ -64,8 +63,6 @@ public:
              velocity_view = false,
              acceleration_view = false;
     } settings;
-
-    static Simulation* sim;
 
 };
 

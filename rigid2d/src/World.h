@@ -6,7 +6,7 @@
 #include <mfwlog.h>
 
 enum class RenderLayer : i32 {
-    Level1 = 0,
+    Level1,
     Level2,
     Level3,
     Level4,
@@ -34,6 +34,7 @@ private:
     std::unordered_map<const char*, i32> renderLayersMap;
 
 public:
+    f32 scale = 1;
     glm::vec2 size;
     glm::dvec2 gravity;
 

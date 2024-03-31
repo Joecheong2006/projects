@@ -1,7 +1,7 @@
 #pragma once
 
 #include "util.h"
-#include "Render.h"
+#include "Drawable.h"
 
 class ConstraintTypeIdGenerator {
 private:
@@ -29,7 +29,8 @@ inline i32 ConstraintTypeIdGenerator::current;
         return GetTypeId();\
     }\
     static inline const char* GetTypeName() {\
-        return #identifier;\
+        static const char* name = #identifier;\
+        return name;\
     }\
     virtual inline const char* getTypeName() const override {\
         return GetTypeName();\

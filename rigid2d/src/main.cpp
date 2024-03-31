@@ -7,39 +7,53 @@
 #include "Tracer.h"
 
 mfw::Application* mfw::CreateApplication() {
+
 #if 0
-    Simulation* sim = new Simulation("Double Pendulum",
-                0.4f,
-                {
-                    glm::vec4(COLOR(0x858AA6), 1),
-                    0.06f,
-                    0.05f,
-                }
-            );
-    sim->world = World(glm::vec2(30, 12) * sim->unitScale);
+    Simulation::Create<Simulation>({"Double Pendulum", 0.4f});
+    auto sim = Simulation::Get();
+    sim->attri.node_color = glm::vec4(COLOR(0x858AA6), 1);
+    sim->world = World(glm::vec2(30, 12) * sim->getWorldScale());
 
     sim->initialize = [sim]() {
         auto& world = sim->world;
-        auto& unitScale = sim->unitScale;
+        const f32 worldScale = sim->getWorldScale();
         world.setObjectLayer<Tracer>(RenderLayer::Level4);
         world.setObjectLayer<Circle>(RenderLayer::Level3);
         world.setObjectLayer<DistanceConstraint>(RenderLayer::Level2);
-        ::addDoublePendulum(sim, 30, 3);
+        ::addDoublePendulum(sim.get(), 30, 3);
 
         auto tracer = world.addObject<Tracer>();
         tracer->target = world.getObjects<Circle>().back();
-        tracer->maxScale = 0.12 * unitScale;
-        tracer->minScale = 0.01 * unitScale;
-        tracer->dr = 0.75;
-        tracer->maxSamples = 200;
+        tracer->maxScale = 0.12 * worldScale;
+        tracer->minScale = 0.01 * worldScale;
     };
 
 #else
-    DemoSimulation* sim = new DemoSimulation();
+    Simulation::Create<DemoSimulation>({});
+    auto sim = Simulation::Get();
+    sim->world.scale = sim->getWorldScale();
+    sim->initialize = [sim]() {
+        auto& world = sim->world;
+        const f32 worldScale = sim->getWorldScale();
+
+        world.setObjectLayer<DistanceConstraint>(RenderLayer::Level2);
+        world.setObjectLayer<Circle>(RenderLayer::Level3);
+        world.setObjectLayer<Tracer>(RenderLayer::Level4);
+
+        for (i32 i = 0; i < 4; i++) {
+            ::addFixPointConstraint(sim.get(), glm::vec2(-4, 4) * worldScale);
+        }
+        for (i32 i = 0; i < 4; i++) {
+            ::addHorizontalPointConstraint(sim.get(), glm::vec2(4, 4) * worldScale);
+        }
+        ::SetupRotateBox(sim.get());
+        ::addTriangle(sim.get(), glm::vec2(), 2 * worldScale);
+        ::addBox(sim.get(), glm::vec2(), 2 * worldScale);
+    };
 #endif
 
-    PhysicsEmulator* emulator = new PhysicsEmulator(sim);
-    emulator->world_scale = 8 * sim->unitScale;
+    PhysicsEmulator* emulator = new PhysicsEmulator();
+    emulator->world_scale = 7 * Simulation::Get()->getWorldScale();
     emulator->shift_rate = 0.001 * emulator->world_scale;
     emulator->zoom_rate = 0.01 * emulator->world_scale;
 

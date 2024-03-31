@@ -93,24 +93,24 @@ void addDoublePendulum(Simulation* sim, f64 angle, f64 d) {
     f64 r = angle * 3.14 / 180;
     auto& world = sim->world;
     const auto& attri = sim->attri;
-    const auto unitScale = sim->unitScale;
-    glm::dvec2 direction = glm::normalize(glm::dvec2(cos(r), sin(r))) * d * (f64)unitScale;
+    const f32 worldScale = sim->getWorldScale();
+    glm::dvec2 direction = glm::normalize(glm::dvec2(cos(r), sin(r))) * d * (f64)worldScale;
     auto p1 = world.addObject<Circle>(glm::vec2(), attri.node_color, attri.node_size);
     auto p2 = world.addObject<Circle>(direction, attri.node_color, attri.node_size);
     auto p3 = world.addObject<Circle>(direction * 2.0, attri.node_color, attri.node_size);
-    world.addConstraint<DistanceConstraint>(p1, p2, d * unitScale, attri.line_width);
-    world.addConstraint<DistanceConstraint>(p2, p3, d * unitScale, attri.line_width);
+    world.addConstraint<DistanceConstraint>(p1, p2, d * worldScale, attri.line_width);
+    world.addConstraint<DistanceConstraint>(p2, p3, d * worldScale, attri.line_width);
     addFixPointConstraint(sim, glm::vec2())
         ->target = p1;
     p3->m_mass = 0.3f;
-    p3->r = p3->m_mass * unitScale;
+    p3->r = p3->m_mass * worldScale;
 }
 
 void SetupRotateBox(Simulation* sim) {
     auto& world = sim->world;
     const auto& attri = sim->attri;
-    const auto unitScale = sim->unitScale;
-    addBox(sim, glm::vec2(), 3 * unitScale);
+    const f32 worldScale = sim->getWorldScale();
+    addBox(sim, glm::vec2(), 3 * worldScale);
 
     auto& circles = world.getObjects<Circle>();
     i32 len = circles.size();
@@ -120,8 +120,8 @@ void SetupRotateBox(Simulation* sim) {
     addFixPointConstraint(sim, glm::vec2())
         ->target = boxCenter;
 
-    auto h1 = addHorizontalPointConstraint(sim, glm::vec2(6, 0) * unitScale);
-    auto h2 = addHorizontalPointConstraint(sim, glm::vec2(-6, 0) * unitScale);
+    auto h1 = addHorizontalPointConstraint(sim, glm::vec2(6, 0) * worldScale);
+    auto h2 = addHorizontalPointConstraint(sim, glm::vec2(-6, 0) * worldScale);
     auto p1 = world.addObject<Circle>(h1->self.m_pos, attri.node_color, attri.node_size);
     auto p2 = world.addObject<Circle>(h2->self.m_pos, attri.node_color, attri.node_size);
     f64 l = glm::length(p1->m_pos - c1->m_pos);

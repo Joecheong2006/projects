@@ -1,5 +1,6 @@
 #include "Object.h"
 #include "logger.h"
+#include "PhysicsEmulator.h"
 
 i32 ObjectTypeIdGenerator::current;
 
