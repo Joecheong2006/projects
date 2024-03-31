@@ -7,7 +7,8 @@ namespace mfw {
     class Window;
 };
 class PointConstraint;
-struct Simulation {
+class Simulation {
+public:
     Simulation(const std::string& name): name(name) {}
     virtual ~Simulation() {}
     virtual void update(const f64& dt);

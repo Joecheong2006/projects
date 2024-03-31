@@ -113,6 +113,10 @@ public:
         zoom -= event.ydelta * 0.1;
     }
 
+    virtual void OnCursorMove(const CursorMoveEvent& event) override { 
+        LOG_EVENT_INFO(event);
+    }
+
     ~DemoSandBox() {
     }
 

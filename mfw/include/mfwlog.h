@@ -1,5 +1,9 @@
 #pragma once
 
+#include "map.h"
+#define _VOID(x) (void)(x);
+#define TOVOID(...) MAP(_VOID, __VA_ARGS__)
+
 #include "logger.h"
 #if defined(DEBUG) || defined(_DEBUG)
 #define ASSERT(x) if(!(x)) __debugbreak();
@@ -28,9 +32,6 @@ namespace Log {
 }
 
 #else
-#include "map.h"
-#define _VOID(x) (void)(x);
-#define TOVOID(...) MAP(_VOID, __VA_ARGS__)
 #define ASSERT(x) _VOID(x)
 #define LOG_TRACE(...) TOVOID(__VA_ARGS__)
 #define LOG_DEBUG(...) TOVOID(__VA_ARGS__)

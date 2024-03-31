@@ -19,9 +19,9 @@ void Simulation::render(mfw::Renderer& renderer) {
 void Simulation::addString(const glm::vec2& pos, u32 node, f32 length) {
     ASSERT(node > 1);
 
-    Object* p1 = world.addObject<Circle>(glm::vec2(0, 0) + pos, attri.node_color, attri.node_size);
+    auto p1 = world.addObject<Circle>(glm::vec2(0, 0) + pos, attri.node_color, attri.node_size);
     for (f32 i = 1; i < node; i++) {
-        Object* p2 = world.addObject<Circle>(glm::vec2(0, -i * length) + pos, attri.node_color, attri.node_size);
+        auto p2 = world.addObject<Circle>(glm::vec2(0, -i * length) + pos, attri.node_color, attri.node_size);
         world.addConstraint<DistanceConstraint>(p1, p2, length, attri.line_width);
         p1 = p2;
     }
@@ -31,29 +31,28 @@ void Simulation::addCircle(const glm::vec2& pos, i32 n, f32 r, i32 nstep) {
     ASSERT(r > 0 && n > 2 && nstep > 0);
     static const f32 pi = 3.14159265359f;
 
-    auto& circles = world.getObjects<Circle>();
-    u32 first = circles.size();
-
     f32 ri = 2 * pi / n;
+    f32 nlen = glm::length(r * glm::vec2(sin(0) - sin(ri), cos(0) - cos(ri)));
 
-    for (i32 i = 0; i < n; i++) {
+    auto center = world.addObject<Circle>(glm::vec2(0) + pos, attri.node_color, attri.node_size);
+    center->drawEnable = false;
+
+    Object* p1 = world.addObject<Circle>(r * glm::vec2(sin(0), cos(0)) + pos, attri.node_color, attri.node_size);
+    Object* first = p1;
+    p1->drawEnable = false;
+    Object* p2;
+
+    for (i32 i = 1; i < n; i++) {
         f32 a = ri * i;
-        world.addObject<Circle>(r * glm::vec2(sin(a), cos(a)) + pos, attri.node_color, attri.node_size)
-            ->display = false;
-    }
-    world.addObject<Circle>(glm::vec2(0) + pos, attri.node_color, attri.node_size)
-        ->display = false;
-
-    for (i32 i = 0; i < n; i++) {
-        world.addConstraint<DistanceConstraint>(circles[first + i], circles[first + n], r, attri.line_width);
+        p2 = world.addObject<Circle>(r * glm::vec2(sin(a), cos(a)) + pos, attri.node_color, attri.node_size);
+        p2->drawEnable = false;
+        world.addConstraint<DistanceConstraint>(p1, center, r, attri.line_width);
+        world.addConstraint<DistanceConstraint>(p1, p2, nlen, attri.line_width);
+        p1 = p2;
     }
 
-    for (i32 step = 1; step <= nstep; step++) {
-        f32 nlen = glm::length(r * glm::vec2(sin(0) - sin(ri * step), cos(0) - cos(ri * step)));
-        for (i32 i = 0; i < n; i++) {
-            world.addConstraint<DistanceConstraint>(circles[first + i], circles[first + (i + step) % n], nlen, attri.line_width);
-        }
-    }
+    world.addConstraint<DistanceConstraint>(p1, first, nlen, attri.line_width);
+    world.addConstraint<DistanceConstraint>(p1, center, r, attri.line_width);
 }
 
 void Simulation::addBox(const glm::vec2& pos, f32 l)
@@ -70,7 +69,6 @@ void Simulation::addTriangle(const glm::vec2& pos, f32 l) {
 void Simulation::addDoublePendulum(f64 angle, f64 d) {
     f64 r = angle * 3.14 / 180;
     glm::dvec2 direction = glm::normalize(glm::dvec2(cos(r), sin(r))) * d * (f64)unitScale;
-
     auto p1 = world.addObject<Circle>(glm::vec2(), attri.node_color, attri.node_size);
     auto p2 = world.addObject<Circle>(direction, attri.node_color, attri.node_size);
     auto p3 = world.addObject<Circle>(direction * 2.0, attri.node_color, attri.node_size);
@@ -87,9 +85,9 @@ void Simulation::SetupRotateBox() {
 
     auto& circles = world.getObjects<Circle>();
     i32 len = circles.size();
-    auto boxCenter = circles.back();
-    auto c1 = circles[len - 3];
-    auto c2 = circles[len - 5];
+    auto boxCenter = circles[len - 5];
+    auto c1 = circles[len - 2];
+    auto c2 = circles[len - 4];
     addFixPointConstraint(glm::vec2(), attri.node_size * 1.5)
         ->target = boxCenter;
 
@@ -115,7 +113,7 @@ PointConstraint* Simulation::addHorizontalPointConstraint(const glm::dvec2& pos,
                     }
                 });
     result->onRender = [=](const glm::mat4& proj, mfw::Renderer& renderer, PointConstraint* pc) {
-        Circle(pc->self.m_pos, pc->self.m_color, pc->d).render(proj, renderer);
+        Circle(pc->self.m_pos, pc->self.m_color, pc->d).draw(proj, renderer);
     };
 
     result->self = Object(pos, 0, glm::vec3(COLOR(0x3c4467)));
@@ -132,7 +130,7 @@ PointConstraint* Simulation::addFixPointConstraint(const glm::dvec2& pos, f32 r)
                     }
                 });
     result->onRender = [=](const glm::mat4& proj, mfw::Renderer& renderer, PointConstraint* pc) {
-        Circle(pc->self.m_pos, pc->self.m_color, pc->d).render(proj, renderer);
+        Circle(pc->self.m_pos, pc->self.m_color, pc->d).draw(proj, renderer);
     };
 
     result->self = Object(pos, 0, glm::vec3(COLOR(0x486577)));
@@ -167,9 +165,9 @@ void Simulation::addTracer(World& world, Object* target, i32 samples) {
             const glm::vec3 color = (trace - background) * (i++ / positions_trace.size()) + background;
             f32 t = maxScale * (i / positions_trace.size());
             t = glm::clamp(t - maxScale * dr, minScale, maxScale);
-            renderer.renderCircle(proj, { p2, color, t });
-            renderer.renderCircle(proj, { p1, color, t });
-            renderer.renderLine(proj, p1, p2, color, t);
+            renderer.renderCircleI(proj, { p2, color, t });
+            renderer.renderCircleI(proj, { p1, color, t });
+            renderer.renderLineI(proj, p1, p2, color, t);
         }
     };
 }

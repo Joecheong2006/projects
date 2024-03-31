@@ -15,7 +15,7 @@ void PointConstraint::solve(f64 dt) {
     onUpdate(dt, this);
 }
 
-void PointConstraint::render(const glm::mat4& proj, mfw::Renderer& renderer) {
+void PointConstraint::draw(const glm::mat4& proj, mfw::Renderer& renderer) {
     onRender(proj, renderer, this);
 }
 

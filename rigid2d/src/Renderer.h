@@ -26,10 +26,15 @@ namespace mfw {
 
         void clear();
         void renderLine(const glm::mat4& proj, const glm::vec2& p1, const glm::vec2& p2, glm::vec3 color, f32 w);
-        void renderRactangle(const glm::mat4& proj, const glm::vec2& p1, const glm::vec2& p2, glm::vec4 color, f32 w);
+        void renderLine(const glm::mat4& proj, const glm::vec2& p1, const glm::vec2& p2, glm::vec4 color, f32 w);
+        void renderLineI(const glm::mat4& proj, const glm::vec2& p1, const glm::vec2& p2, glm::vec3 color, f32 w);
+        void renderLineI(const glm::mat4& proj, const glm::vec2& p1, const glm::vec2& p2, glm::vec4 color, f32 w);
         void renderCircle(const glm::mat4& proj, const Circle& circle);
         void renderCircle(const glm::mat4& proj, const Circle* circle);
         void renderCircle(const glm::mat4& proj, const glm::vec2& p, f32 r, glm::vec4 color);
+        void renderCircleI(const glm::mat4& proj, const Circle& circle);
+        void renderCircleI(const glm::mat4& proj, const Circle* circle);
+        void renderCircleI(const glm::mat4& proj, const glm::vec2& p, f32 r, glm::vec4 color);
         void renderImage(const glm::mat4& proj, const glm::vec2& p1, const glm::vec2& p2);
         void renderRing(const glm::mat4& proj, const glm::vec2& p, f32 r, f32 width, glm::vec4 color);
         void renderRingI(const glm::mat4& proj, const glm::vec2& p, f32 r, glm::vec4 color);

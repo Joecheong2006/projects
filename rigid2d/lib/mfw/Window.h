@@ -35,8 +35,7 @@ namespace mfw {
         virtual void setEventCallBack(const std::function<void(const Event&)>& callBackFunction) = 0;
         virtual void* getNativeWindow() = 0;
         virtual void close() = 0;
-        virtual void showCursor() = 0;
-        virtual void hideCursor() = 0;
+        virtual void showCursor(bool show = true) = 0;
         virtual void setCursorPos(const u32 x, const u32 y) = 0;
         virtual void swapBuffers() = 0;
         virtual void setFullScreen(bool enable) = 0;

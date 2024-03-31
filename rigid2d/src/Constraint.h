@@ -1,6 +1,7 @@
 #pragma once
+
 #include "util.h"
-#include "glm/glm.hpp"
+#include "Render.h"
 
 class ConstraintTypeIdGenerator {
 private:
@@ -19,7 +20,7 @@ public:
 
 inline i32 ConstraintTypeIdGenerator::current;
 
-#define GENERATE_CONSTRAINT_IDENTIFIER()\
+#define GENERATE_CONSTRAINT_IDENTIFIER(identifier)\
     static inline i32 GetTypeId() {\
         static i32 id = ConstraintTypeIdGenerator::GenerateId();\
         return id;\
@@ -27,20 +28,22 @@ inline i32 ConstraintTypeIdGenerator::current;
     virtual inline i32 getTypeId() const override {\
         return GetTypeId();\
     }\
+    static inline const char* GetTypeName() {\
+        return #identifier;\
+    }\
+    virtual inline const char* getTypeName() const override {\
+        return GetTypeName();\
+    }
 
-
-namespace mfw {
-    class Renderer;
-};
-
-class Constraint {
+class Constraint : public Drawable {
 public:
     Constraint() {}
     virtual ~Constraint() {}
 
+
     virtual inline i32 getTypeId() const { return -1; };
+    virtual inline const char* getTypeName() const { return "None"; };
     virtual void solve(f64 dt) = 0;
-    virtual void render(const glm::mat4& proj, mfw::Renderer& renderer) = 0;
 
 };
 

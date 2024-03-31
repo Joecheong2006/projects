@@ -24,7 +24,7 @@ void DistanceConstraint::solve(f64 dt) {
 #endif
 }
 
-void DistanceConstraint::render(const glm::mat4& proj, mfw::Renderer& renderer) {
+void DistanceConstraint::draw(const glm::mat4& proj, mfw::Renderer& renderer) {
     renderer.renderCircle(proj, target[0]->m_pos, w, glm::vec4(color, 1));
     renderer.renderRingI(proj, target[0]->m_pos, w, glm::vec4(0, 0, 0, 1));
     renderer.renderCircle(proj, target[1]->m_pos, w, glm::vec4(color, 1));
@@ -33,8 +33,8 @@ void DistanceConstraint::render(const glm::mat4& proj, mfw::Renderer& renderer) 
     f64 linew = 0.9;
     renderer.renderLine(proj, target[0]->m_pos, target[1]->m_pos, color, w * linew);
 
-    renderer.renderCircle(proj, target[0]->m_pos, w * 0.2, glm::vec4(0, 0, 0, 1));
-    renderer.renderCircle(proj, target[1]->m_pos, w * 0.2, glm::vec4(0, 0, 0, 1));
+    renderer.renderCircleI(proj, target[0]->m_pos, w * 0.3, glm::vec4(0, 0, 0, 1));
+    renderer.renderCircleI(proj, target[1]->m_pos, w * 0.3, glm::vec4(0, 0, 0, 1));
 
     glm::dvec2 ab = target[0]->m_pos - target[1]->m_pos;
     glm::dvec2 normal = glm::normalize(glm::dvec2(-ab.y, ab.x));

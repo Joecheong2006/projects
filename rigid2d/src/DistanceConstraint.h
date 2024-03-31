@@ -7,14 +7,13 @@ namespace mfw {
     class Renderer;
 };
 
-class Attribute;
 class DistanceConstraint : public Constraint {
 public:
-    GENERATE_CONSTRAINT_IDENTIFIER();
+    GENERATE_CONSTRAINT_IDENTIFIER(DistanceConstraint);
 
     DistanceConstraint(Object* t1, Object* t2, f32 d, f32 w);
     virtual void solve(f64 dt) override;
-    virtual void render(const glm::mat4& proj, mfw::Renderer& renderer) override;
+    virtual void draw(const glm::mat4& proj, mfw::Renderer& renderer) override;
 
     Object* target[2];
     f32 d, w;

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "glm/glm.hpp"
 #include "util.h"
+#include "Render.h"
 
 class ObjectTypeIdGenerator {
 private:
@@ -18,7 +18,7 @@ public:
 
 };
 
-#define GENERATE_OBJECT_IDENTIFIER()\
+#define GENERATE_OBJECT_IDENTIFIER(identifier)\
     static inline i32 GetTypeId() {\
         static i32 id = ObjectTypeIdGenerator::GenerateId();\
         return id;\
@@ -26,27 +26,29 @@ public:
     virtual inline i32 getTypeId() const override {\
         return GetTypeId();\
     }\
+    static inline const char* GetTypeName() {\
+        return #identifier;\
+    }\
+    virtual inline const char* getTypeName() const override {\
+        return GetTypeName();\
+    }
 
-namespace mfw {
-    class Renderer;
-};
-
-class Object {
+class Object : public Drawable {
 public:
     glm::dvec2 m_pos, m_opos, m_velocity, m_ovelocity, m_acceleration;
     glm::dvec3 m_color;
     f64 m_mass;
-    bool display = true;
 
-    Object() {}
+    Object() = default;
     Object(const glm::dvec3& color): m_color(color) {}
     Object(const glm::dvec2& pos, const f64& mass, const glm::dvec3& color);
-    virtual ~Object() {}
+    virtual ~Object() = default;
     void addForce(const glm::dvec2& force);
 
     virtual inline i32 getTypeId() const { return -1; };
+    virtual inline const char* getTypeName() const { return "None"; };
     virtual void update(const f64& dt);
-    virtual void render(const glm::mat4& proj, mfw::Renderer& renderer) { (void)proj; (void)renderer; }
+    virtual void draw(const glm::mat4& proj, mfw::Renderer& renderer) override { (void)proj; (void)renderer; }
 
 };
 

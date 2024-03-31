@@ -14,12 +14,12 @@ private:
     std::function<void(const f64& dt, PointConstraint* pc)> onUpdate;
 
 public:
-    GENERATE_CONSTRAINT_IDENTIFIER();
+    GENERATE_CONSTRAINT_IDENTIFIER(PointConstraint);
 
     PointConstraint(f32 d, std::function<void(const f64& dt, PointConstraint* pc)> update);
 
     virtual void solve(f64 dt) override;
-    virtual void render(const glm::mat4& proj, mfw::Renderer& renderer) override;
+    virtual void draw(const glm::mat4& proj, mfw::Renderer& renderer) override;
 
     f32 d;
     Object* target;

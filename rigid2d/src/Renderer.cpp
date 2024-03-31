@@ -106,27 +106,40 @@ namespace mfw {
     }
 
     void Renderer::renderLine(const glm::mat4& proj, const glm::vec2& p1, const glm::vec2& p2, glm::vec3 color, f32 w) {
-        renderRactangle(proj, p1, p2, glm::vec4(color, 1), w);
+        renderLine(proj, p1, p2, glm::vec4(color, 1), w);
     }
 
-    void Renderer::renderRactangle(const glm::mat4& proj, const glm::vec2& p1, const glm::vec2& p2, glm::vec4 color, f32 w) {
+    void Renderer::renderLine(const glm::mat4& proj, const glm::vec2& p1, const glm::vec2& p2, glm::vec4 color, f32 w) {
         glm::mat4 view = glm::mat4(1);
         view = glm::translate(view, glm::vec3((p1 + p2) * 0.5f, 0));
         view = glm::rotate(view, glm::atan((p1.y - p2.y) / (p1.x - p2.x)), glm::vec3(0, 0, 1));
         view = glm::scale(view, glm::vec3(glm::length(p1 - p2) * 0.5, w, 1));
-#if 1
+
+        renderer->m_shader.bind();
+        renderer->m_vao.bind();
+        renderer->m_shader.set4f("color", color);
+        renderer->m_shader.setMat4("view", proj * view);
+
+        GLCALL(glDrawArrays(GL_TRIANGLES, 0, 6));
+    }
+
+    void Renderer::renderLineI(const glm::mat4& proj, const glm::vec2& p1, const glm::vec2& p2, glm::vec3 color, f32 w) {
+        renderLine(proj, p1, p2, glm::vec4(color, 1), w);
+    }
+
+    void Renderer::renderLineI(const glm::mat4& proj, const glm::vec2& p1, const glm::vec2& p2, glm::vec4 color, f32 w) {
+        glm::mat4 view = glm::mat4(1);
+        view = glm::translate(view, glm::vec3((p1 + p2) * 0.5f, 0));
+        view = glm::rotate(view, glm::atan((p1.y - p2.y) / (p1.x - p2.x)), glm::vec3(0, 0, 1));
+        view = glm::scale(view, glm::vec3(glm::length(p1 - p2) * 0.5, w, 1));
+
         iLineRenderer->m_texture.bind();
         iLineRenderer->m_shader.bind();
         iLineRenderer->m_vao.bind();
         iLineRenderer->m_shader.set1i("tex", 0);
         iLineRenderer->m_shader.set4f("color", color);
         iLineRenderer->m_shader.setMat4("view", proj * view);
-#else
-        renderer->m_shader.bind();
-        renderer->m_vao.bind();
-        renderer->m_shader.set4f("color", color);
-        renderer->m_shader.setMat4("view", proj * view);
-#endif
+
         GLCALL(glDrawArrays(GL_TRIANGLES, 0, 6));
     }
 
@@ -135,19 +148,10 @@ namespace mfw {
         view = glm::translate(view, glm::vec3(circle.m_pos.x, circle.m_pos.y, 0));
         view = glm::scale(view, glm::vec3(circle.r, circle.r, 1));
 
-#if 0
-        circleRenderer->m_texture.bind();
-        circleRenderer->m_shader.bind();
-        circleRenderer->m_vao.bind();
-        circleRenderer->m_shader.set1i("tex", 0);
-        circleRenderer->m_shader.set4f("color", glm::vec4(circle.m_color, 1));
-        circleRenderer->m_shader.setMat4("view", proj * view);
-#else
         crenderer->m_shader.bind();
         crenderer->m_vao.bind();
         crenderer->m_shader.set4f("color", glm::vec4(circle.m_color, 1));
         crenderer->m_shader.setMat4("view", proj * view);
-#endif
 
         GLCALL(glDrawArrays(GL_TRIANGLES, 0, 6));
     }
@@ -157,19 +161,10 @@ namespace mfw {
         view = glm::translate(view, glm::vec3(circle->m_pos.x, circle->m_pos.y, 0));
         view = glm::scale(view, glm::vec3(circle->r, circle->r, 0));
 
-#if 0
-        circleRenderer->m_texture.bind();
-        circleRenderer->m_shader.bind();
-        circleRenderer->m_vao.bind();
-        circleRenderer->m_shader.set1i("tex", 0);
-        circleRenderer->m_shader.set4f("color", glm::vec4(circle->m_color, 1));
-        circleRenderer->m_shader.setMat4("view", proj * view);
-#else
         crenderer->m_shader.bind();
         crenderer->m_vao.bind();
         crenderer->m_shader.set4f("color", glm::vec4(circle->m_color, 1));
         crenderer->m_shader.setMat4("view", proj * view);
-#endif
 
         GLCALL(glDrawArrays(GL_TRIANGLES, 0, 6));
     }
@@ -179,19 +174,55 @@ namespace mfw {
         view = glm::translate(view, glm::vec3(p.x, p.y, 0));
         view = glm::scale(view, glm::vec3(r, r, 0));
 
-#if 0
-        circleRenderer->m_texture.bind();
-        circleRenderer->m_shader.bind();
-        circleRenderer->m_vao.bind();
-        circleRenderer->m_shader.set1i("tex", 0);
-        circleRenderer->m_shader.set4f("color", color);
-        circleRenderer->m_shader.setMat4("view", proj * view);
-#else
         crenderer->m_shader.bind();
         crenderer->m_vao.bind();
         crenderer->m_shader.set4f("color", color);
         crenderer->m_shader.setMat4("view", proj * view);
-#endif
+
+        GLCALL(glDrawArrays(GL_TRIANGLES, 0, 6));
+    }
+
+    void Renderer::renderCircleI(const glm::mat4& proj, const Circle& circle) {
+        glm::mat4 view = glm::mat4(1);
+        view = glm::translate(view, glm::vec3(circle.m_pos.x, circle.m_pos.y, 0));
+        view = glm::scale(view, glm::vec3(circle.r, circle.r, 1));
+
+        iCircleRenderer->m_texture.bind();
+        iCircleRenderer->m_shader.bind();
+        iCircleRenderer->m_vao.bind();
+        iCircleRenderer->m_shader.set1i("tex", 0);
+        iCircleRenderer->m_shader.set4f("color", glm::vec4(circle.m_color, 1));
+        iCircleRenderer->m_shader.setMat4("view", proj * view);
+
+        GLCALL(glDrawArrays(GL_TRIANGLES, 0, 6));
+    }
+
+    void Renderer::renderCircleI(const glm::mat4& proj, const Circle* circle) {
+        glm::mat4 view = glm::mat4(1);
+        view = glm::translate(view, glm::vec3(circle->m_pos.x, circle->m_pos.y, 0));
+        view = glm::scale(view, glm::vec3(circle->r, circle->r, 0));
+
+        iCircleRenderer->m_texture.bind();
+        iCircleRenderer->m_shader.bind();
+        iCircleRenderer->m_vao.bind();
+        iCircleRenderer->m_shader.set1i("tex", 0);
+        iCircleRenderer->m_shader.set4f("color", glm::vec4(circle->m_color, 1));
+        iCircleRenderer->m_shader.setMat4("view", proj * view);
+
+        GLCALL(glDrawArrays(GL_TRIANGLES, 0, 6));
+    }
+
+    void Renderer::renderCircleI(const glm::mat4& proj, const glm::vec2& p, f32 r, glm::vec4 color) {
+        glm::mat4 view = glm::mat4(1);
+        view = glm::translate(view, glm::vec3(p.x, p.y, 0));
+        view = glm::scale(view, glm::vec3(r, r, 0));
+
+        iCircleRenderer->m_texture.bind();
+        iCircleRenderer->m_shader.bind();
+        iCircleRenderer->m_vao.bind();
+        iCircleRenderer->m_shader.set1i("tex", 0);
+        iCircleRenderer->m_shader.set4f("color", color);
+        iCircleRenderer->m_shader.setMat4("view", proj * view);
 
         GLCALL(glDrawArrays(GL_TRIANGLES, 0, 6));
     }
