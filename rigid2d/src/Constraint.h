@@ -22,7 +22,7 @@ inline i32 ConstraintTypeIdGenerator::current;
 
 #define GENERATE_CONSTRAINT_IDENTIFIER(identifier)\
     static inline i32 GetTypeId() {\
-        static const i32 id = ConstraintTypeIdGenerator::GenerateId();\
+        static i32 id = ConstraintTypeIdGenerator::GenerateId();\
         return id;\
     }\
     virtual inline i32 getTypeId() const override {\

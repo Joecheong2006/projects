@@ -158,10 +158,10 @@ void PhysicsEmulator::ApplyUserInputToScene() {
         holding->m_pos = wpos;
         return;
     }
-    f64 k = (f64)settings.sub_step * 20;
+    f64 k = (f64)settings.sub_step * settings.mouseSpringForce;
     auto n = glm::normalize(wpos - holding->m_pos);
     f64 strengh = glm::length(wpos - holding->m_pos);
-    holding->addForce(glm::pow(strengh, 2) * n * k);
+    holding->addForce(glm::pow(strengh, 2) * n * k / (f64)settings.sub_step);
 }
 
 void PhysicsEmulator::update(const f64& dt) {
@@ -169,10 +169,10 @@ void PhysicsEmulator::update(const f64& dt) {
     if (!settings.pause && mode != Mode::Edit) {
         sub_dt = dt / (f64)settings.sub_step;
         for (i32 i = 0; i < settings.sub_step; ++i) {
+            if (holding) {
+                ApplyUserInputToScene();
+            }
             Simulation::Get()->update(sub_dt);
-        }
-        if (holding) {
-            ApplyUserInputToScene();
         }
     }
 
@@ -203,7 +203,7 @@ void PhysicsEmulator::render() {
                         obj->m_pos + a * (f64)worldScale, blue, 0.02 * worldScale);
             }
             if (settings.velocity_view) {
-                glm::dvec2 v = obj->m_velocity / 6.0;
+                glm::dvec2 v = (obj->m_pos - obj->m_opos) / sub_dt / 6.0;
                 renderer.renderLine(proj, obj->m_pos, 
                         obj->m_pos + v * (f64)worldScale, red, 0.02 * worldScale);
             }
@@ -219,7 +219,7 @@ void PhysicsEmulator::render() {
 }
 
 void PhysicsEmulator::renderImgui() {
-    auto sim = Simulation::Get();
+    auto& sim = *Simulation::Get();
 
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplWin32_NewFrame();
@@ -229,7 +229,7 @@ void PhysicsEmulator::renderImgui() {
     ImGui::BeginTabBar("tabBar");
     if (ImGui::BeginTabItem("config")) {
         ImGui::Text("objects:%d", GetObjectsCount());
-        ImGui::Text("unit:%gcm", sim->getWorldScale() * 100);
+        ImGui::Text("unit:%gcm", sim.getWorldScale() * 100);
         ImGui::Text("Step:%d", settings.sub_step);
 
         ImGui::Checkbox("pause", &settings.pause);
@@ -237,6 +237,7 @@ void PhysicsEmulator::renderImgui() {
         ImGui::Checkbox("world view", &settings.world_view);
         ImGui::Checkbox("velocity view", &settings.velocity_view);
         ImGui::Checkbox("acceleration view", &settings.acceleration_view);
+        ImGui::SliderFloat("mouse fource", &settings.mouseSpringForce, 20, 300);
 
         if (ImGui::Button("restart")) {
             restart();
@@ -272,9 +273,9 @@ void PhysicsEmulator::renderImgui() {
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-    auto& attri = sim->attri;
+    auto& attri = sim.attri;
     if (mode != Mode::Action) {
-        auto objects = FindCirclesByPosition(sim->mouseToWorldCoord());
+        auto objects = FindCirclesByPosition(sim.mouseToWorldCoord());
         for (auto& prev : preview) {
             prev->m_color = attri.node_color;
         }
@@ -288,15 +289,15 @@ void PhysicsEmulator::renderImgui() {
 }
 
 void PhysicsEmulator::restart() {
-    auto sim = Simulation::Get();
-    sim->world.clear();
-    sim->initialize();
+    auto& sim = *Simulation::Get();
+    sim.world.clear();
+    sim.initialize();
     preview.clear();
     mode = Mode::Normal;
 }
 
 void PhysicsEmulator::OnInputKey(const KeyEvent& event) {
-    auto sim = Simulation::Get();
+    auto& sim = *Simulation::Get();
     if (event.key == VK_ESCAPE && event.mode == KeyMode::Down) {
         Terminate();
     }
@@ -318,7 +319,7 @@ void PhysicsEmulator::OnInputKey(const KeyEvent& event) {
         }
         if (event.key == ' ' && event.mode == Down && !holding) {
             for (auto& prev : preview) {
-                prev->m_color = sim->attri.node_color;
+                prev->m_color = sim.attri.node_color;
             }
             mode = Mode::Action;
         }
@@ -333,24 +334,24 @@ void PhysicsEmulator::OnInputKey(const KeyEvent& event) {
 
 void PhysicsEmulator::OnCursorMove(const CursorMoveEvent& event) {
     static glm::vec2 m = glm::vec2(event.x, event.y);
-    auto sim = Simulation::Get();
+    auto& sim = *Simulation::Get();
     if (mode == Mode::Action && Input::MouseButtonDown(Left)) {
-        sim->camera.view = glm::translate(sim->camera.view, glm::vec3(event.x - m.x, m.y - event.y, 0) * shift_rate);
+        sim.camera.view = glm::translate(sim.camera.view, glm::vec3(event.x - m.x, m.y - event.y, 0) * shift_rate);
     }
     m = glm::vec2(event.x, event.y);
 }
 
 void PhysicsEmulator::OnMouseScroll(const MouseScrollEvent& event) {
-    auto sim = Simulation::Get();
+    auto& sim = *Simulation::Get();
     if (mode == Mode::Action) {
         f32 val = 1 + event.ydelta * zoom_rate;
-        sim->camera.scale = glm::scale(sim->camera.scale, glm::vec3(val, val, 1));
+        sim.camera.scale = glm::scale(sim.camera.scale, glm::vec3(val, val, 1));
     }
 }
 
 void PhysicsEmulator::OnMouseButton(const MouseButtonEvent& event) {
-    auto sim = Simulation::Get();
-    const glm::dvec2 wpos = sim->mouseToWorldCoord();
+    auto& sim = *Simulation::Get();
+    const glm::dvec2 wpos = sim.mouseToWorldCoord();
 
     switch (mode) {
         case Mode::Normal:
@@ -368,7 +369,7 @@ void PhysicsEmulator::OnEdit(const MouseButtonEvent& event, const glm::dvec2& wp
     static Circle* preview_node = nullptr;
     static PointConstraint* preview_fix_point = nullptr;
     static glm::dvec2 preview_pos;
-    auto sim = Simulation::Get();
+    auto& sim = *Simulation::Get();
     if (event.button == MouseButton::Left && event.mode == KeyMode::Down) {
         preview_node = FindCircleByPosition(wpos);
         preview_fix_point = FindPointConstraintByPosition(wpos);
@@ -378,19 +379,19 @@ void PhysicsEmulator::OnEdit(const MouseButtonEvent& event, const glm::dvec2& wp
     } else if (event.button == MouseButton::Left && event.mode == KeyMode::Release) {
         Circle* second_node = FindCircleByPosition(wpos);
         PointConstraint* point = FindPointConstraintByPosition(wpos);
-        const auto& attri = sim->attri;
+        const auto& attri = sim.attri;
 
         if (preview_node && second_node) {
             if (preview_node == second_node) {
                 return;
             }
             f64 d = glm::length(preview_node->m_pos - second_node->m_pos);
-            sim->world.addConstraint<DistanceConstraint>(preview_node, second_node, d, attri.line_width);
+            sim.world.addConstraint<DistanceConstraint>(preview_node, second_node, d, attri.line_width);
         }
         else if (preview_node && second_node == nullptr) {
             f64 d = glm::length(preview_node->m_pos - wpos);
-            auto p = sim->world.addObject<Circle>(wpos, attri.node_color, attri.node_size);
-            auto dc = sim->world.addConstraint<DistanceConstraint>(preview_node, p, d, attri.line_width);
+            auto p = sim.world.addObject<Circle>(wpos, attri.node_color, attri.node_size);
+            auto dc = sim.world.addConstraint<DistanceConstraint>(preview_node, p, d, attri.line_width);
 
             p->m_color = attri.node_color;
             p->r = attri.node_size;
@@ -402,8 +403,8 @@ void PhysicsEmulator::OnEdit(const MouseButtonEvent& event, const glm::dvec2& wp
         }
         else if (preview_node == nullptr && second_node) {
             f64 d = glm::length(preview_pos - second_node->m_pos);
-            auto p = sim->world.addObject<Circle>(preview_pos, attri.node_color, attri.node_size);
-            auto dc = sim->world.addConstraint<DistanceConstraint>(p, second_node, d, attri.line_width);
+            auto p = sim.world.addObject<Circle>(preview_pos, attri.node_color, attri.node_size);
+            auto dc = sim.world.addConstraint<DistanceConstraint>(p, second_node, d, attri.line_width);
 
             p->m_color = attri.node_color;
             p->r = attri.node_size;
@@ -415,7 +416,7 @@ void PhysicsEmulator::OnEdit(const MouseButtonEvent& event, const glm::dvec2& wp
         }
         else {
             if (preview_pos == wpos) {
-                sim->world.addObject<Circle>(preview_pos, attri.node_color, attri.node_size);
+                sim.world.addObject<Circle>(preview_pos, attri.node_color, attri.node_size);
                 return;
             }
             f32 d = glm::length(preview_pos - wpos);
@@ -423,9 +424,9 @@ void PhysicsEmulator::OnEdit(const MouseButtonEvent& event, const glm::dvec2& wp
                 return;
             }
 
-            auto p1 = sim->world.addObject<Circle>(preview_pos, attri.node_color, attri.node_size);
-            auto p2 = sim->world.addObject<Circle>(wpos, attri.node_color, attri.node_size);
-            auto dc = sim->world.addConstraint<DistanceConstraint>(p1, p2, d, attri.line_width);
+            auto p1 = sim.world.addObject<Circle>(preview_pos, attri.node_color, attri.node_size);
+            auto p2 = sim.world.addObject<Circle>(wpos, attri.node_color, attri.node_size);
+            auto dc = sim.world.addConstraint<DistanceConstraint>(p1, p2, d, attri.line_width);
 
             p1->m_color = attri.node_color;
             p1->r = attri.node_size;

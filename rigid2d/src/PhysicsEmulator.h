@@ -62,6 +62,7 @@ public:
              world_view = true,
              velocity_view = false,
              acceleration_view = false;
+        f32 mouseSpringForce = 20;
     } settings;
 
 };

@@ -18,10 +18,8 @@ void DistanceConstraint::solve(const f64& dt) {
     target[0]->m_pos += nd; 
     target[1]->m_pos -= nd; 
 #if 1
-    target[0]->m_velocity += (nd / dt);
-    target[1]->m_velocity -= (nd / dt);
-    // target[0]->m_acceleration += (nd / dt) / dt;
-    // target[1]->m_acceleration -= (nd / dt) / dt;
+    target[0]->m_acceleration += nd / dt / dt;
+    target[1]->m_acceleration -= nd / dt / dt;
 #endif
 }
 

@@ -18,7 +18,7 @@ public:
 
 public:
     struct Attribute {
-        glm::vec4 node_color = glm::vec4(0.9, 0.9, 0.9, 1);
+        glm::vec3 node_color = glm::vec3(0.9, 0.9, 0.9);
         f32 node_size = 0.15f;
         f32 line_width = 0.12f;
     };

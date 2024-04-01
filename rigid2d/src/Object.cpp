@@ -14,6 +14,7 @@ void Object::addForce(const glm::dvec2& force) {
 
 void Object::update(const f64& dt) {
 #if 1
+    m_opos = m_pos;
     m_ovelocity = m_velocity;
     m_velocity += m_acceleration * dt;
     m_pos += m_velocity * dt;
