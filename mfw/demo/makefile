@@ -25,7 +25,7 @@ debug:
 	@gdb -q $(OUT) --eval-command=run --eval-command=exit
 
 clean:
-	@rm -rf $(OBJ) $(DEP)
+	@rm -rf $(OBJ) $(DEP) $(OUT)
 	@echo Cleaned
 
 build: bin

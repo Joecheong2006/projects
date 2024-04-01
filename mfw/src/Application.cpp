@@ -20,18 +20,18 @@ namespace mfw {
         Instance = this;
         {
             START_CLOCK_TIMER("INIT WINDOW");
-            m_window = Window::Create({title, 100, 100, width, height});
+            m_window = std::unique_ptr<Window>(Window::Create({title, 100, 100, width, height}));
         }
         {
             START_CLOCK_TIMER("INIT OPENGL");
-            OpenglContext::CreateMorden(m_window);
+            OpenglContext::CreateMorden(m_window.get(), 3, 3);
             GLCALL(glEnable(GL_BLEND));
             GLCALL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
         }
 
-        m_window->setVSync(true);
-
         stbi_set_flip_vertically_on_load(true);
+
+        m_window->setVSync(true);
 
         m_window->setEventCallBack([this](const Event& event) {
                     Eventhandle(event);
@@ -68,7 +68,6 @@ namespace mfw {
         delete Input::Instance;
         delete Time::Instance;
         delete OpenglContext::Instance;
-        delete m_window;
     }
 
     void Application::run() {

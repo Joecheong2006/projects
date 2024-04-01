@@ -19,10 +19,10 @@ namespace mfw {
         virtual ~Application();
         void run();
 
-        Window* GetWindow() const { return m_window; }
+        Window& GetWindow() const { return *m_window; }
 
     public:
-        static Application* Get() { return Instance; }
+        static Application& Get() { return *Instance; }
 
     protected:
         inline virtual void Start() {}
@@ -49,7 +49,7 @@ namespace mfw {
         inline void WindowFocus(const WindowFocusEvent& event) { OnWindowFocus(event); }
         inline void WindowNotFocus(const WindowNotFocusEvent& event) { OnWindowNotFocus(event); }
 
-        Window* m_window;
+        std::unique_ptr<Window> m_window;
         EventListener eventListener;
 
         static Application* Instance;

@@ -4,6 +4,7 @@
 #define _VOID(x) (void)(x);
 #define TOVOID(...) MAP(_VOID, __VA_ARGS__)
 
+
 #include "logger.h"
 #if defined(DEBUG) || defined(_DEBUG)
 #define ASSERT(x) if(!(x)) __debugbreak();
@@ -40,4 +41,3 @@ namespace Log {
 #define LOG_ERROR(...) TOVOID(__VA_ARGS__)
 #define LOG_FATAL(...) TOVOID(__VA_ARGS__)
 #endif
-

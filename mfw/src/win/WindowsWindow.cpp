@@ -166,7 +166,6 @@ namespace mfw {
     }
 
     Window* Window::Create(const WindowState& state) {
-        OpenglContext::CreateOld();
         return new WindowsWindow(state);
     }
 

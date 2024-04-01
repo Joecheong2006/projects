@@ -13,6 +13,7 @@ namespace mfw {
 
         void bind() const;
         void unbind() const;
+        void setBuffer(const void* data, u32 size) const;
 
     };
 }

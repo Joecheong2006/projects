@@ -15,7 +15,7 @@ namespace mfw {
 
     const wchar_t* OpenglContextClassName = L"__OpenglDummyWindow";
 
-    void WindowsOpenglContext::CreateOldImpl() {
+    void WindowsOpenglContext::CreateMordenImpl(Window* window, i32 major, i32 minor) {
         HINSTANCE instance = GetModuleHandle(NULL);
         WNDCLASSEX wc{};
         if (GetClassInfoEx(instance, OpenglContextClassName, &wc))
@@ -74,9 +74,7 @@ namespace mfw {
         ReleaseImpl();
         ReleaseDC(hwnd, hdc);
         DestroyWindow(hwnd);
-    }
 
-    void WindowsOpenglContext::CreateMordenImpl(Window* window) {
         WindowsWindow* w = reinterpret_cast<WindowsWindow*>(window->getNativeWindow());
 
         const int attribList[] = {
@@ -94,12 +92,11 @@ namespace mfw {
         unsigned int numFormats;
         wglChoosePixelFormatARB(w->m_hdc, attribList, nullptr, 1, &pixelFormat, &numFormats);
 
-        PIXELFORMATDESCRIPTOR pfd;
         SetPixelFormat(w->m_hdc, pixelFormat, &pfd);
 
         const int contextAttribList[] = {
-            WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
-            WGL_CONTEXT_MINOR_VERSION_ARB, 3,
+            WGL_CONTEXT_MAJOR_VERSION_ARB, major,
+            WGL_CONTEXT_MINOR_VERSION_ARB, minor,
             WGL_CONTEXT_PROFILE_MASK_ARB,  WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
             WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
             0
@@ -110,7 +107,8 @@ namespace mfw {
         wglMakeContextCurrentARB(w->m_hdc, w->m_hdc, w->m_hglrc);
 
         if (!gladLoaderLoadGL()) {
-            LOG_INFO("glad load gl fail");
+            LOG_INFO("glad load gl fail\n");
+            ASSERT(true);
         }
 
         LOG_INFO("OPENGL VERSION: {}\n", glGetString(GL_VERSION));

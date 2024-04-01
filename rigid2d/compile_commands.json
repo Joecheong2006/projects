@@ -10,7 +10,8 @@
       "-g",
       "-O2",
       "-DDEBUG",
-      "-Ilib/mfw"
+      "-Ilib/mfw",
+      "-Ilib/mfw/lib"
     ],
     "directory": "D:/project/rigid2d",
     "file": "src/main.cpp"

@@ -69,9 +69,8 @@ i32 GetObjectsCount() {
 
 using namespace mfw;
 void PhysicsEmulator::UpdateStatus() {
-    mfw::Window* main = GetWindow();
-    width = main->width();
-    height = main->height();
+    width = GetWindow().width();
+    height = GetWindow().height();
     auto& mouse = Input::GetMouse();
     this->mouse.x = mouse.first;
     this->mouse.y = mouse.second;
@@ -93,7 +92,7 @@ PhysicsEmulator::~PhysicsEmulator() {
 
 void PhysicsEmulator::Start() {
     ImPlot::CreateContext();
-    GetWindow()->setVSync(true);
+    GetWindow().setVSync(true);
     UpdateStatus();
 
     Simulation::Get()->initialize();
@@ -327,12 +326,10 @@ void PhysicsEmulator::OnInputKey(const KeyEvent& event) {
         }
     }
 
-    auto* main = GetWindow();
-
     static bool fullScreen = false;
     if (event.key == 'F' && event.mode == KeyMode::Down) {
         fullScreen = !fullScreen;
-        main->setFullScreen(fullScreen);
+        GetWindow().setFullScreen(fullScreen);
     }
 }
 

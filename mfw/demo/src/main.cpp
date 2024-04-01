@@ -1,55 +1,94 @@
 #include <mfw.h>
 
+#include "Camera.hpp"
+
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_opengl3.h"
 #include "imgui/imgui_impl_win32.h"
 
 static f32 vertex[] = {
-     1,  1,
-    -1,  1,
-     1, -1,
-    -1, -1,
+     0.0,  0.5,
+    -0.5, -0.5,
+     0.5, -0.5,
+
+     0.0,  0.5,
+    -0.5, -0.5,
+     0.5, -0.5,
 };
 
-static u32 index[] = {
-    1, 0, 2,
-    1, 3, 2,
+struct TriangleStack {
+    f32 data[300];
+    i32 count = 0;
 };
+
+struct QuadStack {
+    f32 data[600];
+    i32 count = 0;
+};
+
+void drawTriangle(TriangleStack& stack, glm::vec2 p1, glm::vec2 p2, glm::vec2 p3) {
+    stack.data[stack.count + 0] = p1.x;
+    stack.data[stack.count + 1] = p1.y;
+    stack.data[stack.count + 2] = p2.x;
+    stack.data[stack.count + 3] = p2.y;
+    stack.data[stack.count + 4] = p3.x;
+    stack.data[stack.count + 5] = p3.y;
+    stack.count += 6;
+}
+
+void drawQuad(QuadStack& stack, glm::vec2 p1, glm::vec2 p2, glm::vec2 p3, glm::vec2 p4) {
+    stack.data[stack.count + 0] = p1.x;
+    stack.data[stack.count + 1] = p1.y;
+    stack.data[stack.count + 2] = p2.x;
+    stack.data[stack.count + 3] = p2.y;
+    stack.data[stack.count + 4] = p3.x;
+    stack.data[stack.count + 5] = p3.y;
+
+    stack.data[stack.count + 6] = p1.x;
+    stack.data[stack.count + 7] = p1.y;
+    stack.data[stack.count + 8] = p4.x;
+    stack.data[stack.count + 9] = p4.y;
+    stack.data[stack.count + 10] = p3.x;
+    stack.data[stack.count + 11] = p3.y;
+    stack.count += 12;
+}
 
 using namespace mfw;
 class DemoSandBox : public Application {
 private:
     VertexArray vao;
-    IndexBuffer ibo;
     VertexBuffer vbo;
     ShaderProgram shader;
+    TriangleStack stack;
+
+    i32 drawCount;
+
     f32 zoom = 1;
     f32 offset_x = 0, offset_y = 0;
 
 public:
     DemoSandBox()
-        : Application("demo", 960, 640), ibo(index, 6), vbo(vertex, sizeof(vertex))
+        : Application("demo", 960, 640), vbo(vertex, 0, GL_DYNAMIC_DRAW)
     {
         VertexBufferLayout layout;
         layout.add<f32>(2);
         vao.applyBufferLayout(layout);
-        shader.attachShader(GL_VERTEX_SHADER, "res/shaders/test.vert");
-        shader.attachShader(GL_FRAGMENT_SHADER, "res/shaders/test.frag");
+        shader.attachShader(GL_VERTEX_SHADER, "res/shaders/default.vert");
+        shader.attachShader(GL_FRAGMENT_SHADER, "res/shaders/default.frag");
         shader.link();
         vao.unbind();
-        ibo.unbind();
         vbo.unbind();
         shader.unbind();
 
-        glClearColor(0.1, 0.22, 0.1, 1);
+        glClearColor(0.1, 0.1, 0.1, 1);
     }
 
     virtual void Start() override {
-        GetWindow()->setVSync(true);
+        GetWindow().setVSync(true);
     }
 
     virtual void Update() override {
-        auto window = GetWindow();
+        auto window = &GetWindow();
         glViewport(0, 0, window->width(), window->height());
         glClear(GL_COLOR_BUFFER_BIT);
 
@@ -60,16 +99,20 @@ public:
         vao.bind();
         shader.bind();
 
-        f32 width = window->width();
-        f32 height = window->height();
-        shader.set2f("resolution", width, height);
-        shader.set2f("offset", offset_x, offset_y);
-        shader.set1f("time", Time::GetCurrent());
-        shader.set1f("zoom", zoom);
-
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        shader.set3f("color", glm::vec3(1));
 
         f32 frame = 1.0 / 144;
+
+        // drawTriangle(stack, glm::vec2(0.0, 0.5), -glm::vec2(0.5, 0.5), glm::vec2(0.5, -0.5));
+        // drawTriangle(stack, -glm::vec2(0.0, 0.5), glm::vec2(0.5, 0.5), -glm::vec2(0.5, -0.5));
+        QuadStack stack;
+        drawQuad(stack, glm::vec2(0.1, 0.1), -glm::vec2(0.1, -0.1), -glm::vec2(0.1, 0.1), glm::vec2(0.1, -0.1));
+        // drawQuad(stack, glm::vec2(0.5, 0.5), -glm::vec2(0.5, -0.5), -glm::vec2(0.5, 0.5), glm::vec2(0.5, -0.5));
+
+        vbo.setBuffer(stack.data, stack.count * sizeof(f32));
+        drawCount = stack.count * 0.5;
+        glDrawArrays(GL_TRIANGLES, 0, drawCount);
+        stack.count = 0;
 
         if (Input::KeyPress(' ')) {
             window->setCursorPos(window->width() * 0.5, window->height() * 0.5);
@@ -100,7 +143,7 @@ public:
         if (event.key == VK_ESCAPE && event.mode == KeyMode::Down) {
             Terminate();
         }
-        auto* main = GetWindow();
+        auto main = &GetWindow();
 
         static bool fullScreen = false;
         if (event.key == 'F' && event.mode == KeyMode::Down) {

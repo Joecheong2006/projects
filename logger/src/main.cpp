@@ -1,4 +1,5 @@
 #include "logger.h"
+
 #include <vector>
 
 template <typename T>

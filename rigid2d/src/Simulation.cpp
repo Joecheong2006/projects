@@ -18,9 +18,9 @@ void Simulation::render(mfw::Renderer& renderer) {
 }
 
 glm::dvec2 Simulation::mouseToWorldCoord() {
-    mfw::Window* main = mfw::Application::Get()->GetWindow();
+    auto&& main = mfw::Application::Get().GetWindow();
     auto& mouse = mfw::Input::GetMouse();
-    f32 width = main->width(), height = main->height();
+    f32 width = main.width(), height = main.height();
     glm::vec4 uv = glm::vec4(mouse.first / width, 1 - mouse.second / height, 0, 0) * 2.0f - 1.0f;
     return camera.view * (uv * ((glm::vec4(1) / camera.ortho) / camera.scale));
 }
