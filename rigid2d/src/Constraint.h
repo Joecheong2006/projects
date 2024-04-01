@@ -22,7 +22,7 @@ inline i32 ConstraintTypeIdGenerator::current;
 
 #define GENERATE_CONSTRAINT_IDENTIFIER(identifier)\
     static inline i32 GetTypeId() {\
-        static i32 id = ConstraintTypeIdGenerator::GenerateId();\
+        static const i32 id = ConstraintTypeIdGenerator::GenerateId();\
         return id;\
     }\
     virtual inline i32 getTypeId() const override {\
@@ -38,9 +38,8 @@ inline i32 ConstraintTypeIdGenerator::current;
 
 class Constraint : public Drawable {
 public:
-    Constraint() {}
-    virtual ~Constraint() {}
-
+    Constraint() = default;
+    virtual ~Constraint() = default;
 
     virtual inline i32 getTypeId() const { return -1; };
     virtual inline const char* getTypeName() const { return "None"; };

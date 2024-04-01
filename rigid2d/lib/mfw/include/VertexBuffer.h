@@ -6,9 +6,10 @@ namespace mfw {
     {
     private:
         u32 m_id;
+        u32 usage;
 
     public:
-        explicit VertexBuffer(const void* data, u32 size);
+        explicit VertexBuffer(const void* data, u32 size, u32 usage);
         ~VertexBuffer();
 
         void bind() const;

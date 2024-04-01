@@ -29,7 +29,6 @@ namespace Log {
             Pattern<char>::Log(']', "");
         }
     };
-
 }
 
 #else

@@ -10,10 +10,10 @@ namespace mfw {
 class PointConstraint;
 class Simulation {
 public:
-    static inline std::shared_ptr<Simulation> Get() { return Instance; }
+    static inline Simulation* Get() { return Instance; }
     template <typename T>
     static inline void Create(const T& sim) {
-        Instance = std::make_shared<T>(sim);
+        Instance = new T(sim);
     }
 
 public:
@@ -46,7 +46,7 @@ public:
     glm::dvec2 mouseToWorldCoord();
 
 private:
-    static std::shared_ptr<Simulation> Instance;
+    static Simulation* Instance;
     f32 unitScale = 0;
 
 };

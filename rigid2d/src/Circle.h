@@ -1,10 +1,6 @@
 #pragma once
 #include "Object.h"
 
-namespace mfw {
-    class Renderer;
-};
-
 class Circle : public Object {
 public:
     GENERATE_OBJECT_IDENTIFIER(Circle);

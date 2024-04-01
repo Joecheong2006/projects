@@ -39,7 +39,7 @@ namespace mfw {
     }
 
     ImageRenderer::ImageRenderer(const char* path, i32 wrap, i32 filter)
-        : m_vbo(vertexs, sizeof(vertexs)), m_texture(path, wrap, filter, filter)
+        : m_vbo(vertexs, sizeof(vertexs), GL_STATIC_DRAW), m_texture(path, wrap, filter, filter)
     {
         VertexBufferLayout cube_layout;
         cube_layout.add<f32>(2);
@@ -65,7 +65,7 @@ namespace mfw {
         ShaderProgram m_shader;
         VertexBuffer m_vbo;
         ShaderRenderer(const char* vert, const char* frag)
-            : m_vbo(vertexs, sizeof(vertexs))
+            : m_vbo(vertexs, sizeof(vertexs), GL_STATIC_DRAW)
         {
             VertexBufferLayout cube_layout;
             cube_layout.add<f32>(2);

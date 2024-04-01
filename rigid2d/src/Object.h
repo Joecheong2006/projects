@@ -20,14 +20,15 @@ public:
 
 #define GENERATE_OBJECT_IDENTIFIER(identifier)\
     static inline i32 GetTypeId() {\
-        static i32 id = ObjectTypeIdGenerator::GenerateId();\
+        static const i32 id = ObjectTypeIdGenerator::GenerateId();\
         return id;\
     }\
     virtual inline i32 getTypeId() const override {\
         return GetTypeId();\
     }\
     static inline const char* GetTypeName() {\
-        return #identifier;\
+        static const char* name = #identifier;\
+        return name;\
     }\
     virtual inline const char* getTypeName() const override {\
         return GetTypeName();\

@@ -25,8 +25,6 @@ namespace Log {
     };
 }
 
-std::shared_ptr<Simulation> Simulation::Instance = nullptr;
-
 std::vector<Circle*> FindCirclesByPosition(const glm::vec2& pos) {
     std::vector<Circle*> result;
     for (auto& obj : Simulation::Get()->world.getObjects<Circle>()) {
@@ -79,7 +77,7 @@ void PhysicsEmulator::UpdateStatus() {
 PhysicsEmulator::PhysicsEmulator()
     : Application("PE", 1440, 960), mode(Mode::Normal)
 {
-    ASSERT(Simulation::Get() != nullptr);
+    //ASSERT(Simulation::Get() != nullptr);
 
     // world_scale = 9 * simu->unitScale;
     // shift_rate = 0.001 * world_scale;

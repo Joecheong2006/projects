@@ -32,9 +32,33 @@ void wall_collision(f64 dt, Circle* c, const glm::vec2& world) {
 DemoSimulation::DemoSimulation()
     : Simulation("Demo", 0.4f)
 {
-    f32 unitScale = getWorldScale();
+    f32 worldScale = getWorldScale();
     attri.node_color = glm::vec4(COLOR(0x858AA6), 1);
-    world = World(glm::vec2(30, 12) * unitScale);
+    world = World(glm::vec2(30, 12) * worldScale);
+
+    initialize = [this, worldScale]() {
+        world.setObjectLayer<DistanceConstraint>(RenderLayer::Level2);
+        world.setObjectLayer<Circle>(RenderLayer::Level3);
+        world.setObjectLayer<Tracer>(RenderLayer::Level4);
+
+        ::addDoublePendulum(this, 30, 3);
+
+        auto tracer = world.addObject<Tracer>();
+        tracer->target = world.getObjects<Circle>().back();
+        tracer->maxScale = 0.12 * worldScale;
+        tracer->minScale = 0.01 * worldScale;
+        return;
+
+        for (i32 i = 0; i < 4; i++) {
+            ::addFixPointConstraint(this, glm::vec2(-4, 4) * worldScale);
+        }
+        for (i32 i = 0; i < 4; i++) {
+            ::addHorizontalPointConstraint(this, glm::vec2(4, 4) * worldScale);
+        }
+        ::SetupRotateBox(this);
+        ::addTriangle(this, glm::vec2(), 2 * worldScale);
+        ::addBox(this, glm::vec2(), 2 * worldScale);
+    };
 }
 
 void DemoSimulation::update(const f64& dt) {
