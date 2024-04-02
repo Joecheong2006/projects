@@ -34,14 +34,15 @@ public:
     Rotator() = default;
 
     virtual void solve(const f64& dt) override {
-        if (!target)
+        if (!target || !center)
             return;
-        glm::dvec3 ro = glm::dvec3(glm::normalize(target->m_pos - center), 0);
+        target->m_pos += center->m_pos - center->m_opos;
+        glm::dvec3 ro = glm::dvec3(glm::normalize(target->m_pos - center->m_pos), 0);
         glm::dvec2 vd = glm::cross(ro, glm::dvec3(0, 0, 1)) * f64(w * r);
         target->m_pos += vd * dt;
         target->m_velocity = vd;
         target->m_acceleration = vd / dt;
-        self.m_pos = glm::dvec2(ro) * (f64)r + center;
+        self.m_pos = glm::dvec2(ro) * (f64)r + center->m_pos;
     }
 
     virtual void draw(const glm::mat4& proj, mfw::Renderer& renderer) override {
@@ -49,13 +50,13 @@ public:
     }
 
     f32 r, w;
-    glm::dvec2 center;
+    Object* center;
 
 };
 
 class DemoSimulation : public Simulation {
 public:
-    Object c;
+    // Object c0;
     DemoSimulation()
         : Simulation("Demo", 0.4f)
     {
@@ -67,26 +68,43 @@ public:
             world.setObjectLayer<DistanceConstraint>(RenderLayer::Level2);
             world.setObjectLayer<Circle>(RenderLayer::Level3);
             world.setObjectLayer<Tracer>(RenderLayer::Level4);
-            world.setObjectLayer<Rotator>(RenderLayer::Level2);
+            world.setObjectLayer<Rotator>(RenderLayer::Level3);
 
-            c.m_pos = {};
-            addString(this, {}, 2, 1.6 * worldScale);
+            addString(this, {}, 2, 2 * worldScale);
             auto c1 = world.getObjects<Circle>()[0];
             auto c2 = world.getObjects<Circle>()[1];
-            c1->m_pos = { -0.8, 0 };
-            c2->m_pos = {  0.8, 0 };
+            c1->m_pos = {  1.0, 0 };
+            c2->m_pos = { -1.0, 0 };
 
-            addFixPointConstraint(this, {})->target = &c;
-            auto c3 = world.addObject<Circle>(glm::vec2(4, 0) * worldScale, attri.node_color, attri.node_size);
-            world.addConstraint<DistanceConstraint>(c3, c2, 3 * worldScale, attri.line_width);
-            addHorizontalPointConstraint(this, c2->m_pos)->target = c3;
+            // 2-rotator
+            auto c0 = world.addObject<Circle>(glm::vec2(0), attri.node_color, 0);
+            addFixPointConstraint(this, {})->target = c0;
+            auto rotator1 = world.addConstraint<Rotator>();
+            rotator1->center = c0;
+            rotator1->target = c1;
+            rotator1->r = 1 * worldScale;
+            rotator1->w = 1;
+            rotator1 = world.addConstraint<Rotator>();
+            rotator1->center = c0;
+            rotator1->target = c2;
+            rotator1->r = 1 * worldScale;
+            rotator1->w = 1;
 
             auto tracer = world.addObject<Tracer>();
             tracer->target = c1;
-            tracer->maxScale = 0.03 * worldScale;
+            tracer->maxScale = 0.1 * worldScale;
             tracer->minScale = 0.01 * worldScale;
-            tracer->maxSamples = 30;
-            tracer->dr = 0;
+            tracer->maxSamples = 100;
+            tracer->dr = 0.7;
+
+            return;
+            c0 = world.addObject<Circle>(glm::vec2(0), attri.node_color, attri.node_size);
+            world.addConstraint<DistanceConstraint>(c0, c1, 1 * worldScale, attri.line_width);
+            rotator1 = world.addConstraint<Rotator>();
+            rotator1->center = c1;
+            rotator1->target = c0;
+            rotator1->r = 1 * worldScale;
+            rotator1->w = 6;
 
             return;
             addDoublePendulum(this, 30, 3);
@@ -104,15 +122,17 @@ public:
     }
 
     void update(const f64& dt) {
+        world.update(dt);
+
+        // 2-rotator
         auto c1 = world.getObjects<Circle>()[0];
         auto c2 = world.getObjects<Circle>()[1];
-        glm::dvec2 s = c.m_pos - (c1->m_pos + c2->m_pos) * 0.5;
+        auto c0 = world.getObjects<Circle>()[2];
+        glm::dvec2 s = (c0->m_pos - (c1->m_pos + c2->m_pos) * 0.5) * 0.5;
         c1->m_pos += s;
         c2->m_pos += s;
-        c2->m_acceleration += s / dt / dt;
-        c1->m_acceleration += s / dt / dt;
+        c0->m_pos -= s;
 
-        world.update(dt);
         for (auto& obj : world.getObjects<Circle>()) {
             wall_collision(dt, static_cast<Circle*>(obj), world.size);
         }

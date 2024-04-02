@@ -193,6 +193,11 @@ namespace mfw {
     }
 
     void WindowsWindow::createWindowsWindow() {
+        RECT rt = {0, 0, m_state.width, m_state.height};
+        AdjustWindowRect(&rt, WS_OVERLAPPEDWINDOW, FALSE);
+        m_state.width = rt.right - rt.left;
+        m_state.height = rt.bottom - rt.top;
+
         m_hwnd = CreateWindow(
                 windowClassName,
                 m_state.title.c_str(),
@@ -204,6 +209,8 @@ namespace mfw {
                 GetModuleHandle(NULL),
                 this
                 );
+
+        // setSize(m_state.width, m_state.height);
 
         m_hdc = GetDC(m_hwnd);
     }
@@ -226,9 +233,12 @@ namespace mfw {
     }
 
     void WindowsWindow::setFullScreen(bool enable) {
+        static WindowState preState;
         i32 colourBits       = GetDeviceCaps(m_hdc, BITSPIXEL);
         i32 refreshRate      = GetDeviceCaps(m_hdc, VREFRESH);
         if (enable) {
+            preState = m_state;
+            LOG_INFO("{} {}\n", m_state.width, m_state.height);
             i32 fullscreenWidth  = GetDeviceCaps(m_hdc, DESKTOPHORZRES);
             i32 fullscreenHeight = GetDeviceCaps(m_hdc, DESKTOPVERTRES);
             DEVMODE fullscreenSettings;
@@ -248,25 +258,20 @@ namespace mfw {
             isChangeSuccessful = ChangeDisplaySettings(&fullscreenSettings, CDS_FULLSCREEN) == DISP_CHANGE_SUCCESSFUL;
         }
         else {
-            DEVMODE fullscreenSettings;
             [[maybe_unused]]bool isChangeSuccessful;
-
-            EnumDisplaySettings(NULL, 0, &fullscreenSettings);
-            fullscreenSettings.dmPelsWidth        = 960;
-            fullscreenSettings.dmPelsHeight       = 640;
-            fullscreenSettings.dmBitsPerPel       = colourBits;
-            fullscreenSettings.dmDisplayFrequency = refreshRate;
-            fullscreenSettings.dmFields           = DM_PELSWIDTH | DM_PELSHEIGHT | DM_BITSPERPEL | DM_DISPLAYFREQUENCY;
             SetWindowLongPtr(m_hwnd, GWL_EXSTYLE, WS_EX_WINDOWEDGE);
             SetWindowLongPtr(m_hwnd, GWL_STYLE, WS_OVERLAPPEDWINDOW);
-            setSize(960, 640);
-            setPosition((GetSystemMetrics(SM_CXSCREEN) - m_state.width) / 2, (GetSystemMetrics(SM_CYSCREEN) - m_state.height) / 2);
-            isChangeSuccessful = ChangeDisplaySettings(&fullscreenSettings, CDS_SET_PRIMARY) == DISP_CHANGE_SUCCESSFUL;
+            
+            SetWindowPos(m_hwnd, HWND_TOP,
+                    preState.x - 8, preState.y - 31,
+                    preState.width + 16, preState.height + 39, SWP_SHOWWINDOW);
+            isChangeSuccessful = ChangeDisplaySettings(NULL, CDS_RESET) == DISP_CHANGE_SUCCESSFUL;
         }
     }
 
     void WindowsWindow::setPosition(i32 x, i32 y) {
         SetWindowPos(m_hwnd, HWND_TOP, x, y, m_state.width, m_state.height, SWP_SHOWWINDOW);
+        // MoveWindow(m_hwnd, x, y, m_state.width, m_state.height, TRUE);
     }
 
     void WindowsWindow::setSize(i32 width, i32 height) {

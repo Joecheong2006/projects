@@ -147,6 +147,7 @@ public:
         if (event.key == 'F' && event.mode == KeyMode::Down) {
             fullScreen = !fullScreen;
             main->setFullScreen(fullScreen);
+            glViewport(0, 0, main->width(), main->height());
         }
     }
 
@@ -156,6 +157,11 @@ public:
 
     virtual void OnCursorMove(const CursorMoveEvent& event) override { 
         LOG_EVENT_INFO(event);
+    }
+
+    virtual void OnWindowResize(const WindowResizeEvent& event) override {
+        glViewport(0, 0, event.width, event.height);
+
     }
 
     ~DemoSandBox() {
