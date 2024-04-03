@@ -8,6 +8,7 @@
 #include "Tracer.h"
 #include "FixPoint.h"
 #include "Roller.h"
+#include "Rotator.h"
 
 void wall_collision(f64 dt, Circle* c, const glm::vec2& world) {
     static f64 bounce = 0.1;
@@ -28,37 +29,10 @@ void wall_collision(f64 dt, Circle* c, const glm::vec2& world) {
     c->m_acceleration += a;
 };
 
-class Rotator : public PointConstraint {
-public:
-    GENERATE_CONSTRAINT_IDENTIFIER(Rotator);
-    Rotator() = default;
-
-    virtual void solve(const f64& dt) override {
-        if (!target || !center)
-            return;
-        target->m_pos += center->m_pos - center->m_opos;
-        glm::dvec3 ro = glm::dvec3(glm::normalize(target->m_pos - center->m_pos), 0);
-        glm::dvec2 vd = glm::cross(ro, glm::dvec3(0, 0, 1)) * f64(w * r);
-        target->m_pos += vd * dt;
-        target->m_velocity = vd;
-        target->m_acceleration = vd / dt;
-        self.m_pos = glm::dvec2(ro) * (f64)r + center->m_pos;
-    }
-
-    virtual void draw(const glm::mat4& proj, mfw::Renderer& renderer) override {
-        Circle(self.m_pos, glm::vec3(0), d * 0.2).draw(proj, renderer);
-    }
-
-    f32 r, w;
-    Object* center;
-
-};
-
 class DemoSimulation : public Simulation {
 public:
-    // Object c0;
     DemoSimulation()
-        : Simulation("Demo", 0.4f)
+        : Simulation("Demo", 0.2f)
     {
         f32 worldScale = getWorldScale();
         attri.node_color = glm::vec3(COLOR(0x858AA6));
@@ -70,11 +44,11 @@ public:
             world.setObjectLayer<Tracer>(RenderLayer::Level4);
             world.setObjectLayer<Rotator>(RenderLayer::Level3);
 
-            addString(this, {}, 2, 2 * worldScale);
+            addString(this, {}, 2, 3 * worldScale);
             auto c1 = world.getObjects<Circle>()[0];
             auto c2 = world.getObjects<Circle>()[1];
-            c1->m_pos = {  1.0, 0 };
-            c2->m_pos = { -1.0, 0 };
+            c1->m_pos = glm::vec2(0, 1.5) * worldScale;
+            c2->m_pos = glm::vec2(0, -1.5) * worldScale;
 
             // 2-rotator
             auto c0 = world.addObject<Circle>(glm::vec2(0), attri.node_color, 0);
@@ -82,29 +56,28 @@ public:
             auto rotator1 = world.addConstraint<Rotator>();
             rotator1->center = c0;
             rotator1->target = c1;
-            rotator1->r = 1 * worldScale;
+            rotator1->r = 1.5 * worldScale;
             rotator1->w = 1;
             rotator1 = world.addConstraint<Rotator>();
             rotator1->center = c0;
             rotator1->target = c2;
-            rotator1->r = 1 * worldScale;
+            rotator1->r = 1.5 * worldScale;
             rotator1->w = 1;
 
-            auto tracer = world.addObject<Tracer>();
-            tracer->target = c1;
-            tracer->maxScale = 0.1 * worldScale;
-            tracer->minScale = 0.01 * worldScale;
-            tracer->maxSamples = 100;
-            tracer->dr = 0.7;
-
-            return;
             c0 = world.addObject<Circle>(glm::vec2(0), attri.node_color, attri.node_size);
             world.addConstraint<DistanceConstraint>(c0, c1, 1 * worldScale, attri.line_width);
             rotator1 = world.addConstraint<Rotator>();
             rotator1->center = c1;
             rotator1->target = c0;
             rotator1->r = 1 * worldScale;
-            rotator1->w = 6;
+            rotator1->w = 1.5;
+
+            auto tracer = world.addObject<Tracer>();
+            tracer->target = c0;
+            tracer->maxScale = 0.03 * worldScale;
+            tracer->minScale = 0.01 * worldScale;
+            tracer->maxSamples = 400;
+            tracer->dr = 0.75;
 
             return;
             addDoublePendulum(this, 30, 3);

@@ -19,8 +19,8 @@ void Tracer::draw(const glm::mat4& proj, mfw::Renderer& renderer) {
 
     f32 i = 0;
     for (auto iter = positions_trace.begin();;) {
-        const glm::vec2 p1 = *(iter++);
-        if (iter == positions_trace.end())
+        const glm::vec2 p1 = *(iter);
+        if (++iter == positions_trace.end())
             break;
         const glm::vec2 p2 = *iter;
         const glm::vec3 trace = glm::vec3(COLOR(0xc73e3e)), background = glm::vec3(COLOR(0x191919));

@@ -4,7 +4,7 @@
 
 class Tracer: public Object {
 public:
-    GENERATE_OBJECT_IDENTIFIER(Tracer);
+    GENERATE_OBJECT_IDENTIFIER();
 
     Tracer();
     inline virtual void update(const f64& dt) override { TOVOID(dt); };

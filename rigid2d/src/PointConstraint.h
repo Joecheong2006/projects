@@ -11,7 +11,7 @@ namespace mfw {
 
 class PointConstraint: public Constraint {
 public:
-    GENERATE_CONSTRAINT_IDENTIFIER(PointConstraint);
+    GENERATE_CONSTRAINT_IDENTIFIER();
     PointConstraint();
 
     f32 d;

@@ -31,7 +31,8 @@ private:
     std::vector<ObjectContainer> objectsContainer;
     std::vector<ConstraintContainer> constraintsContainer;
     std::array<std::vector<Drawable*>, 16> renderLayers;
-    std::unordered_map<const char*, i32> renderLayersMap;
+    std::unordered_map<i32, i32> renderLayersMap;
+    std::unordered_map<i32, i32> objectsTypeMap;
 
 public:
     f32 scale = 1;
@@ -48,40 +49,43 @@ public:
 
     template <typename T>
     inline void setObjectLayer(RenderLayer layer) {
-        renderLayersMap[T::GetTypeName()] = (i32)layer;
+        renderLayersMap[T::GetTypeId()] = (i32)layer;
     }
 
     template <typename T, typename... Args>
     inline T* addObject(const Args& ...args) {
         T* result = new T(args...);
-        if (T::GetTypeId() + 1 > (i32)objectsContainer.size()) {
-            objectsContainer.resize(T::GetTypeId() + 1);
+        i32 typeId = T::GetTypeId();
+        if (objectsTypeMap.find(typeId) == objectsTypeMap.end()) {
+            objectsTypeMap[typeId] = objectsContainer.size();
+            objectsContainer.push_back({});
         }
-        objectsContainer[T::GetTypeId()].push_back(result);
-        renderLayers[renderLayersMap[T::GetTypeName()]].push_back(result);
+        objectsContainer[objectsTypeMap[typeId]].push_back(result);
+        renderLayers[renderLayersMap[T::GetTypeId()]].push_back(result);
         return result;
     }
 
     template <typename T, typename... Args>
     inline T* addConstraint(const Args& ...args) {
         T* result = new T(args...);
-        if (T::GetTypeId() + 1 > (i32)constraintsContainer.size()) {
-            constraintsContainer.resize(T::GetTypeId() + 1);
+        i32 typeId = T::GetTypeId();
+        if (objectsTypeMap.find(typeId) == objectsTypeMap.end()) {
+            objectsTypeMap[typeId] = constraintsContainer.size();
+            constraintsContainer.push_back({});
         }
-        constraintsContainer[T::GetTypeId()].push_back(result);
-        renderLayers[renderLayersMap[T::GetTypeName()]].push_back(result);
+        constraintsContainer[objectsTypeMap[typeId]].push_back(result);
+        renderLayers[renderLayersMap[T::GetTypeId()]].push_back(result);
         return result;
     }
 
     template <typename T> [[nodiscard]]
     inline ObjectContainer& getObjects() {
-        return objectsContainer[T::GetTypeId()];
+        return objectsContainer[objectsTypeMap[T::GetTypeId()]];
     }
 
     template <typename T> [[nodiscard]]
     inline ConstraintContainer& getConstraint() {
-        return constraintsContainer[T::GetTypeId()];
-         
+        return constraintsContainer[objectsTypeMap[T::GetTypeId()]];
     }
 
 };

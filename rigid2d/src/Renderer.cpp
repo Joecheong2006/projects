@@ -124,14 +124,15 @@ namespace mfw {
     }
 
     void Renderer::renderLineI(const glm::mat4& proj, const glm::vec2& p1, const glm::vec2& p2, glm::vec3 color, f32 w) {
-        renderLine(proj, p1, p2, glm::vec4(color, 1), w);
+        renderLineI(proj, p1, p2, glm::vec4(color, 1), w);
     }
 
     void Renderer::renderLineI(const glm::mat4& proj, const glm::vec2& p1, const glm::vec2& p2, glm::vec4 color, f32 w) {
         glm::mat4 view = glm::mat4(1);
         view = glm::translate(view, glm::vec3((p1 + p2) * 0.5f, 0));
+        view = glm::rotate(view, 3.14f * 0.5f, glm::vec3(0, 0, -1));
         view = glm::rotate(view, glm::atan((p1.y - p2.y) / (p1.x - p2.x)), glm::vec3(0, 0, 1));
-        view = glm::scale(view, glm::vec3(glm::length(p1 - p2) * 0.5, w, 1));
+        view = glm::scale(view, glm::vec3(w, glm::length(p1 - p2) * 0.5, 1));
 
         iLineRenderer->m_texture.bind();
         iLineRenderer->m_shader.bind();

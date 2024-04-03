@@ -19,8 +19,8 @@ public:
 public:
     struct Attribute {
         glm::vec3 node_color = glm::vec3(0.9, 0.9, 0.9);
-        f32 node_size = 0.15f;
-        f32 line_width = 0.12f;
+        f32 node_size = 0.18f;
+        f32 line_width = 0.14f;
     };
 
     Simulation(const std::string& name, f32 worldScale)

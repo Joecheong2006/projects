@@ -233,14 +233,13 @@ namespace mfw {
     }
 
     void WindowsWindow::setFullScreen(bool enable) {
-        static WindowState preState;
-        i32 colourBits       = GetDeviceCaps(m_hdc, BITSPIXEL);
-        i32 refreshRate      = GetDeviceCaps(m_hdc, VREFRESH);
+        static WINDOWPLACEMENT windowPlacement;
         if (enable) {
-            preState = m_state;
-            LOG_INFO("{} {}\n", m_state.width, m_state.height);
+            GetWindowPlacement(m_hwnd, &windowPlacement);
             i32 fullscreenWidth  = GetDeviceCaps(m_hdc, DESKTOPHORZRES);
             i32 fullscreenHeight = GetDeviceCaps(m_hdc, DESKTOPVERTRES);
+            i32 colourBits       = GetDeviceCaps(m_hdc, BITSPIXEL);
+            i32 refreshRate      = GetDeviceCaps(m_hdc, VREFRESH);
             DEVMODE fullscreenSettings;
             [[maybe_unused]]bool isChangeSuccessful;
 
@@ -251,7 +250,6 @@ namespace mfw {
             fullscreenSettings.dmDisplayFrequency = refreshRate;
             fullscreenSettings.dmFields           = DM_PELSWIDTH | DM_PELSHEIGHT | DM_BITSPERPEL | DM_DISPLAYFREQUENCY;
 
-            SetWindowLongPtr(m_hwnd, GWL_EXSTYLE, WS_EX_APPWINDOW | WS_EX_TOPMOST);
             SetWindowLongPtr(m_hwnd, GWL_STYLE, WS_POPUP | WS_VISIBLE);
                 
             SetWindowPos(m_hwnd, HWND_TOP, 0, 0, fullscreenWidth, fullscreenHeight, SWP_SHOWWINDOW);
@@ -259,12 +257,11 @@ namespace mfw {
         }
         else {
             [[maybe_unused]]bool isChangeSuccessful;
-            SetWindowLongPtr(m_hwnd, GWL_EXSTYLE, WS_EX_WINDOWEDGE);
             SetWindowLongPtr(m_hwnd, GWL_STYLE, WS_OVERLAPPEDWINDOW);
             
-            SetWindowPos(m_hwnd, HWND_TOP,
-                    preState.x - 8, preState.y - 31,
-                    preState.width + 16, preState.height + 39, SWP_SHOWWINDOW);
+            SetWindowPlacement(m_hwnd, &windowPlacement);
+            SetWindowPos(m_hwnd, 0, 0, 0, 0, 0,
+                    SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
             isChangeSuccessful = ChangeDisplaySettings(NULL, CDS_RESET) == DISP_CHANGE_SUCCESSFUL;
         }
     }
@@ -276,6 +273,27 @@ namespace mfw {
 
     void WindowsWindow::setSize(i32 width, i32 height) {
         SetWindowPos(m_hwnd, HWND_TOP, m_state.x, m_state.y, width, height, SWP_SHOWWINDOW);
+    }
+
+    void WindowsWindow::setMode(WindowMode mode) {
+        i32 correctMode;
+        switch (mode) {
+        case WindowMode::Show: correctMode = SW_SHOW; break;
+        case WindowMode::Hide: correctMode = SW_HIDE; break;
+        case WindowMode::Minimize: correctMode = SW_MINIMIZE; break;
+        case WindowMode::Maximize: correctMode = SW_MAXIMIZE; break;
+        case WindowMode::NoActive: correctMode = SW_SHOWNOACTIVATE; break;
+        default: {
+                 LOG_WARN("Invail WindowMode: {}", (i32)mode);
+                 ASSERT(true);
+            } break;
+        }
+        ShowWindow(m_hwnd, correctMode);
+        UpdateWindow(m_hwnd);
+    }
+
+    void WindowsWindow::setFocus() {
+        SetFocus(m_hwnd);
     }
 
     void WindowsWindow::processMessage() {

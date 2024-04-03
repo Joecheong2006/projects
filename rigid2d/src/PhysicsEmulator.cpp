@@ -212,7 +212,38 @@ void PhysicsEmulator::render() {
 
     if (holding) {
         const glm::dvec2 m = sim->mouseToWorldCoord();
-        renderer.renderLine(proj, m, holding->m_pos, glm::vec3(COLOR(0xb92c2c)), 0.1 * worldScale);
+        // renderer.renderLine(proj, m, holding->m_pos, glm::vec3(COLOR(0xb92c2c)), 0.1 * worldScale);
+
+        f32 count = 14, len = 2;
+        f32 n = 2 * glm::length(m - holding->m_pos) / (count / 2.0f);
+        glm::vec2 normal = glm::normalize(m - holding->m_pos) * (f64)worldScale;
+        glm::vec2 t1 = glm::cross(glm::vec3(normal, 0), glm::vec3(0, 0, 1)) * worldScale * len;
+        glm::vec2 t2 = glm::cross(glm::vec3(normal, 0), glm::vec3(0, 0, -1)) * worldScale * len;
+
+        f32 w = 0.08 * worldScale;
+        glm::vec2 p1 = t1 + (glm::vec2)holding->m_pos;
+        glm::vec2 p2 = (glm::vec2)t2 + (glm::vec2)holding->m_pos;
+        p1 += normal * n;
+
+        for (i32 i = 1; i < count; i++) {
+            renderer.renderLineI(proj, p1, p2, glm::vec3(0), w);
+            renderer.renderLineI(proj, p1, p2, glm::vec3(1), w * 0.5);
+            if (i % 2) {
+                p2 += normal * n * 2.0f;
+            }
+            else {
+                p1 += normal * n * 2.0f;
+            }
+            if (i == count - 1) {
+                glm::vec2 d = t1 * 0.1f;
+                renderer.renderLineI(proj, p1 + d, p2 - d, glm::vec3(0), w * 1.3f);
+                renderer.renderLineI(proj, p1, p2, glm::vec3(1), w * 0.8f);
+                p1 = t1 + (glm::vec2)holding->m_pos;
+                p2 = (glm::vec2)t2 + (glm::vec2)holding->m_pos;
+                renderer.renderLineI(proj, p1 + d, p2 - d, glm::vec3(0), w * 1.3f);
+                renderer.renderLineI(proj, p1, p2, glm::vec3(1), w * 0.8f);
+            }
+        }
     }
 
     render_frame = timer.getDuration();

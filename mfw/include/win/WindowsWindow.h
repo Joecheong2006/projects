@@ -16,6 +16,7 @@ namespace  mfw {
         explicit WindowsWindow(const WindowState& state);
         ~WindowsWindow();
 
+        virtual void update() override;
         inline virtual bool isRunning() const override { return m_state.isRunning; }
         inline virtual i32 width() const override { return m_state.width; }
         inline virtual i32 height() const override { return m_state.height; }
@@ -34,7 +35,8 @@ namespace  mfw {
         virtual void setFullScreen(bool enable) override;
         virtual void setPosition(i32 x, i32 y) override;
         virtual void setSize(i32 width, i32 height) override;
-        virtual void update() override;
+        virtual void setMode(WindowMode mode) override;
+        virtual void setFocus() override;
 
     private:
         WindowState m_state;

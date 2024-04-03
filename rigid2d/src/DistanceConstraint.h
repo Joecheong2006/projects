@@ -9,7 +9,7 @@ namespace mfw {
 
 class DistanceConstraint : public Constraint {
 public:
-    GENERATE_CONSTRAINT_IDENTIFIER(DistanceConstraint);
+    GENERATE_CONSTRAINT_IDENTIFIER();
 
     DistanceConstraint(Object* t1, Object* t2, f32 d, f32 w);
     virtual void solve(const f64& dt) override;

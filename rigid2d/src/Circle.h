@@ -3,7 +3,7 @@
 
 class Circle : public Object {
 public:
-    GENERATE_OBJECT_IDENTIFIER(Circle);
+    GENERATE_OBJECT_IDENTIFIER();
 
     f32 r;
     Circle();

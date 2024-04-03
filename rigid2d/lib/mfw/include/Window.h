@@ -21,6 +21,14 @@ namespace mfw {
         std::function<void(const Event&)> m_callBackFunc;
     };
 
+    enum class WindowMode : i32 {
+        Show,
+        Hide,
+        Minimize,
+        Maximize,
+        NoActive,
+    };
+
     struct Window {
     public:
         virtual ~Window() {}
@@ -41,6 +49,8 @@ namespace mfw {
         virtual void setFullScreen(bool enable) = 0;
         virtual void setPosition(i32 x, i32 y) = 0;
         virtual void setSize(i32 width, i32 height) = 0;
+        virtual void setMode(WindowMode mode) = 0;
+        virtual void setFocus() = 0;
 
         static Window* Create(const WindowState& state);
 

@@ -137,13 +137,13 @@ public:
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     }
 
+    bool fullScreen = false;
     virtual void OnInputKey(const KeyEvent& event) override {
         if (event.key == VK_ESCAPE && event.mode == KeyMode::Down) {
             Terminate();
         }
         auto main = &GetWindow();
 
-        static bool fullScreen = false;
         if (event.key == 'F' && event.mode == KeyMode::Down) {
             fullScreen = !fullScreen;
             main->setFullScreen(fullScreen);
@@ -161,7 +161,20 @@ public:
 
     virtual void OnWindowResize(const WindowResizeEvent& event) override {
         glViewport(0, 0, event.width, event.height);
+    }
 
+    virtual void OnWindowFocus(const WindowFocusEvent& event) override {
+        LOG_EVENT_INFO(event);
+        if (fullScreen) {
+            GetWindow().setMode(WindowMode::Maximize);
+        }
+    }
+
+    virtual void OnWindowNotFocus(const WindowNotFocusEvent& event) override {
+        LOG_EVENT_INFO(event);
+        if (fullScreen) {
+            GetWindow().setMode(WindowMode::Minimize);
+        }
     }
 
     ~DemoSandBox() {

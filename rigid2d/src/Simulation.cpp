@@ -7,6 +7,7 @@
 #include "Circle.h"
 #include "mfwlog.h"
 #include "Input.h"
+#include "Tracer.h"
 #include "Application.h"
 #include <list>
 
@@ -102,8 +103,17 @@ void addDoublePendulum(Simulation* sim, f64 angle, f64 d) {
     world.addConstraint<DistanceConstraint>(p2, p3, d * worldScale, attri.line_width);
     addFixPointConstraint(sim, glm::vec2())
         ->target = p1;
-    p3->m_mass = 0.3f;
-    p3->r = p3->m_mass * worldScale;
+    // p3->m_mass = p1->m_mass * 1;
+    p1->drawEnable = false;
+    p2->drawEnable = false;
+    p3->drawEnable = false;
+
+    auto tracer = world.addObject<Tracer>();
+    tracer->target = p3;
+    tracer->maxScale = 0.1 * worldScale;
+    tracer->minScale = 0.01 * worldScale;
+    tracer->maxSamples = 200;
+    tracer->dr = 0.7;
 }
 
 void SetupRotateBox(Simulation* sim) {

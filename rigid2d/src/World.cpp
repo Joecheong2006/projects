@@ -23,6 +23,7 @@ void World::clear() {
     }
     constraintsContainer.clear();
     renderLayersMap.clear();
+    objectsTypeMap.clear();
     renderLayers = {};
 }
 
