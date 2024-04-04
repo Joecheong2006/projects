@@ -1,14 +1,11 @@
 #include "Tracer.h"
 #include "Renderer.h"
 #include "Circle.h"
-#include <list>
 
-Tracer::Tracer()
+Tracer::Tracer(Object* target): target(target)
 {}
 
 void Tracer::draw(const glm::mat4& proj, mfw::Renderer& renderer) {
-    static std::list<glm::vec2> positions_trace;
-
     if (!target)
         return;
 

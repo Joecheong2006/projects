@@ -80,11 +80,21 @@ public:
 
     template <typename T> [[nodiscard]]
     inline ObjectContainer& getObjects() {
+        i32 typeId = T::GetTypeId();
+        if (objectsTypeMap.find(typeId) == objectsTypeMap.end()) {
+            objectsTypeMap[typeId] = objectsContainer.size();
+            objectsContainer.push_back({});
+        }
         return objectsContainer[objectsTypeMap[T::GetTypeId()]];
     }
 
     template <typename T> [[nodiscard]]
     inline ConstraintContainer& getConstraint() {
+        i32 typeId = T::GetTypeId();
+        if (objectsTypeMap.find(typeId) == objectsTypeMap.end()) {
+            objectsTypeMap[typeId] = constraintsContainer.size();
+            constraintsContainer.push_back({});
+        }
         return constraintsContainer[objectsTypeMap[T::GetTypeId()]];
     }
 

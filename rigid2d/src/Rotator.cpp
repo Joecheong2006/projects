@@ -2,6 +2,11 @@
 #include "Simulation.h"
 #include "Circle.h"
 
+Rotator::Rotator(Object* center, Object* target): center(center)
+{
+    this->target = target;
+}
+
 void Rotator::solve(const f64& dt) {
     if (!target || !center)
         return;

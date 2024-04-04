@@ -2,8 +2,8 @@
 #include "Renderer.h"
 #include "Simulation.h"
 
-Circle::Circle(const glm::vec2& pos, const glm::vec3& color, const f32& d)
-    : Object(pos, d, color), r(d)
+Circle::Circle(const glm::vec2& pos, const glm::vec3& color, const f32& r)
+    : Object(pos, r, color), r(r)
 {}
 
 Circle::Circle()

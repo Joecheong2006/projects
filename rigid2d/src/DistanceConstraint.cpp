@@ -14,7 +14,7 @@ DistanceConstraint::DistanceConstraint(Object* t1, Object* t2, f32 d, f32 w)
 void DistanceConstraint::solve(const f64& dt) {
     (void)dt;
     f64 cd = glm::length(target[0]->m_pos - target[1]->m_pos);
-    glm::dvec2 nd = glm::normalize(target[0]->m_pos - target[1]->m_pos) * (d - cd) * 0.5 * hardness;
+    glm::dvec2 nd = glm::normalize(target[0]->m_pos - target[1]->m_pos) * (d - cd) * 0.5;
 
     target[0]->m_pos += nd; 
     target[1]->m_pos -= nd; 

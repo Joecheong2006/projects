@@ -1,8 +1,9 @@
 #include "World.h"
 #include "logger.h"
+#include "Simulation.h"
 
 World::World(glm::vec2 size, glm::dvec2 gravity)
-    : size(size), gravity(gravity)
+    : size(size * Simulation::Get()->getWorldScale()), gravity(gravity)
 {}
 
 World::~World() {

@@ -24,9 +24,8 @@ public:
     virtual ~Object() = default;
     void addForce(const glm::dvec2& force);
 
-    virtual inline i32 getTypeId() const { return -1; };
     virtual void update(const f64& dt);
     virtual void draw(const glm::mat4& proj, mfw::Renderer& renderer) override { (void)proj; (void)renderer; }
-
+    virtual inline i32 getTypeId() const { return -1; };
 };
 

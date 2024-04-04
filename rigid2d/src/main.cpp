@@ -10,6 +10,8 @@
 #include "Roller.h"
 #include "Rotator.h"
 
+#include "ObjectBuilder.h"
+
 void wall_collision(f64 dt, Circle* c, const glm::vec2& world) {
     static f64 bounce = 0.1;
     glm::vec2 a{}, s{};
@@ -32,79 +34,53 @@ void wall_collision(f64 dt, Circle* c, const glm::vec2& world) {
 class DemoSimulation : public Simulation {
 public:
     DemoSimulation()
-        : Simulation("Demo", 0.2f)
+        : Simulation("Demo", 0.3f)
     {
-        f32 worldScale = getWorldScale();
         attri.node_color = glm::vec3(COLOR(0x858AA6));
-        world = World(glm::vec2(30, 12) * worldScale);
 
-        initialize = [this, worldScale]() {
+        initialize = [this]() {
+            world = World(glm::vec2(30, 12));
             world.setObjectLayer<DistanceConstraint>(RenderLayer::Level2);
             world.setObjectLayer<Circle>(RenderLayer::Level3);
             world.setObjectLayer<Tracer>(RenderLayer::Level4);
             world.setObjectLayer<Rotator>(RenderLayer::Level3);
 
-            addString(this, {}, 2, 3 * worldScale);
-            auto c1 = world.getObjects<Circle>()[0];
-            auto c2 = world.getObjects<Circle>()[1];
-            c1->m_pos = glm::vec2(0, 1.5) * worldScale;
-            c2->m_pos = glm::vec2(0, -1.5) * worldScale;
+            auto buildLink = ObjectBuilder<DistanceConstraint>{glm::vec3(COLOR(0xefefef)), 0.14};
+            auto buildCircle = ObjectBuilder<Circle>{attri.node_color, 0.17};
+            auto buildTracer = ObjectBuilder<Tracer>{glm::vec3(COLOR(0xc73e3e)), 0.03, 0.01, 0.75, 450};
+            auto buildRotator = ObjectBuilder<Rotator>{};
+            auto buildFixPoint = ObjectBuilder<FixPoint>{glm::vec3(COLOR(0x486577)), buildCircle.default_d * 1.6f };
 
-            // 2-rotator
-            auto c0 = world.addObject<Circle>(glm::vec2(0), attri.node_color, 0);
-            addFixPointConstraint(this, {})->target = c0;
-            auto rotator1 = world.addConstraint<Rotator>();
-            rotator1->center = c0;
-            rotator1->target = c1;
-            rotator1->r = 1.5 * worldScale;
-            rotator1->w = 1;
-            rotator1 = world.addConstraint<Rotator>();
-            rotator1->center = c0;
-            rotator1->target = c2;
-            rotator1->r = 1.5 * worldScale;
-            rotator1->w = 1;
+            auto c1 = buildCircle(glm::vec2(1.5));
+            auto c0 = buildCircle(glm::vec2(0), 0);
+            buildLink(c0, c1, 1.5);
+            buildFixPoint({})->target = c0;
+            buildRotator(c0, c1, 1.5, 1);
 
-            c0 = world.addObject<Circle>(glm::vec2(0), attri.node_color, attri.node_size);
-            world.addConstraint<DistanceConstraint>(c0, c1, 1 * worldScale, attri.line_width);
-            rotator1 = world.addConstraint<Rotator>();
-            rotator1->center = c1;
-            rotator1->target = c0;
-            rotator1->r = 1 * worldScale;
-            rotator1->w = 1.5;
+            c0 = buildCircle(glm::vec2(0, 0.5));
+            buildLink(c0, c1, 1);
+            buildRotator(c1, c0, 1, 1.5);
 
-            auto tracer = world.addObject<Tracer>();
-            tracer->target = c0;
-            tracer->maxScale = 0.03 * worldScale;
-            tracer->minScale = 0.01 * worldScale;
-            tracer->maxSamples = 400;
-            tracer->dr = 0.75;
+            buildTracer(c0);
 
-            return;
-            addDoublePendulum(this, 30, 3);
+            buildCircle(glm::vec2(1, 0), 0.3)
+                ->m_mass = 1;
 
-            for (i32 i = 0; i < 4; i++) {
-                addFixPointConstraint(this, glm::vec2(-4, 4) * worldScale);
-            }
-            for (i32 i = 0; i < 4; i++) {
-                addHorizontalPointConstraint(this, glm::vec2(4, 4) * worldScale);
-            }
-            // ::SetupRotateBox(this);
-            addTriangle(this, glm::vec2(), 2 * worldScale);
-            addBox(this, glm::vec2(), 2 * worldScale);
+            // addDoublePendulum(this, 30, 3);
+            //
+            // for (i32 i = 0; i < 4; i++) {
+            //     addFixPointConstraint(this, glm::vec2(-4, 4) * worldScale);
+            // }
+            // for (i32 i = 0; i < 4; i++) {
+            //     addHorizontalPointConstraint(this, glm::vec2(4, 4) * worldScale);
+            // }
+            // addTriangle(this, glm::vec2(), 2 * worldScale);
+            // addBox(this, glm::vec2(), 2 * worldScale);
         };
     }
 
     void update(const f64& dt) {
         world.update(dt);
-
-        // 2-rotator
-        auto c1 = world.getObjects<Circle>()[0];
-        auto c2 = world.getObjects<Circle>()[1];
-        auto c0 = world.getObjects<Circle>()[2];
-        glm::dvec2 s = (c0->m_pos - (c1->m_pos + c2->m_pos) * 0.5) * 0.5;
-        c1->m_pos += s;
-        c2->m_pos += s;
-        c0->m_pos -= s;
 
         for (auto& obj : world.getObjects<Circle>()) {
             wall_collision(dt, static_cast<Circle*>(obj), world.size);
@@ -121,7 +97,7 @@ public:
 
 };
 
-Simulation* Simulation::Instance = new DemoSimulation();
+Simulation* Simulation::Instance = new Simulation({"demo", 0.3});
 
 mfw::Application* mfw::CreateApplication() {
     PhysicsEmulator* emulator = new PhysicsEmulator();

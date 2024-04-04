@@ -1,6 +1,7 @@
 #include "Object.h"
 #include "logger.h"
 #include "PhysicsEmulator.h"
+#include "mfwlog.h"
 
 i32 ObjectTypeIdGenerator::current;
 
@@ -16,8 +17,12 @@ void Object::update(const f64& dt) {
 #if 1
     m_opos = m_pos;
     m_ovelocity = m_velocity;
+
     m_velocity += m_acceleration * dt;
-    m_pos += m_velocity * dt;
+    m_pos += m_velocity * dt + m_acceleration * dt * dt * 0.5;
+
+    // m_velocity += m_acceleration * dt;
+    // m_pos += (m_velocity) * dt;
 #else
     glm::dvec2 s = (m_pos - m_opos);
     m_opos = m_pos;

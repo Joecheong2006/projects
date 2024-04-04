@@ -1,15 +1,25 @@
 #include "Simulation.h"
 
-#include "DistanceConstraint.h"
+#include "ObjectBuilder.h"
 #include "Roller.h"
-#include "FixPoint.h"
 #include "Renderer.h"
-#include "Circle.h"
 #include "mfwlog.h"
 #include "Input.h"
-#include "Tracer.h"
 #include "Application.h"
 #include <list>
+
+Simulation::Simulation(const std::string& name, f32 worldScale)
+    : name(name), unitScale(worldScale)
+{
+    attri.node_size *= unitScale;
+    attri.line_width *= unitScale;
+    attri.node_color = glm::vec3(COLOR(0x858AA6));
+    initialize = [this]() {
+        world = World(glm::vec2(10, 10));
+        auto buildFixPoint = ObjectBuilder<FixPoint>{glm::vec3(COLOR(0x486577)), 0.2f };
+        buildFixPoint({});
+    };
+}
 
 void Simulation::update(const f64& dt) {
     world.update(dt);
@@ -96,9 +106,9 @@ void addDoublePendulum(Simulation* sim, f64 angle, f64 d) {
     const auto& attri = sim->attri;
     const f32 worldScale = sim->getWorldScale();
     glm::dvec2 direction = glm::normalize(glm::dvec2(cos(r), sin(r))) * d * (f64)worldScale;
-    auto p1 = world.addObject<Circle>(glm::vec2(), attri.node_color, attri.node_size);
-    auto p2 = world.addObject<Circle>(direction, attri.node_color, attri.node_size);
-    auto p3 = world.addObject<Circle>(direction * 2.0, attri.node_color, attri.node_size);
+    auto p1 = world.addObject<Circle>(glm::vec2(), attri.node_color, attri.node_size * 1.5);
+    auto p2 = world.addObject<Circle>(direction, attri.node_color, attri.node_size * 1.5);
+    auto p3 = world.addObject<Circle>(direction * 2.0, attri.node_color, attri.node_size * 1.5);
     world.addConstraint<DistanceConstraint>(p1, p2, d * worldScale, attri.line_width);
     world.addConstraint<DistanceConstraint>(p2, p3, d * worldScale, attri.line_width);
     addFixPointConstraint(sim, glm::vec2())
@@ -108,8 +118,7 @@ void addDoublePendulum(Simulation* sim, f64 angle, f64 d) {
     p2->drawEnable = false;
     p3->drawEnable = false;
 
-    auto tracer = world.addObject<Tracer>();
-    tracer->target = p3;
+    auto tracer = world.addObject<Tracer>(p3);
     tracer->maxScale = 0.1 * worldScale;
     tracer->minScale = 0.01 * worldScale;
     tracer->maxSamples = 200;

@@ -2,7 +2,6 @@
 #include "util.h"
 #include "World.h"
 #include "Camera.h"
-#include <memory>
 
 namespace mfw {
     class Renderer;
@@ -23,12 +22,7 @@ public:
         f32 line_width = 0.14f;
     };
 
-    Simulation(const std::string& name, f32 worldScale)
-        : name(name), unitScale(worldScale)
-    {
-        attri.node_size *= unitScale;
-        attri.line_width *= unitScale;
-    }
+    Simulation(const std::string& name, f32 worldScale);
 
     virtual ~Simulation() = default;
     virtual void update(const f64& dt);

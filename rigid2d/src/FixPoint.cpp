@@ -13,6 +13,6 @@ void FixPoint::solve(const f64& dt) {
 }
 
 void FixPoint::draw(const glm::mat4& proj, mfw::Renderer& renderer) {
-    Circle(self.m_pos, self.m_color, Simulation::Get()->attri.node_size * 1.6).draw(proj, renderer);
+    Circle(self.m_pos, self.m_color, d).draw(proj, renderer);
 }
 

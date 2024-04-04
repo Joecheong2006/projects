@@ -3,6 +3,7 @@
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_opengl3.h"
 #include "imgui/imgui_impl_win32.h"
+#include <list>
 
 static f32 vertex[] = {
      0.0,  0.5,
@@ -20,14 +21,13 @@ struct TriangleStack {
 };
 
 struct QuadStack {
-    f32 data[600];
+    f32 data[6000];
     i32 count = 0;
 };
 
 void drawTriangle(TriangleStack& stack, glm::vec2 p1, glm::vec2 p2, glm::vec2 p3) {
     stack.data[stack.count + 0] = p1.x;
-    stack.data[stack.count + 1] = p1.y;
-    stack.data[stack.count + 2] = p2.x;
+    stack.data[stack.count + 1] = p1.y; stack.data[stack.count + 2] = p2.x;
     stack.data[stack.count + 3] = p2.y;
     stack.data[stack.count + 4] = p3.x;
     stack.data[stack.count + 5] = p3.y;
@@ -57,7 +57,6 @@ private:
     VertexArray vao;
     VertexBuffer vbo;
     ShaderProgram shader;
-    TriangleStack stack;
 
     i32 drawCount;
 
@@ -101,16 +100,41 @@ public:
 
         f32 frame = 1.0 / 144;
 
-        // drawTriangle(stack, glm::vec2(0.0, 0.5), -glm::vec2(0.5, 0.5), glm::vec2(0.5, -0.5));
-        // drawTriangle(stack, -glm::vec2(0.0, 0.5), glm::vec2(0.5, 0.5), -glm::vec2(0.5, -0.5));
-        QuadStack stack;
-        drawQuad(stack, glm::vec2(0.1, 0.1), -glm::vec2(0.1, -0.1), -glm::vec2(0.1, 0.1), glm::vec2(0.1, -0.1));
-        // drawQuad(stack, glm::vec2(0.5, 0.5), -glm::vec2(0.5, -0.5), -glm::vec2(0.5, 0.5), glm::vec2(0.5, -0.5));
+        {
+            static QuadStack stack;
+            static std::list<glm::vec2> posSamples;
+            const auto m = Input::GetMouse();
+            const f32 aspect = (f32)GetWindow().width() / GetWindow().height();
+            const glm::vec2 mouse = glm::vec2(m.first / (f32)GetWindow().width(), 1 - m.second / (f32)GetWindow().height()) * 2.0f - 1.0f;
+            const glm::vec2 offset = glm::vec2(1 * aspect, 1);
 
-        vbo.setBuffer(stack.data, stack.count * sizeof(f32));
-        drawCount = stack.count * 0.5;
-        glDrawArrays(GL_TRIANGLES, 0, drawCount);
-        stack.count = 0;
+            if (posSamples.size() == 60) {
+                posSamples.pop_front();
+            }
+            posSamples.push_back(mouse);
+
+            for (auto iter = posSamples.begin();;) {
+                if (iter == posSamples.end())
+                    break;
+                const glm::vec2 p1 = *iter;
+                ++iter;
+                if (iter == posSamples.end())
+                    break;
+                const glm::vec2 p2 = *iter;
+                const glm::vec2 normal = glm::normalize(p2 - p1);
+                const glm::vec2 t1 = glm::cross(glm::vec3(normal, 0), glm::vec3(0, 0, 1.0)) * 0.1f;
+                const glm::vec2 d = p2 - p1;
+                glm::vec2 pp1 = p1 - t1, pp2 = p1 + t1;
+                drawQuad(stack, pp1, pp2, p2 + t1 + d, p2 - t1 + d);
+                // pp2 = p2 + t1 + d;
+                // pp1 = p2 - t1 + d;
+            }
+
+            vbo.setBuffer(stack.data, stack.count * sizeof(f32));
+            drawCount = stack.count * 0.5;
+            glDrawArrays(GL_TRIANGLES, 0, drawCount);
+            stack.count = 0;
+        }
 
         if (Input::KeyPress(' ')) {
             window->setCursorPos(window->width() * 0.5, window->height() * 0.5);
@@ -156,7 +180,6 @@ public:
     }
 
     virtual void OnCursorMove(const CursorMoveEvent& event) override { 
-        LOG_EVENT_INFO(event);
     }
 
     virtual void OnWindowResize(const WindowResizeEvent& event) override {
