@@ -6,13 +6,8 @@ private:
     static i32 current;
 
 public:
-    static inline i32 GenerateId() {
-        return current++;
-    }
-
-    static inline i32 GetCurrent() {
-        return current;
-    }
+    static i32 GenerateId();
+    static i32 GetCurrent();
 
 };
 

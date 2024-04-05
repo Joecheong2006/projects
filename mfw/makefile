@@ -46,9 +46,9 @@ app: $(OBJ)
 	@$(CC) $(CFLAGS) $(INCLUDE) -o $@ -c $< -MMD
 
 win_release:
-	@make app -j -s DEFINE="" FLAGS="-std=c++17 -O2"
+	@make app -s DEFINE="" FLAGS="-std=c++17 -O2"
 
 win_debug:
-	@make app -j -s DEFINE="-DDEBUG" FLAGS="-std=c++17 -Wall -Wextra -Wpedantic -Wstrict-aliasing -g"
+	@make app -s DEFINE="-DDEBUG" FLAGS="-std=c++17 -Wall -Wextra -Wpedantic -Wstrict-aliasing -g"
 
 -include $(DEP)

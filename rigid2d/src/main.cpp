@@ -1,15 +1,4 @@
 #include "PhysicsEmulator.h"
-#include <Clock.h>
-
-#include "PointConstraint.h"
-#include "DistanceConstraint.h"
-#include "Circle.h"
-#include "Simulation.h"
-#include "Tracer.h"
-#include "FixPoint.h"
-#include "Roller.h"
-#include "Rotator.h"
-
 #include "ObjectBuilder.h"
 
 void wall_collision(f64 dt, Circle* c, const glm::vec2& world) {
@@ -50,6 +39,12 @@ public:
             auto buildTracer = ObjectBuilder<Tracer>{glm::vec3(COLOR(0xc73e3e)), 0.03, 0.01, 0.75, 450};
             auto buildRotator = ObjectBuilder<Rotator>{};
             auto buildFixPoint = ObjectBuilder<FixPoint>{glm::vec3(COLOR(0x486577)), buildCircle.default_d * 1.6f };
+            auto buildRoller = ObjectBuilder<Roller>{glm::vec3(COLOR(0x3c4467)), buildCircle.default_d * 1.6f };
+
+            buildRoller({1, 0});
+
+            buildFixPoint({2, 0});
+            buildFixPoint({-2, 0});
 
             auto c1 = buildCircle(glm::vec2(1.5));
             auto c0 = buildCircle(glm::vec2(0), 0);
@@ -97,7 +92,7 @@ public:
 
 };
 
-Simulation* Simulation::Instance = new Simulation({"demo", 0.3});
+Simulation* Simulation::Instance = new DemoSimulation();
 
 mfw::Application* mfw::CreateApplication() {
     PhysicsEmulator* emulator = new PhysicsEmulator();
@@ -105,7 +100,7 @@ mfw::Application* mfw::CreateApplication() {
     emulator->shift_rate = 0.001 * emulator->world_scale;
     emulator->zoom_rate = 0.01 * emulator->world_scale;
 
-    emulator->settings.sub_step = 100;
+    emulator->settings.sub_step = 10;
 
     return emulator;
 }

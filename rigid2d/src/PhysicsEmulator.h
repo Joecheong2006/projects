@@ -1,43 +1,11 @@
 #include "Application.h"
 
 #include "Renderer.h"
-#include "Object.h"
+#include "RigidBody2D.h"
+#include "PointConstraint.h"
+#include "Simulation.h"
 
 class PhysicsEmulator : public mfw::Application {
-private:
-    enum Mode {
-        Normal,
-        Action,
-        Edit,
-        None
-    } mode;
-
-    f64 sub_dt;
-    glm::vec2 catch_offset;
-
-    Object* holding = nullptr;
-    std::vector<Object*> preview;
-
-    mfw::Renderer renderer;
-
-    void UpdateStatus();
-
-    // window status
-    i32 width, height;
-    glm::vec2 mouse;
-    const f64 refresh_rate = 144, fps = refresh_rate;
-    f64 frame = 1.0 / fps, render_frame = 0, update_frame = 0;
-
-    void SetWorldProjection(glm::vec2 view);
-    void ApplyUserInputToScene();
-    void update(const f64& dt);
-    void render();
-    void renderImgui();
-    void restart();
-
-    void OnEdit(const mfw::MouseButtonEvent& event, const glm::dvec2& wpos);
-    void OnNormal(const mfw::MouseButtonEvent& event, const glm::vec2& wpos);
-
 public:
     PhysicsEmulator();
     ~PhysicsEmulator();
@@ -64,6 +32,43 @@ public:
              acceleration_view = false;
         f32 mouseSpringForce = 10;
     } settings;
+
+private:
+    enum Mode {
+        Normal,
+        Action,
+        Edit,
+        None
+    } mode;
+
+    f64 sub_dt;
+    glm::vec2 catch_offset;
+
+    RigidBody* rigidBodyHolder = nullptr;
+    PointConstraint* pointHolder = nullptr;
+    std::vector<RigidBody*> preview;
+    Simulation* sim;
+
+    mfw::Renderer renderer;
+
+    void UpdateStatus();
+
+    // window status
+    i32 width, height;
+    glm::vec2 mouse;
+    const f64 refresh_rate = 144, fps = refresh_rate;
+    f64 frame = 1.0 / fps, render_frame = 0, update_frame = 0;
+
+    void SetWorldProjection(glm::vec2 view);
+    void ApplySpringForce();
+    void MovePointConstraint();
+    void update(const f64& dt);
+    void render();
+    void renderImgui();
+    void restart();
+
+    void OnEdit(const mfw::MouseButtonEvent& event, const glm::dvec2& wpos);
+    void OnNormal(const mfw::MouseButtonEvent& event, const glm::vec2& wpos);
 
 };
 

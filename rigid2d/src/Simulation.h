@@ -45,12 +45,12 @@ private:
 
 };
 
-void addString(Simulation* sim, const glm::vec2& pos, u32 node, f32 length);
-void addCircle(Simulation* sim, const glm::vec2& pos, i32 n, f32 r, i32 nstep = 1);
-void addBox(Simulation* sim, const glm::vec2& pos, f32 l);
-void addTriangle(Simulation* sim, const glm::vec2& pos, f32 l);
-void addDoublePendulum(Simulation* sim, f64 angle, f64 d);
-void SetupRotateBox(Simulation* sim);
-PointConstraint* addHorizontalPointConstraint(Simulation* sim, const glm::dvec2& pos);
-PointConstraint* addFixPointConstraint(Simulation* sim, const glm::dvec2& pos);
+void addString(const glm::vec2& pos, u32 node, f32 length);
+void addCircle(const glm::vec2& pos, i32 n, f32 r, i32 nstep = 1);
+void addBox(const glm::vec2& pos, f32 l);
+void addTriangle(const glm::vec2& pos, f32 l);
+void addDoublePendulum(f64 angle, f64 d);
+void SetupRotateBox();
+PointConstraint* addHorizontalPointConstraint(const glm::dvec2& pos);
+PointConstraint* addFixPointConstraint(const glm::dvec2& pos);
 

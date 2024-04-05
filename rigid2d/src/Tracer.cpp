@@ -1,8 +1,10 @@
 #include "Tracer.h"
 #include "Renderer.h"
 #include "Circle.h"
+#include "Simulation.h"
 
-Tracer::Tracer(Object* target): target(target)
+Tracer::Tracer(RigidBody* target)
+    : target(target)
 {}
 
 void Tracer::draw(const glm::mat4& proj, mfw::Renderer& renderer) {
@@ -20,8 +22,9 @@ void Tracer::draw(const glm::mat4& proj, mfw::Renderer& renderer) {
         if (++iter == positions_trace.end())
             break;
         const glm::vec2 p2 = *iter;
-        const glm::vec3 trace = glm::vec3(COLOR(0xc73e3e)), background = glm::vec3(COLOR(0x191919));
-        const glm::vec3 color = (trace - background) * (i++ / positions_trace.size()) + background;
+        // const glm::vec3 trace = glm::vec3(COLOR(0xc73e3e)), background = glm::vec3(COLOR(0x191919));
+        const glm::vec3 background = glm::vec3(COLOR(0x191919));
+        const glm::vec3 color = (m_color - background) * (i++ / positions_trace.size()) + background;
         f32 t = maxScale * (i / positions_trace.size());
         t = glm::clamp(t - maxScale * dr, minScale, maxScale);
         renderer.renderCircleI(proj, { p2, color, t });
@@ -29,3 +32,19 @@ void Tracer::draw(const glm::mat4& proj, mfw::Renderer& renderer) {
         renderer.renderLineI(proj, p1, p2, color, t);
     }
 }
+
+Tracer* ObjectBuilder<Tracer>::operator()(RigidBody* target, f32 maxScale, f32 minScale, f32 dr, i32 maxSamples, glm::vec3 color) {
+    static const f32 worldScale = Simulation::Get()->getWorldScale();
+    auto tracer = Simulation::Get()->world.addConstraint<Tracer>(target);
+    tracer->maxScale = maxScale * worldScale;
+    tracer->minScale = minScale * worldScale;
+    tracer->maxSamples = maxSamples;
+    tracer->dr = dr;
+    tracer->m_color = color;
+    return tracer;
+}
+
+Tracer* ObjectBuilder<Tracer>::operator()(RigidBody* target) {
+    return (*this)(target, default_maxScale, default_minScale, default_dr, default_maxSamples, default_color);
+}
+

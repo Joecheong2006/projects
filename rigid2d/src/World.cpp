@@ -37,7 +37,7 @@ void World::update(const f64& dt) {
     }
     for (auto& containter : constraintsContainer) {
         for (auto& constraint : containter) {
-            constraint->solve(dt);
+            constraint->update(dt);
         }
     }
 }
