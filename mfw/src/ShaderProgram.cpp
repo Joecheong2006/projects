@@ -135,6 +135,7 @@ namespace mfw {
             char infolog[512];
             GLCALL(glGetShaderInfoLog(id, 512, NULL, infolog));
             LOG_INFO("Compile error: {}\n", infolog);
+            LOG_INFO("{}\n", src);
             GLCALL(glDeleteShader(id));
             return 0;
         }

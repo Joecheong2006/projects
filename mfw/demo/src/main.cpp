@@ -4,16 +4,7 @@
 #include "imgui/imgui_impl_opengl3.h"
 #include "imgui/imgui_impl_win32.h"
 #include <list>
-
-static f32 vertex[] = {
-     0.0,  0.5,
-    -0.5, -0.5,
-     0.5, -0.5,
-
-     0.0,  0.5,
-    -0.5, -0.5,
-     0.5, -0.5,
-};
+#include "Renderer.h"
 
 struct TriangleStack {
     f32 data[300];
@@ -21,7 +12,7 @@ struct TriangleStack {
 };
 
 struct QuadStack {
-    f32 data[6000];
+    f32 data[400000];
     i32 count = 0;
 };
 
@@ -51,9 +42,85 @@ void drawQuad(QuadStack& stack, glm::vec2 p1, glm::vec2 p2, glm::vec2 p3, glm::v
     stack.count += 12;
 }
 
+static f32 vertex[] = {
+     0.0,  0.5,
+    -0.5, -0.5,
+     0.5, -0.5,
+
+     0.0,  0.5,
+    -0.5, -0.5,
+     0.5, -0.5,
+};
+
+static f32 ract[] = {
+     1.0,  1.0,   1.0, 1.0,
+     1.0, -1.0,   1.0, 0.0,
+    -1.0, -1.0,   0.0, 0.0,
+
+     1.0,  1.0,   1.0, 1.0,
+    -1.0,  1.0,   0.0, 1.0,
+    -1.0, -1.0,   0.0, 0.0,
+};
+
 using namespace mfw;
+struct ScreenBuffer {
+    VertexArray vao;
+    VertexBuffer vbo;
+    ShaderProgram shader;
+
+    u32 fbo, texture, rbo;
+    ScreenBuffer(): vbo(ract, sizeof(ract), GL_STATIC_DRAW)
+    {
+        VertexBufferLayout layout;
+        layout.add<f32>(2);
+        layout.add<f32>(2);
+        vao.applyBufferLayout(layout);
+
+        shader.attachShader(GL_VERTEX_SHADER, "res/shaders/framebuffer.vert");
+        shader.attachShader(GL_FRAGMENT_SHADER, "res/shaders/framebuffer.frag");
+        shader.link();
+
+        vao.unbind();
+        vbo.unbind();
+        shader.unbind();
+
+        GLCALL(glGenFramebuffers(1, &fbo));
+        GLCALL(glBindFramebuffer(GL_FRAMEBUFFER, fbo));
+
+        auto window = &Application::Get().GetWindow();
+        i32 width = window->width(), height = window->height();
+        GLCALL(glGenTextures(1, &texture));
+        GLCALL(glBindTexture(GL_TEXTURE_2D, texture));
+        GLCALL(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL));
+        GLCALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
+        GLCALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
+        GLCALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
+        GLCALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
+        GLCALL(glBindTexture(GL_TEXTURE_2D, 0));
+
+        GLCALL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0));
+
+        GLCALL(glGenRenderbuffers(1, &rbo));
+        GLCALL(glBindRenderbuffer(GL_RENDERBUFFER, rbo));
+        GLCALL(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height));
+        GLCALL(glBindRenderbuffer(GL_RENDERBUFFER, 0));
+
+        GLCALL(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo));
+
+        auto status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+        if (status != GL_FRAMEBUFFER_COMPLETE) {
+            std::cout << "error: " << status << '\n';
+        }
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    }
+};
+
 class DemoSandBox : public Application {
 private:
+    ScreenBuffer screenBuffer;
+
     VertexArray vao;
     VertexBuffer vbo;
     ShaderProgram shader;
@@ -63,9 +130,15 @@ private:
     f32 zoom = 1;
     f32 offset_x = 0, offset_y = 0;
 
+    struct Particle {
+        glm::vec2 pos, direction;
+    };
+
+    std::vector<Particle> particles;
+
 public:
     DemoSandBox()
-        : Application("demo", 960, 640), vbo(vertex, 0, GL_DYNAMIC_DRAW)
+        : Application("demo", 1440, 960), vbo(vertex, 0, GL_DYNAMIC_DRAW)
     {
         VertexBufferLayout layout;
         layout.add<f32>(2);
@@ -76,18 +149,62 @@ public:
         vao.unbind();
         vbo.unbind();
         shader.unbind();
-
         glClearColor(0.1, 0.1, 0.1, 1);
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        srand(time(0));
+        i32 len = 13000;
+        particles.reserve(len);
+        for (i32 i = 0; i < len; ++i) {
+            f32 r = rand() % len / (f32)len - 0.5;
+            f32 a = (rand() % len / (f32)len) * 3.14f - 3.14 * 0.5;
+            particles.emplace_back(Particle {
+                    glm::vec2(cos(a), sin(a)) * r,
+                    glm::vec2(cos(a), sin(a)) * 0.01f});
+        }
     }
 
     virtual void Start() override {
         GetWindow().setVSync(true);
     }
 
+    void updateParticles() {
+        for (auto& particle : particles) {
+            particle.pos += particle.direction * 0.008f;
+            if (particle.pos.x <= -1 || particle.pos.x >= 1) {
+                particle.direction.x *= -0.7;
+            }
+            if (particle.pos.y <= -1 || particle.pos.y >= 1) {
+                particle.direction.y *= -0.7;
+            }
+        }
+
+        for (auto& p1 : particles) {
+            i32 i = 0, c = 0;
+            for (auto& p2 : particles) {
+                if (c == 40 || i == 20)
+                    break;
+                c++;
+                if (&p2 == &p1)
+                    continue;
+                if (glm::length(p2.pos - p1.pos) < 0.7f) {
+                    i++;
+                    p2.direction += 0.001f * (p1.pos - p2.pos) * glm::length(p1.direction);
+                    p1.direction -= 0.001f * (p1.pos - p2.pos) * glm::length(p2.direction);
+                }
+            }
+        }
+    }
+
     virtual void Update() override {
+        Timer timer;
         auto window = &GetWindow();
         glViewport(0, 0, window->width(), window->height());
-        glClear(GL_COLOR_BUFFER_BIT);
+        updateParticles();
+
+        glBindFramebuffer(GL_FRAMEBUFFER, screenBuffer.fbo);
+        // glClearColor(0.1, 0.1, 0.1, 1);
+        // glClear(GL_COLOR_BUFFER_BIT);
 
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplWin32_NewFrame();
@@ -96,44 +213,34 @@ public:
         vao.bind();
         shader.bind();
 
-        shader.set3f("color", glm::vec3(1));
+        shader.set3f("color", glm::vec3(0.4, 0.6, 0.8));
 
         f32 frame = 1.0 / 144;
 
         {
             static QuadStack stack;
-            static std::list<glm::vec2> posSamples;
-            const auto m = Input::GetMouse();
-            const f32 aspect = (f32)GetWindow().width() / GetWindow().height();
-            const glm::vec2 mouse = glm::vec2(m.first / (f32)GetWindow().width(), 1 - m.second / (f32)GetWindow().height()) * 2.0f - 1.0f;
-            const glm::vec2 offset = glm::vec2(1 * aspect, 1);
-
-            if (posSamples.size() == 60) {
-                posSamples.pop_front();
+            static f32 scale = 0.002;
+            const f32 aspect = (f32)GetWindow().height() / GetWindow().width();
+            for (auto& particle : particles) {
+                drawQuad(stack, particle.pos + glm::vec2(scale * aspect, -scale),
+                                particle.pos + glm::vec2(-scale * aspect, -scale), 
+                                particle.pos + glm::vec2(-scale * aspect, scale),
+                                particle.pos + glm::vec2(scale * aspect, scale));
             }
-            posSamples.push_back(mouse);
-
-            for (auto iter = posSamples.begin();;) {
-                if (iter == posSamples.end())
-                    break;
-                const glm::vec2 p1 = *iter;
-                ++iter;
-                if (iter == posSamples.end())
-                    break;
-                const glm::vec2 p2 = *iter;
-                const glm::vec2 normal = glm::normalize(p2 - p1);
-                const glm::vec2 t1 = glm::cross(glm::vec3(normal, 0), glm::vec3(0, 0, 1.0)) * 0.1f;
-                const glm::vec2 d = p2 - p1;
-                glm::vec2 pp1 = p1 - t1, pp2 = p1 + t1;
-                drawQuad(stack, pp1, pp2, p2 + t1 + d, p2 - t1 + d);
-                // pp2 = p2 + t1 + d;
-                // pp1 = p2 - t1 + d;
-            }
-
             vbo.setBuffer(stack.data, stack.count * sizeof(f32));
             drawCount = stack.count * 0.5;
             glDrawArrays(GL_TRIANGLES, 0, drawCount);
             stack.count = 0;
+        }
+
+        {
+            screenBuffer.shader.bind();
+            screenBuffer.vao.bind();
+            glBindTexture(GL_TEXTURE_2D, screenBuffer.texture);
+            glDrawArrays(GL_TRIANGLES, 0, 6);
+
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            glDrawArrays(GL_TRIANGLES, 0, 6);
         }
 
         if (Input::KeyPress(' ')) {
@@ -154,7 +261,7 @@ public:
         }
 
         ImGui::Begin("status");
-        ImGui::Text("hello, world\n");
+        ImGui::Text("%g", timer.getDuration() * 1000);
         ImGui::End();
 
         ImGui::Render();
@@ -177,9 +284,6 @@ public:
 
     virtual void OnMouseScroll(const MouseScrollEvent& event) override {
         zoom -= event.ydelta * 0.1;
-    }
-
-    virtual void OnCursorMove(const CursorMoveEvent& event) override { 
     }
 
     virtual void OnWindowResize(const WindowResizeEvent& event) override {
