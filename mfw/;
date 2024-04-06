@@ -6,7 +6,10 @@
 #include <list>
 #include "Renderer.h"
 
-#define COLOR(val) ((u32)val >> 16) / 255.0, (((u32)val << 16) >> 24) / 255.0, (((u32)val << 24) >> 24) / 255.0
+struct TriangleStack {
+    f32 data[300];
+    i32 count = 0;
+};
 
 struct QuadStack {
     f32 data[400000];
@@ -22,6 +25,16 @@ void drawPoint(PointStack& stack, glm::vec2 p1) {
     stack.data[stack.count + 0] = p1.x;
     stack.data[stack.count + 1] = p1.y; 
     stack.count += 2;
+}
+
+void drawTriangle(TriangleStack& stack, glm::vec2 p1, glm::vec2 p2, glm::vec2 p3) {
+    stack.data[stack.count + 0] = p1.x;
+    stack.data[stack.count + 1] = p1.y; 
+    stack.data[stack.count + 2] = p2.x;
+    stack.data[stack.count + 3] = p2.y;
+    stack.data[stack.count + 4] = p3.x;
+    stack.data[stack.count + 5] = p3.y;
+    stack.count += 6;
 }
 
 void drawQuad(QuadStack& stack, glm::vec2 p1, glm::vec2 p2, glm::vec2 p3, glm::vec2 p4) {
@@ -122,13 +135,18 @@ private:
     VertexBuffer vbo;
     ShaderProgram shader;
 
+    i32 drawCount;
+
+    f32 zoom = 1;
+    f32 offset_x = 0, offset_y = 0;
+
     struct Particle {
         glm::vec2 pos, direction;
     };
 
     std::vector<Particle> particles;
 
-    glm::vec2 canvasSize = glm::vec2(720, 540);
+    glm::vec2 canvasSize = glm::vec2(320, 240);
 
 public:
     DemoSandBox()
@@ -150,26 +168,22 @@ public:
 
         glClearColor(0.1, 0.1, 0.1, 1);
         glClear(GL_COLOR_BUFFER_BIT);
-        glViewport(0, 0, window->width(), window->height());
 
-        initParticles();
-    }
-
-    virtual void Start() override {
-        GetWindow().setVSync(true);
-    }
-
-    void initParticles() {
         std::srand(Time::GetCurrent());
-        i32 len = 1000;
+        i32 len = 10000;
         particles.reserve(len);
         for (i32 i = 0; i < len; ++i) {
             f32 r = std::rand() % len / (f32)len - 0.5f;
             f32 a = (std::rand() % len / (f32)len) * 3.14f - 3.14f * 0.5f;
             particles.emplace_back(Particle {
-                    glm::vec2(cos(a), sin(a)) * r * 0.5f,
-                    glm::vec2(cos(a), sin(a)) * 0.001f});
+                    glm::vec2(cos(a), sin(a)) * r * 0.1f,
+                    glm::vec2(cos(a), sin(a)) * 0.001});
         }
+        glViewport(0, 0, window->width(), window->height());
+    }
+
+    virtual void Start() override {
+        GetWindow().setVSync(true);
     }
 
     void updateParticles() {
@@ -186,13 +200,13 @@ public:
         for (auto& p1 : particles) {
             i32 i = 0, c = 0;
             for (auto& p2 : particles) {
-                // if (i == 40)
-                //     break;
+                if (c == 100 || i == 100)
+                    break;
                 c++;
                 if (&p2 == &p1)
                     continue;
-                if (glm::length(p2.pos - p1.pos) < 0.8f) {
-                    glm::vec2 d = 0.0004f * (glm::vec2)glm::cross(glm::vec3(p1.pos - p2.pos, 0), glm::vec3(0, 0, 0.3));
+                if (glm::length(p2.pos - p1.pos) < 0.4f) {
+                    glm::vec2 d = 0.0004f * (glm::vec2)glm::cross(glm::vec3(p1.pos - p2.pos, 0), glm::vec3(0, 0, 1));
                     p2.direction += d * glm::length(p1.direction);
                     p1.direction -= d * glm::length(p2.direction);
                     i++;
@@ -218,16 +232,20 @@ public:
         vao.bind();
         shader.bind();
 
-        static f32 color[3] = {COLOR(0x977F89)};
-        shader.set3f("color", color);
+        shader.set3f("color", glm::vec3(0.4, 0.6, 0.8));
+
+        f32 frame = 1.0 / 144;
 
         {
             static PointStack stack;
+            // static f32 scale = 0.001;
+            // const f32 aspect = (f32)GetWindow().height() / GetWindow().width();
             for (auto& particle : particles) {
                 drawPoint(stack, particle.pos);
             }
             vbo.setBuffer(stack.data, stack.count * sizeof(f32));
-            glDrawArrays(GL_POINTS, 0, stack.count * 0.5);
+            drawCount = stack.count * 0.5;
+            glDrawArrays(GL_POINTS, 0, drawCount);
             stack.count = 0;
         }
 
@@ -243,9 +261,25 @@ public:
 
         }
 
+        if (Input::KeyPress(' ')) {
+            window->setCursorPos(window->width() * 0.5, window->height() * 0.5);
+        }
+
+        if (Input::KeyPress('W')) {
+            offset_y += frame;
+        }
+        if (Input::KeyPress('A')) {
+            offset_x -= frame;
+        }
+        if (Input::KeyPress('S')) {
+            offset_y -= frame;
+        }
+        if (Input::KeyPress('D')) {
+            offset_x += frame;
+        }
+
         ImGui::Begin("status");
         ImGui::Text("frame: %gms", timer.getDuration() * 1000);
-        ImGui::ColorPicker3("color", color);
         ImGui::End();
 
         ImGui::Render();
@@ -264,11 +298,14 @@ public:
             main->setFullScreen(fullScreen);
             glViewport(0, 0, main->width(), main->height());
         }
+    }
 
-        if (event.key == 'R' && event.mode == KeyMode::Down) {
-            particles.clear();
-            initParticles();
-        }
+    virtual void OnMouseScroll(const MouseScrollEvent& event) override {
+        zoom -= event.ydelta * 0.1;
+    }
+
+    virtual void OnWindowResize(const WindowResizeEvent& event) override {
+        glViewport(0, 0, event.width, event.height);
     }
 
     virtual void OnWindowFocus(const WindowFocusEvent& event) override {
