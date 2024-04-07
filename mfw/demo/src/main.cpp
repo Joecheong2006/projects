@@ -1,273 +1,50 @@
 #include <mfw.h>
+#include "ScreenBufferTest.h"
 
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_opengl3.h"
 #include "imgui/imgui_impl_win32.h"
-#include <list>
-#include "Renderer.h"
-
-#define COLOR(val) ((u32)val >> 16) / 255.0, (((u32)val << 16) >> 24) / 255.0, (((u32)val << 24) >> 24) / 255.0
-
-struct QuadStack {
-    f32 data[400000];
-    i32 count = 0;
-};
-
-struct PointStack {
-    f32 data[1000000];
-    i32 count = 0;
-};
-
-void drawPoint(PointStack& stack, glm::vec2 p1) {
-    stack.data[stack.count + 0] = p1.x;
-    stack.data[stack.count + 1] = p1.y; 
-    stack.count += 2;
-}
-
-void drawQuad(QuadStack& stack, glm::vec2 p1, glm::vec2 p2, glm::vec2 p3, glm::vec2 p4) {
-    stack.data[stack.count + 0] = p1.x;
-    stack.data[stack.count + 1] = p1.y;
-    stack.data[stack.count + 2] = p2.x;
-    stack.data[stack.count + 3] = p2.y;
-    stack.data[stack.count + 4] = p3.x;
-    stack.data[stack.count + 5] = p3.y;
-
-    stack.data[stack.count + 6] = p1.x;
-    stack.data[stack.count + 7] = p1.y;
-    stack.data[stack.count + 8] = p4.x;
-    stack.data[stack.count + 9] = p4.y;
-    stack.data[stack.count + 10] = p3.x;
-    stack.data[stack.count + 11] = p3.y;
-    stack.count += 12;
-}
-
-static f32 vertex[] = {
-     0.0,  0.5,
-    -0.5, -0.5,
-     0.5, -0.5,
-
-     0.0,  0.5,
-    -0.5, -0.5,
-     0.5, -0.5,
-};
-
-static f32 ract[] = {
-     1.0,  1.0,   1.0, 1.0,
-     1.0, -1.0,   1.0, 0.0,
-    -1.0, -1.0,   0.0, 0.0,
-
-     1.0,  1.0,   1.0, 1.0,
-    -1.0,  1.0,   0.0, 1.0,
-    -1.0, -1.0,   0.0, 0.0,
-};
 
 using namespace mfw;
-struct ScreenBuffer {
-    VertexArray vao;
-    VertexBuffer vbo;
-    ShaderProgram shader;
-
-    u32 fbo, texture, rbo;
-    ScreenBuffer(i32 width, i32 height): vbo(ract, sizeof(ract), GL_STATIC_DRAW)
-    {
-        VertexBufferLayout layout;
-        layout.add<f32>(2);
-        layout.add<f32>(2);
-        vao.applyBufferLayout(layout);
-
-        shader.attachShader(GL_VERTEX_SHADER, "res/shaders/framebuffer.vert");
-        shader.attachShader(GL_FRAGMENT_SHADER, "res/shaders/framebuffer.frag");
-        shader.link();
-
-        vao.unbind();
-        vbo.unbind();
-        shader.unbind();
-
-        GLCALL(glGenFramebuffers(1, &fbo));
-        GLCALL(glBindFramebuffer(GL_FRAMEBUFFER, fbo));
-
-        GLCALL(glGenTextures(1, &texture));
-        GLCALL(glBindTexture(GL_TEXTURE_2D, texture));
-        GLCALL(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL));
-        GLCALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
-        GLCALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
-        GLCALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
-        GLCALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
-        GLCALL(glBindTexture(GL_TEXTURE_2D, 0));
-
-        GLCALL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0));
-
-        GLCALL(glGenRenderbuffers(1, &rbo));
-        GLCALL(glBindRenderbuffer(GL_RENDERBUFFER, rbo));
-        GLCALL(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height));
-        GLCALL(glBindRenderbuffer(GL_RENDERBUFFER, 0));
-
-        GLCALL(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo));
-
-        auto status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-        if (status != GL_FRAMEBUFFER_COMPLETE) {
-            std::cout << "error: " << status << '\n';
-        }
-
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    }
-
-};
-
 class DemoSandBox : public Application {
 private:
-    ScreenBuffer* screenBuffer;
-
-    VertexArray vao;
-    VertexBuffer vbo;
-    ShaderProgram shader;
-
-    struct Particle {
-        glm::vec2 pos, direction;
-    };
-
-    std::vector<Particle> particles;
-
-    glm::vec2 canvasSize = glm::vec2(720, 540);
+    Test* test;
+    bool fullScreen = false;
 
 public:
-    DemoSandBox()
-        : Application("demo", 1280, 960), vbo(vertex, 0, GL_DYNAMIC_DRAW)
+    DemoSandBox(): Application("demo", 1280, 960)
     {
-        VertexBufferLayout layout;
-        layout.add<f32>(2);
-        vao.applyBufferLayout(layout);
-        shader.attachShader(GL_VERTEX_SHADER, "res/shaders/default.vert");
-        shader.attachShader(GL_FRAGMENT_SHADER, "res/shaders/default.frag");
-        shader.link();
-        vao.unbind();
-        vbo.unbind();
-        shader.unbind();
-
-        auto window = &GetWindow();
-        window->setFullScreen(true);
-        screenBuffer = new ScreenBuffer(canvasSize.x, canvasSize.y);
-
-        glClearColor(0.1, 0.1, 0.1, 1);
-        glClear(GL_COLOR_BUFFER_BIT);
-        glViewport(0, 0, window->width(), window->height());
-
-        initParticles();
+        test = new ScreenBufferTest();
     }
 
     virtual void Start() override {
-        GetWindow().setVSync(true);
-    }
-
-    void initParticles() {
-        std::srand(Time::GetCurrent());
-        i32 len = 1000;
-        particles.reserve(len);
-        for (i32 i = 0; i < len; ++i) {
-            f32 r = std::rand() % len / (f32)len - 0.5f;
-            f32 a = (std::rand() % len / (f32)len) * 3.14f - 3.14f * 0.5f;
-            particles.emplace_back(Particle {
-                    glm::vec2(cos(a), sin(a)) * r * 0.5f,
-                    glm::vec2(cos(a), sin(a)) * 0.001f});
-        }
-    }
-
-    void updateParticles() {
-        for (auto& particle : particles) {
-            if (particle.pos.x <= -1 || particle.pos.x >= 1) {
-                particle.direction.x *= -0.9;
-            }
-            if (particle.pos.y <= -1 || particle.pos.y >= 1) {
-                particle.direction.y *= -0.9;
-            }
-            particle.pos += particle.direction * 0.0069f;
-        }
-
-        for (auto& p1 : particles) {
-            i32 i = 0, c = 0;
-            for (auto& p2 : particles) {
-                // if (i == 40)
-                //     break;
-                c++;
-                if (&p2 == &p1)
-                    continue;
-                if (glm::length(p2.pos - p1.pos) < 0.8f) {
-                    glm::vec2 d = 0.0004f * (glm::vec2)glm::cross(glm::vec3(p1.pos - p2.pos, 0), glm::vec3(0, 0, 0.3));
-                    p2.direction += d * glm::length(p1.direction);
-                    p1.direction -= d * glm::length(p2.direction);
-                    i++;
-                }
-            }
-        }
+        test->Start();
     }
 
     virtual void Update() override {
-        Timer timer;
-        auto window = &GetWindow();
-        glViewport(0, 0, canvasSize.x, canvasSize.y);
-        updateParticles();
-
-        glBindFramebuffer(GL_FRAMEBUFFER, screenBuffer->fbo);
-        // glClearColor(0.1, 0.1, 0.1, 1);
-        // glClear(GL_COLOR_BUFFER_BIT);
+        test->Update();
 
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
-
-        vao.bind();
-        shader.bind();
-
-        static f32 color[3] = {COLOR(0x977F89)};
-        shader.set3f("color", color);
-
-        {
-            static PointStack stack;
-            for (auto& particle : particles) {
-                drawPoint(stack, particle.pos);
-            }
-            vbo.setBuffer(stack.data, stack.count * sizeof(f32));
-            glDrawArrays(GL_POINTS, 0, stack.count * 0.5);
-            stack.count = 0;
-        }
-
-        {
-            screenBuffer->shader.bind();
-            screenBuffer->vao.bind();
-            glBindTexture(GL_TEXTURE_2D, screenBuffer->texture);
-            glDrawArrays(GL_TRIANGLES, 0, 6);
-
-            glViewport(0, 0, window->width(), window->height());
-            glBindFramebuffer(GL_FRAMEBUFFER, 0);
-            glDrawArrays(GL_TRIANGLES, 0, 6);
-
-        }
-
-        ImGui::Begin("status");
-        ImGui::Text("frame: %gms", timer.getDuration() * 1000);
-        ImGui::ColorPicker3("color", color);
+        ImGui::Begin(test->name.c_str());
+        test->UpdateImgui();
         ImGui::End();
-
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     }
 
-    bool fullScreen = false;
     virtual void OnInputKey(const KeyEvent& event) override {
         if (event.key == VK_ESCAPE && event.mode == KeyMode::Down) {
             Terminate();
         }
-        auto main = &GetWindow();
 
-        if (event.key == 'F' && event.mode == KeyMode::Down) {
+        auto main = &Application::Get().GetWindow();
+
+        if (Input::KeyPress('F')) {
             fullScreen = !fullScreen;
             main->setFullScreen(fullScreen);
             glViewport(0, 0, main->width(), main->height());
-        }
-
-        if (event.key == 'R' && event.mode == KeyMode::Down) {
-            particles.clear();
-            initParticles();
         }
     }
 
@@ -283,10 +60,6 @@ public:
         if (fullScreen) {
             GetWindow().setMode(WindowMode::Minimize);
         }
-    }
-
-    ~DemoSandBox() {
-        delete screenBuffer;
     }
 
 };
