@@ -31,13 +31,13 @@ namespace mfw {
         void renderLineI(const glm::mat4& proj, const glm::vec2& p1, const glm::vec2& p2, glm::vec4 color, f32 w);
         void renderCircle(const glm::mat4& proj, const Circle& circle);
         void renderCircle(const glm::mat4& proj, const Circle* circle);
-        void renderCircle(const glm::mat4& proj, const glm::vec2& p, f32 r, glm::vec4 color);
+        void renderCircle(const glm::mat4& proj, const glm::vec2& p, f32 radius, glm::vec4 color);
         void renderCircleI(const glm::mat4& proj, const Circle& circle);
         void renderCircleI(const glm::mat4& proj, const Circle* circle);
-        void renderCircleI(const glm::mat4& proj, const glm::vec2& p, f32 r, glm::vec4 color);
+        void renderCircleI(const glm::mat4& proj, const glm::vec2& p, f32 radius, glm::vec4 color);
         void renderImage(const glm::mat4& proj, const glm::vec2& p1, const glm::vec2& p2);
-        void renderRing(const glm::mat4& proj, const glm::vec2& p, f32 r, f32 width, glm::vec4 color);
-        void renderRingI(const glm::mat4& proj, const glm::vec2& p, f32 r, glm::vec4 color);
+        void renderRing(const glm::mat4& proj, const glm::vec2& p, f32 radius, f32 width, glm::vec4 color);
+        void renderRingI(const glm::mat4& proj, const glm::vec2& p, f32 radius, glm::vec4 color);
 
     };
 

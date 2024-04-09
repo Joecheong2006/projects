@@ -16,7 +16,7 @@ public:
 
     f32 d;
     RigidBody* target;
-    glm::dvec2 m_pos;
+    glm::dvec2 m_position;
     glm::dvec3 m_color;
     
 };

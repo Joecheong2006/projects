@@ -10,13 +10,13 @@ Rotator::Rotator(RigidBody* center, RigidBody* target)
 void Rotator::update(const f64& dt) {
     if (!target || !center)
         return;
-    target->m_pos += center->m_pos - center->m_opos;
-    glm::dvec3 ro = glm::dvec3(glm::normalize(target->m_pos - center->m_pos), 0);
+    target->m_position += center->m_position - center->m_opos;
+    glm::dvec3 ro = glm::dvec3(glm::normalize(target->m_position - center->m_position), 0);
     glm::dvec2 vd = glm::cross(ro, glm::dvec3(0, 0, 1)) * f64(w * r);
-    target->m_pos += vd * dt;
+    target->m_position += vd * dt;
     target->m_velocity = vd;
     target->m_acceleration = vd / dt;
-    m_pos = glm::dvec2(ro) * (f64)r + center->m_pos;
+    m_pos = glm::dvec2(ro) * (f64)r + center->m_position;
 }
 
 void Rotator::draw(const glm::mat4& proj, mfw::Renderer& renderer) {

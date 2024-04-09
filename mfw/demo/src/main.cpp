@@ -48,6 +48,9 @@ public:
         }
     }
 
+    virtual void OnWindowResize(const WindowResizeEvent& event) override {
+    }
+
     virtual void OnWindowFocus(const WindowFocusEvent& event) override {
         LOG_EVENT_INFO(event);
         if (fullScreen) {

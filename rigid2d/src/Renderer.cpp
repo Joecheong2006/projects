@@ -146,8 +146,8 @@ namespace mfw {
 
     void Renderer::renderCircle(const glm::mat4& proj, const Circle& circle) {
         glm::mat4 view = glm::mat4(1);
-        view = glm::translate(view, glm::vec3(circle.m_pos.x, circle.m_pos.y, 0));
-        view = glm::scale(view, glm::vec3(circle.r, circle.r, 1));
+        view = glm::translate(view, glm::vec3(circle.m_position.x, circle.m_position.y, 0));
+        view = glm::scale(view, glm::vec3(circle.radius, circle.radius, 1));
 
         crenderer->m_shader.bind();
         crenderer->m_vao.bind();
@@ -159,8 +159,8 @@ namespace mfw {
 
     void Renderer::renderCircle(const glm::mat4& proj, const Circle* circle) {
         glm::mat4 view = glm::mat4(1);
-        view = glm::translate(view, glm::vec3(circle->m_pos.x, circle->m_pos.y, 0));
-        view = glm::scale(view, glm::vec3(circle->r, circle->r, 0));
+        view = glm::translate(view, glm::vec3(circle->m_position.x, circle->m_position.y, 0));
+        view = glm::scale(view, glm::vec3(circle->radius, circle->radius, 0));
 
         crenderer->m_shader.bind();
         crenderer->m_vao.bind();
@@ -170,10 +170,10 @@ namespace mfw {
         GLCALL(glDrawArrays(GL_TRIANGLES, 0, 6));
     }
 
-    void Renderer::renderCircle(const glm::mat4& proj, const glm::vec2& p, f32 r, glm::vec4 color) {
+    void Renderer::renderCircle(const glm::mat4& proj, const glm::vec2& p, f32 radius, glm::vec4 color) {
         glm::mat4 view = glm::mat4(1);
         view = glm::translate(view, glm::vec3(p.x, p.y, 0));
-        view = glm::scale(view, glm::vec3(r, r, 0));
+        view = glm::scale(view, glm::vec3(radius, radius, 0));
 
         crenderer->m_shader.bind();
         crenderer->m_vao.bind();
@@ -185,8 +185,8 @@ namespace mfw {
 
     void Renderer::renderCircleI(const glm::mat4& proj, const Circle& circle) {
         glm::mat4 view = glm::mat4(1);
-        view = glm::translate(view, glm::vec3(circle.m_pos.x, circle.m_pos.y, 0));
-        view = glm::scale(view, glm::vec3(circle.r, circle.r, 1));
+        view = glm::translate(view, glm::vec3(circle.m_position.x, circle.m_position.y, 0));
+        view = glm::scale(view, glm::vec3(circle.radius, circle.radius, 1));
 
         iCircleRenderer->m_texture.bind();
         iCircleRenderer->m_shader.bind();
@@ -200,8 +200,8 @@ namespace mfw {
 
     void Renderer::renderCircleI(const glm::mat4& proj, const Circle* circle) {
         glm::mat4 view = glm::mat4(1);
-        view = glm::translate(view, glm::vec3(circle->m_pos.x, circle->m_pos.y, 0));
-        view = glm::scale(view, glm::vec3(circle->r, circle->r, 0));
+        view = glm::translate(view, glm::vec3(circle->m_position.x, circle->m_position.y, 0));
+        view = glm::scale(view, glm::vec3(circle->radius, circle->radius, 0));
 
         iCircleRenderer->m_texture.bind();
         iCircleRenderer->m_shader.bind();
@@ -213,10 +213,10 @@ namespace mfw {
         GLCALL(glDrawArrays(GL_TRIANGLES, 0, 6));
     }
 
-    void Renderer::renderCircleI(const glm::mat4& proj, const glm::vec2& p, f32 r, glm::vec4 color) {
+    void Renderer::renderCircleI(const glm::mat4& proj, const glm::vec2& p, f32 radius, glm::vec4 color) {
         glm::mat4 view = glm::mat4(1);
         view = glm::translate(view, glm::vec3(p.x, p.y, 0));
-        view = glm::scale(view, glm::vec3(r, r, 0));
+        view = glm::scale(view, glm::vec3(radius, radius, 0));
 
         iCircleRenderer->m_texture.bind();
         iCircleRenderer->m_shader.bind();
@@ -228,10 +228,10 @@ namespace mfw {
         GLCALL(glDrawArrays(GL_TRIANGLES, 0, 6));
     }
 
-    void Renderer::renderRing(const glm::mat4& proj, const glm::vec2& p, f32 r, f32 width, glm::vec4 color) {
+    void Renderer::renderRing(const glm::mat4& proj, const glm::vec2& p, f32 radius, f32 width, glm::vec4 color) {
         glm::mat4 view = glm::mat4(1);
         view = glm::translate(view, glm::vec3(p.x, p.y, 0));
-        view = glm::scale(view, glm::vec3(r, r, 0));
+        view = glm::scale(view, glm::vec3(radius, radius, 0));
 
         ringRenderer->m_shader.bind();
         ringRenderer->m_vao.bind();
@@ -241,10 +241,10 @@ namespace mfw {
         GLCALL(glDrawArrays(GL_TRIANGLES, 0, 6));
     }
 
-    void Renderer::renderRingI(const glm::mat4& proj, const glm::vec2& p, f32 r, glm::vec4 color) {
+    void Renderer::renderRingI(const glm::mat4& proj, const glm::vec2& p, f32 radius, glm::vec4 color) {
         glm::mat4 view = glm::mat4(1);
         view = glm::translate(view, glm::vec3(p.x, p.y, 0));
-        view = glm::scale(view, glm::vec3(r, r, 0));
+        view = glm::scale(view, glm::vec3(radius, radius, 0));
 
         iRingRenderer->m_texture.bind();
         iRingRenderer->m_shader.bind();

@@ -5,8 +5,13 @@ namespace mfw {
     class Renderer;
 };
 
-struct Drawable {
-    bool drawEnable = true;
+class Drawable {
+private:
+    friend class World;
     virtual void draw(const glm::mat4& proj, mfw::Renderer& renderer) = 0;
+
+public:
+    bool drawEnable = true;
+
 };
 

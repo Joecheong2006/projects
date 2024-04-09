@@ -21,12 +21,14 @@ struct ScreenBuffer {
 class ScreenBufferTest : public Test {
 public:
     ScreenBufferTest();
+    ~ScreenBufferTest();
     virtual void Start() override;
     virtual void Update() override;
     virtual void UpdateImgui() override;
 
 private:
     f32 frame, dd = 0.01, cursorSize = 1;
+    i32 step = 10;
     ScreenBuffer* screenBuffer;
 
     mfw::VertexArray vao;

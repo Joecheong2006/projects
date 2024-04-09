@@ -91,13 +91,13 @@ void addTriangle(const glm::vec2& pos, f32 l) {
 
 PointConstraint* addHorizontalPointConstraint(const glm::dvec2& pos) {
     auto result = Simulation::Get()->world.addConstraint<Roller>();
-    result->m_pos = pos;
+    result->m_position = pos;
     return result;
 }
 
 PointConstraint* addFixPointConstraint(const glm::dvec2& pos) {
     auto result = Simulation::Get()->world.addConstraint<FixPoint>();
-    result->m_pos = pos;
+    result->m_position = pos;
     return result;
 }
 
@@ -144,9 +144,9 @@ void SetupRotateBox() {
 
     auto h1 = addHorizontalPointConstraint(glm::vec2(6, 0) * worldScale);
     auto h2 = addHorizontalPointConstraint(glm::vec2(-6, 0) * worldScale);
-    auto p1 = world.addRigidBody<Circle>(h1->m_pos, attri.node_color, attri.node_size);
-    auto p2 = world.addRigidBody<Circle>(h2->m_pos, attri.node_color, attri.node_size);
-    f64 l = glm::length(p1->m_pos - c1->m_pos);
+    auto p1 = world.addRigidBody<Circle>(h1->m_position, attri.node_color, attri.node_size);
+    auto p2 = world.addRigidBody<Circle>(h2->m_position, attri.node_color, attri.node_size);
+    f64 l = glm::length(p1->m_position - c1->m_position);
     world.addConstraint<DistanceConstraint>(c1, p1, l, attri.line_width);
     world.addConstraint<DistanceConstraint>(c2, p2, l, attri.line_width);
     h1->target = p1;

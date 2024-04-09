@@ -76,6 +76,12 @@ ScreenBuffer::ScreenBuffer(i32 width, i32 height): vbo(ract, sizeof(ract), GL_ST
 ScreenBufferTest::ScreenBufferTest(): vbo(vertex, sizeof(vertex), GL_DYNAMIC_DRAW)
 {}
 
+ScreenBufferTest::~ScreenBufferTest() {
+    if (screenBuffer) {
+        delete screenBuffer;
+    }
+}
+
 static f32 color[3] = {COLOR(0x977F89)};
 void ScreenBufferTest::Start() {
     name = "ScreenBufferTest";
@@ -92,57 +98,70 @@ void ScreenBufferTest::Start() {
 
     auto window = &Application::Get().GetWindow();
     window->setFullScreen(true);
-    resolution = glm::vec2(window->width(), window->height());
+    resolution = glm::vec2(320, 240);
+    // resolution = glm::vec2(window->width(), window->height());
     screenBuffer = new ScreenBuffer(resolution.x, resolution.y);
 
-    glViewport(0, 0, window->width(), window->height());
-    glClearColor(0, 0, 0, 1);
-    glClear(GL_COLOR_BUFFER_BIT);
+    glViewport(0, 0, resolution.x, resolution.y);
+    glClearColor(1, 1, 1, 1);
 }
 
 void ScreenBufferTest::Update() {
     Timer timer;
     auto window = &Application::Get().GetWindow();
-    glViewport(0, 0, resolution.x, resolution.y);
 
     glBindFramebuffer(GL_FRAMEBUFFER, screenBuffer->fbo);
+    if (Input::KeyPress('R')) {
+        glClear(GL_COLOR_BUFFER_BIT);
+    }
+    glViewport(0, 0, resolution.x, resolution.y);
 
-    vao.bind();
-    shader.bind();
-    shader.set3f("color", color);
+    if (Input::MouseButtonDown(MouseButton::Left)) {
+        auto[x, y] = Input::GetMouse();
+        const glm::vec2 mouse = glm::vec2(x / (f32)window->width(), 1 - y / (f32)window->height()) * 2.0f - 1.0f;
+        vertex[0] = mouse.x;
+        vertex[1] = mouse.y;
 
-    const auto m = Input::GetMouse();
-    const f32 aspect = (f32)window->width() / window->height();
-    const glm::vec2 mouse = glm::vec2(m.first / (f32)window->width(), 1 - m.second / (f32)window->height()) * 2.0f - 1.0f;
-    const glm::vec2 offset = glm::vec2(0.01, 0.01 * aspect) * cursorSize;
+        vao.bind();
+        shader.bind();
+        color[0] = 1;
+        color[1] = 1;
+        color[2] = 1;
+        shader.set3f("color", color);
+        vbo.setBuffer(vertex, 2 * sizeof(f32));
+        glDrawArrays(GL_POINTS, 0, 1);
+    }
 
-    vertex[0]  = mouse.x + offset.x;
-    vertex[1]  = mouse.y + offset.y;
-    vertex[2]  = mouse.x + offset.x;
-    vertex[3]  = mouse.y - offset.y;
-    vertex[4]  = mouse.x - offset.x;
-    vertex[5]  = mouse.y - offset.y;
+    static int c = 0;
+    c++;
+    if (c % step == 0) {
+        u32 newTexture;
+        GLCALL(glGenTextures(1, &newTexture));
+        GLCALL(glBindTexture(GL_TEXTURE_2D, newTexture));
+        GLCALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
+        GLCALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
+        GLCALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
+        GLCALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
+        GLCALL(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, resolution.x, resolution.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL));
+        GLCALL(glReadBuffer(GL_COLOR_ATTACHMENT0));
+        GLCALL(glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, resolution.x, resolution.y));
 
-    vertex[6]  = mouse.x + offset.x;
-    vertex[7]  = mouse.y + offset.y;
-    vertex[8]  = mouse.x - offset.x;
-    vertex[9]  = mouse.y + offset.y;
-    vertex[10] = mouse.x - offset.x;
-    vertex[11] = mouse.y - offset.y;
-
-    vbo.setBuffer(vertex, sizeof(vertex));
-    glDrawArrays(GL_TRIANGLES, 0, 6);
+        screenBuffer->vao.bind();
+        ShaderProgram shader;
+        shader.attachShader(GL_VERTEX_SHADER, "res/shaders/GameOfLive.vert");
+        shader.attachShader(GL_FRAGMENT_SHADER, "res/shaders/GameOfLive.frag");
+        shader.link();
+        shader.bind();
+        glBindTexture(GL_TEXTURE_2D, newTexture);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+        glDeleteTextures(1, &newTexture);
+        c = 0;
+    }
 
     screenBuffer->shader.bind();
-    screenBuffer->shader.set1f("dd", dd);
     screenBuffer->vao.bind();
     glBindTexture(GL_TEXTURE_2D, screenBuffer->texture);
-    glDrawArrays(GL_TRIANGLES, 0, 6);
-
     glViewport(0, 0, window->width(), window->height());
-    screenBuffer->shader.bind();
-    screenBuffer->shader.set1f("dd", dd);
-    screenBuffer->vao.bind();
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glDrawArrays(GL_TRIANGLES, 0, 6);
 
@@ -152,8 +171,7 @@ void ScreenBufferTest::Update() {
 void ScreenBufferTest::UpdateImgui() {
     ImGui::Text("frame: %gms", frame * 1000);
     ImGui::ColorPicker3("color", color);
-    ImGui::SliderFloat("decreament", &dd, 0, 0.1);
-    ImGui::SliderFloat("cursor size", &cursorSize, 1, 5);
+    ImGui::SliderInt("step", &step, 1, 40);
     if (ImGui::SliderFloat2("resolution", glm::value_ptr(resolution), 120, 2560)) {
         delete screenBuffer;
         screenBuffer = new ScreenBuffer(resolution.x, resolution.y);

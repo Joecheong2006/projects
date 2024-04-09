@@ -3,7 +3,8 @@
 #include "Object.h"
 
 class Constraint : public Object {
-public:
+    friend class World;
+    virtual void update(const f64& dt) override { (void)dt; }
 
 };
 

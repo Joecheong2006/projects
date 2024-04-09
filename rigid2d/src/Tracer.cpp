@@ -14,7 +14,7 @@ void Tracer::draw(const glm::mat4& proj, mfw::Renderer& renderer) {
     if ((i32)positions_trace.size() == maxSamples) {
         positions_trace.pop_front();
     }
-    positions_trace.push_back(target->m_pos);
+    positions_trace.push_back(target->m_position);
 
     f32 i = 0;
     for (auto iter = positions_trace.begin();;) {

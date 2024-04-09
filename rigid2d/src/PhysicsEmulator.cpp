@@ -29,7 +29,7 @@ std::vector<Circle*> FindCirclesByPosition(const glm::vec2& pos) {
     std::vector<Circle*> result;
     for (auto& obj : Simulation::Get()->world.getObjects<Circle>()) {
         auto circle = static_cast<Circle*>(obj);
-        if (circle->r > glm::length((const glm::vec2&)circle->m_pos - pos)) {
+        if (circle->radius > glm::length((const glm::vec2&)circle->m_position - pos)) {
             result.push_back(circle);
         }
     }
@@ -40,7 +40,7 @@ PointConstraint* FindPointConstraintByPosition(const glm::vec2& pos) {
     auto& objects = Simulation::Get()->world.getConstraint<PointConstraint>();
     for (auto& obj : objects) {
         auto point = static_cast<PointConstraint*>(obj);
-        if (point->d > glm::length((glm::vec2)point->m_pos - pos)) {
+        if (point->d > glm::length((glm::vec2)point->m_position - pos)) {
             return point;
         }
     }
@@ -51,7 +51,7 @@ Circle* FindCircleByPosition(const glm::vec2& pos) {
     auto& objects = Simulation::Get()->world.getObjects<Circle>();
     for (auto& obj : objects) {
         auto point = static_cast<Circle*>(obj);
-        if (point->r > glm::length((const glm::vec2&)point->m_pos - pos)) {
+        if (point->radius > glm::length((const glm::vec2&)point->m_position - pos)) {
             return point;
         }
     }
@@ -163,14 +163,14 @@ void PhysicsEmulator::SetWorldProjection(glm::vec2 view) {
 void PhysicsEmulator::ApplySpringForce() {
     glm::dvec2 wpos = sim->mouseToWorldCoord();
     f64 k = (f64)settings.sub_step * settings.mouseSpringForce;
-    auto n = glm::normalize(wpos - rigidBodyHolder->m_pos);
-    f64 strengh = glm::length(wpos - rigidBodyHolder->m_pos);
+    auto n = glm::normalize(wpos - rigidBodyHolder->m_position);
+    f64 strengh = glm::length(wpos - rigidBodyHolder->m_position);
     rigidBodyHolder->addForce(glm::pow(strengh, 2) * n * k);
 }
 
 void PhysicsEmulator::MovePointConstraint() {
     glm::dvec2 wpos = sim->mouseToWorldCoord();
-    pointHolder->m_pos = wpos;
+    pointHolder->m_position = wpos;
 }
 
 void PhysicsEmulator::update(const f64& dt) {
@@ -210,14 +210,14 @@ void PhysicsEmulator::render() {
         // renderer.renderLine(proj, m, holding->m_pos, glm::vec3(COLOR(0xb92c2c)), 0.1 * worldScale);
 
         f32 count = 16, len = 1.3 * worldScale;
-        f32 n = 2 * glm::length(m - rigidBodyHolder->m_pos) / (count / 2);
-        glm::vec2 normal = glm::normalize(m - rigidBodyHolder->m_pos) * (f64)worldScale;
+        f32 n = 2 * glm::length(m - rigidBodyHolder->m_position) / (count / 2);
+        glm::vec2 normal = glm::normalize(m - rigidBodyHolder->m_position) * (f64)worldScale;
         glm::vec2 t1 = glm::cross(glm::vec3(normal, 0), glm::vec3(0, 0, 1)) * len;
         glm::vec2 t2 = glm::cross(glm::vec3(normal, 0), glm::vec3(0, 0, -1)) * len;
 
         f32 w = 0.08 * worldScale;
-        glm::vec2 p1 = t1 + (glm::vec2)rigidBodyHolder->m_pos;
-        glm::vec2 p2 = (glm::vec2)t2 + (glm::vec2)rigidBodyHolder->m_pos;
+        glm::vec2 p1 = t1 + (glm::vec2)rigidBodyHolder->m_position;
+        glm::vec2 p2 = (glm::vec2)t2 + (glm::vec2)rigidBodyHolder->m_position;
         p1 += normal * n;
 
         for (i32 i = 1; i < count - 2; i++) {
@@ -233,8 +233,8 @@ void PhysicsEmulator::render() {
                 glm::vec2 d = t1 * 0.1f;
                 renderer.renderLineI(proj, p1 + d, p2 - d, glm::vec3(0), w * 1.3f);
                 renderer.renderLineI(proj, p1, p2, glm::vec3(1), w * 0.8f);
-                p1 = t1 + (glm::vec2)rigidBodyHolder->m_pos;
-                p2 = (glm::vec2)t2 + (glm::vec2)rigidBodyHolder->m_pos;
+                p1 = t1 + (glm::vec2)rigidBodyHolder->m_position;
+                p2 = (glm::vec2)t2 + (glm::vec2)rigidBodyHolder->m_position;
                 renderer.renderLineI(proj, p1 + d, p2 - d, glm::vec3(0), w * 1.3f);
                 renderer.renderLineI(proj, p1, p2, glm::vec3(1), w * 0.8f);
             }
@@ -247,13 +247,13 @@ void PhysicsEmulator::render() {
             RigidBody* body = static_cast<RigidBody*>(obj);
             if (settings.acceleration_view) {
                 glm::dvec2 a = (body->m_velocity - body->m_ovelocity) / (sub_dt * 20.0);
-                renderer.renderLine(proj, body->m_pos,
-                        body->m_pos + a * (f64)worldScale, blue, 0.02 * worldScale);
+                renderer.renderLine(proj, body->m_position,
+                        body->m_position + a * (f64)worldScale, blue, 0.02 * worldScale);
             }
             if (settings.velocity_view) {
-                glm::dvec2 v = (body->m_pos - body->m_opos) / sub_dt / 6.0;
-                renderer.renderLine(proj, body->m_pos, 
-                        body->m_pos + v * (f64)worldScale, red, 0.02 * worldScale);
+                glm::dvec2 v = (body->m_position - body->m_opos) / sub_dt / 6.0;
+                renderer.renderLine(proj, body->m_position, 
+                        body->m_position + v * (f64)worldScale, red, 0.02 * worldScale);
             }
         }
     }
@@ -441,33 +441,33 @@ void PhysicsEmulator::OnEdit(const MouseButtonEvent& event, const glm::dvec2& wp
             if (preview_node == second_node) {
                 return;
             }
-            f64 d = glm::length(preview_node->m_pos - second_node->m_pos);
+            f64 d = glm::length(preview_node->m_position - second_node->m_position);
             sim->world.addConstraint<DistanceConstraint>(preview_node, second_node, d, attri.line_width);
         }
         else if (preview_node && second_node == nullptr) {
-            f64 d = glm::length(preview_node->m_pos - wpos);
+            f64 d = glm::length(preview_node->m_position - wpos);
             auto p = sim->world.addRigidBody<Circle>(wpos, attri.node_color, attri.node_size);
             auto dc = sim->world.addConstraint<DistanceConstraint>(preview_node, p, d, attri.line_width);
 
             p->m_color = attri.node_color;
-            p->r = attri.node_size;
+            p->radius = attri.node_size;
 
             if (point) {
                 point->target = p;
-                dc->d = glm::length(point->m_pos - preview_node->m_pos);
+                dc->d = glm::length(point->m_position - preview_node->m_position);
             }
         }
         else if (preview_node == nullptr && second_node) {
-            f64 d = glm::length(preview_pos - second_node->m_pos);
+            f64 d = glm::length(preview_pos - second_node->m_position);
             auto p = sim->world.addRigidBody<Circle>(preview_pos, attri.node_color, attri.node_size);
             auto dc = sim->world.addConstraint<DistanceConstraint>(p, second_node, d, attri.line_width);
 
             p->m_color = attri.node_color;
-            p->r = attri.node_size;
+            p->radius = attri.node_size;
 
             if (preview_fix_point) {
                 preview_fix_point->target = p;
-                dc->d = glm::length(preview_fix_point->m_pos - second_node->m_pos);
+                dc->d = glm::length(preview_fix_point->m_position - second_node->m_position);
             }
         }
         else {
@@ -485,22 +485,22 @@ void PhysicsEmulator::OnEdit(const MouseButtonEvent& event, const glm::dvec2& wp
             auto dc = sim->world.addConstraint<DistanceConstraint>(p1, p2, d, attri.line_width);
 
             p1->m_color = attri.node_color;
-            p1->r = attri.node_size;
+            p1->radius = attri.node_size;
             p2->m_color = attri.node_color;
-            p2->r = attri.node_size;
+            p2->radius = attri.node_size;
 
             if (point && preview_fix_point) {
                 point->target = static_cast<RigidBody*>(p2);
                 preview_fix_point->target = static_cast<RigidBody*>(p1);
-                dc->d = glm::length(point->m_pos - preview_fix_point->m_pos);
+                dc->d = glm::length(point->m_position - preview_fix_point->m_position);
             }
             else if (preview_fix_point) {
                 preview_fix_point->target = static_cast<RigidBody*>(p1);
-                dc->d = glm::length(preview_fix_point->m_pos - wpos);
+                dc->d = glm::length(preview_fix_point->m_position - wpos);
             }
             else if (point) {
                 point->target = static_cast<RigidBody*>(p2);
-                dc->d = (f32)glm::length(point->m_pos - preview_node->m_pos);
+                dc->d = (f32)glm::length(point->m_position - preview_node->m_position);
             }
         }
     }
@@ -509,7 +509,7 @@ void PhysicsEmulator::OnEdit(const MouseButtonEvent& event, const glm::dvec2& wp
         if (!rigidBodyHolder) {
             rigidBodyHolder = FindCircleByPosition(wpos);
             if (rigidBodyHolder) {
-                catch_offset = wpos - rigidBodyHolder->m_pos;
+                catch_offset = wpos - rigidBodyHolder->m_position;
             }
         }
     }
@@ -531,7 +531,7 @@ void PhysicsEmulator::OnEdit(const MouseButtonEvent& event, const glm::dvec2& wp
 void PhysicsEmulator::OnNormal(const MouseButtonEvent& event, const glm::vec2& wpos) {
     if (event.button == MouseButton::Left && event.mode == KeyMode::Release) {
         if (rigidBodyHolder) {
-            PointConstraint* point = FindPointConstraintByPosition(rigidBodyHolder->m_pos);
+            PointConstraint* point = FindPointConstraintByPosition(rigidBodyHolder->m_position);
             if (point) {
                 point->target = static_cast<RigidBody*>(rigidBodyHolder);
                 rigidBodyHolder = nullptr;
@@ -544,7 +544,7 @@ void PhysicsEmulator::OnNormal(const MouseButtonEvent& event, const glm::vec2& w
             PointConstraint* point = FindPointConstraintByPosition(wpos);
             rigidBodyHolder = FindCircleByPosition(wpos);
             if (rigidBodyHolder) {
-                catch_offset = wpos - (glm::vec2)rigidBodyHolder->m_pos;
+                catch_offset = wpos - (glm::vec2)rigidBodyHolder->m_position;
             }
             if (rigidBodyHolder && point) {
                 rigidBodyHolder = point->target;

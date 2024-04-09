@@ -6,12 +6,12 @@
 class Tracer: public Constraint {
 private:
     std::list<glm::vec2> positions_trace;
+    virtual void draw(const glm::mat4& proj, mfw::Renderer& renderer) override;
 
 public:
     GENERATE_OBJECT_IDENTIFIER();
 
     Tracer(RigidBody* target);
-    virtual void draw(const glm::mat4& proj, mfw::Renderer& renderer) override;
 
     i32 maxSamples = 100;
     f32 maxScale, minScale;

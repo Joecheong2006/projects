@@ -4,19 +4,19 @@
 void wall_collision(f64 dt, Circle* c, const glm::vec2& world) {
     static f64 bounce = 0.1;
     glm::vec2 a{}, s{};
-    if (c->m_pos.y - c->r < -world.y) {
-        s.y = -world.y - c->m_pos.y + c->r;
+    if (c->m_position.y - c->radius < -world.y) {
+        s.y = -world.y - c->m_position.y + c->radius;
         a.y = (c->m_velocity.y * (-bounce  - 1)) / dt;
     }
-    if (c->m_pos.x - c->r < -world.x) {
-        s.x = -world.x - c->m_pos.x + c->r;
+    if (c->m_position.x - c->radius < -world.x) {
+        s.x = -world.x - c->m_position.x + c->radius;
         a.x = (c->m_velocity.x * (-bounce - 1)) / dt;
     }
-    else if (c->m_pos.x + c->r > world.x) {
-        s.x = world.x - c->m_pos.x - c->r;
+    else if (c->m_position.x + c->radius > world.x) {
+        s.x = world.x - c->m_position.x - c->radius;
         a.x = (c->m_velocity.x * (-bounce - 1)) / dt;
     }
-    c->m_pos += s;
+    c->m_position += s;
     c->m_acceleration += a;
 };
 
@@ -100,7 +100,7 @@ mfw::Application* mfw::CreateApplication() {
     emulator->shift_rate = 0.001 * emulator->world_scale;
     emulator->zoom_rate = 0.01 * emulator->world_scale;
 
-    emulator->settings.sub_step = 10;
+    emulator->settings.sub_step = 20;
 
     return emulator;
 }

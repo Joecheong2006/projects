@@ -12,11 +12,12 @@
     }
 
 class Object : public Drawable {
+private:
+    virtual void update(const f64& dt);
+
 public:
     Object() = default;
     virtual ~Object() = default;
-    virtual void update(const f64& dt);
-    virtual void draw(const glm::mat4& proj, mfw::Renderer& renderer);
     virtual i32 getTypeId() const;
 
 };
