@@ -38,28 +38,28 @@ namespace mfw {
                 });
 
         eventListener.addEventFunc<KeyEvent>([this](const Event& event) {
-                    InputHandle(static_cast<const KeyEvent&>(event));
+                    return InputHandle(static_cast<const KeyEvent&>(event));
                 });
         eventListener.addEventFunc<MouseButtonEvent>([this](const Event& event) {
-                    MouseButtonHandle(static_cast<const MouseButtonEvent&>(event));
+                    return MouseButtonHandle(static_cast<const MouseButtonEvent&>(event));
                 });
         eventListener.addEventFunc<MouseScrollEvent>([this](const Event& event) {
-                    MouseScrollHandle(static_cast<const MouseScrollEvent&>(event));
+                    return MouseScrollHandle(static_cast<const MouseScrollEvent&>(event));
                 });
         eventListener.addEventFunc<WindowResizeEvent>([this](const Event& event) {
-                    WindowResize(static_cast<const WindowResizeEvent&>(event));
+                    return WindowResize(static_cast<const WindowResizeEvent&>(event));
                 });
         eventListener.addEventFunc<WindowCloseEvent>([this](const Event& event) {
-                    WindowClose(static_cast<const WindowCloseEvent&>(event));
+                    return WindowClose(static_cast<const WindowCloseEvent&>(event));
                 });
         eventListener.addEventFunc<CursorMoveEvent>([this](const Event& event) {
-                    CursorMove(static_cast<const CursorMoveEvent&>(event));
+                    return CursorMove(static_cast<const CursorMoveEvent&>(event));
                 });
         eventListener.addEventFunc<WindowFocusEvent>([this](const Event& event) {
-                    WindowFocus(static_cast<const WindowFocusEvent&>(event));
+                    return WindowFocus(static_cast<const WindowFocusEvent&>(event));
                 });
         eventListener.addEventFunc<WindowNotFocusEvent>([this](const Event& event) {
-                    WindowNotFocus(static_cast<const WindowNotFocusEvent&>(event));
+                    return WindowNotFocus(static_cast<const WindowNotFocusEvent&>(event));
                 });
     }
 
@@ -74,20 +74,30 @@ namespace mfw {
         Start();
         while (m_window->isRunning()) {
             m_window->update();
+            for (auto& layer : layerSystem.getLayers()) {
+                layer->OnUpdate();
+            }
             Update();
             m_window->swapBuffers();
         }
     }
 
     void Application::Eventhandle(const Event& event) {
-        eventListener.listen<KeyEvent>(event);
-        eventListener.listen<WindowResizeEvent>(event);
-        eventListener.listen<WindowCloseEvent>(event);
-        eventListener.listen<MouseButtonEvent>(event);
-        eventListener.listen<MouseScrollEvent>(event);
-        eventListener.listen<CursorMoveEvent>(event);
-        eventListener.listen<WindowFocusEvent>(event);
-        eventListener.listen<WindowNotFocusEvent>(event);
+        // TODO: IT SHOULD LOOP FROM THE BACK
+        for (auto& layer : layerSystem.getLayers()) {
+            if (layer->handleEvent(event)) {
+                return;
+            }
+        }
+
+        // eventListener.listen<KeyEvent>(event);
+        // eventListener.listen<WindowResizeEvent>(event);
+        // eventListener.listen<WindowCloseEvent>(event);
+        // eventListener.listen<MouseButtonEvent>(event);
+        // eventListener.listen<MouseScrollEvent>(event);
+        // eventListener.listen<CursorMoveEvent>(event);
+        // eventListener.listen<WindowFocusEvent>(event);
+        // eventListener.listen<WindowNotFocusEvent>(event);
     }
 
 }

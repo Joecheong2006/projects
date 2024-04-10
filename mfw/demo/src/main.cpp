@@ -34,7 +34,7 @@ public:
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     }
 
-    virtual void OnInputKey(const KeyEvent& event) override {
+    virtual bool OnInputKey(const KeyEvent& event) override {
         if (event.key == VK_ESCAPE && event.mode == KeyMode::Down) {
             Terminate();
         }
@@ -46,27 +46,59 @@ public:
             main->setFullScreen(fullScreen);
             glViewport(0, 0, main->width(), main->height());
         }
+        return true;
     }
 
-    virtual void OnWindowResize(const WindowResizeEvent& event) override {
+    virtual bool OnWindowResize(const WindowResizeEvent& event) override {
+        return true;
     }
 
-    virtual void OnWindowFocus(const WindowFocusEvent& event) override {
+    virtual bool OnWindowFocus(const WindowFocusEvent& event) override {
         LOG_EVENT_INFO(event);
         if (fullScreen) {
             GetWindow().setMode(WindowMode::Maximize);
         }
+        return true;
     }
 
-    virtual void OnWindowNotFocus(const WindowNotFocusEvent& event) override {
+    virtual bool OnWindowNotFocus(const WindowNotFocusEvent& event) override {
         LOG_EVENT_INFO(event);
         if (fullScreen) {
             GetWindow().setMode(WindowMode::Minimize);
         }
+        return true;
+    }
+
+};
+
+class TestLayer : public Layer {
+public:
+    ~TestLayer() { LOG_INFO("{}\n", __func__); }
+    virtual void OnStart() override { LOG_INFO("{}\n", __func__); }
+    virtual bool OnInputKey(const KeyEvent& event) override { LOG_EVENT_INFO(event); return false; }
+    virtual bool OnMouseButton(const MouseButtonEvent& event) override { LOG_EVENT_INFO(event); return false; }
+    virtual bool OnMouseScroll(const MouseScrollEvent& event) override { LOG_EVENT_INFO(event); return false; }
+    virtual bool OnWindowResize(const WindowResizeEvent& event) override { LOG_EVENT_INFO(event); return false; }
+    virtual bool OnWindowClose(const WindowCloseEvent& event) override { LOG_EVENT_INFO(event); return false; }
+    virtual bool OnCursorMove(const CursorMoveEvent& event) override { LOG_EVENT_INFO(event); return false; }
+    virtual bool OnWindowFocus(const WindowFocusEvent& event) override { LOG_EVENT_INFO(event); return false; }
+    virtual bool OnWindowNotFocus(const WindowNotFocusEvent& event) override { LOG_EVENT_INFO(event); return false; }
+
+};
+
+class App : public Application {
+public:
+    App(): Application("demo", 1280, 960)
+    {
+        addLayer(new TestLayer());
+    }
+
+    virtual void Start() override {
     }
 
 };
 
 mfw::Application* mfw::CreateApplication() {
-    return new DemoSandBox();
+    return new App();
+    //return new DemoSandBox();
 }

@@ -2,6 +2,7 @@
 
 #include "util.h"
 #include "mfwlog.h"
+#include "mfwpch.h"
 
 #define LOG_EVENT_INFO(event) LOG_INFO("{}\n", static_cast<const Event&>(event))
 
@@ -37,16 +38,16 @@ namespace mfw {
     };
 
     class EventListener {
-        using EventFunc = std::function<void(const Event&)>;
+        using EventFunc = std::function<bool(const Event&)>;
     public:
-        template <class T = Event>
+        template <class T>
         void listen(const Event& event) {
             if (event.getEventType() == T::Type()) {
                 eventCallBackMap[T::Type()](event);
             }
         }
 
-        template <class T = Event>
+        template <class T>
         void addEventFunc(EventFunc eventFunc) {
             eventCallBackMap[T::Type()] = eventFunc;
         }
