@@ -29,6 +29,7 @@ public:
 private:
     f32 frame, dd = 0.01, cursorSize = 1;
     i32 step = 10;
+    bool stop = false;
     ScreenBuffer* screenBuffer;
 
     mfw::VertexArray vao;

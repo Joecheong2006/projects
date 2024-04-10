@@ -10,10 +10,10 @@ void main() {
     vec2 perpixel = 1.0f / size;
 
     float sum = 0;
-    float c = texture(screen, texCoords).r;
+    float c = texture(screen, texCoords).b;
     for (int i = -1; i <= 1; i++) {
         for (int j = -1; j <= 1; j++) {
-            sum += texture(screen, texCoords + vec2(i, j) * perpixel).r;
+            sum += texture(screen, texCoords + vec2(i, j) * perpixel).b;
         }
     }
 

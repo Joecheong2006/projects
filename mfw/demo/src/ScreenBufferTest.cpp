@@ -98,12 +98,12 @@ void ScreenBufferTest::Start() {
 
     auto window = &Application::Get().GetWindow();
     window->setFullScreen(true);
-    resolution = glm::vec2(320, 240);
+    resolution = glm::vec2(160, 90);
     // resolution = glm::vec2(window->width(), window->height());
     screenBuffer = new ScreenBuffer(resolution.x, resolution.y);
 
     glViewport(0, 0, resolution.x, resolution.y);
-    glClearColor(1, 1, 1, 1);
+    glClearColor(0, 0, 0, 1);
 }
 
 void ScreenBufferTest::Update() {
@@ -114,14 +114,20 @@ void ScreenBufferTest::Update() {
     if (Input::KeyPress('R')) {
         glClear(GL_COLOR_BUFFER_BIT);
     }
+    if (Input::KeyPress('S')) {
+        stop = true;
+    }
+    else  {
+        stop = false;
+    }
     glViewport(0, 0, resolution.x, resolution.y);
 
-    if (Input::MouseButtonDown(MouseButton::Left)) {
         auto[x, y] = Input::GetMouse();
         const glm::vec2 mouse = glm::vec2(x / (f32)window->width(), 1 - y / (f32)window->height()) * 2.0f - 1.0f;
         vertex[0] = mouse.x;
         vertex[1] = mouse.y;
 
+    if (Input::MouseButtonDown(MouseButton::Left)) {
         vao.bind();
         shader.bind();
         color[0] = 1;
@@ -132,9 +138,20 @@ void ScreenBufferTest::Update() {
         glDrawArrays(GL_POINTS, 0, 1);
     }
 
+    if (Input::MouseButtonDown(MouseButton::Right)) {
+        vao.bind();
+        shader.bind();
+        color[0] = 0;
+        color[1] = 0;
+        color[2] = 0;
+        shader.set3f("color", color);
+        vbo.setBuffer(vertex, 2 * sizeof(f32));
+        glDrawArrays(GL_POINTS, 0, 1);
+    }
+
     static int c = 0;
     c++;
-    if (c % step == 0) {
+    if (c % step == 0 && !stop) {
         u32 newTexture;
         GLCALL(glGenTextures(1, &newTexture));
         GLCALL(glBindTexture(GL_TEXTURE_2D, newTexture));
@@ -172,6 +189,7 @@ void ScreenBufferTest::UpdateImgui() {
     ImGui::Text("frame: %gms", frame * 1000);
     ImGui::ColorPicker3("color", color);
     ImGui::SliderInt("step", &step, 1, 40);
+    ImGui::Checkbox("stop", &stop);
     if (ImGui::SliderFloat2("resolution", glm::value_ptr(resolution), 120, 2560)) {
         delete screenBuffer;
         screenBuffer = new ScreenBuffer(resolution.x, resolution.y);
