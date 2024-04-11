@@ -35,9 +35,9 @@ public:
     }
 
     virtual bool OnInputKey(const KeyEvent& event) override {
-        if (event.key == VK_ESCAPE && event.mode == KeyMode::Down) {
-            Terminate();
-        }
+        // if (event.key == VK_ESCAPE && event.mode == KeyMode::Down) {
+        //     Terminate();
+        // }
 
         auto main = &Application::Get().GetWindow();
 

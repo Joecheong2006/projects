@@ -11,13 +11,13 @@ public:
     ~PhysicsEmulator();
     virtual void Start() override;
     virtual void Update() override;
-    virtual void OnInputKey(const mfw::KeyEvent& event) override;
-    virtual void OnCursorMove(const mfw::CursorMoveEvent& event) override;
-    virtual void OnMouseScroll(const mfw::MouseScrollEvent& event) override;
-    virtual void OnMouseButton(const mfw::MouseButtonEvent& event) override;
-    virtual void OnWindowResize(const mfw::WindowResizeEvent& event) override;
-    virtual void OnWindowFocus(const mfw::WindowFocusEvent& event) override;
-    virtual void OnWindowNotFocus(const mfw::WindowNotFocusEvent& event) override;
+    virtual bool OnInputKey(const mfw::KeyEvent& event) override;
+    virtual bool OnCursorMove(const mfw::CursorMoveEvent& event) override;
+    virtual bool OnMouseScroll(const mfw::MouseScrollEvent& event) override;
+    virtual bool OnMouseButton(const mfw::MouseButtonEvent& event) override;
+    virtual bool OnWindowResize(const mfw::WindowResizeEvent& event) override;
+    virtual bool OnWindowFocus(const mfw::WindowFocusEvent& event) override;
+    virtual bool OnWindowNotFocus(const mfw::WindowNotFocusEvent& event) override;
 
     f32 world_scale = 0;
     f32 shift_rate;

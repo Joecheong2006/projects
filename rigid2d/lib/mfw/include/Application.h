@@ -1,6 +1,7 @@
 #pragma once
 #include "Window.h"
 #include "EventSystem.h"
+#include "LayerSystem.h"
 
 namespace mfw {
     class WindowResizeEvent;
@@ -27,30 +28,32 @@ namespace mfw {
     protected:
         inline virtual void Start() {}
         inline virtual void Update() {}
-        inline virtual void OnInputKey(const KeyEvent& event) { (void)event; }
-        inline virtual void OnMouseButton(const MouseButtonEvent& event) { (void)event; }
-        inline virtual void OnMouseScroll(const MouseScrollEvent& event) { (void)event; }
-        inline virtual void OnWindowResize(const WindowResizeEvent& event) { (void)event; }
-        inline virtual void OnWindowClose(const WindowCloseEvent& event) { (void)event; }
-        inline virtual void OnCursorMove(const CursorMoveEvent& event) { (void)event; }
-        inline virtual void OnWindowFocus(const WindowFocusEvent& event) { (void)event; }
-        inline virtual void OnWindowNotFocus(const WindowNotFocusEvent& event) { (void)event; }
+        inline virtual bool OnInputKey(const KeyEvent& event) { (void)event; return false; }
+        inline virtual bool OnMouseButton(const MouseButtonEvent& event) { (void)event; return false; }
+        inline virtual bool OnMouseScroll(const MouseScrollEvent& event) { (void)event; return false; }
+        inline virtual bool OnWindowResize(const WindowResizeEvent& event) { (void)event; return false; }
+        inline virtual bool OnWindowClose(const WindowCloseEvent& event) { (void)event; return false; }
+        inline virtual bool OnCursorMove(const CursorMoveEvent& event) { (void)event; return false; }
+        inline virtual bool OnWindowFocus(const WindowFocusEvent& event) { (void)event; return false; }
+        inline virtual bool OnWindowNotFocus(const WindowNotFocusEvent& event) { (void)event; return false; }
 
         void Terminate() { m_window->close(); }
+        inline void addLayer(Layer* layer) { layerSystem.addLayer(layer); }
 
     private:
         void Eventhandle(const Event& event);
-        inline void InputHandle(const KeyEvent& event) { OnInputKey(event); }
-        inline void MouseButtonHandle(const MouseButtonEvent& event) { OnMouseButton(event); }
-        inline void MouseScrollHandle(const MouseScrollEvent& event) { OnMouseScroll(event); }
-        inline void WindowResize(const WindowResizeEvent& event) { OnWindowResize(event); }
-        inline void WindowClose(const WindowCloseEvent& event) { OnWindowClose(event); }
-        inline void CursorMove(const CursorMoveEvent& event) { OnCursorMove(event); }
-        inline void WindowFocus(const WindowFocusEvent& event) { OnWindowFocus(event); }
-        inline void WindowNotFocus(const WindowNotFocusEvent& event) { OnWindowNotFocus(event); }
+        inline bool InputHandle(const KeyEvent& event) { return OnInputKey(event); }
+        inline bool MouseButtonHandle(const MouseButtonEvent& event) { return OnMouseButton(event); }
+        inline bool MouseScrollHandle(const MouseScrollEvent& event) { return OnMouseScroll(event); }
+        inline bool WindowResize(const WindowResizeEvent& event) { return OnWindowResize(event); }
+        inline bool WindowClose(const WindowCloseEvent& event) { return OnWindowClose(event); }
+        inline bool CursorMove(const CursorMoveEvent& event) { return OnCursorMove(event); }
+        inline bool WindowFocus(const WindowFocusEvent& event) { return OnWindowFocus(event); }
+        inline bool WindowNotFocus(const WindowNotFocusEvent& event) { return OnWindowNotFocus(event); }
 
         std::unique_ptr<Window> m_window;
         EventListener eventListener;
+        LayerSystem layerSystem;
 
         static Application* Instance;
 

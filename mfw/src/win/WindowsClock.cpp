@@ -1,6 +1,7 @@
 #include "win/WindowsClock.h"
 #include "mfwlog.h"
 
+#include <windows.h>
 #include <mmsystem.h>
 
 namespace mfw {

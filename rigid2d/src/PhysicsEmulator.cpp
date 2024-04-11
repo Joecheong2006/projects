@@ -172,6 +172,7 @@ void PhysicsEmulator::MovePointConstraint() {
     glm::dvec2 wpos = sim->mouseToWorldCoord();
     pointHolder->m_position = wpos;
 }
+#include <windows.h>
 
 void PhysicsEmulator::update(const f64& dt) {
     (void)dt;
@@ -355,7 +356,7 @@ void PhysicsEmulator::restart() {
     mode = Mode::Normal;
 }
 
-void PhysicsEmulator::OnInputKey(const KeyEvent& event) {
+bool PhysicsEmulator::OnInputKey(const KeyEvent& event) {
     if (event.key == VK_ESCAPE && event.mode == KeyMode::Down) {
         Terminate();
     }
@@ -388,25 +389,28 @@ void PhysicsEmulator::OnInputKey(const KeyEvent& event) {
         fullScreen = !fullScreen;
         GetWindow().setFullScreen(fullScreen);
     }
+    return true;
 }
 
-void PhysicsEmulator::OnCursorMove(const CursorMoveEvent& event) {
+bool PhysicsEmulator::OnCursorMove(const CursorMoveEvent& event) {
     static glm::vec2 m = glm::vec2(event.x, event.y);
     if (mode == Mode::Action && Input::MouseButtonDown(Left)) {
         sim->camera.view = glm::translate(sim->camera.view, glm::vec3(event.x - m.x, m.y - event.y, 0) * shift_rate);
     }
     m = glm::vec2(event.x, event.y);
+    return true;
 }
 
-void PhysicsEmulator::OnMouseScroll(const MouseScrollEvent& event) {
+bool PhysicsEmulator::OnMouseScroll(const MouseScrollEvent& event) {
     auto& sim = *Simulation::Get();
     if (mode == Mode::Action) {
         f32 val = 1 + event.ydelta * zoom_rate;
         sim.camera.scale = glm::scale(sim.camera.scale, glm::vec3(val, val, 1));
     }
+    return true;
 }
 
-void PhysicsEmulator::OnMouseButton(const MouseButtonEvent& event) {
+bool PhysicsEmulator::OnMouseButton(const MouseButtonEvent& event) {
     auto& sim = *Simulation::Get();
     const glm::dvec2 wpos = sim.mouseToWorldCoord();
 
@@ -420,6 +424,7 @@ void PhysicsEmulator::OnMouseButton(const MouseButtonEvent& event) {
         default:
             break;
     }
+    return true;
 }
 
 void PhysicsEmulator::OnEdit(const MouseButtonEvent& event, const glm::dvec2& wpos) {
@@ -567,18 +572,21 @@ void PhysicsEmulator::OnNormal(const MouseButtonEvent& event, const glm::vec2& w
     }
 }
 
-void PhysicsEmulator::OnWindowResize(const WindowResizeEvent& event) {
+bool PhysicsEmulator::OnWindowResize(const WindowResizeEvent& event) {
     glViewport(0, 0, event.width, event.height);
     SetWorldProjection(glm::vec2(event.width, event.height));
+    return true;
 }
 
-void PhysicsEmulator::OnWindowFocus(const WindowFocusEvent& event) {
+bool PhysicsEmulator::OnWindowFocus(const WindowFocusEvent& event) {
     (void)event;
     mode = Mode::Normal;
+    return true;
 }
 
-void PhysicsEmulator::OnWindowNotFocus(const mfw::WindowNotFocusEvent& event) {
+bool PhysicsEmulator::OnWindowNotFocus(const mfw::WindowNotFocusEvent& event) {
     (void)event;
     mode = Mode::Normal;
+    return true;
 }
 

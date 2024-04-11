@@ -16,7 +16,7 @@ namespace mfw {
             case EventType::WindowFocus: return OnWindowFocus(static_cast<const WindowFocusEvent&>(event)); break;
             case EventType::WindowNotFocus: return OnWindowNotFocus(static_cast<const WindowNotFocusEvent&>(event)); break;
             default: {
-                LOG_WARN("UNSUPPORT EVENT HANDLE TYPE: {}\n", event.getEventTypeAsString());
+                LOG_WARN("LAYER: UNSUPPORT HANDLE EVENT TYPE: {}\n", event.getEventTypeAsString());
             } break;
         }
         return false;

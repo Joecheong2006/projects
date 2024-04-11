@@ -84,20 +84,20 @@ namespace mfw {
 
     void Application::Eventhandle(const Event& event) {
         // TODO: IT SHOULD LOOP FROM THE BACK
+        eventListener.listen<KeyEvent>(event);
+        eventListener.listen<WindowResizeEvent>(event);
+        eventListener.listen<WindowCloseEvent>(event);
+        eventListener.listen<MouseButtonEvent>(event);
+        eventListener.listen<MouseScrollEvent>(event);
+        eventListener.listen<CursorMoveEvent>(event);
+        eventListener.listen<WindowFocusEvent>(event);
+        eventListener.listen<WindowNotFocusEvent>(event);
+
         for (auto& layer : layerSystem.getLayers()) {
             if (layer->handleEvent(event)) {
                 return;
             }
         }
-
-        // eventListener.listen<KeyEvent>(event);
-        // eventListener.listen<WindowResizeEvent>(event);
-        // eventListener.listen<WindowCloseEvent>(event);
-        // eventListener.listen<MouseButtonEvent>(event);
-        // eventListener.listen<MouseScrollEvent>(event);
-        // eventListener.listen<CursorMoveEvent>(event);
-        // eventListener.listen<WindowFocusEvent>(event);
-        // eventListener.listen<WindowNotFocusEvent>(event);
     }
 
 }

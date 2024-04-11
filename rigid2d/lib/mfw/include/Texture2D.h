@@ -6,8 +6,8 @@ namespace mfw {
     class Texture2D
     {
     private:
-        u32 m_id;
         i32 m_width, m_height, m_bpp;
+        u32 m_id;
 
     public:
         Texture2D(const char* path);

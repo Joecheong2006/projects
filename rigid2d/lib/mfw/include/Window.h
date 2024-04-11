@@ -1,6 +1,7 @@
 #pragma once
 
 #include "util.h"
+#include "mfwpch.h"
 
 namespace mfw {
     class Event;

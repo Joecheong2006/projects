@@ -3,6 +3,7 @@
 #include "glad/gl.h"
 #include "Renderer.h"
 #include "glm/gtc/type_ptr.hpp"
+#include <fstream>
 
 namespace mfw {
     ShaderProgram::ShaderProgram()
