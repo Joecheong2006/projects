@@ -40,7 +40,34 @@ public:
             auto buildRotator = ObjectBuilder<Rotator>{};
             auto buildFixPoint = ObjectBuilder<FixPoint>{glm::vec3(COLOR(0x486577)), buildCircle.default_d * 1.6f };
             auto buildRoller = ObjectBuilder<Roller>{glm::vec3(COLOR(0x3c4467)), buildCircle.default_d * 1.6f };
+            auto buildSpring = ObjectBuilder<Spring>{glm::vec3(COLOR(0xefefef)), 0.06, 2, 0.1};
 
+            auto o1 = buildCircle({0, 0});
+            auto o2 = buildCircle({0, -2});
+            auto o3 = buildCircle({0, -4});
+            o3->m_mass = 0.003; 
+            o2->m_mass = 0.003; 
+            buildFixPoint(o1->m_position)
+                ->target = o1;
+            buildSpring(o1, o2, 2, 100, 0.1);
+            buildSpring(o2, o3, 2, 100, 0.1);
+
+            auto o2_tracer = buildTracer(o2);
+            o2_tracer->maxSamples = 50;
+            o2_tracer->m_color = glm::vec3(COLOR(0x7b7694));
+            auto o3_tracer = buildTracer(o3);
+            o3_tracer->maxSamples = 80;
+            o3_tracer->m_color = glm::vec3(COLOR(0xcba987));
+
+            o1 = buildCircle({-1.5, 0});
+            o2 = buildCircle({-4, 0});
+            buildFixPoint(o1->m_position)
+                ->target = o1;
+            buildRoller(o2->m_position)
+                ->target = o2;
+            buildSpring(o1, o2, 2.5);
+
+            return;
             buildRoller({1, 0});
 
             buildFixPoint({2, 0});
@@ -60,17 +87,6 @@ public:
 
             buildCircle(glm::vec2(1, 0), 0.3)
                 ->m_mass = 1;
-
-            // addDoublePendulum(this, 30, 3);
-            //
-            // for (i32 i = 0; i < 4; i++) {
-            //     addFixPointConstraint(this, glm::vec2(-4, 4) * worldScale);
-            // }
-            // for (i32 i = 0; i < 4; i++) {
-            //     addHorizontalPointConstraint(this, glm::vec2(4, 4) * worldScale);
-            // }
-            // addTriangle(this, glm::vec2(), 2 * worldScale);
-            // addBox(this, glm::vec2(), 2 * worldScale);
         };
     }
 
@@ -100,7 +116,7 @@ mfw::Application* mfw::CreateApplication() {
     emulator->shift_rate = 0.001 * emulator->world_scale;
     emulator->zoom_rate = 0.01 * emulator->world_scale;
 
-    emulator->settings.sub_step = 20;
+    emulator->settings.sub_step = 6000;
 
     return emulator;
 }

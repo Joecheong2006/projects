@@ -1,8 +1,8 @@
+#include "mfwpch.h"
 #pragma once
 
 #include "util.h"
 #include "glm/glm.hpp"
-#include "mfwpch.h"
 
 namespace mfw {
     class ShaderProgram

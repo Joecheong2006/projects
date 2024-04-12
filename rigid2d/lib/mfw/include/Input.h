@@ -1,6 +1,7 @@
-#pragma once
-#include "util.h"
 #include "mfwpch.h"
+#pragma once
+
+#include "util.h"
 
 namespace mfw {
     class Input {

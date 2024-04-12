@@ -7,6 +7,7 @@ namespace mfw {
 
     bool WindowsWindowInput::KeyPressImpl(const i32& key) {
         WindowsWindow* window = static_cast<WindowsWindow*>(Application::Get().GetWindow().getNativeWindow());
+        ASSERT(key > 0 && key < 256);
         return window->keys[key];
     }
 

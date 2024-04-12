@@ -1,5 +1,5 @@
-#pragma once
 #include <mfwpch.h>
+#pragma once
 
 struct Test {
     std::string name;

@@ -195,6 +195,14 @@ void PhysicsEmulator::update(const f64& dt) {
     update_frame = timer.getDuration();
 }
 
+#define DRAW_SPRING_SUB_STICK()\
+    renderer.renderCircle(proj, Circle(p[1], glm::vec3(0), w));\
+    renderer.renderCircle(proj, Circle(p[0], glm::vec3(0), w));\
+    renderer.renderCircle(proj, Circle(p[1], glm::vec3(1), w * 0.6));\
+    renderer.renderCircle(proj, Circle(p[0], glm::vec3(1), w * 0.6));\
+    renderer.renderLine(proj, p[1], p[0], glm::vec3(0), w);\
+    renderer.renderLine(proj, p[1], p[0], glm::vec3(1), w * 0.6);
+
 void PhysicsEmulator::render() {
     Timer timer;
     renderer.clear();
@@ -205,41 +213,30 @@ void PhysicsEmulator::render() {
         sim->render(renderer);
     }
 
-    const f32 worldScale = sim->getWorldScale();
+    const f64 worldScale = sim->getWorldScale();
     if (rigidBodyHolder) {
-        const glm::dvec2 m = sim->mouseToWorldCoord();
-        // renderer.renderLine(proj, m, holding->m_pos, glm::vec3(COLOR(0xb92c2c)), 0.1 * worldScale);
+        const glm::dvec2 pos1 = sim->mouseToWorldCoord();
+        const glm::dvec2 pos2 = rigidBodyHolder->m_position;
 
-        f32 count = 16, len = 1.3 * worldScale;
-        f32 n = 2 * glm::length(m - rigidBodyHolder->m_position) / (count / 2);
-        glm::vec2 normal = glm::normalize(m - rigidBodyHolder->m_position) * (f64)worldScale;
-        glm::vec2 t1 = glm::cross(glm::vec3(normal, 0), glm::vec3(0, 0, 1)) * len;
-        glm::vec2 t2 = glm::cross(glm::vec3(normal, 0), glm::vec3(0, 0, -1)) * len;
+        const f64 count = 16, len = 0.8 * worldScale, w = 0.07 * worldScale;
+        const f64 n = glm::length(pos1 - pos2) / (count * worldScale);
+        const glm::dvec2 normal = glm::normalize(pos1 - pos2) * worldScale;
+        const glm::dvec2 t1 = glm::cross(glm::dvec3(normal, 0), glm::dvec3(0, 0, 1)) * len;
+        const glm::dvec2 t2 = glm::cross(glm::dvec3(normal, 0), glm::dvec3(0, 0, -1)) * len;
 
-        f32 w = 0.08 * worldScale;
-        glm::vec2 p1 = t1 + (glm::vec2)rigidBodyHolder->m_position;
-        glm::vec2 p2 = (glm::vec2)t2 + (glm::vec2)rigidBodyHolder->m_position;
-        p1 += normal * n;
-
-        for (i32 i = 1; i < count - 2; i++) {
-            renderer.renderLineI(proj, p1, p2, glm::vec3(0), w);
-            renderer.renderLineI(proj, p1, p2, glm::vec3(1), w * 0.5);
-            if (i % 2) {
-                p2 += normal * n * 2.0f;
-            }
-            else {
-                p1 += normal * n * 2.0f;
-            }
-            if (i == count - 3) {
-                glm::vec2 d = t1 * 0.1f;
-                renderer.renderLineI(proj, p1 + d, p2 - d, glm::vec3(0), w * 1.3f);
-                renderer.renderLineI(proj, p1, p2, glm::vec3(1), w * 0.8f);
-                p1 = t1 + (glm::vec2)rigidBodyHolder->m_position;
-                p2 = (glm::vec2)t2 + (glm::vec2)rigidBodyHolder->m_position;
-                renderer.renderLineI(proj, p1 + d, p2 - d, glm::vec3(0), w * 1.3f);
-                renderer.renderLineI(proj, p1, p2, glm::vec3(1), w * 0.8f);
-            }
+        glm::dvec2 p[2];
+        p[0] = t2 + pos2;
+        p[1] = t1 + pos2;
+        DRAW_SPRING_SUB_STICK();
+        p[1] += normal * n;
+        for (i32 i = 0; i < count; i++) {
+            DRAW_SPRING_SUB_STICK();
+            renderer.renderLine(proj, p[1], p[0], glm::vec3(1), w * 0.5);
+            p[i % 2] += normal * n * 2.0;
         }
+        p[0] = t2 + pos1;
+        p[1] = t1 + pos1;
+        DRAW_SPRING_SUB_STICK();
     }
 
     if (settings.velocity_view || settings.acceleration_view) {

@@ -1,5 +1,4 @@
 #pragma once
-
 #include "util.h"
 #include "mfwlog.h"
 

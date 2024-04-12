@@ -1,4 +1,3 @@
-#include "mfwpch.h"
 #include "LayerSystem.h"
 #include "mfwlog.h"
 

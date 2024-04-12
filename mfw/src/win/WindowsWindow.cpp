@@ -102,46 +102,40 @@ namespace mfw {
                 m_state.m_callBackFunc(KeyEvent(key, scancode, mode));
             } break;
 
-        case WM_XBUTTONUP: {
-                mouse.buttons[MouseButton::X1 + GET_XBUTTON_WPARAM(wparam) - 1] = false;
-                mouse.actions[MouseButton::X1 + GET_XBUTTON_WPARAM(wparam) - 1] = KeyMode::Release;
-                m_state.m_callBackFunc(MouseButtonEvent(MouseButton::X1 + GET_XBUTTON_WPARAM(wparam) - 1, KeyMode::Release));
-            } break;
-        case WM_LBUTTONUP: {
-                mouse.buttons[MouseButton::Left] = false;
-                mouse.actions[MouseButton::Left] = KeyMode::Release;
-                m_state.m_callBackFunc(MouseButtonEvent(MouseButton::Left, KeyMode::Release));
-            } break;
-        case WM_RBUTTONUP: {
-                mouse.buttons[MouseButton::Right] = false;
-                mouse.actions[MouseButton::Right] = KeyMode::Release;
-                m_state.m_callBackFunc(MouseButtonEvent(MouseButton::Right, KeyMode::Release));
-            } break;
-        case WM_MBUTTONUP: {
-                mouse.buttons[MouseButton::Middle] = false;
-                mouse.actions[MouseButton::Middle] = KeyMode::Release;
-                m_state.m_callBackFunc(MouseButtonEvent(MouseButton::Middle, KeyMode::Release));
-            } break;
-
-        case WM_XBUTTONDOWN: {
-                mouse.buttons[MouseButton::X1 + GET_XBUTTON_WPARAM(wparam) - 1] = true;
-                mouse.actions[MouseButton::X1 + GET_XBUTTON_WPARAM(wparam) - 1] = KeyMode::Down;
-                m_state.m_callBackFunc(MouseButtonEvent(MouseButton::X1 + GET_XBUTTON_WPARAM(wparam) - 1, KeyMode::Down));
-            } break;
-        case WM_LBUTTONDOWN: {
-                mouse.buttons[MouseButton::Left] = true;
-                mouse.actions[MouseButton::Left] = KeyMode::Down;
-                m_state.m_callBackFunc(MouseButtonEvent(MouseButton::Left, KeyMode::Down));
-            } break;
-        case WM_RBUTTONDOWN: {
-                mouse.buttons[MouseButton::Right] = true;
-                mouse.actions[MouseButton::Right] = KeyMode::Down;
-                m_state.m_callBackFunc(MouseButtonEvent(MouseButton::Right, KeyMode::Down));
-            } break;
+        case WM_XBUTTONUP:
+        case WM_LBUTTONUP:
+        case WM_RBUTTONUP:
+        case WM_MBUTTONUP:
+        case WM_XBUTTONDOWN:
+        case WM_LBUTTONDOWN:
+        case WM_RBUTTONDOWN:
         case WM_MBUTTONDOWN: {
-                mouse.buttons[MouseButton::Middle] = true;
-                mouse.actions[MouseButton::Middle] = KeyMode::Down;
-                m_state.m_callBackFunc(MouseButtonEvent(MouseButton::Middle, KeyMode::Down));
+                int button;
+                if (message == WM_LBUTTONDOWN || message == WM_LBUTTONUP) {
+                    button = MouseButton::Left;
+                }
+                else if (message == WM_RBUTTONDOWN || message == WM_RBUTTONUP) {
+                    button = MouseButton::Right;
+                }
+                else if (message == WM_MBUTTONDOWN || message == WM_MBUTTONUP) {
+                    button = MouseButton::Middle;
+                }
+                else if (GET_XBUTTON_WPARAM(wparam) == XBUTTON1) {
+                    button = MouseButton::X1;
+                }
+                else {
+                    button = MouseButton::X2;
+                }
+                if (message == WM_LBUTTONDOWN || message == WM_RBUTTONDOWN || message == WM_MBUTTONDOWN || message == WM_XBUTTONDOWN) {
+                    mouse.buttons[button] = true;
+                    mouse.actions[button] = KeyMode::Down;
+                    m_state.m_callBackFunc(MouseButtonEvent(button, KeyMode::Down));
+                }
+                else {
+                    mouse.buttons[button] = false;
+                    mouse.actions[button] = KeyMode::Release;
+                    m_state.m_callBackFunc(MouseButtonEvent(button, KeyMode::Release));
+                }
             } break;
 
         case WM_MOUSEMOVE: {
@@ -232,6 +226,7 @@ namespace mfw {
         SetCursorPos(m_state.x + x, m_state.y + y);
     }
 
+    // IT DOESN'T WORK FOR SOME REASOM ON SCHOOL COMPUTERS
     void WindowsWindow::setFullScreen(bool enable) {
         static WINDOWPLACEMENT windowPlacement;
         if (enable) {
@@ -241,7 +236,7 @@ namespace mfw {
             i32 colourBits       = GetDeviceCaps(m_hdc, BITSPIXEL);
             i32 refreshRate      = GetDeviceCaps(m_hdc, VREFRESH);
             DEVMODE fullscreenSettings;
-            [[maybe_unused]]bool isChangeSuccessful;
+            [[maybe_unused]] bool isChangeSuccessful;
 
             EnumDisplaySettings(NULL, 0, &fullscreenSettings);
             fullscreenSettings.dmPelsWidth        = fullscreenWidth;
@@ -268,7 +263,6 @@ namespace mfw {
 
     void WindowsWindow::setPosition(i32 x, i32 y) {
         SetWindowPos(m_hwnd, HWND_TOP, x, y, m_state.width, m_state.height, SWP_SHOWWINDOW);
-        // MoveWindow(m_hwnd, x, y, m_state.width, m_state.height, TRUE);
     }
 
     void WindowsWindow::setSize(i32 width, i32 height) {

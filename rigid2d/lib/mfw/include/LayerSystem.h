@@ -1,4 +1,6 @@
+#include "mfwpch.h"
 #pragma once
+
 #include "Layer.h"
 
 namespace mfw {

@@ -1,5 +1,6 @@
-#pragma once
 #include "mfwpch.h"
+#pragma once
+
 #include "util.h"
 
 namespace mfw {

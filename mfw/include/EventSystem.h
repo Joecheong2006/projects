@@ -1,8 +1,8 @@
-#pragma once
+#include "mfwpch.h"
 
+#pragma once
 #include "util.h"
 #include "mfwlog.h"
-#include "mfwpch.h"
 
 #define LOG_EVENT_INFO(event) LOG_INFO("{}\n", static_cast<const Event&>(event))
 
@@ -31,7 +31,7 @@ namespace mfw {
 
     protected:
         virtual void log() const {
-            LOG_INFO(getEventTypeAsString());
+            LOG_INFO("[EVENT][{}]", getEventTypeAsString());
         }
         EventType m_eventType;
 

@@ -1,5 +1,4 @@
 #pragma once
-
 #include "EventSystem.h"
 
 namespace mfw {

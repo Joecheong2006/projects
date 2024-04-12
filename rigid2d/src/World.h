@@ -4,6 +4,8 @@
 #include "RigidBody2D.h"
 #include <mfwpch.h>
 
+#include "ObjectBuilder.h"
+
 enum class RenderLayer : i32 {
     Level1,
     Level2,

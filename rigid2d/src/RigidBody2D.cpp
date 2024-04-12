@@ -21,11 +21,11 @@ void RigidBody::update(const f64& dt) {
     m_opos = m_position;
     m_ovelocity = m_velocity;
 
-    // m_pos += m_velocity * dt + m_acceleration * dt * dt * 0.5;
-    // m_velocity += m_acceleration * dt;
-
+    m_position += m_velocity * dt + m_acceleration * dt * dt * 0.5;
     m_velocity += m_acceleration * dt;
-    m_position += m_velocity * dt;
+
+    // m_velocity += m_acceleration * dt;
+    // m_position += m_velocity * dt;
 #else
     glm::dvec2 s = (m_pos - m_opos);
     m_opos = m_pos;

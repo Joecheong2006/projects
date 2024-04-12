@@ -1,3 +1,4 @@
+#include "mfwpch.h"
 #pragma once
 
 namespace mfw {
@@ -13,6 +14,7 @@ namespace mfw {
 
     class Layer {
     public:
+        Layer(const std::string& name): name(name) {}
         virtual ~Layer() = default;
         bool handleEvent(const Event& event);
         virtual void OnStart() {}
@@ -25,6 +27,8 @@ namespace mfw {
         virtual bool OnCursorMove(const CursorMoveEvent& event) { (void)event; return false; }
         virtual bool OnWindowFocus(const WindowFocusEvent& event) { (void)event; return false; }
         virtual bool OnWindowNotFocus(const WindowNotFocusEvent& event) { (void)event; return false; }
+
+        const std::string name;
 
     };
 }

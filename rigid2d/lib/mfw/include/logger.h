@@ -1,8 +1,5 @@
+#include "mfwpch.h"
 #pragma once
-
-#include <stdio.h>
-#include <string>
-#include <cstdint>
 
 #define INLINE inline __attribute((always_inline))
 
