@@ -17,17 +17,17 @@ public:
 
 public:
     struct Attribute {
-        glm::vec3 node_color = glm::vec3(0.9, 0.9, 0.9);
-        f32 node_size = 0.18f;
-        f32 line_width = 0.14f;
+        color node_color = color(0.9, 0.9, 0.9);
+        real node_size = 0.18f;
+        real line_width = 0.14f;
     };
 
-    Simulation(const std::string& name, f32 worldScale);
+    Simulation(const std::string& name, real worldScale);
 
     virtual ~Simulation() = default;
-    virtual void update(const f64& dt);
+    virtual void update(const real& dt);
     virtual void render(mfw::Renderer& renderer);
-    inline f32 getWorldScale() const { return unitScale; }
+    inline real getWorldScale() const { return unitScale; }
 
     std::function<void()> initialize;
 
@@ -37,20 +37,20 @@ public:
     std::string name;
     Attribute attri;
 
-    glm::dvec2 mouseToWorldCoord();
+    vec2 mouseToWorldCoord();
 
 private:
     static Simulation* Instance;
-    f32 unitScale = 0;
+    real unitScale = 0;
 
 };
 
-void addString(const glm::vec2& pos, u32 node, f32 length);
-void addCircle(const glm::vec2& pos, i32 n, f32 r, i32 nstep = 1);
-void addBox(const glm::vec2& pos, f32 l);
-void addTriangle(const glm::vec2& pos, f32 l);
-void addDoublePendulum(f64 angle, f64 d);
+void addString(const vec2& pos, u32 node, real length);
+void addCircle(const vec2& pos, i32 n, real r, i32 nstep = 1);
+void addBox(const vec2& pos, real l);
+void addTriangle(const vec2& pos, real l);
+void addDoublePendulum(real angle, real d);
 void SetupRotateBox();
-PointConstraint* addHorizontalPointConstraint(const glm::dvec2& pos);
-PointConstraint* addFixPointConstraint(const glm::dvec2& pos);
+PointConstraint* addHorizontalPointConstraint(const vec2& pos);
+PointConstraint* addFixPointConstraint(const vec2& pos);
 

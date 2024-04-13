@@ -4,14 +4,14 @@
 
 class Spring : public DistanceConstraint {
 private:
-    virtual void update(const f64& dt) override;
+    virtual void update(const real& dt) override;
     virtual void draw(const glm::mat4& proj, mfw::Renderer& renderer) override;
 
 public:
     GENERATE_OBJECT_IDENTIFIER();
 
-    Spring(RigidBody* t1, RigidBody* t2, f32 d, f32 w);
-    f64 stiffness, damping;
+    Spring(RigidBody* t1, RigidBody* t2, real d, real w);
+    real stiffness, damping;
 
 };
 
@@ -20,10 +20,10 @@ struct ObjectBuilder;
 
 template <>
 struct ObjectBuilder<Spring> {
-    const glm::vec3 default_color;
-    const f32 default_w;
-    const f64 default_stiffness, default_damping;
-    Spring* operator()(RigidBody* target1, RigidBody* target2, f32 d, f32 w, glm::vec3 color, f64 stiffness, f64 damping);
-    Spring* operator()(RigidBody* target1, RigidBody* target2, f32 d, f64 stiffness, f64 damping);
-    Spring* operator()(RigidBody* target1, RigidBody* target2, f32 d);
+    const color default_color;
+    const real default_w;
+    const real default_stiffness, default_damping;
+    Spring* operator()(RigidBody* target1, RigidBody* target2, real d, real w, color color, real stiffness, real damping);
+    Spring* operator()(RigidBody* target1, RigidBody* target2, real d, real stiffness, real damping);
+    Spring* operator()(RigidBody* target1, RigidBody* target2, real d);
 };

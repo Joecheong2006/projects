@@ -4,12 +4,7 @@
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtc/type_ptr.hpp"
 
-#include "VertexArray.h"
-#include "VertexBuffer.h"
-#include "VertexBufferLayout.h"
-#include "ShaderProgram.h"
-#include "Texture2D.h"
-
+#include <mfw/VertexBufferLayout.h>
 #include "Circle.h"
 
 static f32 vertexs[] = {

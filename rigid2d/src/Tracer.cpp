@@ -33,8 +33,8 @@ void Tracer::draw(const glm::mat4& proj, mfw::Renderer& renderer) {
     }
 }
 
-Tracer* ObjectBuilder<Tracer>::operator()(RigidBody* target, f32 maxScale, f32 minScale, f32 dr, i32 maxSamples, glm::vec3 color) {
-    static const f32 worldScale = Simulation::Get()->getWorldScale();
+Tracer* ObjectBuilder<Tracer>::operator()(RigidBody* target, real maxScale, real minScale, real dr, i32 maxSamples, glm::vec3 color) {
+    const real worldScale = Simulation::Get()->getWorldScale();
     auto tracer = Simulation::Get()->world.addConstraint<Tracer>(target);
     tracer->maxScale = maxScale * worldScale;
     tracer->minScale = minScale * worldScale;

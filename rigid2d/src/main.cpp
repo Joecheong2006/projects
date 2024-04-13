@@ -1,23 +1,36 @@
 #include "PhysicsEmulator.h"
 #include "ObjectBuilder.h"
 
-void wall_collision(f64 dt, Circle* c, const glm::vec2& world) {
-    static f64 bounce = 0.1;
-    glm::vec2 a{}, s{};
-    if (c->m_position.y - c->radius < -world.y) {
-        s.y = -world.y - c->m_position.y + c->radius;
-        a.y = (c->m_velocity.y * (-bounce  - 1)) / dt;
+class Line {
+public:
+    vec2 p[2];
+    Line(vec2 p1, vec2 p2) {
+        p[0] = p1;
+        p[1] = p2;
     }
-    if (c->m_position.x - c->radius < -world.x) {
-        s.x = -world.x - c->m_position.x + c->radius;
-        a.x = (c->m_velocity.x * (-bounce - 1)) / dt;
+
+    bool collide(Circle* circle) {
+        const vec2 direction = p[1] - p[0];
+        real target_length = glm::dot(circle->m_position - p[0], direction) / glm::length(direction);
+        target_length = glm::clamp(target_length, 0.0, glm::length(direction));
+        const vec2 target = target_length * glm::normalize(direction) + p[0];
+        return glm::length(circle->m_position - target) < circle->radius;
     }
-    else if (c->m_position.x + c->radius > world.x) {
-        s.x = world.x - c->m_position.x - c->radius;
-        a.x = (c->m_velocity.x * (-bounce - 1)) / dt;
+
+    void resolve_collision(Circle* circle) {
+        const vec2 direction = p[1] - p[0];
+        const real target_length = glm::clamp(glm::dot(circle->m_position - p[0], direction) / glm::length(direction), 0.0, glm::length(direction));
+        const vec2 target = target_length * glm::normalize(direction) + p[0];
+        const vec2 parallel_velocity = glm::dot(circle->m_velocity, direction) * glm::normalize(direction) / glm::length(direction);
+
+        const real bounce = 0.3;
+        const vec2 friction = -circle->m_mass * 9.81 * 0.1 * parallel_velocity;
+
+        circle->m_position += (circle->radius - glm::length(circle->m_position - target)) * glm::normalize(circle->m_position - target);
+        circle->m_velocity = parallel_velocity - (circle->m_velocity - parallel_velocity) * bounce;
+        circle->addForce(friction);
     }
-    c->m_position += s;
-    c->m_acceleration += a;
+
 };
 
 class DemoSimulation : public Simulation {
@@ -28,7 +41,7 @@ public:
         attri.node_color = glm::vec3(COLOR(0x858AA6));
 
         initialize = [this]() {
-            world = World(glm::vec2(30, 12));
+            world.initialize();
             world.setObjectLayer<DistanceConstraint>(RenderLayer::Level2);
             world.setObjectLayer<Circle>(RenderLayer::Level3);
             world.setObjectLayer<Tracer>(RenderLayer::Level4);
@@ -67,6 +80,9 @@ public:
                 ->target = o2;
             buildSpring(o1, o2, 2.5);
 
+            buildCircle(glm::vec2(1, 0), 0.3)
+                ->m_mass = 1;
+
             return;
             buildRoller({1, 0});
 
@@ -84,17 +100,19 @@ public:
             buildRotator(c1, c0, 1, 1.5);
 
             buildTracer(c0);
-
-            buildCircle(glm::vec2(1, 0), 0.3)
-                ->m_mass = 1;
         };
     }
 
-    void update(const f64& dt) {
+    Line line = Line({5, -3}, {-5, -3});
+    void update(const real& dt) {
         world.update(dt);
 
-        for (auto& obj : world.getObjects<Circle>()) {
-            wall_collision(dt, static_cast<Circle*>(obj), world.size);
+        auto& objects = world.getObjects<Circle>();
+        for (auto& obj : objects) {
+            auto circle = static_cast<Circle*>(obj);
+            if (line.collide(circle)) {
+                line.resolve_collision(circle);
+            }
         }
     }
 
@@ -102,8 +120,7 @@ public:
         glm::mat4 proj = camera.getProjection();
         world.render(proj, renderer);
 
-        f32 unitScale = getWorldScale();
-        renderer.renderLine(proj, glm::vec2(world.size.x, -world.size.y) - 0.2f * unitScale, glm::vec2(-world.size.x, -world.size.y) - 0.2f * unitScale, glm::vec4(1), 0.2 * unitScale);
+        renderer.renderLine(proj, line.p[0], line.p[1], glm::vec3(1), 0.01);
     }
 
 };
@@ -116,7 +133,7 @@ mfw::Application* mfw::CreateApplication() {
     emulator->shift_rate = 0.001 * emulator->world_scale;
     emulator->zoom_rate = 0.01 * emulator->world_scale;
 
-    emulator->settings.sub_step = 6000;
+    emulator->settings.sub_step = 1000;
 
     return emulator;
 }

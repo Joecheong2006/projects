@@ -9,17 +9,17 @@ namespace mfw {
 
 class DistanceConstraint : public Constraint {
 private:
-    virtual void update(const f64& dt) override;
+    virtual void update(const real& dt) override;
     virtual void draw(const glm::mat4& proj, mfw::Renderer& renderer) override;
 
 public:
     GENERATE_OBJECT_IDENTIFIER();
 
-    DistanceConstraint(RigidBody* t1, RigidBody* t2, f32 d, f32 w);
+    DistanceConstraint(RigidBody* t1, RigidBody* t2, real d, real w);
 
-    f32 d, w;
+    real d, w;
+    color color;
     RigidBody* target[2];
-    glm::dvec3 m_color;
     
 };
 
@@ -28,9 +28,9 @@ struct ObjectBuilder;
 
 template <>
 struct ObjectBuilder<DistanceConstraint> {
-    const glm::vec3 default_color;
-    const f32 default_w;
-    DistanceConstraint* operator()(RigidBody* target1, RigidBody* target2, f32 d, f32 w, glm::vec3 color);
-    DistanceConstraint* operator()(RigidBody* target1, RigidBody* target2, f32 d);
+    const color default_color;
+    const real default_w;
+    DistanceConstraint* operator()(RigidBody* target1, RigidBody* target2, real d, f32 w, color color);
+    DistanceConstraint* operator()(RigidBody* target1, RigidBody* target2, real d);
 };
 

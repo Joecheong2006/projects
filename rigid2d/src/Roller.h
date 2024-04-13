@@ -3,7 +3,7 @@
 
 class Roller: public PointConstraint {
 private:
-    virtual void update(const f64& dt) override;
+    virtual void update(const real& dt) override;
     virtual void draw(const glm::mat4& proj, mfw::Renderer& renderer) override;
 
 public:
@@ -16,9 +16,9 @@ struct ObjectBuilder;
 
 template <>
 struct ObjectBuilder<Roller> {
-    const glm::vec3 default_color;
-    const f32 default_d;
-    Roller* operator()(glm::vec2 pos, f32 d, glm::vec3 color);
-    Roller* operator()(glm::vec2 pos);
+    const color default_color;
+    const real default_d;
+    Roller* operator()(vec2 pos, real d, color color);
+    Roller* operator()(vec2 pos);
 };
 

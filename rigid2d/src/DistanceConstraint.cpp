@@ -4,8 +4,8 @@
 #include "Simulation.h"
 #include "glm/gtc/matrix_transform.hpp"
 
-DistanceConstraint::DistanceConstraint(RigidBody* t1, RigidBody* t2, f32 d, f32 w)
-    : d(d), w(w), m_color()
+DistanceConstraint::DistanceConstraint(RigidBody* t1, RigidBody* t2, real d, real w)
+    : d(d), w(w), color()
 {
     target[0] = t1;
     target[1] = t2;
@@ -20,8 +20,6 @@ void DistanceConstraint::update(const f64& dt) {
     target[1]->m_position -= nd; 
 #if 1
     glm::dvec2 a = nd / dt / dt;
-    // target[0]->addForce(target[0]->m_mass * a);
-    // target[1]->addForce(-target[1]->m_mass * a);
     target[0]->m_acceleration += a;
     target[1]->m_acceleration -= a;
 #endif
@@ -32,13 +30,13 @@ void DistanceConstraint::draw(const glm::mat4& proj, mfw::Renderer& renderer) {
 
     renderer.renderCircle(proj, target[0]->m_position, w, glm::vec4(0, 0, 0, 1));
     renderer.renderCircle(proj, target[0]->m_position,
-            w - worldScale * 0.03, glm::vec4(m_color, 1));
+            w - worldScale * 0.03, glm::vec4(target[0]->m_color, 1));
     renderer.renderCircle(proj, target[1]->m_position, w, glm::vec4(0, 0, 0, 1));
     renderer.renderCircle(proj, target[1]->m_position,
-            w - worldScale * 0.03, glm::vec4(m_color, 1));
+            w - worldScale * 0.03, glm::vec4(target[0]->m_color, 1));
 
     renderer.renderLineI(proj, target[0]->m_position, target[1]->m_position, glm::vec3(0), w * 0.97);
-    renderer.renderLineI(proj, target[0]->m_position, target[1]->m_position, m_color,
+    renderer.renderLineI(proj, target[0]->m_position, target[1]->m_position, color,
             w * 0.97 - worldScale * 0.03);
 
     renderer.renderCircle(proj, target[0]->m_position, w * 0.3, glm::vec4(0, 0, 0, 1));
@@ -46,14 +44,14 @@ void DistanceConstraint::draw(const glm::mat4& proj, mfw::Renderer& renderer) {
 }
 
 
-DistanceConstraint* ObjectBuilder<DistanceConstraint>::operator()(RigidBody* target1, RigidBody* target2, f32 d, f32 w, glm::vec3 color) {
-    static const f32 worldScale = Simulation::Get()->getWorldScale();
+DistanceConstraint* ObjectBuilder<DistanceConstraint>::operator()(RigidBody* target1, RigidBody* target2, real d, f32 w, color color) {
+    const real worldScale = Simulation::Get()->getWorldScale();
     auto distanceConstraint = Simulation::Get()->world.addConstraint<DistanceConstraint>(target1, target2, d * worldScale, w * worldScale);
-    distanceConstraint->m_color = color;
+    distanceConstraint->color = color;
     return distanceConstraint;
 }
 
-DistanceConstraint* ObjectBuilder<DistanceConstraint>::operator()(RigidBody* target1, RigidBody* target2, f32 d) {
+DistanceConstraint* ObjectBuilder<DistanceConstraint>::operator()(RigidBody* target1, RigidBody* target2, real d) {
     return (*this)(target1, target2, d, default_w, default_color);
 }
 

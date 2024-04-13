@@ -5,7 +5,7 @@
 
 class Tracer: public Constraint {
 private:
-    std::list<glm::vec2> positions_trace;
+    std::list<vec2> positions_trace;
     virtual void draw(const glm::mat4& proj, mfw::Renderer& renderer) override;
 
 public:
@@ -14,11 +14,11 @@ public:
     Tracer(RigidBody* target);
 
     i32 maxSamples = 100;
-    f32 maxScale, minScale;
-    f32 dr = 0.6f;
+    real maxScale, minScale;
+    real dr = 0.6f;
+    color m_color;
 
     RigidBody* target;
-    glm::vec3 m_color;
     
 };
 
@@ -27,10 +27,10 @@ struct ObjectBuilder;
 
 template <>
 struct ObjectBuilder<Tracer> {
-    const glm::vec3 default_color;
-    const f32 default_maxScale, default_minScale, default_dr;
+    const color default_color;
+    const real default_maxScale, default_minScale, default_dr;
     const i32 default_maxSamples;
-    Tracer* operator()(RigidBody* target, f32 maxScale, f32 minScale, f32 dr, i32 maxSamples, glm::vec3 color);
+    Tracer* operator()(RigidBody* target, real maxScale, real minScale, real dr, i32 maxSamples, glm::vec3 color);
     Tracer* operator()(RigidBody* target);
 };
 

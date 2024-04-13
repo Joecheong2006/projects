@@ -1,12 +1,11 @@
 #pragma once
 
 #include "util.h"
-#include "glm/glm.hpp"
 
-#include "VertexArray.h"
-#include "ShaderProgram.h"
-#include "VertexBuffer.h"
-#include "Texture2D.h"
+#include <mfw/VertexArray.h>
+#include <mfw/ShaderProgram.h>
+#include <mfw/VertexBuffer.h>
+#include <mfw/Texture2D.h>
 
 #define COLOR(val) ((u32)val >> 16) / 255.0, (((u32)val << 16) >> 24) / 255.0, (((u32)val << 24) >> 24) / 255.0
 

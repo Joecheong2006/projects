@@ -2,7 +2,8 @@
 
 #include "Constraint.h"
 #include "RigidBody2D.h"
-#include <mfwpch.h>
+#include "OdeSolver.h"
+#include <mfw/mfwpch.h>
 
 #include "ObjectBuilder.h"
 
@@ -29,15 +30,14 @@ class World {
     using ObjectContainer = std::vector<RigidBody*>;
     using ConstraintContainer = std::vector<Constraint*>;
 public:
-    glm::vec2 size;
-    glm::dvec2 gravity;
+    vec2 gravity;
 
     World() = default;
-    explicit World(glm::vec2 size, glm::dvec2 gravity = glm::dvec2(0, -9.81));
     ~World();
     
     void clear();
-    void update(const f64& dt);
+    void initialize(vec2 gravity = glm::dvec2(0, -9.81));
+    void update(const real& dt);
     void render(const glm::mat4& proj, mfw::Renderer& renderer);
 
     template <typename T>
@@ -107,6 +107,7 @@ private:
     std::array<std::vector<Drawable*>, 16> renderLayers;
     std::unordered_map<i32, i32> renderLayersMap;
     std::unordered_map<i32, i32> objectsTypeMap;
+    std::unique_ptr<OdeSolver> solver;
 
 };
 

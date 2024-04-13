@@ -1,20 +1,17 @@
 #pragma once
 #include "Object.h"
+#include "Transform.h"
 
 class RigidBody : public Object {
-private:
-    friend class World;
-    virtual void update(const f64& dt) override;
-
 public:
-    glm::dvec2 m_opos, m_position, m_velocity, m_ovelocity, m_acceleration;
-    glm::dvec3 m_color;
-    f64 m_mass;
+    vec2 m_opos, m_position, m_velocity, m_ovelocity, m_acceleration;
+    color m_color;
+    real m_mass;
 
     RigidBody() = default;
-    RigidBody(const glm::dvec3& color);
-    RigidBody(const glm::dvec2& pos, const f64& mass, const glm::dvec3& color);
-    void addForce(const glm::dvec2& force);
+    RigidBody(const color& color);
+    RigidBody(const vec2& pos, const real& mass, const color& color);
+    void addForce(const vec2& force);
 
 };
 

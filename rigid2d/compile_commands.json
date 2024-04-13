@@ -10,7 +10,7 @@
       "-g",
       "-O2",
       "-DDEBUG",
-      "-Ilib/mfw/include",
+      "-Ilib/",
       "-Ilib/mfw/lib"
     ],
     "directory": "D:/project/rigid2d",

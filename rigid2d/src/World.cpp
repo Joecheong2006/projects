@@ -1,24 +1,26 @@
 #include "World.h"
-#include "logger.h"
+#include <mfw/mfwlog.h>
 #include "Simulation.h"
+#include "EulerOdeSolver.h"
 
-World::World(glm::vec2 size, glm::dvec2 gravity)
-    : size(size * Simulation::Get()->getWorldScale()), gravity(gravity)
-{}
+void World::initialize(glm::dvec2 gravity) {
+    this->gravity = gravity;
+    solver = std::make_unique<EulerOdeSolver>();
+}
 
 World::~World() {
     clear();
 }
 
 void World::clear() {
-    for (auto& container : objectsContainer) {
-        for (auto& object : container) {
+    for (auto& objects : objectsContainer) {
+        for (auto& object : objects) {
             delete object;
         }
     }
     objectsContainer.clear();
-    for (auto& container : constraintsContainer) {
-        for (auto& constraint : container) {
+    for (auto& constraints : constraintsContainer) {
+        for (auto& constraint : constraints) {
             delete constraint;
         }
     }
@@ -28,15 +30,15 @@ void World::clear() {
     renderLayers = {};
 }
 
-void World::update(const f64& dt) {
-    for (auto& container : objectsContainer) {
-        for (auto& object : container) {
-            object->update(dt);
+void World::update(const real& dt) {
+    for (auto& objects : objectsContainer) {
+        solver->solve(dt, objects);
+        for (auto& object : objects) {
             object->addForce(gravity * object->m_mass);
         }
     }
-    for (auto& containter : constraintsContainer) {
-        for (auto& constraint : containter) {
+    for (auto& constraints : constraintsContainer) {
+        for (auto& constraint : constraints) {
             constraint->update(dt);
         }
     }

@@ -1,35 +1,30 @@
 #include "Rotator.h"
 #include "Simulation.h"
 #include "Circle.h"
-#include <mfwlog.h>
+#include <mfw/mfwlog.h>
 
 Rotator::Rotator(RigidBody* center, RigidBody* target)
     : center(center), target(target)
 {}
 
-void Rotator::update(const f64& dt) {
+void Rotator::update(const real& dt) {
     if (!target || !center)
         return;
     target->m_position += center->m_position - center->m_opos;
-    glm::dvec3 ro = glm::dvec3(glm::normalize(target->m_position - center->m_position), 0);
-    glm::dvec2 vd = glm::cross(ro, glm::dvec3(0, 0, 1)) * f64(w * r);
+    vec3 ro = vec3(glm::normalize(target->m_position - center->m_position), 0);
+    vec2 vd = glm::cross(ro, vec3(0, 0, 1)) * w * r;
     target->m_position += vd * dt;
     target->m_velocity = vd;
     target->m_acceleration = vd / dt;
-    m_pos = glm::dvec2(ro) * (f64)r + center->m_position;
+    m_pos = vec2(ro) * (f64)r + center->m_position;
 }
 
 void Rotator::draw(const glm::mat4& proj, mfw::Renderer& renderer) {
     TOVOID(proj, renderer);
 };
 
-// void Rotator::draw(const glm::mat4& proj, mfw::Renderer& renderer) {
-//     Circle(self.m_pos, glm::vec3(0), d * 0.2).draw(proj, renderer);
-// }
-
-
-Rotator* ObjectBuilder<Rotator>::operator()(RigidBody* center, RigidBody* target, f32 r, f32 w) {
-    static const f32 worldScale = Simulation::Get()->getWorldScale();
+Rotator* ObjectBuilder<Rotator>::operator()(RigidBody* center, RigidBody* target, real r, real w) {
+    const real worldScale = Simulation::Get()->getWorldScale();
     auto rotator = Simulation::Get()->world.addConstraint<Rotator>(center, target);
     rotator->r = r * worldScale;
     rotator->w = w;

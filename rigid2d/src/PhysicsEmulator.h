@@ -1,4 +1,4 @@
-#include "Application.h"
+#include <mfw/Application.h>
 
 #include "Renderer.h"
 #include "RigidBody2D.h"
@@ -19,9 +19,9 @@ public:
     virtual bool OnWindowFocus(const mfw::WindowFocusEvent& event) override;
     virtual bool OnWindowNotFocus(const mfw::WindowNotFocusEvent& event) override;
 
-    f32 world_scale = 0;
-    f32 shift_rate;
-    f32 zoom_rate;
+    real world_scale = 0;
+    real shift_rate;
+    real zoom_rate;
 
     struct Settings {
         i32 sub_step = 100;
@@ -30,7 +30,7 @@ public:
              world_view = true,
              velocity_view = false,
              acceleration_view = false;
-        f32 mouseSpringForce = 10;
+        real mouseSpringForce = 10;
     } settings;
 
 private:
@@ -41,8 +41,8 @@ private:
         None
     } mode;
 
-    f64 sub_dt;
-    glm::vec2 catch_offset;
+    real sub_dt;
+    vec2 catch_offset;
 
     RigidBody* rigidBodyHolder = nullptr;
     PointConstraint* pointHolder = nullptr;
@@ -55,20 +55,20 @@ private:
 
     // window status
     i32 width, height;
-    glm::vec2 mouse;
-    const f64 refresh_rate = 144, fps = refresh_rate;
-    f64 frame = 1.0 / fps, render_frame = 0, update_frame = 0;
+    vec2 mouse;
+    const real refresh_rate = 144, fps = refresh_rate;
+    real frame = 1.0 / fps, render_frame = 0, update_frame = 0;
 
-    void SetWorldProjection(glm::vec2 view);
+    void SetWorldProjection(vec2 view);
     void ApplySpringForce();
     void MovePointConstraint();
-    void update(const f64& dt);
+    void update(const real& dt);
     void render();
     void renderImgui();
     void restart();
 
-    void OnEdit(const mfw::MouseButtonEvent& event, const glm::dvec2& wpos);
-    void OnNormal(const mfw::MouseButtonEvent& event, const glm::vec2& wpos);
+    void OnEdit(const mfw::MouseButtonEvent& event, const vec2& wpos);
+    void OnNormal(const mfw::MouseButtonEvent& event, const vec2& wpos);
 
 };
 

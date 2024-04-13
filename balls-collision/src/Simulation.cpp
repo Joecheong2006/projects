@@ -79,6 +79,8 @@ void Simulation::solve_collision(i32 begin, i32 end) {
     u64 len = cm.entities.size();
     for(i32 i = begin; i < end; ++i) {
         for(u64 j = 0; j < len; ++j) {
+            if (&objs[i] == &objs[j])
+                break;
             Collision::Colliable<Circle>* d = static_cast<Collision::Colliable<Circle>*>(&objs[i]);
             if(d->collide(objs[j]))
                 d->solve_collision(objs[j]);

@@ -12,9 +12,6 @@
     }
 
 class Object : public Drawable {
-private:
-    virtual void update(const f64& dt);
-
 public:
     Object() = default;
     virtual ~Object() = default;
