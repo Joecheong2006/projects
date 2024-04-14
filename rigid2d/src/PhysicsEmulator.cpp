@@ -83,10 +83,6 @@ PhysicsEmulator::PhysicsEmulator()
     }
 
     sim = Simulation::Get();
-
-    // world_scale = 9 * simu->unitScale;
-    // shift_rate = 0.001 * world_scale;
-    // zoom_rate = 0.01 * world_scale;
 }
 
 PhysicsEmulator::~PhysicsEmulator() {
@@ -332,18 +328,16 @@ void PhysicsEmulator::renderImgui() {
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-    auto& attri = sim->attri;
     if (mode != Mode::Action) {
-        return;
         auto objects = FindCirclesByPosition(sim->mouseToWorldCoord());
         for (auto& prev : preview) {
-            prev->m_color = attri.node_color;
+            prev->m_color = ObjectBuilder<Circle>().default_color;
         }
         for (auto& circle : objects) {
             preview.emplace_back(circle);
         }
         for (auto& circle : objects) {
-            circle->m_color = color(COLOR(0x5D627E));
+            circle->m_color = ObjectBuilder<Circle>().default_color * 0.7f;
         }
     }
 }
@@ -377,7 +371,8 @@ bool PhysicsEmulator::OnInputKey(const KeyEvent& event) {
         }
         if (event.key == ' ' && event.mode == Down && !rigidBodyHolder) {
             for (auto& prev : preview) {
-                prev->m_color = sim->attri.node_color;
+                auto a = ObjectBuilder<Circle>();
+                prev->m_color = a.default_color;
             }
             mode = Mode::Action;
         }
@@ -430,6 +425,9 @@ void PhysicsEmulator::OnEdit(const MouseButtonEvent& event, const vec2& wpos) {
     static Circle* preview_node = nullptr;
     static PointConstraint* preview_fix_point = nullptr;
     static vec2 preview_pos;
+    const real worldScale = sim->getWorldScale();
+    auto buildCircle = ObjectBuilder<Circle>();
+    auto buildLink = ObjectBuilder<DistanceConstraint>();
     if (event.button == MouseButton::Right && event.mode == KeyMode::Down) {
         preview_node = FindCircleByPosition(wpos);
         preview_fix_point = FindPointConstraintByPosition(wpos);
@@ -439,72 +437,59 @@ void PhysicsEmulator::OnEdit(const MouseButtonEvent& event, const vec2& wpos) {
     } else if (event.button == MouseButton::Right && event.mode == KeyMode::Release) {
         Circle* second_node = FindCircleByPosition(wpos);
         PointConstraint* point = FindPointConstraintByPosition(wpos);
-        const auto& attri = sim->attri;
 
         if (preview_node && second_node) {
             if (preview_node == second_node) {
                 return;
             }
-            real d = glm::length(preview_node->m_position - second_node->m_position);
-            sim->world.addConstraint<DistanceConstraint>(preview_node, second_node, d, attri.line_width);
+            real d = glm::length(preview_node->m_position - second_node->m_position) / worldScale;
+            buildLink(preview_node, second_node, d);
         }
         else if (preview_node && second_node == nullptr) {
-            real d = glm::length(preview_node->m_position - wpos);
-            auto p = sim->world.addRigidBody<Circle>(wpos, attri.node_color, attri.node_size);
-            auto dc = sim->world.addConstraint<DistanceConstraint>(preview_node, p, d, attri.line_width);
-
-            p->m_color = attri.node_color;
-            p->radius = attri.node_size;
+            real d = glm::length(preview_node->m_position - wpos) / worldScale;
+            auto p = buildCircle(wpos / worldScale);
+            auto dc = buildLink(preview_node, p, d);
 
             if (point) {
                 point->target = p;
-                dc->d = glm::length(point->m_position - preview_node->m_position);
+                dc->d = glm::length(point->m_position - preview_node->m_position) / worldScale;
             }
         }
         else if (preview_node == nullptr && second_node) {
-            real d = glm::length(preview_pos - second_node->m_position);
-            auto p = sim->world.addRigidBody<Circle>(preview_pos, attri.node_color, attri.node_size);
-            auto dc = sim->world.addConstraint<DistanceConstraint>(p, second_node, d, attri.line_width);
-
-            p->m_color = attri.node_color;
-            p->radius = attri.node_size;
+            real d = glm::length(preview_pos - second_node->m_position) / worldScale;
+            auto p = buildCircle(preview_pos / worldScale);
+            auto dc = buildLink(p, second_node, d);
 
             if (preview_fix_point) {
                 preview_fix_point->target = p;
-                dc->d = glm::length(preview_fix_point->m_position - second_node->m_position);
+                dc->d = glm::length(preview_fix_point->m_position - second_node->m_position) / worldScale;
             }
         }
         else {
             if (preview_pos == wpos) {
-                sim->world.addRigidBody<Circle>(preview_pos, attri.node_color, attri.node_size);
+                buildCircle(preview_pos / worldScale);
                 return;
             }
-            real d = glm::length(preview_pos - wpos);
-            if (d < attri.node_size * 2) {
+            real d = glm::length(preview_pos - wpos) / worldScale;
+            if (d < ObjectBuilder<Circle>().default_d * 2.0) {
                 return;
             }
-
-            auto p1 = sim->world.addRigidBody<Circle>(preview_pos, attri.node_color, attri.node_size);
-            auto p2 = sim->world.addRigidBody<Circle>(wpos, attri.node_color, attri.node_size);
-            auto dc = sim->world.addConstraint<DistanceConstraint>(p1, p2, d, attri.line_width);
-
-            p1->m_color = attri.node_color;
-            p1->radius = attri.node_size;
-            p2->m_color = attri.node_color;
-            p2->radius = attri.node_size;
+            auto p1 = buildCircle(preview_pos / worldScale);
+            auto p2 = buildCircle(wpos / worldScale);
+            auto dc = buildLink(p1, p2, d);
 
             if (point && preview_fix_point) {
                 point->target = static_cast<RigidBody*>(p2);
                 preview_fix_point->target = static_cast<RigidBody*>(p1);
-                dc->d = glm::length(point->m_position - preview_fix_point->m_position);
+                dc->d = glm::length(point->m_position - preview_fix_point->m_position) / worldScale;
             }
             else if (preview_fix_point) {
                 preview_fix_point->target = static_cast<RigidBody*>(p1);
-                dc->d = glm::length(preview_fix_point->m_position - wpos);
+                dc->d = glm::length(preview_fix_point->m_position - wpos) / worldScale;
             }
             else if (point) {
                 point->target = static_cast<RigidBody*>(p2);
-                dc->d = glm::length(point->m_position - preview_node->m_position);
+                dc->d = glm::length(point->m_position - preview_node->m_position) / worldScale;
             }
         }
     }

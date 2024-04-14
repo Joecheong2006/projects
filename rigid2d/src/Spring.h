@@ -20,10 +20,13 @@ struct ObjectBuilder;
 
 template <>
 struct ObjectBuilder<Spring> {
-    const color default_color;
-    const real default_w;
-    const real default_stiffness, default_damping;
-    Spring* operator()(RigidBody* target1, RigidBody* target2, real d, real w, color color, real stiffness, real damping);
-    Spring* operator()(RigidBody* target1, RigidBody* target2, real d, real stiffness, real damping);
-    Spring* operator()(RigidBody* target1, RigidBody* target2, real d);
+    static color default_color;
+    static real default_w;
+    static real default_stiffness, default_damping;
+    Spring* operator()(RigidBody* target1, RigidBody* target2,
+            real d,
+            real stiffness = default_stiffness,
+            real damping = default_damping,
+            real w = default_w,
+            color color = default_color);
 };

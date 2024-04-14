@@ -16,9 +16,8 @@ struct ObjectBuilder;
 
 template <>
 struct ObjectBuilder<Roller> {
-    const color default_color;
-    const real default_d;
-    Roller* operator()(vec2 pos, real d, color color);
-    Roller* operator()(vec2 pos);
+    static color default_color;
+    static real default_d;
+    Roller* operator()(vec2 pos, real d = default_d, color color = default_color);
 };
 

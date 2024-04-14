@@ -27,10 +27,14 @@ struct ObjectBuilder;
 
 template <>
 struct ObjectBuilder<Tracer> {
-    const color default_color;
-    const real default_maxScale, default_minScale, default_dr;
-    const i32 default_maxSamples;
-    Tracer* operator()(RigidBody* target, real maxScale, real minScale, real dr, i32 maxSamples, glm::vec3 color);
-    Tracer* operator()(RigidBody* target);
+    static color default_color;
+    static real default_maxScale, default_minScale, default_dr;
+    static i32 default_maxSamples;
+    Tracer* operator()(RigidBody* target,
+            real maxScale = default_maxScale,
+            real minScale = default_minScale,
+            real dr = default_dr,
+            i32 maxSamples = default_maxSamples,
+            color color = default_color);
 };
 

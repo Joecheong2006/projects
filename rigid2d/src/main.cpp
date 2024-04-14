@@ -23,7 +23,7 @@ public:
         const vec2 target = target_length * glm::normalize(direction) + p[0];
         const vec2 parallel_velocity = glm::dot(circle->m_velocity, direction) * glm::normalize(direction) / glm::length(direction);
 
-        const real bounce = 0.3;
+        const real bounce = 0.1;
         const vec2 friction = -circle->m_mass * 9.81 * 0.1 * parallel_velocity;
 
         circle->m_position += (circle->radius - glm::length(circle->m_position - target)) * glm::normalize(circle->m_position - target);
@@ -38,23 +38,51 @@ public:
     DemoSimulation()
         : Simulation("Demo", 0.3f)
     {
-        attri.node_color = glm::vec3(COLOR(0x858AA6));
+        initialize = [&]() {
+            auto buildCircle = ObjectBuilder<Circle>();
+            auto buildLink = ObjectBuilder<DistanceConstraint>();
+            auto buildTracer = ObjectBuilder<Tracer>();
+            auto buildRotator = ObjectBuilder<Rotator>();
+            auto buildFixPoint = ObjectBuilder<FixPoint>();
+            auto buildRoller = ObjectBuilder<Roller>();
+            auto buildSpring = ObjectBuilder<Spring>();
 
-        initialize = [this]() {
+            buildCircle.default_color = {COLOR(0x858AA6)};
+            buildCircle.default_d = 0.17;
+            buildLink.default_color = {COLOR(0xefefef)};
+            buildLink.default_w = 0.14;
+
+            buildTracer.default_color = {COLOR(0xc73e3e)};
+            buildTracer.default_maxScale = 0.03;
+            buildTracer.default_minScale = 0.01;
+            buildTracer.default_dr = 0.75;
+            buildTracer.default_maxSamples = 450;
+
+            buildFixPoint.default_color = {COLOR(0x486577)};
+            buildFixPoint.default_d = buildCircle.default_d * 1.6f;
+
+            buildRoller.default_color = {COLOR(0x3c4467)};
+            buildRoller.default_d = buildFixPoint.default_d;
+
+            buildSpring.default_color = {COLOR(0xefefef)};
+            buildSpring.default_w = 0.06;
+            buildSpring.default_stiffness = 2;
+            buildSpring.default_damping = 0.1;
+
             world.initialize();
             world.setObjectLayer<DistanceConstraint>(RenderLayer::Level2);
+            world.setObjectLayer<Spring>(RenderLayer::Level2);
             world.setObjectLayer<Circle>(RenderLayer::Level3);
-            world.setObjectLayer<Tracer>(RenderLayer::Level4);
             world.setObjectLayer<Rotator>(RenderLayer::Level3);
+            world.setObjectLayer<Tracer>(RenderLayer::Level4);
 
-            auto buildLink = ObjectBuilder<DistanceConstraint>{glm::vec3(COLOR(0xefefef)), 0.14};
-            auto buildCircle = ObjectBuilder<Circle>{attri.node_color, 0.17};
-            auto buildTracer = ObjectBuilder<Tracer>{glm::vec3(COLOR(0xc73e3e)), 0.03, 0.01, 0.75, 450};
-            auto buildRotator = ObjectBuilder<Rotator>{};
-            auto buildFixPoint = ObjectBuilder<FixPoint>{glm::vec3(COLOR(0x486577)), buildCircle.default_d * 1.6f };
-            auto buildRoller = ObjectBuilder<Roller>{glm::vec3(COLOR(0x3c4467)), buildCircle.default_d * 1.6f };
-            auto buildSpring = ObjectBuilder<Spring>{glm::vec3(COLOR(0xefefef)), 0.06, 2, 0.1};
+            SetupRotateBox();
+            addString({0, 0}, 3, 1);
+            addBox({}, 1);
+            addTriangle({}, 1);
 
+            // addDoublePendulum(10, 2);
+            return;
             auto o1 = buildCircle({0, 0});
             auto o2 = buildCircle({0, -2});
             auto o3 = buildCircle({0, -4});
@@ -62,8 +90,8 @@ public:
             o2->m_mass = 0.003; 
             buildFixPoint(o1->m_position)
                 ->target = o1;
-            buildSpring(o1, o2, 2, 100, 0.1);
-            buildSpring(o2, o3, 2, 100, 0.1);
+            buildSpring(o1, o2, 2, 50, 0.1);
+            buildSpring(o2, o3, 2, 50, 0.1);
 
             auto o2_tracer = buildTracer(o2);
             o2_tracer->maxSamples = 50;
@@ -105,8 +133,6 @@ public:
 
     Line line = Line({5, -3}, {-5, -3});
     void update(const real& dt) {
-        world.update(dt);
-
         auto& objects = world.getObjects<Circle>();
         for (auto& obj : objects) {
             auto circle = static_cast<Circle*>(obj);
@@ -114,6 +140,7 @@ public:
                 line.resolve_collision(circle);
             }
         }
+        world.update(dt);
     }
 
     void render(mfw::Renderer& renderer) {
@@ -132,7 +159,6 @@ mfw::Application* mfw::CreateApplication() {
     emulator->world_scale = 7 * Simulation::Get()->getWorldScale();
     emulator->shift_rate = 0.001 * emulator->world_scale;
     emulator->zoom_rate = 0.01 * emulator->world_scale;
-
     emulator->settings.sub_step = 1000;
 
     return emulator;

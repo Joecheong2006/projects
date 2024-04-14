@@ -16,9 +16,8 @@ struct ObjectBuilder;
 
 template <>
 struct ObjectBuilder<FixPoint> {
-    const glm::vec3 default_color;
-    const real default_d;
-    FixPoint* operator()(vec2 position, real d, color color);
-    FixPoint* operator()(vec2 position);
+    static color default_color;
+    static real default_d;
+    FixPoint* operator()(vec2 position, real d = default_d, color color = default_color);
 };
 

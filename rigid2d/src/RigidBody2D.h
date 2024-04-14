@@ -1,12 +1,12 @@
 #pragma once
+#include "util.h"
 #include "Object.h"
-#include "Transform.h"
 
 class RigidBody : public Object {
 public:
     vec2 m_opos, m_position, m_velocity, m_ovelocity, m_acceleration;
-    color m_color;
     real m_mass;
+    color m_color;
 
     RigidBody() = default;
     RigidBody(const color& color);

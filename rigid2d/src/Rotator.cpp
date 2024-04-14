@@ -23,15 +23,14 @@ void Rotator::draw(const glm::mat4& proj, mfw::Renderer& renderer) {
     TOVOID(proj, renderer);
 };
 
+real ObjectBuilder<Rotator>::default_r;
+real ObjectBuilder<Rotator>::default_w;
+
 Rotator* ObjectBuilder<Rotator>::operator()(RigidBody* center, RigidBody* target, real r, real w) {
     const real worldScale = Simulation::Get()->getWorldScale();
     auto rotator = Simulation::Get()->world.addConstraint<Rotator>(center, target);
     rotator->r = r * worldScale;
     rotator->w = w;
     return rotator;
-}
-
-Rotator* ObjectBuilder<Rotator>::operator()(RigidBody* center, RigidBody* target) {
-    return (*this)(center, target, default_r, default_w);
 }
 

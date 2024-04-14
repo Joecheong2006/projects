@@ -28,9 +28,8 @@ struct ObjectBuilder;
 
 template <>
 struct ObjectBuilder<DistanceConstraint> {
-    const color default_color;
-    const real default_w;
-    DistanceConstraint* operator()(RigidBody* target1, RigidBody* target2, real d, f32 w, color color);
-    DistanceConstraint* operator()(RigidBody* target1, RigidBody* target2, real d);
+    static color default_color;
+    static real default_w;
+    DistanceConstraint* operator()(RigidBody* target1, RigidBody* target2, real d, f32 w = default_w, color color = default_color);
 };
 

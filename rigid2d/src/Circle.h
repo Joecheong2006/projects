@@ -17,10 +17,8 @@ struct ObjectBuilder;
 
 template <>
 struct ObjectBuilder<Circle> {
-    const color default_color = color(0.52, 0.54, 0.65);
-    const real default_d = 0.17;
-    Circle* operator()(const vec2& position, const real& d, const color& color);
-    Circle* operator()(const vec2& position, const real& d);
-    Circle* operator()(const vec2& position = color());
+    static color default_color;
+    static real default_d;
+    Circle* operator()(const vec2& position, const real& d = default_d, const color& color = default_color);
 };
 

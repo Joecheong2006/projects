@@ -16,15 +16,12 @@ void Circle::draw(const glm::mat4& proj, mfw::Renderer& renderer) {
     renderer.renderCircle(proj, m_position, radius - worldScale * 0.03, glm::vec4(m_color, 1));
 }
 
+color ObjectBuilder<Circle>::default_color;
+real ObjectBuilder<Circle>::default_d;
+
 Circle* ObjectBuilder<Circle>::operator()(const vec2& position, const real& d, const color& color) {
     const real worldScale = Simulation::Get()->getWorldScale();
     auto circle = Simulation::Get()->world.addRigidBody<Circle>(position * worldScale, color, d * worldScale);
     return circle;
 }
 
-Circle* ObjectBuilder<Circle>::operator()(const vec2& position, const real& d) {
-    return (*this)(position, d, default_color);
-}
-Circle* ObjectBuilder<Circle>::operator()(const vec2& position) {
-    return (*this)(position, default_d, default_color);
-}

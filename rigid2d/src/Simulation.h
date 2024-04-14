@@ -16,12 +16,6 @@ public:
     }
 
 public:
-    struct Attribute {
-        color node_color = color(0.9, 0.9, 0.9);
-        real node_size = 0.18f;
-        real line_width = 0.14f;
-    };
-
     Simulation(const std::string& name, real worldScale);
 
     virtual ~Simulation() = default;
@@ -33,9 +27,7 @@ public:
 
     World world;
     Camera camera;
-
     std::string name;
-    Attribute attri;
 
     vec2 mouseToWorldCoord();
 

@@ -43,7 +43,7 @@ void Spring::draw(const glm::mat4& proj, mfw::Renderer& renderer) {
     const vec2 pos1 = target[0]->m_position;
     const vec2 pos2 = target[1]-> m_position;
 
-    const real count = 9, len = 0.6 * worldScale;
+    const real count = i32(d * 10), len = 0.6 * worldScale;
     const real n = glm::length(pos1 - pos2) / (count * worldScale);
     const vec2 normal = glm::normalize(pos1 - pos2) * worldScale;
     const vec2 t1 = glm::cross(vec3(normal, 0), vec3(0, 0, 1)) * len;
@@ -64,21 +64,17 @@ void Spring::draw(const glm::mat4& proj, mfw::Renderer& renderer) {
     DRAW_SPRING_SUB_STICK();
 }
 
+color ObjectBuilder<Spring>::default_color;
+real ObjectBuilder<Spring>::default_w;
+real ObjectBuilder<Spring>::default_stiffness;
+real ObjectBuilder<Spring>::default_damping;
 
-Spring* ObjectBuilder<Spring>::operator()(RigidBody* target1, RigidBody* target2, real d, real w, color color, real stiffness, real damping) {
+Spring* ObjectBuilder<Spring>::operator()(RigidBody* target1, RigidBody* target2, real d, real stiffness, real damping, real w, color color) {
     const real worldScale = Simulation::Get()->getWorldScale();
     auto spring = Simulation::Get()->world.addConstraint<Spring>(target1, target2, d * worldScale, w * worldScale);
     spring->color = color;
     spring->stiffness = stiffness;
     spring->damping = damping;
     return spring;
-}
-
-Spring* ObjectBuilder<Spring>::operator()(RigidBody* target1, RigidBody* target2, real d, real stiffness, real damping) {
-    return (*this)(target1, target2, d, default_w, default_color, stiffness, damping);
-}
-
-Spring* ObjectBuilder<Spring>::operator()(RigidBody* target1, RigidBody* target2, real d) {
-    return (*this)(target1, target2, d, default_w, default_color, default_stiffness, default_damping);
 }
 

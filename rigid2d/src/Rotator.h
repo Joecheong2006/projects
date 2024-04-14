@@ -23,8 +23,7 @@ struct ObjectBuilder;
 
 template <>
 struct ObjectBuilder<Rotator> {
-    const real default_r, default_w;
-    Rotator* operator()(RigidBody* center, RigidBody* target, real r, real w);
-    Rotator* operator()(RigidBody* center, RigidBody* target);
+    static real default_r, default_w;
+    Rotator* operator()(RigidBody* center, RigidBody* target, real r = default_r, real w = default_w);
 };
 
