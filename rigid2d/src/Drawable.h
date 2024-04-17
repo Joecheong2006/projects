@@ -1,5 +1,5 @@
 #pragma once
-#include "glm/glm.hpp"
+#include "util.h"
 
 namespace mfw {
     class Renderer;
@@ -8,7 +8,7 @@ namespace mfw {
 class Drawable {
 private:
     friend class World;
-    virtual void draw(const glm::mat4& proj, mfw::Renderer& renderer) = 0;
+    virtual void draw(const mat4& proj, mfw::Renderer& renderer) = 0;
 
 public:
     bool drawEnable = true;

@@ -6,7 +6,7 @@
 class Tracer: public Constraint {
 private:
     std::list<vec2> positions_trace;
-    virtual void draw(const glm::mat4& proj, mfw::Renderer& renderer) override;
+    virtual void draw(const mat4& proj, mfw::Renderer& renderer) override;
 
 public:
     GENERATE_OBJECT_IDENTIFIER();

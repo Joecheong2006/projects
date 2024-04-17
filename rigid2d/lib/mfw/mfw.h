@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Application.h"
+#include "KeyCode.h"
 #include "Input.h"
 #include "InputEvent.h"
 #include "WindowEvent.h"

@@ -4,7 +4,7 @@
 
 class Constraint : public Object {
     friend class World;
-    virtual void update(const f64& dt) { (void)dt; }
+    virtual void update(const real& dt) { (void)dt; }
 
 };
 

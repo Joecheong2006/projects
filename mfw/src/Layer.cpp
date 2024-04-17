@@ -5,7 +5,6 @@
 
 namespace mfw {
     bool Layer::handleEvent(const Event& event) {
-        LOG_TRACE("[{}]", name);
         switch (event.getEventType()) {
             case EventType::WindowResize:
                 return OnWindowResize(static_cast<const WindowResizeEvent&>(event));

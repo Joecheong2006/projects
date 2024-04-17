@@ -34,6 +34,7 @@ namespace  mfw {
         inline virtual void swapBuffers() override { SwapBuffers(m_hdc); }
         virtual void setFullScreen(bool enable) override;
         virtual void setPosition(i32 x, i32 y) override;
+        inline virtual void* getHandle() override { return m_hwnd; }
         virtual void setSize(i32 width, i32 height) override;
         virtual void setMode(WindowMode mode) override;
         virtual void setFocus() override;
@@ -51,7 +52,7 @@ namespace  mfw {
         HWND m_hwnd;
         HGLRC m_hglrc = nullptr;
 
-        bool keys[256];
+        bool keys[520];
 
         struct Mouse {
             i32 x, y;

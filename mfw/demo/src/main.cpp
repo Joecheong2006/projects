@@ -1,4 +1,5 @@
 #include <mfw.h>
+#include "KeyCode.h"
 #include "ScreenBufferTest.h"
 
 #include "imgui/imgui.h"
@@ -17,7 +18,23 @@ public:
         test = new ScreenBufferTest();
     }
 
+    ~DemoSandBox() {
+        ImGui_ImplOpenGL3_Shutdown();
+        ImGui_ImplWin32_Shutdown();
+        ImGui::DestroyContext();
+    }
+
     virtual void Start() override {
+        IMGUI_CHECKVERSION();
+        ImGui::CreateContext();
+        ImGuiIO& io = ImGui::GetIO();
+        io.ConfigFlags |= ImGuiBackendFlags_HasMouseCursors;
+        io.ConfigFlags |= ImGuiBackendFlags_HasSetMousePos;
+
+        //io.KeyMap[ImGuiKey_A] = 'A';
+        ImGui::StyleColorsDark();
+        ImGui_ImplWin32_InitForOpenGL(Application::Get().GetWindow().getHandle());
+        ImGui_ImplOpenGL3_Init("#version 410");
         test->Start();
     }
 
@@ -35,9 +52,9 @@ public:
     }
 
     virtual bool OnInputKey(const KeyEvent& event) override {
-        // if (event.key == VK_ESCAPE && event.mode == KeyMode::Down) {
-        //     Terminate();
-        // }
+        if (event.key == MF_KEY_ESCAPE && event.mode == KeyMode::Down) {
+            Terminate();
+        }
 
         auto main = &Application::Get().GetWindow();
 
@@ -94,6 +111,14 @@ public:
 
 };
 
+class TestImgui : Layer {
+public:
+    TestImgui(): Layer("testImgui") {}
+    virtual void OnUpdate() override {
+        ImGui::Text("hi");
+    }
+};
+
 class App : public Application {
 public:
     App(): Application("demo", 960, 640)
@@ -101,12 +126,27 @@ public:
     }
 
     virtual void Start() override {
-        addLayer(new TestLayer("test"));
+        //addLayer(imguiLayer);
+        glViewport(0, 0, GetWindow().width(), GetWindow().height());
+    }
+
+    virtual void Update() override {
+        glClearColor(0, 0, 0, 1);
+        glClear(GL_COLOR_BUFFER_BIT);
+    }
+
+    virtual bool OnInputKey(const KeyEvent& event) override {
+        if (event.key == MF_KEY_ESCAPE)
+            Terminate();
+        if (event.mode == KeyMode::Down) {
+            LOG_INFO("{}", (char)event.key);
+        }
+        return false;
     }
 
 };
 
 mfw::Application* mfw::CreateApplication() {
     return new App();
-    // return new DemoSandBox();
+    return new DemoSandBox();
 }

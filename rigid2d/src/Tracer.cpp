@@ -7,7 +7,7 @@ Tracer::Tracer(RigidBody* target)
     : target(target)
 {}
 
-void Tracer::draw(const glm::mat4& proj, mfw::Renderer& renderer) {
+void Tracer::draw(const mat4& proj, mfw::Renderer& renderer) {
     if (!target)
         return;
 

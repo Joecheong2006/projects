@@ -83,10 +83,23 @@ PhysicsEmulator::PhysicsEmulator()
     }
 
     sim = Simulation::Get();
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO();
+    io.ConfigFlags |= ImGuiBackendFlags_HasMouseCursors;
+    io.ConfigFlags |= ImGuiBackendFlags_HasSetMousePos;
+
+    //io.KeyMap[ImGuiKey_A] = 'A';
+    ImGui::StyleColorsDark();
+    ImGui_ImplWin32_InitForOpenGL(Application::Get().GetWindow().getHandle());
+    ImGui_ImplOpenGL3_Init("#version 410");
 }
 
 PhysicsEmulator::~PhysicsEmulator() {
     ImPlot::DestroyContext();
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplWin32_Shutdown();
+    ImGui::DestroyContext();
 }
 
 void PhysicsEmulator::Start() {
@@ -184,7 +197,7 @@ void PhysicsEmulator::update(const real& dt) {
         }
     }
 
-    if ((i32)!Input::KeyPress(' ') & (i32)!Input::KeyPress(VK_CONTROL)) {
+    if ((i32)!Input::KeyPress(' ') & (i32)!Input::KeyPress(MF_KEY_LEFT_CONTROL)) {
         mode = Mode::Normal;
     }
     update_frame = timer.getDuration();
@@ -239,7 +252,8 @@ void PhysicsEmulator::render() {
         for (auto& obj : objects) {
             RigidBody* body = static_cast<RigidBody*>(obj);
             if (settings.acceleration_view) {
-                vec2 a = body->m_acceleration * worldScale * 0.1;
+                //vec2 a = body->m_acceleration * worldScale * 0.1;
+                vec2 a = (body->m_velocity - body->m_ovelocity) * worldScale * 0.1 / sub_dt;
                 renderer.renderLine(proj, body->m_position,
                         body->m_position + a * worldScale, blue, 0.02 * worldScale);
             }
@@ -350,7 +364,7 @@ void PhysicsEmulator::restart() {
 }
 
 bool PhysicsEmulator::OnInputKey(const KeyEvent& event) {
-    if (event.key == VK_ESCAPE && event.mode == KeyMode::Down) {
+    if (event.key == MF_KEY_ESCAPE && event.mode == KeyMode::Down) {
         Terminate();
     }
 
@@ -366,7 +380,7 @@ bool PhysicsEmulator::OnInputKey(const KeyEvent& event) {
     }
     
     if (mode == Mode::Normal) {
-        if (event.key == VK_CONTROL && event.mode == Down && !rigidBodyHolder) {
+        if (event.key == MF_KEY_LEFT_CONTROL && event.mode == Down && !rigidBodyHolder) {
             mode = Mode::Edit;
         }
         if (event.key == ' ' && event.mode == Down && !rigidBodyHolder) {

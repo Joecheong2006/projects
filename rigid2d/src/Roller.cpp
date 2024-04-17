@@ -11,7 +11,7 @@ void Roller::update([[maybe_unused]] const real& dt) {
     target->m_velocity.y = 0;
 }
 
-void Roller::draw(const glm::mat4& proj, mfw::Renderer& renderer) {
+void Roller::draw(const mat4& proj, mfw::Renderer& renderer) {
     Circle(m_position, m_color, d).draw(proj, renderer);
 }
 

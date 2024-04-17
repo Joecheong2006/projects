@@ -197,12 +197,13 @@ namespace mfw {
         glm::mat4 view = glm::mat4(1);
         view = glm::translate(view, glm::vec3(circle->m_position.x, circle->m_position.y, 0));
         view = glm::scale(view, glm::vec3(circle->radius, circle->radius, 0));
+        view = glm::rotate(view, (f32)circle->m_angle, glm::vec3(0, 0, 1));
 
         iCircleRenderer->m_texture.bind();
         iCircleRenderer->m_shader.bind();
         iCircleRenderer->m_vao.bind();
         iCircleRenderer->m_shader.set1i("tex", 0);
-        iCircleRenderer->m_shader.set4f("color", glm::vec4(circle->m_color, 1));
+        iCircleRenderer->m_shader.set4f("color", glm::vec4(circle->m_color, 0));
         iCircleRenderer->m_shader.setMat4("view", proj * view);
 
         GLCALL(glDrawArrays(GL_TRIANGLES, 0, 6));

@@ -10,7 +10,7 @@ void FixPoint::update([[maybe_unused]] const real& dt) {
     target->m_velocity = {};
 }
 
-void FixPoint::draw(const glm::mat4& proj, mfw::Renderer& renderer) {
+void FixPoint::draw(const mat4& proj, mfw::Renderer& renderer) {
     Circle(m_position, m_color, d).draw(proj, renderer);
 }
 

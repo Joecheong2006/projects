@@ -52,6 +52,7 @@ namespace mfw {
         virtual void setSize(i32 width, i32 height) = 0;
         virtual void setMode(WindowMode mode) = 0;
         virtual void setFocus() = 0;
+        virtual void* getHandle() = 0;
 
         static Window* Create(const WindowState& state);
 

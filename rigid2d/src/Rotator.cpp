@@ -10,7 +10,7 @@ Rotator::Rotator(RigidBody* center, RigidBody* target)
 void Rotator::update(const real& dt) {
     if (!target || !center)
         return;
-    target->m_position += center->m_position - center->m_opos;
+    target->m_position += center->m_position - center->m_oposition;
     vec3 ro = vec3(glm::normalize(target->m_position - center->m_position), 0);
     vec2 vd = glm::cross(ro, vec3(0, 0, 1)) * w * r;
     target->m_position += vd * dt;
@@ -19,7 +19,7 @@ void Rotator::update(const real& dt) {
     m_pos = vec2(ro) * (f64)r + center->m_position;
 }
 
-void Rotator::draw(const glm::mat4& proj, mfw::Renderer& renderer) {
+void Rotator::draw(const mat4& proj, mfw::Renderer& renderer) {
     TOVOID(proj, renderer);
 };
 

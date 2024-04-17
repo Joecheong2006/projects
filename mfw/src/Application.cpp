@@ -74,10 +74,10 @@ namespace mfw {
         Start();
         while (m_window->isRunning()) {
             m_window->update();
+            Update();
             for (auto& layer : layerSystem.getLayers()) {
                 layer->OnUpdate();
             }
-            Update();
             m_window->swapBuffers();
         }
     }

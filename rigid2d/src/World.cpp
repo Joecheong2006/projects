@@ -32,10 +32,12 @@ void World::clear() {
 
 void World::update(const real& dt) {
     for (auto& objects : objectsContainer) {
-        solver->solve(dt, objects);
         for (auto& object : objects) {
             object->addForce(gravity * object->m_mass);
         }
+    }
+    for (auto& objects : objectsContainer) {
+        solver->solve(dt, objects);
     }
     for (auto& constraints : constraintsContainer) {
         for (auto& constraint : constraints) {

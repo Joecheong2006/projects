@@ -88,7 +88,7 @@ namespace mfw {
         case WM_SYSKEYDOWN:
         case WM_KEYUP:
         case WM_SYSKEYUP: {
-                WORD key = LOWORD(wparam);
+                i32 key = LOWORD(wparam);
                 WORD flags = HIWORD(lparam);
                 WORD scancode = LOBYTE(flags);
                 if ((flags & KF_EXTENDED) == KF_EXTENDED) {
@@ -98,8 +98,12 @@ namespace mfw {
                 BOOL keyDown = !keyRepeat;
                 BOOL keyRelease = ((flags & KF_UP) == KF_UP);
                 KeyMode mode = static_cast<KeyMode>(keyRepeat + keyDown + keyRelease);
-                keys[key] = mode == KeyMode::Down || mode == KeyMode::Press;
-                m_state.m_callBackFunc(KeyEvent(key, scancode, mode));
+
+                key = Input::GetKeyCode(key);
+                if (key >= 0) {
+                    keys[key] = mode == KeyMode::Down || mode == KeyMode::Press;
+                    m_state.m_callBackFunc(KeyEvent(key, scancode, mode));
+                }
             } break;
 
         case WM_XBUTTONUP:
@@ -299,10 +303,6 @@ namespace mfw {
     }
 
     WindowsWindow::~WindowsWindow() {
-        ImGui_ImplOpenGL3_Shutdown();
-        ImGui_ImplWin32_Shutdown();
-        ImGui::DestroyContext();
-
         if (!m_hglrc) {
             wglDeleteContext(m_hglrc);
             m_hglrc = nullptr;

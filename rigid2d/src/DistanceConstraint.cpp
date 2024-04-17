@@ -12,35 +12,34 @@ DistanceConstraint::DistanceConstraint(RigidBody* t1, RigidBody* t2, real d, rea
 }
 
 void DistanceConstraint::update(const f64& dt) {
-    (void)dt;
-    f64 cd = glm::length(target[0]->m_position - target[1]->m_position);
-    glm::dvec2 nd = glm::normalize(target[0]->m_position - target[1]->m_position) * (d - cd) * 0.5;
+    const real length = glm::length(target[0]->m_position - target[1]->m_position);
+    const vec2 direction = glm::normalize(target[0]->m_position - target[1]->m_position);
+    const vec2 nd = direction * (d - length) * 0.5;
 
-    target[0]->m_position += nd; 
-    target[1]->m_position -= nd; 
-#if 1
-    glm::dvec2 a = nd / dt / dt;
+    // target[0]->m_position += nd; 
+    // target[1]->m_position -= nd; 
+
+    const vec2 a = nd / dt / dt;
     target[0]->m_acceleration += a;
     target[1]->m_acceleration -= a;
-#endif
 }
 
-void DistanceConstraint::draw(const glm::mat4& proj, mfw::Renderer& renderer) {
-    f32 worldScale = Simulation::Get()->getWorldScale();
+void DistanceConstraint::draw(const mat4& proj, mfw::Renderer& renderer) {
+    real worldScale = Simulation::Get()->getWorldScale();
 
-    renderer.renderCircle(proj, target[0]->m_position, w, glm::vec4(0, 0, 0, 1));
+    renderer.renderCircle(proj, target[0]->m_position, w, vec4(0, 0, 0, 1));
     renderer.renderCircle(proj, target[0]->m_position,
-            w - worldScale * 0.03, glm::vec4(color, 1));
-    renderer.renderCircle(proj, target[1]->m_position, w, glm::vec4(0, 0, 0, 1));
+            w - worldScale * 0.03, vec4(color, 1));
+    renderer.renderCircle(proj, target[1]->m_position, w, vec4(0, 0, 0, 1));
     renderer.renderCircle(proj, target[1]->m_position,
-            w - worldScale * 0.03, glm::vec4(color, 1));
+            w - worldScale * 0.03, vec4(color, 1));
 
-    renderer.renderLineI(proj, target[0]->m_position, target[1]->m_position, glm::vec3(0), w * 0.97);
+    renderer.renderLineI(proj, target[0]->m_position, target[1]->m_position, vec3(0), w * 0.97);
     renderer.renderLineI(proj, target[0]->m_position, target[1]->m_position, color,
             w * 0.97 - worldScale * 0.03);
 
-    renderer.renderCircle(proj, target[0]->m_position, w * 0.3, glm::vec4(0, 0, 0, 1));
-    renderer.renderCircle(proj, target[1]->m_position, w * 0.3, glm::vec4(0, 0, 0, 1));
+    renderer.renderCircle(proj, target[0]->m_position, w * 0.3, vec4(0, 0, 0, 1));
+    renderer.renderCircle(proj, target[1]->m_position, w * 0.3, vec4(0, 0, 0, 1));
 }
 
 color ObjectBuilder<DistanceConstraint>::default_color;

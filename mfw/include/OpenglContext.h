@@ -7,7 +7,7 @@ namespace mfw {
     class OpenglContext {
         friend class Application;
     public:
-        virtual ~OpenglContext() {}
+        virtual ~OpenglContext() = default;
         static void CreateMorden(Window* window, i32 major, i32 minor) {
             Instance->CreateMordenImpl(window, major, minor);
         }
