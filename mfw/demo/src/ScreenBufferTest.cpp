@@ -1,5 +1,6 @@
 #include "ScreenbufferTest.h"
 
+#include "KeyCode.h"
 #include "Application.h"
 #include "Input.h"
 #include "Clock.h"
@@ -97,9 +98,8 @@ void ScreenBufferTest::Start() {
     shader.unbind();
 
     auto window = &Application::Get().GetWindow();
-    window->setFullScreen(true);
+    // window->setFullScreen(true);
     resolution = glm::vec2(160, 90);
-    // resolution = glm::vec2(window->width(), window->height());
     screenBuffer = new ScreenBuffer(resolution.x, resolution.y);
 
     glViewport(0, 0, resolution.x, resolution.y);
@@ -111,10 +111,10 @@ void ScreenBufferTest::Update() {
     auto window = &Application::Get().GetWindow();
 
     glBindFramebuffer(GL_FRAMEBUFFER, screenBuffer->fbo);
-    if (Input::KeyPress('R')) {
+    if (Input::KeyPress(MF_KEY_R)) {
         glClear(GL_COLOR_BUFFER_BIT);
     }
-    if (Input::KeyPress('S')) {
+    if (Input::KeyPress(MF_KEY_LEFT_CONTROL)) {
         stop = true;
     }
     else  {
@@ -127,7 +127,7 @@ void ScreenBufferTest::Update() {
         vertex[0] = mouse.x;
         vertex[1] = mouse.y;
 
-    if (Input::MouseButtonDown(MouseButton::Left)) {
+    if (Input::MouseButtonDown(MF_MOUSE_BUTTON_LEFT)) {
         vao.bind();
         shader.bind();
         color[0] = 1;
@@ -138,7 +138,7 @@ void ScreenBufferTest::Update() {
         glDrawArrays(GL_POINTS, 0, 1);
     }
 
-    if (Input::MouseButtonDown(MouseButton::Right)) {
+    if (Input::MouseButtonDown(MF_MOUSE_BUTTON_RIGHT)) {
         vao.bind();
         shader.bind();
         color[0] = 0;
@@ -187,13 +187,13 @@ void ScreenBufferTest::Update() {
 
 void ScreenBufferTest::UpdateImgui() {
     ImGui::Text("frame: %gms", frame * 1000);
-    ImGui::ColorPicker3("color", color);
     ImGui::SliderInt("step", &step, 1, 40);
     ImGui::Checkbox("stop", &stop);
-    if (ImGui::SliderFloat2("resolution", glm::value_ptr(resolution), 120, 2560)) {
+    if (ImGui::SliderFloat("resolution.x", &resolution.x, 120, 2560) ||
+        ImGui::SliderFloat("resolution.y", &resolution.y, 68, 1440))
+    {
         delete screenBuffer;
         screenBuffer = new ScreenBuffer(resolution.x, resolution.y);
     }
 }
-
 

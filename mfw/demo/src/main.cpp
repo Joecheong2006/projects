@@ -58,7 +58,7 @@ public:
 
         auto main = &Application::Get().GetWindow();
 
-        if (Input::KeyPress('F')) {
+        if (Input::KeyPress(MF_KEY_F)) {
             fullScreen = !fullScreen;
             main->setFullScreen(fullScreen);
             glViewport(0, 0, main->width(), main->height());
@@ -138,8 +138,8 @@ public:
     virtual bool OnInputKey(const KeyEvent& event) override {
         if (event.key == MF_KEY_ESCAPE)
             Terminate();
-        if (event.mode == KeyMode::Down) {
-            LOG_INFO("{}", (char)event.key);
+        if (event.key == MF_KEY_LEFT_CONTROL) {
+            LOG_INFO("lshift");
         }
         return false;
     }
@@ -147,6 +147,6 @@ public:
 };
 
 mfw::Application* mfw::CreateApplication() {
-    return new App();
+    // return new App();
     return new DemoSandBox();
 }

@@ -197,7 +197,7 @@ void PhysicsEmulator::update(const real& dt) {
         }
     }
 
-    if ((i32)!Input::KeyPress(' ') & (i32)!Input::KeyPress(MF_KEY_LEFT_CONTROL)) {
+    if ((i32)!Input::KeyPress(MF_KEY_SPACE) & (i32)!Input::KeyPress(MF_KEY_LEFT_CONTROL)) {
         mode = Mode::Normal;
     }
     update_frame = timer.getDuration();
@@ -368,14 +368,14 @@ bool PhysicsEmulator::OnInputKey(const KeyEvent& event) {
         Terminate();
     }
 
-    if (event.key == 'R' && event.mode == KeyMode::Down) {
+    if (event.key == MF_KEY_R && event.mode == KeyMode::Down) {
         restart();
     }
 
-    if (event.key == 'S' && event.mode == KeyMode::Down) {
+    if (event.key == MF_KEY_S && event.mode == KeyMode::Down) {
         settings.pause = true;
     }
-    else if (event.key == 'S' && event.mode == KeyMode::Release) {
+    else if (event.key == MF_KEY_S && event.mode == KeyMode::Release) {
         settings.pause = false;
     }
     
@@ -383,7 +383,7 @@ bool PhysicsEmulator::OnInputKey(const KeyEvent& event) {
         if (event.key == MF_KEY_LEFT_CONTROL && event.mode == Down && !rigidBodyHolder) {
             mode = Mode::Edit;
         }
-        if (event.key == ' ' && event.mode == Down && !rigidBodyHolder) {
+        if (event.key == MF_KEY_SPACE && event.mode == Down && !rigidBodyHolder) {
             for (auto& prev : preview) {
                 auto a = ObjectBuilder<Circle>();
                 prev->m_color = a.default_color;
@@ -393,7 +393,7 @@ bool PhysicsEmulator::OnInputKey(const KeyEvent& event) {
     }
 
     static bool fullScreen = false;
-    if (event.key == 'F' && event.mode == KeyMode::Down) {
+    if (event.key == MF_KEY_F && event.mode == KeyMode::Down) {
         fullScreen = !fullScreen;
         GetWindow().setFullScreen(fullScreen);
     }
@@ -402,7 +402,7 @@ bool PhysicsEmulator::OnInputKey(const KeyEvent& event) {
 
 bool PhysicsEmulator::OnCursorMove(const CursorMoveEvent& event) {
     static vec2 m = vec2(event.x, event.y);
-    if (mode == Mode::Action && Input::MouseButtonDown(Left)) {
+    if (mode == Mode::Action && Input::MouseButtonDown(MF_MOUSE_BUTTON_LEFT)) {
         sim->camera.view = glm::translate(sim->camera.view, vec3(event.x - m.x, m.y - event.y, 0) * shift_rate);
     }
     m = vec2(event.x, event.y);
@@ -442,13 +442,13 @@ void PhysicsEmulator::OnEdit(const MouseButtonEvent& event, const vec2& wpos) {
     const real worldScale = sim->getWorldScale();
     auto buildCircle = ObjectBuilder<Circle>();
     auto buildLink = ObjectBuilder<DistanceConstraint>();
-    if (event.button == MouseButton::Right && event.mode == KeyMode::Down) {
+    if (event.button == MF_MOUSE_BUTTON_RIGHT && event.mode == KeyMode::Down) {
         preview_node = FindCircleByPosition(wpos);
         preview_fix_point = FindPointConstraintByPosition(wpos);
         if (!preview_node) {
             preview_pos = wpos;
         }
-    } else if (event.button == MouseButton::Right && event.mode == KeyMode::Release) {
+    } else if (event.button == MF_MOUSE_BUTTON_RIGHT && event.mode == KeyMode::Release) {
         Circle* second_node = FindCircleByPosition(wpos);
         PointConstraint* point = FindPointConstraintByPosition(wpos);
 
@@ -508,7 +508,7 @@ void PhysicsEmulator::OnEdit(const MouseButtonEvent& event, const vec2& wpos) {
         }
     }
 
-    if (event.button == MouseButton::Left && event.mode == KeyMode::Down) {
+    if (event.button == MF_MOUSE_BUTTON_LEFT && event.mode == KeyMode::Down) {
         if (!rigidBodyHolder) {
             rigidBodyHolder = FindCircleByPosition(wpos);
             if (rigidBodyHolder) {
@@ -521,7 +521,7 @@ void PhysicsEmulator::OnEdit(const MouseButtonEvent& event, const vec2& wpos) {
         pointHolder = nullptr;
     }
 
-    if (event.button == MouseButton::Left && event.mode == KeyMode::Down) {
+    if (event.button == MF_MOUSE_BUTTON_LEFT && event.mode == KeyMode::Down) {
         if (!rigidBodyHolder) {
             auto pc = FindPointConstraintByPosition(wpos);
             if (pc) {
@@ -532,7 +532,7 @@ void PhysicsEmulator::OnEdit(const MouseButtonEvent& event, const vec2& wpos) {
 }
 
 void PhysicsEmulator::OnNormal(const MouseButtonEvent& event, const vec2& wpos) {
-    if (event.button == MouseButton::Left && event.mode == KeyMode::Release) {
+    if (event.button == MF_MOUSE_BUTTON_LEFT && event.mode == KeyMode::Release) {
         if (rigidBodyHolder) {
             PointConstraint* point = FindPointConstraintByPosition(rigidBodyHolder->m_position);
             if (point) {
@@ -542,7 +542,7 @@ void PhysicsEmulator::OnNormal(const MouseButtonEvent& event, const vec2& wpos) 
         }
     }
 
-    if (event.button == MouseButton::Left && event.mode == KeyMode::Down) {
+    if (event.button == MF_MOUSE_BUTTON_LEFT && event.mode == KeyMode::Down) {
         if (!rigidBodyHolder) {
             PointConstraint* point = FindPointConstraintByPosition(wpos);
             rigidBodyHolder = FindCircleByPosition(wpos);
@@ -560,7 +560,7 @@ void PhysicsEmulator::OnNormal(const MouseButtonEvent& event, const vec2& wpos) 
         pointHolder = nullptr;
     }
 
-    if (event.button == MouseButton::Right && event.mode == KeyMode::Down) {
+    if (event.button == MF_MOUSE_BUTTON_RIGHT && event.mode == KeyMode::Down) {
         if (!rigidBodyHolder) {
             auto pc = FindPointConstraintByPosition(wpos);
             if (pc) {

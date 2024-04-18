@@ -4,6 +4,7 @@
 #include "Input.h"
 #include "OpenglContext.h"
 #include "glad/wgl.h"
+#include "KeyCode.h"
 
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_opengl3.h"
@@ -88,7 +89,7 @@ namespace mfw {
         case WM_SYSKEYDOWN:
         case WM_KEYUP:
         case WM_SYSKEYUP: {
-                i32 key = LOWORD(wparam);
+                i32 key = wparam;
                 WORD flags = HIWORD(lparam);
                 WORD scancode = LOBYTE(flags);
                 if ((flags & KF_EXTENDED) == KF_EXTENDED) {
@@ -99,7 +100,7 @@ namespace mfw {
                 BOOL keyRelease = ((flags & KF_UP) == KF_UP);
                 KeyMode mode = static_cast<KeyMode>(keyRepeat + keyDown + keyRelease);
 
-                key = Input::GetKeyCode(key);
+                key = Input::GetKeyCode(MapVirtualKeyW(scancode, MAPVK_VSC_TO_VK_EX));
                 if (key >= 0) {
                     keys[key] = mode == KeyMode::Down || mode == KeyMode::Press;
                     m_state.m_callBackFunc(KeyEvent(key, scancode, mode));
@@ -116,19 +117,24 @@ namespace mfw {
         case WM_MBUTTONDOWN: {
                 int button;
                 if (message == WM_LBUTTONDOWN || message == WM_LBUTTONUP) {
-                    button = MouseButton::Left;
+                    button = MF_MOUSE_BUTTON_LEFT;
+                    // button = MouseButton::Left;
                 }
                 else if (message == WM_RBUTTONDOWN || message == WM_RBUTTONUP) {
-                    button = MouseButton::Right;
+                    button = MF_MOUSE_BUTTON_RIGHT;
+                    // button = MouseButton::Right;
                 }
                 else if (message == WM_MBUTTONDOWN || message == WM_MBUTTONUP) {
-                    button = MouseButton::Middle;
+                    button = MF_MOUSE_BUTTON_MIDDLE;
+                    // button = MouseButton::Middle;
                 }
                 else if (GET_XBUTTON_WPARAM(wparam) == XBUTTON1) {
-                    button = MouseButton::X1;
+                    button = MF_MOUSE_BUTTON_4;
+                    // button = MouseButton::X1;
                 }
                 else {
-                    button = MouseButton::X2;
+                    button = MF_MOUSE_BUTTON_5;
+                    // button = MouseButton::X2;
                 }
                 if (message == WM_LBUTTONDOWN || message == WM_RBUTTONDOWN || message == WM_MBUTTONDOWN || message == WM_XBUTTONDOWN) {
                     mouse.buttons[button] = true;

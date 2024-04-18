@@ -23,12 +23,4 @@ namespace mfw {
 
     };
 
-    enum MouseButton : u8 {
-        Left,
-        Right,
-        Middle,
-        X1,
-        X2,
-    };
-
 }
