@@ -16,8 +16,8 @@ void DistanceConstraint::update(const f64& dt) {
     const vec2 direction = glm::normalize(target[0]->m_position - target[1]->m_position);
     const vec2 nd = direction * (d - length) * 0.5;
 
-    // target[0]->m_position += nd; 
-    // target[1]->m_position -= nd; 
+    target[0]->m_position += nd; 
+    target[1]->m_position -= nd; 
 
     const vec2 a = nd / dt / dt;
     target[0]->m_acceleration += a;
@@ -42,13 +42,12 @@ void DistanceConstraint::draw(const mat4& proj, mfw::Renderer& renderer) {
     renderer.renderCircle(proj, target[1]->m_position, w * 0.3, vec4(0, 0, 0, 1));
 }
 
-color ObjectBuilder<DistanceConstraint>::default_color;
-real ObjectBuilder<DistanceConstraint>::default_w;
+color BuildObject<DistanceConstraint>::default_color;
+real BuildObject<DistanceConstraint>::default_w;
 
-DistanceConstraint* ObjectBuilder<DistanceConstraint>::operator()(RigidBody* target1, RigidBody* target2, real d, f32 w, color color) {
+BuildObject<DistanceConstraint>::BuildObject(RigidBody* target1, RigidBody* target2, real d, f32 w, color color) {
     const real worldScale = Simulation::Get()->getWorldScale();
-    auto distanceConstraint = Simulation::Get()->world.addConstraint<DistanceConstraint>(target1, target2, d * worldScale, w * worldScale);
-    distanceConstraint->color = color;
-    return distanceConstraint;
+    object = Simulation::Get()->world.addConstraint<DistanceConstraint>(target1, target2, d * worldScale, w * worldScale);
+    object->color = color;
 }
 

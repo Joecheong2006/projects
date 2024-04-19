@@ -3,7 +3,7 @@
 #include "Simulation.h"
 
 Circle::Circle(const vec2& position, const color& color, const real& r)
-    : RigidBody(position, r, color), radius(r)
+    : RigidBody(position, r * 0.5, color), radius(r)
 {}
 
 Circle::Circle()
@@ -19,12 +19,12 @@ void Circle::draw(const mat4& proj, mfw::Renderer& renderer) {
     renderer.renderCircle(proj, m_position + direction * radius * 0.6, radius * 0.1, glm::vec4(0, 0, 0, 1));
 }
 
-color ObjectBuilder<Circle>::default_color;
-real ObjectBuilder<Circle>::default_d;
+color BuildObject<Circle>::default_color;
+real BuildObject<Circle>::default_d;
 
-Circle* ObjectBuilder<Circle>::operator()(const vec2& position, const real& d, const color& color) {
+BuildObject<Circle>::BuildObject(const vec2& position, const real& d, const color& color)
+{
     const real worldScale = Simulation::Get()->getWorldScale();
-    auto circle = Simulation::Get()->world.addRigidBody<Circle>(position * worldScale, color, d * worldScale);
-    return circle;
+    object = Simulation::Get()->world.addRigidBody<Circle>(position * worldScale, color, d * worldScale);
 }
 

@@ -14,15 +14,14 @@ void FixPoint::draw(const mat4& proj, mfw::Renderer& renderer) {
     Circle(m_position, m_color, d).draw(proj, renderer);
 }
 
-color ObjectBuilder<FixPoint>::default_color;
-real ObjectBuilder<FixPoint>::default_d;
+color BuildObject<FixPoint>::default_color;
+real BuildObject<FixPoint>::default_d;
 
-FixPoint* ObjectBuilder<FixPoint>::operator()(vec2 pos, real d, color color) {
+BuildObject<FixPoint>::BuildObject(vec2 pos, real d, color color) {
     const real worldScale = Simulation::Get()->getWorldScale();
-    auto fixPoint = Simulation::Get()->world.addConstraint<FixPoint>();
-    fixPoint->m_position = pos;
-    fixPoint->m_color = color;
-    fixPoint->d = d * worldScale;
-    return fixPoint;
+    object = Simulation::Get()->world.addConstraint<FixPoint>();
+    object->m_position = pos;
+    object->m_color = color;
+    object->d = d * worldScale;
 }
 

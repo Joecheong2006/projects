@@ -23,14 +23,13 @@ void Rotator::draw(const mat4& proj, mfw::Renderer& renderer) {
     TOVOID(proj, renderer);
 };
 
-real ObjectBuilder<Rotator>::default_r;
-real ObjectBuilder<Rotator>::default_w;
+real BuildObject<Rotator>::default_r;
+real BuildObject<Rotator>::default_w;
 
-Rotator* ObjectBuilder<Rotator>::operator()(RigidBody* center, RigidBody* target, real r, real w) {
+BuildObject<Rotator>::BuildObject(RigidBody* center, RigidBody* target, real r, real w) {
     const real worldScale = Simulation::Get()->getWorldScale();
-    auto rotator = Simulation::Get()->world.addConstraint<Rotator>(center, target);
-    rotator->r = r * worldScale;
-    rotator->w = w;
-    return rotator;
+    object = Simulation::Get()->world.addConstraint<Rotator>(center, target);
+    object->r = r * worldScale;
+    object->w = w;
 }
 

@@ -2,6 +2,7 @@ FLAGS :=
 DEFINE := 
 
 CC = g++
+MAKE = make
 PCH = include/mfwpch.h
 CFLAGS := $(FLAGS) -include $(PCH) -DUNICODE $(DEFINE)
 SOURCE = src src/**
@@ -46,9 +47,9 @@ app: $(OBJ)
 	@$(CC) $(CFLAGS) $(INCLUDE) -o $@ -c $< -MMD
 
 win_release:
-	@make app -s DEFINE="" FLAGS="-std=c++17 -O2"
+	@$(MAKE) app -s DEFINE="" FLAGS="-std=c++17 -O2"
 
 win_debug:
-	@make app -s DEFINE="-DDEBUG" FLAGS="-std=c++17 -Wall -Wextra -Wpedantic -Wstrict-aliasing -g"
+	@$(MAKE) app -s DEFINE="-DDEBUG" FLAGS="-std=c++17 -Wall -Wextra -Wpedantic -Wstrict-aliasing -g"
 
 -include $(DEP)

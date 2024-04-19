@@ -2,6 +2,7 @@
 
 #include "RigidBody2D.h"
 #include "Constraint.h"
+#include "ObjectBuilderSet.h"
 
 namespace mfw {
     class Renderer;
@@ -24,12 +25,12 @@ public:
 };
 
 template <typename T>
-struct ObjectBuilder;
+struct BuildObject;
 
 template <>
-struct ObjectBuilder<DistanceConstraint> {
+struct BuildObject<DistanceConstraint> : public ObjectBuilderSet<DistanceConstraint, Constraint> {
     static color default_color;
     static real default_w;
-    DistanceConstraint* operator()(RigidBody* target1, RigidBody* target2, real d, f32 w = default_w, color color = default_color);
+    BuildObject(RigidBody* target1, RigidBody* target2, real d, f32 w = default_w, color color = default_color);
 };
 

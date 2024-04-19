@@ -1,5 +1,6 @@
 #pragma once
 #include "PointConstraint.h"
+#include "ObjectBuilderSet.h"
 
 class Roller: public PointConstraint {
 private:
@@ -12,12 +13,12 @@ public:
 };
 
 template <typename T>
-struct ObjectBuilder;
+struct BuildObject;
 
 template <>
-struct ObjectBuilder<Roller> {
+struct BuildObject<Roller> : public ObjectBuilderSet<Roller, Constraint> {
     static color default_color;
     static real default_d;
-    Roller* operator()(vec2 pos, real d = default_d, color color = default_color);
+    BuildObject(vec2 pos, real d = default_d, color color = default_color);
 };
 

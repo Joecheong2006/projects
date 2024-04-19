@@ -15,15 +15,14 @@ void Roller::draw(const mat4& proj, mfw::Renderer& renderer) {
     Circle(m_position, m_color, d).draw(proj, renderer);
 }
 
-color ObjectBuilder<Roller>::default_color;
-real ObjectBuilder<Roller>::default_d;
+color BuildObject<Roller>::default_color;
+real BuildObject<Roller>::default_d;
 
-Roller* ObjectBuilder<Roller>::operator()(vec2 pos, real d, color color) {
+BuildObject<Roller>::BuildObject(vec2 pos, real d, color color) {
     const f32 worldScale = Simulation::Get()->getWorldScale();
-    auto roller = Simulation::Get()->world.addConstraint<Roller>();
-    roller->m_position = pos;
-    roller->m_color = color;
-    roller->d = d * worldScale;
-    return roller;
+    object = Simulation::Get()->world.addConstraint<Roller>();
+    object->m_position = pos;
+    object->m_color = color;
+    object->d = d * worldScale;
 }
 

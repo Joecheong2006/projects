@@ -65,22 +65,21 @@ void Spring::draw(const mat4& proj, mfw::Renderer& renderer) {
     DRAW_SPRING_SUB_STICK();
 }
 
-color ObjectBuilder<Spring>::default_color;
-real ObjectBuilder<Spring>::default_w;
-real ObjectBuilder<Spring>::default_stiffness;
-real ObjectBuilder<Spring>::default_damping;
-i32 ObjectBuilder<Spring>::default_count = 3;
+color BuildObject<Spring>::default_color;
+real BuildObject<Spring>::default_w;
+real BuildObject<Spring>::default_stiffness;
+real BuildObject<Spring>::default_damping;
+i32 BuildObject<Spring>::default_count = 3;
 
-Spring* ObjectBuilder<Spring>::operator()(
+BuildObject<Spring>::BuildObject(
         RigidBody* target1, RigidBody* target2,
         real d, real stiffness, real damping,
         i32 count, real w,color color) {
     const real worldScale = Simulation::Get()->getWorldScale();
-    auto spring = Simulation::Get()->world.addConstraint<Spring>(target1, target2, d * worldScale, w * worldScale);
-    spring->color = color;
-    spring->stiffness = stiffness;
-    spring->damping = damping;
-    spring->count = count;
-    return spring;
+    object = Simulation::Get()->world.addConstraint<Spring>(target1, target2, d * worldScale, w * worldScale);
+    object->color = color;
+    object->stiffness = stiffness;
+    object->damping = damping;
+    object->count = count;
 }
 

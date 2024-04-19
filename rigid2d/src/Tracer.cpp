@@ -33,20 +33,19 @@ void Tracer::draw(const mat4& proj, mfw::Renderer& renderer) {
     }
 }
 
-color ObjectBuilder<Tracer>::default_color;
-real ObjectBuilder<Tracer>::default_maxScale;
-real ObjectBuilder<Tracer>::default_minScale;
-real ObjectBuilder<Tracer>::default_dr;
-i32 ObjectBuilder<Tracer>::default_maxSamples;
+color BuildObject<Tracer>::default_color;
+real BuildObject<Tracer>::default_maxScale;
+real BuildObject<Tracer>::default_minScale;
+real BuildObject<Tracer>::default_dr;
+i32 BuildObject<Tracer>::default_maxSamples;
 
-Tracer* ObjectBuilder<Tracer>::operator()(RigidBody* target, real maxScale, real minScale, real dr, i32 maxSamples, color color) {
+BuildObject<Tracer>::BuildObject(RigidBody* target, real maxScale, real minScale, real dr, i32 maxSamples, color color) {
     const real worldScale = Simulation::Get()->getWorldScale();
-    auto tracer = Simulation::Get()->world.addConstraint<Tracer>(target);
-    tracer->maxScale = maxScale * worldScale;
-    tracer->minScale = minScale * worldScale;
-    tracer->maxSamples = maxSamples;
-    tracer->dr = dr;
-    tracer->m_color = color;
-    return tracer;
+    object = Simulation::Get()->world.addConstraint<Tracer>(target);
+    object->maxScale = maxScale * worldScale;
+    object->minScale = minScale * worldScale;
+    object->maxSamples = maxSamples;
+    object->dr = dr;
+    object->m_color = color;
 }
 

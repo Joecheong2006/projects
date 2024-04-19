@@ -1,6 +1,7 @@
 #pragma once
 #include "RigidBody2D.h"
 #include "Constraint.h"
+#include "ObjectBuilderSet.h"
 #include <list>
 
 class Tracer: public Constraint {
@@ -23,18 +24,18 @@ public:
 };
 
 template <typename T>
-struct ObjectBuilder;
+struct BuildObject;
 
 template <>
-struct ObjectBuilder<Tracer> {
+struct BuildObject<Tracer> : public ObjectBuilderSet<Tracer, Constraint> {
     static color default_color;
     static real default_maxScale, default_minScale, default_dr;
     static i32 default_maxSamples;
-    Tracer* operator()(RigidBody* target,
-            real maxScale = default_maxScale,
-            real minScale = default_minScale,
-            real dr = default_dr,
-            i32 maxSamples = default_maxSamples,
-            color color = default_color);
+    BuildObject(RigidBody* target,
+                  real maxScale = default_maxScale,
+                  real minScale = default_minScale,
+                  real dr = default_dr,
+                  i32 maxSamples = default_maxSamples,
+                  color color = default_color);
 };
 

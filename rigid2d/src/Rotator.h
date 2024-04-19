@@ -1,6 +1,7 @@
 #pragma once
 #include "PointConstraint.h"
 #include "RigidBody2D.h"
+#include "ObjectBuilderSet.h"
 
 class Rotator : public Constraint {
 private:
@@ -19,11 +20,11 @@ public:
 };
 
 template <typename T>
-struct ObjectBuilder;
+struct BuildObject;
 
 template <>
-struct ObjectBuilder<Rotator> {
+struct BuildObject<Rotator> : public ObjectBuilderSet<Rotator, Constraint> {
     static real default_r, default_w;
-    Rotator* operator()(RigidBody* center, RigidBody* target, real r = default_r, real w = default_w);
+    BuildObject(RigidBody* center, RigidBody* target, real r = default_r, real w = default_w);
 };
 

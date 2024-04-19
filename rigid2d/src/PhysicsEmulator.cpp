@@ -345,13 +345,13 @@ void PhysicsEmulator::renderImgui() {
     if (mode != Mode::Action) {
         auto objects = FindCirclesByPosition(sim->mouseToWorldCoord());
         for (auto& prev : preview) {
-            prev->m_color = ObjectBuilder<Circle>().default_color;
+            prev->m_color = BuildObject<Circle>::default_color;
         }
         for (auto& circle : objects) {
             preview.emplace_back(circle);
         }
         for (auto& circle : objects) {
-            circle->m_color = ObjectBuilder<Circle>().default_color * 0.7f;
+            circle->m_color = BuildObject<Circle>::default_color * 0.7f;
         }
     }
 }
@@ -385,8 +385,7 @@ bool PhysicsEmulator::OnInputKey(const KeyEvent& event) {
         }
         if (event.key == MF_KEY_SPACE && event.mode == Down && !rigidBodyHolder) {
             for (auto& prev : preview) {
-                auto a = ObjectBuilder<Circle>();
-                prev->m_color = a.default_color;
+                prev->m_color = BuildObject<Circle>::default_color;
             }
             mode = Mode::Action;
         }
@@ -440,8 +439,6 @@ void PhysicsEmulator::OnEdit(const MouseButtonEvent& event, const vec2& wpos) {
     static PointConstraint* preview_fix_point = nullptr;
     static vec2 preview_pos;
     const real worldScale = sim->getWorldScale();
-    auto buildCircle = ObjectBuilder<Circle>();
-    auto buildLink = ObjectBuilder<DistanceConstraint>();
     if (event.button == MF_MOUSE_BUTTON_RIGHT && event.mode == KeyMode::Down) {
         preview_node = FindCircleByPosition(wpos);
         preview_fix_point = FindPointConstraintByPosition(wpos);
@@ -457,12 +454,12 @@ void PhysicsEmulator::OnEdit(const MouseButtonEvent& event, const vec2& wpos) {
                 return;
             }
             real d = glm::length(preview_node->m_position - second_node->m_position) / worldScale;
-            buildLink(preview_node, second_node, d);
+            BuildObject<DistanceConstraint>(preview_node, second_node, d);
         }
         else if (preview_node && second_node == nullptr) {
             real d = glm::length(preview_node->m_position - wpos) / worldScale;
-            auto p = buildCircle(wpos / worldScale);
-            auto dc = buildLink(preview_node, p, d);
+            auto p = BuildObject<Circle>(wpos / worldScale);
+            auto dc = BuildObject<DistanceConstraint>(preview_node, p, d);
 
             if (point) {
                 point->target = p;
@@ -471,8 +468,8 @@ void PhysicsEmulator::OnEdit(const MouseButtonEvent& event, const vec2& wpos) {
         }
         else if (preview_node == nullptr && second_node) {
             real d = glm::length(preview_pos - second_node->m_position) / worldScale;
-            auto p = buildCircle(preview_pos / worldScale);
-            auto dc = buildLink(p, second_node, d);
+            auto p = BuildObject<Circle>(preview_pos / worldScale);
+            auto dc = BuildObject<DistanceConstraint>(p, second_node, d);
 
             if (preview_fix_point) {
                 preview_fix_point->target = p;
@@ -481,16 +478,16 @@ void PhysicsEmulator::OnEdit(const MouseButtonEvent& event, const vec2& wpos) {
         }
         else {
             if (preview_pos == wpos) {
-                buildCircle(preview_pos / worldScale);
+                BuildObject<Circle>(preview_pos / worldScale);
                 return;
             }
             real d = glm::length(preview_pos - wpos) / worldScale;
-            if (d < ObjectBuilder<Circle>().default_d * 2.0) {
+            if (d < BuildObject<Circle>::default_d * 2.0) {
                 return;
             }
-            auto p1 = buildCircle(preview_pos / worldScale);
-            auto p2 = buildCircle(wpos / worldScale);
-            auto dc = buildLink(p1, p2, d);
+            auto p1 = BuildObject<Circle>(preview_pos / worldScale);
+            auto p2 = BuildObject<Circle>(wpos / worldScale);
+            auto dc = BuildObject<DistanceConstraint>(p1, p2, d);
 
             if (point && preview_fix_point) {
                 point->target = static_cast<RigidBody*>(p2);

@@ -1,6 +1,6 @@
 #pragma once
-
 #include "DistanceConstraint.h"
+#include "ObjectBuilderSet.h"
 
 class Spring : public DistanceConstraint {
 private:
@@ -17,19 +17,20 @@ public:
 };
 
 template <typename T>
-struct ObjectBuilder;
+struct BuildObject;
 
 template <>
-struct ObjectBuilder<Spring> {
+struct BuildObject<Spring> : public ObjectBuilderSet<Spring, Constraint> {
     static color default_color;
     static real default_w;
     static real default_stiffness, default_damping;
     static i32 default_count;
-    Spring* operator()(RigidBody* target1, RigidBody* target2,
-            real d,
-            real stiffness = default_stiffness,
-            real damping = default_damping,
-            i32 count = default_count,
-            real w = default_w,
-            color color = default_color);
+    BuildObject(RigidBody* target1, RigidBody* target2,
+                  real d,
+                  real stiffness = default_stiffness,
+                  real damping = default_damping,
+                  i32 count = default_count,
+                  real w = default_w,
+                  color color = default_color);
 };
+

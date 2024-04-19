@@ -1,5 +1,6 @@
 #pragma once
 #include "PointConstraint.h"
+#include "ObjectBuilderSet.h"
 
 class FixPoint: public PointConstraint {
 private:
@@ -12,12 +13,12 @@ public:
 };
 
 template <typename T>
-struct ObjectBuilder;
+struct BuildObject;
 
 template <>
-struct ObjectBuilder<FixPoint> {
+struct BuildObject<FixPoint> : public ObjectBuilderSet<FixPoint, Constraint> {
     static color default_color;
     static real default_d;
-    FixPoint* operator()(vec2 position, real d = default_d, color color = default_color);
+    BuildObject(vec2 position, real d = default_d, color color = default_color);
 };
 
