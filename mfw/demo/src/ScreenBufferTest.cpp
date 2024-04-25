@@ -97,8 +97,6 @@ void ScreenBufferTest::Start() {
     vbo.unbind();
     shader.unbind();
 
-    auto window = &Application::Get().GetWindow();
-    // window->setFullScreen(true);
     resolution = glm::vec2(160, 90);
     screenBuffer = new ScreenBuffer(resolution.x, resolution.y);
 
