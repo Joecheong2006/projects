@@ -4,9 +4,9 @@
 class Line {
 public:
     vec2 p[2];
-    real restitution, friction;
+    real restitution, friction_coefficient;
     Line(vec2 p1, vec2 p2, real restitution = 1, real friction = 0.1)
-        : restitution(restitution), friction(friction)
+        : restitution(restitution), friction_coefficient(friction)
     {
         p[0] = p1;
         p[1] = p2;
@@ -21,62 +21,45 @@ public:
     }
 
     void resolve_velocity(Circle* circle) {
-        const vec2 normal = glm::normalize(vec2(p[0].y - p[1].y, p[1].x - p[0].x));
-        const vec2 normal_velocity = glm::dot(circle->m_velocity, normal) * normal;
-        const vec2 tangent_velocity = circle->m_velocity - normal_velocity;
+        const vec2 line_tangent = glm::normalize(p[1] - p[0]);
+        const real tangent_length = glm::length(p[1] - p[0]);
+        const real contactOffset = glm::clamp(glm::dot(circle->m_position - p[0], line_tangent), 0.0, tangent_length);
+        const vec2 contact = contactOffset * line_tangent + p[0];
 
-        const vec2 tangent = glm::normalize(p[1] - p[0]);
-        const real contactOffset = glm::dot(circle->m_position - p[0], tangent);
-        const vec2 contact = contactOffset * tangent + p[0];
-        circle->m_position += (circle->radius - glm::length(circle->m_position - contact)) * glm::normalize(circle->m_position - contact);
+        const vec2 normal = glm::normalize(circle->m_position - contact);
+        const vec2 tangent = glm::normalize(vec2(normal.y, -normal.x));
+        const vec2 normal_velocity = glm::dot(circle->m_velocity, -normal) * -normal;
+        const vec2 tangent_velocity = glm::dot(circle->m_velocity, tangent) * tangent;
+
+        circle->m_position += (circle->radius - glm::length(circle->m_position - contact)) * normal;
         circle->m_velocity -= normal_velocity * (1 + restitution);
 
         if (tangent_velocity.x != 0 || tangent_velocity.y != 0) {
-            const real n = glm::abs(glm::dot(Simulation::Get()->world.gravity, normal)) * circle->m_mass;
-            // const vec2 n = Simulation::Get()->world.gravity * -glm::normalize(Simulation::Get()->world.gravity) * circle->m_mass;
-            const vec2 friction = -n * this->friction * tangent_velocity;
-            circle->addForce(friction);
-            const vec3 rvec = vec3(contact - circle->m_position, 0);
-            const real rotate_direction = glm::normalize(glm::cross(rvec, vec3(friction, 0))).z;
+            const real n = -abs(glm::dot(Simulation::Get()->world.gravity, normal)) * circle->m_mass;
+            circle->addForce(n * friction_coefficient * glm::clamp(tangent_velocity, vec2(-1), vec2(1)));
+            const vec3 rvec = -vec3(normal, 0);
+            const real rotate_direction = glm::normalize(glm::cross(rvec, vec3(-tangent_velocity, 0))).z;
             circle->m_angular_velocity = rotate_direction * glm::length(tangent_velocity) / circle->radius;
         }
-
     }
 
     void resolve_collision(Circle* circle) {
         resolve_velocity(circle);
     }
 
+    void draw(const mat4& proj, mfw::Renderer& renderer) {
+        renderer.renderLine(proj, p[0], p[1], glm::vec3(1), 0.01);
+        renderer.renderCircle(proj, p[0], 0.01f, glm::vec4(1));
+        renderer.renderCircle(proj, p[1], 0.01f, glm::vec4(1));
+    }
+
 };
 
 class DemoSimulation : public Simulation {
 public:
-    DemoSimulation()
-        : Simulation("Demo", 0.3f)
+    DemoSimulation(): Simulation("Demo", 0.3f)
     {
         initialize = [&]() {
-            BuildObject<Circle>::default_color = {COLOR(0x858AA6)};
-            BuildObject<Circle>::default_d = 0.17;
-            BuildObject<DistanceConstraint>::default_color = {COLOR(0xefefef)};
-            BuildObject<DistanceConstraint>::default_w = 0.14;
-
-            BuildObject<Tracer>::default_color = {COLOR(0xc73e3e)};
-            BuildObject<Tracer>::default_maxScale = 0.03;
-            BuildObject<Tracer>::default_minScale = 0.01;
-            BuildObject<Tracer>::default_dr = 0.75;
-            BuildObject<Tracer>::default_maxSamples = 450;
-
-            BuildObject<FixPoint>::default_color = {COLOR(0x486577)};
-            BuildObject<FixPoint>::default_d = BuildObject<Circle>::default_d * 1.6f;
-
-            BuildObject<Roller>::default_color = {COLOR(0x3c4467)};
-            BuildObject<Roller>::default_d = BuildObject<FixPoint>::default_d;
-
-            BuildObject<Spring>::default_color = {COLOR(0xefefef)};
-            BuildObject<Spring>::default_w = 0.06;
-            BuildObject<Spring>::default_stiffness = 2;
-            BuildObject<Spring>::default_damping = 0.1;
-
             world.initialize();
             world.setObjectLayer<DistanceConstraint>(RenderLayer::Level2);
             world.setObjectLayer<Spring>(RenderLayer::Level2);
@@ -105,7 +88,7 @@ public:
                 ->target = o1;
             BuildObject<Roller>(o2->m_position)
                 ->target = o2;
-            BuildObject<Spring>(o1, o2, 2.5)->count = 8;
+            BuildObject<Spring>(o1, o2, 2.5, 2, 0.1)->count = 8;
 
             auto circle = BuildObject<Circle>(glm::vec2(1, 0), 0.3);
             circle->m_mass = 1;
@@ -136,9 +119,9 @@ public:
         };
     }
 
-    Line ground = Line({5, -3}, {-5, -3}, 0.2, 0.03);
-    Line b1 = Line({1.4, -3}, {5, -2.2}, 0.4, 0.05);
-    Line b2 = Line({-1.4, -3}, {-3, -2.7}, 0.4, 0.05);
+    Line ground = Line({5, -3}, {-5, -3}, 0.2, 0.1);
+    Line b1 = Line({1.4, -3}, {4, -2.2}, 0.4, 0.1);
+    Line b2 = Line({-1.4, -3}, {-4, -2.2}, 0.4, 0.05);
     void update(const real& dt) {
         auto& objects = world.getObjects<Circle>();
         for (auto& obj : objects) {
@@ -160,9 +143,9 @@ public:
         glm::mat4 proj = camera.getProjection();
         world.render(proj, renderer);
 
-        renderer.renderLine(proj, ground.p[0], ground.p[1], glm::vec3(1), 0.01);
-        renderer.renderLine(proj, b1.p[0], b1.p[1], glm::vec3(1), 0.01);
-        renderer.renderLine(proj, b2.p[0], b2.p[1], glm::vec3(1), 0.01);
+        ground.draw(proj, renderer);
+        b1.draw(proj, renderer);
+        b2.draw(proj, renderer);
     }
 
 };
@@ -177,17 +160,38 @@ namespace Log {
     };
 }
 
-
-Simulation* Simulation::Instance = new DemoSimulation();
-
 mfw::Application* mfw::CreateApplication() {
+    BuildObject<Circle>::default_color = {COLOR(0x858AA6)};
+    BuildObject<Circle>::default_d = 0.17;
+    BuildObject<DistanceConstraint>::default_color = {COLOR(0xefefef)};
+    BuildObject<DistanceConstraint>::default_w = 0.14;
+
+    BuildObject<Tracer>::default_color = {COLOR(0xc73e3e)};
+    BuildObject<Tracer>::default_maxScale = 0.03;
+    BuildObject<Tracer>::default_minScale = 0.01;
+    BuildObject<Tracer>::default_dr = 0.75;
+    BuildObject<Tracer>::default_maxSamples = 450;
+
+    BuildObject<FixPoint>::default_color = {COLOR(0x486577)};
+    BuildObject<FixPoint>::default_d = BuildObject<Circle>::default_d * 1.6f;
+
+    BuildObject<Roller>::default_color = {COLOR(0x3c4467)};
+    BuildObject<Roller>::default_d = BuildObject<FixPoint>::default_d;
+
+    BuildObject<Spring>::default_color = {COLOR(0xefefef)};
+    BuildObject<Spring>::default_w = 0.06;
+    BuildObject<Spring>::default_stiffness = 14;
+    BuildObject<Spring>::default_damping = 0.3;
 
     PhysicsEmulator* emulator = new PhysicsEmulator();
-    emulator->world_scale = 6 * Simulation::Get()->getWorldScale();
-    emulator->shift_rate = 0.001 * emulator->world_scale;
-    emulator->zoom_rate = 0.01 * emulator->world_scale;
-    emulator->settings.sub_step = 500;
+    emulator->setSimulation(new DemoSimulation);
 
+    emulator->world_scale = 6;
+    emulator->shift_rate = 0.001 * emulator->world_scale;
+    emulator->zoom_rate = 0.015 * emulator->world_scale;
+    emulator->settings.sub_step = 500;
+    
     return emulator;
+    
 }
 

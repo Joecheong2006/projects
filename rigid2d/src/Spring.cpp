@@ -69,7 +69,7 @@ color BuildObject<Spring>::default_color;
 real BuildObject<Spring>::default_w;
 real BuildObject<Spring>::default_stiffness;
 real BuildObject<Spring>::default_damping;
-i32 BuildObject<Spring>::default_count = 3;
+i32 BuildObject<Spring>::default_count = 1;
 
 BuildObject<Spring>::BuildObject(
         RigidBody* target1, RigidBody* target2,

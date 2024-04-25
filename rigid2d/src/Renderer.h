@@ -24,19 +24,19 @@ namespace mfw {
         ~Renderer();
 
         void clear();
-        void renderLine(const glm::mat4& proj, const glm::vec2& p1, const glm::vec2& p2, glm::vec3 color, f32 w);
-        void renderLine(const glm::mat4& proj, const glm::vec2& p1, const glm::vec2& p2, glm::vec4 color, f32 w);
-        void renderLineI(const glm::mat4& proj, const glm::vec2& p1, const glm::vec2& p2, glm::vec3 color, f32 w);
-        void renderLineI(const glm::mat4& proj, const glm::vec2& p1, const glm::vec2& p2, glm::vec4 color, f32 w);
-        void renderCircle(const glm::mat4& proj, const Circle& circle);
-        void renderCircle(const glm::mat4& proj, const Circle* circle);
-        void renderCircle(const glm::mat4& proj, const glm::vec2& p, f32 radius, glm::vec4 color);
-        void renderCircleI(const glm::mat4& proj, const Circle& circle);
-        void renderCircleI(const glm::mat4& proj, const Circle* circle);
-        void renderCircleI(const glm::mat4& proj, const glm::vec2& p, f32 radius, glm::vec4 color);
-        void renderImage(const glm::mat4& proj, const glm::vec2& p1, const glm::vec2& p2);
-        void renderRing(const glm::mat4& proj, const glm::vec2& p, f32 radius, f32 width, glm::vec4 color);
-        void renderRingI(const glm::mat4& proj, const glm::vec2& p, f32 radius, glm::vec4 color);
+        void renderLine(const mat4& proj, const vec2& p1, const vec2& p2, vec3 color, real w);
+        void renderLine(const mat4& proj, const vec2& p1, const vec2& p2, vec4 color, real w);
+        void renderLineI(const mat4& proj, const vec2& p1, const vec2& p2, vec3 color, real w);
+        void renderLineI(const mat4& proj, const vec2& p1, const vec2& p2, vec4 color, real w);
+        void renderCircle(const mat4& proj, const Circle& circle);
+        void renderCircle(const mat4& proj, const Circle* circle);
+        void renderCircle(const mat4& proj, const vec2& p, real radius, vec4 color);
+        void renderCircleI(const mat4& proj, const Circle& circle);
+        void renderCircleI(const mat4& proj, const Circle* circle);
+        void renderCircleI(const mat4& proj, const vec2& p, real radius, vec4 color);
+        void renderImage(const mat4& proj, const vec2& p1, const vec2& p2);
+        void renderRing(const mat4& proj, const vec2& p, real radius, real width, vec4 color);
+        void renderRingI(const mat4& proj, const vec2& p, real radius, vec4 color);
 
     };
 

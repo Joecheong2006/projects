@@ -9,6 +9,7 @@ class PhysicsEmulator : public mfw::Application {
 public:
     PhysicsEmulator();
     ~PhysicsEmulator();
+    void setSimulation(Simulation* simulation);
     virtual void Start() override;
     virtual void Update() override;
     virtual bool OnInputKey(const mfw::KeyEvent& event) override;
@@ -47,7 +48,7 @@ private:
     RigidBody* rigidBodyHolder = nullptr;
     PointConstraint* pointHolder = nullptr;
     std::vector<RigidBody*> preview;
-    Simulation* sim;
+    Simulation* simulation;
 
     mfw::Renderer renderer;
 

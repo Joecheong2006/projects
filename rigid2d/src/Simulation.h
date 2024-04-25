@@ -10,10 +10,6 @@ class PointConstraint;
 class Simulation {
 public:
     static inline Simulation* Get() { return Instance; }
-    template <typename T>
-    static inline void Create(const T& sim) {
-        Instance = new T(sim);
-    }
 
 public:
     Simulation(const std::string& name, real worldScale);
@@ -32,6 +28,7 @@ public:
     vec2 mouseToWorldCoord();
 
 private:
+    friend class PhysicsEmulator;
     static Simulation* Instance;
     real unitScale = 0;
 

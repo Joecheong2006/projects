@@ -1,11 +1,12 @@
 #include "Simulation.h"
 
 #include "BuildObject.h"
-
 #include "Renderer.h"
 #include <mfw/mfwlog.h>
 #include <mfw/Application.h>
 #include <mfw/Input.h>
+
+Simulation* Simulation::Instance = nullptr;
 
 Simulation::Simulation(const std::string& name, real worldScale)
     : name(name), unitScale(worldScale)
