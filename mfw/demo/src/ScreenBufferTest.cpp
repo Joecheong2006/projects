@@ -97,7 +97,7 @@ void ScreenBufferTest::Start() {
     vbo.unbind();
     shader.unbind();
 
-    resolution = glm::vec2(160, 90);
+    resolution = glm::vec2(900, 540);
     screenBuffer = new ScreenBuffer(resolution.x, resolution.y);
 
     glViewport(0, 0, resolution.x, resolution.y);
@@ -118,12 +118,13 @@ void ScreenBufferTest::Update() {
     else  {
         stop = false;
     }
+
     glViewport(0, 0, resolution.x, resolution.y);
 
-        auto[x, y] = Input::GetMouse();
-        const glm::vec2 mouse = glm::vec2(x / (f32)window->width(), 1 - y / (f32)window->height()) * 2.0f - 1.0f;
-        vertex[0] = mouse.x;
-        vertex[1] = mouse.y;
+    auto[x, y] = Input::GetMouse();
+    const glm::vec2 mouse = glm::vec2(x / (f32)window->width(), 1 - y / (f32)window->height()) * 2.0f - 1.0f;
+    vertex[0] = mouse.x;
+    vertex[1] = mouse.y;
 
     if (Input::MouseButtonDown(MF_MOUSE_BUTTON_LEFT)) {
         vao.bind();
@@ -132,8 +133,15 @@ void ScreenBufferTest::Update() {
         color[1] = 1;
         color[2] = 1;
         shader.set3f("color", color);
-        vbo.setBuffer(vertex, 2 * sizeof(f32));
-        glDrawArrays(GL_POINTS, 0, 1);
+        glm::vec2 pp = {1.0 / resolution.x, 1.0 / resolution.y};
+        for (f32 i = 0; i < pp.x * 10; i += pp.x) {
+            for (f32 j = 0; j < pp.y * 10; j += pp.y) {
+                vertex[0] = mouse.x + i;
+                vertex[1] = mouse.y + j;
+                vbo.setBuffer(vertex, 2 * sizeof(f32));
+                glDrawArrays(GL_POINTS, 0, 1);
+            }
+        }
     }
 
     if (Input::MouseButtonDown(MF_MOUSE_BUTTON_RIGHT)) {
@@ -163,8 +171,8 @@ void ScreenBufferTest::Update() {
 
         screenBuffer->vao.bind();
         ShaderProgram shader;
-        shader.attachShader(GL_VERTEX_SHADER, "res/shaders/GameOfLive.vert");
-        shader.attachShader(GL_FRAGMENT_SHADER, "res/shaders/GameOfLive.frag");
+        shader.attachShader(GL_VERTEX_SHADER, "res/shaders/GameOfLife.vert");
+        shader.attachShader(GL_FRAGMENT_SHADER, "res/shaders/GameOfLife.frag");
         shader.link();
         shader.bind();
         glBindTexture(GL_TEXTURE_2D, newTexture);

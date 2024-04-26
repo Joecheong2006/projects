@@ -66,10 +66,6 @@ public:
         return true;
     }
 
-    virtual bool OnWindowResize(const WindowResizeEvent& event) override {
-        return true;
-    }
-
     virtual bool OnWindowFocus(const WindowFocusEvent& event) override {
         LOG_EVENT_INFO(event);
         if (fullScreen) {
