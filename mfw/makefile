@@ -8,7 +8,7 @@ CFLAGS := $(FLAGS) -include $(PCH) -DUNICODE $(DEFINE)
 SOURCE = src src/**
 LIBRARY = lib/stb_image lib/imgui
 INCLUDE = -Ilib -Iinclude
-LIB = -lopengl32 -lGdi32 -lWinmm -ld3dcompiler -ldwmapi -static-libgcc -static-libstdc++
+LIB = -lopengl32 -lGdi32 -lWinmm -ld3dcompiler -ldwmapi -static-libgcc -static-libstdc++ -Bstatic -Bdynamic
 
 SRC = $(wildcard $(patsubst %, %/*.cpp, $(SOURCE)))
 LIBOBJ = $(wildcard $(patsubst %, %/*.o, $(LIBRARY))) 

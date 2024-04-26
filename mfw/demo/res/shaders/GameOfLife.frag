@@ -34,37 +34,37 @@ float gameOfLife() {
     return c;
 }
 
-float smoothLife() {
+#define e 2.71828
+#define dt 0.1
+
+float singleGrowth(float value, float u, float k) {
+    float x = value - u;
+    k = k * k * 2;
+    return 2 * pow(e, -x * x / k) - 1;
+}
+
+float calKernal(float w, vec2 perpixel) {
+    float result = 0;
+    float count = 0;
+    for (float i = -w; i <= w; ++i) {
+        for (float j = -w; j <= w; ++j) {
+            float r = length(vec2(i, j)) / w;
+            float k = pow(4.0 * r * (1.0 - r), 1);
+            result += texture(screen, texCoords + vec2(i, j) * perpixel).b * k;
+            count += k;
+        }
+    }
+    return result / count;
+}
+
+vec3 smoothLife() {
     vec2 size = textureSize(screen, 0);
     vec2 perpixel = 1.0f / size;
-
-    float ik = 0, ok = 0;
-    for (int i = -1; i <= 1; i++) {
-        for (int j = -1; j <= 1; j++) {
-            ik += texture(screen, texCoords + vec2(i, j) * perpixel).b;
-        }
-    }
-
-    for (int i = -8; i <= 8; i++) {
-        for (int j = -8; j <= 8; j++) {
-            ok += texture(screen, texCoords + vec2(i, j) * perpixel).b;
-        }
-    }
-
-    ok -= ik;
-    float uo = ok / (289 - 9);
-    float ui = ik / (9);
-
-    if (ui >= 0.5 && uo >= 0.26 && uo <= 0.46) {
-        return 1;
-    }
-    else if (ui < 0.5 && uo >= 0.27 && uo <= 0.36) {
-        return 1;
-    }
-    return 0;
+    float kernal = calKernal(20.0, perpixel);
+    float c = clamp(singleGrowth(kernal, 0.2, 0.024) * dt + texture(screen, texCoords).b, 0.0, 1.0);
+    return vec3(c);
 }
 
 void main() {
-    // frag_color = vec4(vec3(gameOfLife()), 1);
-    frag_color = vec4(vec3(smoothLife()), 1);
+    frag_color = vec4(smoothLife(), 1);
 }

@@ -134,8 +134,8 @@ void ScreenBufferTest::Update() {
         color[2] = 1;
         shader.set3f("color", color);
         glm::vec2 pp = {1.0 / resolution.x, 1.0 / resolution.y};
-        for (f32 i = 0; i < pp.x * 10; i += pp.x) {
-            for (f32 j = 0; j < pp.y * 10; j += pp.y) {
+        for (f32 i = 0; i < pp.x * 20; i += pp.x) {
+            for (f32 j = 0; j < pp.y * 20; j += pp.y) {
                 vertex[0] = mouse.x + i;
                 vertex[1] = mouse.y + j;
                 vbo.setBuffer(vertex, 2 * sizeof(f32));
@@ -151,8 +151,15 @@ void ScreenBufferTest::Update() {
         color[1] = 0;
         color[2] = 0;
         shader.set3f("color", color);
-        vbo.setBuffer(vertex, 2 * sizeof(f32));
-        glDrawArrays(GL_POINTS, 0, 1);
+        glm::vec2 pp = {1.0 / resolution.x, 1.0 / resolution.y};
+        for (f32 i = 0; i < pp.x * 20; i += pp.x) {
+            for (f32 j = 0; j < pp.y * 20; j += pp.y) {
+                vertex[0] = mouse.x + i;
+                vertex[1] = mouse.y + j;
+                vbo.setBuffer(vertex, 2 * sizeof(f32));
+                glDrawArrays(GL_POINTS, 0, 1);
+            }
+        }
     }
 
     static int c = 0;

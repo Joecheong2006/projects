@@ -28,7 +28,7 @@ public:
 
 private:
     f32 frame, dd = 0.01, cursorSize = 1;
-    i32 step = 10;
+    i32 step = 2;
     bool stop = false;
     ScreenBuffer* screenBuffer;
 
