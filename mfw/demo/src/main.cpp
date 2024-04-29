@@ -13,7 +13,7 @@ private:
     bool fullScreen = false;
 
 public:
-    DemoSandBox(): Application("demo", 1280, 960)
+    DemoSandBox(): Application("demo", 1280, 720)
     {
         test = new ScreenBufferTest();
     }
@@ -31,7 +31,6 @@ public:
         io.ConfigFlags |= ImGuiBackendFlags_HasMouseCursors;
         io.ConfigFlags |= ImGuiBackendFlags_HasSetMousePos;
 
-        //io.KeyMap[ImGuiKey_A] = 'A';
         ImGui::StyleColorsDark();
         ImGui_ImplWin32_InitForOpenGL(Application::Get().GetWindow().getHandle());
         ImGui_ImplOpenGL3_Init("#version 410");

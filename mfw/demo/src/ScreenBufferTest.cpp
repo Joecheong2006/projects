@@ -87,6 +87,15 @@ static f32 color[3] = {COLOR(0x977F89)};
 void ScreenBufferTest::Start() {
     name = "ScreenBufferTest";
 
+    outer.radius = 10;
+    outer.growth_u = 0.257;
+    outer.growth_k = 0.336;
+    inner.radius = 3;
+    inner.growth_u = 0.365;
+    inner.growth_k = 0.549;
+
+    cursorWidth = 10;
+
     VertexBufferLayout layout;
     layout.add<f32>(2);
     vao.applyBufferLayout(layout);
@@ -97,12 +106,14 @@ void ScreenBufferTest::Start() {
     vbo.unbind();
     shader.unbind();
 
-    resolution = glm::vec2(900, 540);
+    resolution = glm::vec2(1280, 720);
     screenBuffer = new ScreenBuffer(resolution.x, resolution.y);
 
     glViewport(0, 0, resolution.x, resolution.y);
     glClearColor(0, 0, 0, 1);
 }
+
+static f32 dt = 0.1;
 
 void ScreenBufferTest::Update() {
     Timer timer;
@@ -112,6 +123,7 @@ void ScreenBufferTest::Update() {
     if (Input::KeyPress(MF_KEY_R)) {
         glClear(GL_COLOR_BUFFER_BIT);
     }
+
     if (Input::KeyPress(MF_KEY_LEFT_CONTROL)) {
         stop = true;
     }
@@ -134,8 +146,8 @@ void ScreenBufferTest::Update() {
         color[2] = 1;
         shader.set3f("color", color);
         glm::vec2 pp = {1.0 / resolution.x, 1.0 / resolution.y};
-        for (f32 i = 0; i < pp.x * 20; i += pp.x) {
-            for (f32 j = 0; j < pp.y * 20; j += pp.y) {
+        for (f32 i = 0; i < pp.x * cursorWidth; i += pp.x) {
+            for (f32 j = 0; j < pp.y * cursorWidth; j += pp.y) {
                 vertex[0] = mouse.x + i;
                 vertex[1] = mouse.y + j;
                 vbo.setBuffer(vertex, 2 * sizeof(f32));
@@ -152,8 +164,8 @@ void ScreenBufferTest::Update() {
         color[2] = 0;
         shader.set3f("color", color);
         glm::vec2 pp = {1.0 / resolution.x, 1.0 / resolution.y};
-        for (f32 i = 0; i < pp.x * 20; i += pp.x) {
-            for (f32 j = 0; j < pp.y * 20; j += pp.y) {
+        for (f32 i = 0; i < pp.x * cursorWidth; i += pp.x) {
+            for (f32 j = 0; j < pp.y * cursorWidth; j += pp.y) {
                 vertex[0] = mouse.x + i;
                 vertex[1] = mouse.y + j;
                 vbo.setBuffer(vertex, 2 * sizeof(f32));
@@ -182,6 +194,13 @@ void ScreenBufferTest::Update() {
         shader.attachShader(GL_FRAGMENT_SHADER, "res/shaders/GameOfLife.frag");
         shader.link();
         shader.bind();
+        shader.set1f("outer.radius", outer.radius);
+        shader.set1f("outer.growth_u", outer.growth_u);
+        shader.set1f("outer.growth_k", outer.growth_k);
+        shader.set1f("inner.radius", inner.radius);
+        shader.set1f("inner.growth_u", inner.growth_u);
+        shader.set1f("inner.growth_k", inner.growth_k);
+        shader.set1f("dt", dt);
         glBindTexture(GL_TEXTURE_2D, newTexture);
         glDrawArrays(GL_TRIANGLES, 0, 6);
         glDeleteTextures(1, &newTexture);
@@ -198,10 +217,22 @@ void ScreenBufferTest::Update() {
     frame = timer.getDuration();
 }
 
+void updateKernalImgui(std::string name, ScreenBufferTest::kernal& kernal) {
+    ImGui::SliderFloat((name + " radius").c_str(), &kernal.radius, 0, 40);
+    ImGui::SliderFloat((name + " growth u").c_str(), &kernal.growth_u, 0, 1);
+    ImGui::SliderFloat((name + " growth k").c_str(), &kernal.growth_k, 0, 1);
+}
+
 void ScreenBufferTest::UpdateImgui() {
     ImGui::Text("frame: %gms", frame * 1000);
     ImGui::SliderInt("step", &step, 1, 40);
     ImGui::Checkbox("stop", &stop);
+
+    ImGui::SliderFloat("dt", &dt, 0, 1);
+    ImGui::SliderFloat("cursor width", &cursorWidth, 1, 30);
+    updateKernalImgui("outer", outer);
+    updateKernalImgui("inner", inner);
+
     if (ImGui::SliderFloat("resolution.x", &resolution.x, 120, 2560) ||
         ImGui::SliderFloat("resolution.y", &resolution.y, 68, 1440))
     {

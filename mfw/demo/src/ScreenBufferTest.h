@@ -26,8 +26,15 @@ public:
     virtual void Update() override;
     virtual void UpdateImgui() override;
 
+    struct kernal {
+        float radius;
+        float growth_u, growth_k;
+    };
+
 private:
-    f32 frame, dd = 0.01, cursorSize = 1;
+    kernal inner, outer;
+
+    f32 frame, dd = 0.01, cursorSize = 1, cursorWidth;
     i32 step = 2;
     bool stop = false;
     ScreenBuffer* screenBuffer;
