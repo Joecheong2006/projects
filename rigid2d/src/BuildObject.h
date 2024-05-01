@@ -1,6 +1,8 @@
 #pragma once
 
 #include "Circle.h"
+#include "Line.h"
+
 #include "DistanceConstraint.h"
 #include "Tracer.h"
 #include "Rotator.h"

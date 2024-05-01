@@ -78,11 +78,10 @@ namespace mfw {
             } break;
 
         case WM_CHAR: {
-
             } break;
 
         case WM_UNICHAR: {
-                 return;
+                return;
             }
 
         case WM_KEYDOWN:
@@ -101,7 +100,7 @@ namespace mfw {
                 KeyMode mode = static_cast<KeyMode>(keyRepeat + keyDown + keyRelease);
 
                 key = Input::GetKeyCode(MapVirtualKeyW(scancode, MAPVK_VSC_TO_VK_EX));
-                if (key >= 0) {
+                if (key != MF_KEY_NONE) {
                     keys[key] = mode == KeyMode::Down || mode == KeyMode::Press;
                     m_state.m_callBackFunc(KeyEvent(key, scancode, mode));
                 }
@@ -118,23 +117,18 @@ namespace mfw {
                 int button;
                 if (message == WM_LBUTTONDOWN || message == WM_LBUTTONUP) {
                     button = MF_MOUSE_BUTTON_LEFT;
-                    // button = MouseButton::Left;
                 }
                 else if (message == WM_RBUTTONDOWN || message == WM_RBUTTONUP) {
                     button = MF_MOUSE_BUTTON_RIGHT;
-                    // button = MouseButton::Right;
                 }
                 else if (message == WM_MBUTTONDOWN || message == WM_MBUTTONUP) {
                     button = MF_MOUSE_BUTTON_MIDDLE;
-                    // button = MouseButton::Middle;
                 }
                 else if (GET_XBUTTON_WPARAM(wparam) == XBUTTON1) {
                     button = MF_MOUSE_BUTTON_4;
-                    // button = MouseButton::X1;
                 }
                 else {
                     button = MF_MOUSE_BUTTON_5;
-                    // button = MouseButton::X2;
                 }
                 if (message == WM_LBUTTONDOWN || message == WM_RBUTTONDOWN || message == WM_MBUTTONDOWN || message == WM_XBUTTONDOWN) {
                     mouse.buttons[button] = true;
@@ -213,8 +207,6 @@ namespace mfw {
                 GetModuleHandle(NULL),
                 this
                 );
-
-        // setSize(m_state.width, m_state.height);
 
         m_hdc = GetDC(m_hwnd);
     }

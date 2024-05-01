@@ -9,7 +9,7 @@ namespace mfw {
 class PointConstraint;
 class Simulation {
 public:
-    static inline Simulation* Get() { return Instance; }
+    static Simulation* Get() { return Instance; }
 
 public:
     Simulation(const std::string& name, real worldScale);
@@ -17,9 +17,9 @@ public:
     virtual ~Simulation() = default;
     virtual void update(const real& dt);
     virtual void render(mfw::Renderer& renderer);
-    inline real getWorldScale() const { return unitScale; }
+    real getWorldScale() { return unitScale; }
 
-    std::function<void()> initialize;
+    std::function<void(void)> initialize{};
 
     World world;
     Camera camera;
@@ -30,7 +30,7 @@ public:
 private:
     friend class PhysicsEmulator;
     static Simulation* Instance;
-    real unitScale = 0;
+    real unitScale;
 
 };
 

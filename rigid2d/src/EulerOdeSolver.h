@@ -2,5 +2,5 @@
 #include "OdeSolver.h"
 
 struct EulerOdeSolver : OdeSolver {
-    virtual void solve(const f64& dt, const std::vector<RigidBody*>& objects) override;
+    virtual void solve(const real& dt, const std::vector<RigidBody*>& objects) override;
 };

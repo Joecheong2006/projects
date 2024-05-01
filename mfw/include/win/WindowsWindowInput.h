@@ -12,8 +12,5 @@ namespace mfw {
         virtual const std::pair<i32, i32> GetMouseImpl() override;
         virtual i32 GetKeyCodeImpl(i32 key) override;
 
-        //i32 mfKeyMaps[520];
-        std::unordered_map<i32, i32> keymap;
-
     };
 }

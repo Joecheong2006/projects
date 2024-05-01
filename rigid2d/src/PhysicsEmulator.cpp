@@ -114,8 +114,6 @@ void PhysicsEmulator::Start() {
         ASSERT(true);
     }
 
-    simulation->initialize();
-
     real worldScale = simulation->getWorldScale();
     world_scale *= worldScale;
     shift_rate *= worldScale;
@@ -125,6 +123,8 @@ void PhysicsEmulator::Start() {
 
     preview.reserve(16);
     SetWorldProjection(vec2(width, height));
+
+    simulation->initialize();
 
     glClearColor(COLOR(0x121414), 1);
 }
@@ -192,7 +192,6 @@ void PhysicsEmulator::MovePointConstraint() {
     vec2 wpos = simulation->mouseToWorldCoord();
     pointHolder->m_position = wpos;
 }
-#include <windows.h>
 
 void PhysicsEmulator::update(const real& dt) {
     (void)dt;
@@ -355,6 +354,7 @@ void PhysicsEmulator::renderImgui() {
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
     if (mode != Mode::Action) {
+        return;
         auto objects = FindCirclesByPosition(simulation->mouseToWorldCoord());
         for (auto& prev : preview) {
             prev->m_color = BuildObject<Circle>::default_color;

@@ -1,5 +1,6 @@
 #pragma once
 #include "Test.h"
+#include "Layer.h"
 
 #include "VertexArray.h"
 #include "VertexBuffer.h"
@@ -18,32 +19,31 @@ struct ScreenBuffer {
 
 };
 
-class ScreenBufferTest : public Test {
+class ScreenBufferTest : public mfw::Layer {
+    friend class ScreenBufferUi;
 public:
     ScreenBufferTest();
     ~ScreenBufferTest();
-    virtual void Start() override;
-    virtual void Update() override;
-    virtual void UpdateImgui() override;
+    virtual void OnStart() override;
+    virtual void OnUpdate() override;
 
     struct kernal {
         float radius;
         float growth_u, growth_k;
     };
 
-private:
     kernal inner, outer;
-
+    f32 dt;
     f32 frame, dd = 0.01, cursorSize = 1, cursorWidth;
     i32 step = 2;
     bool stop = false;
-    ScreenBuffer* screenBuffer;
+    glm::vec2 resolution = glm::vec2(720, 540);
 
+private:
+    ScreenBuffer* screenBuffer;
     mfw::VertexArray vao;
     mfw::VertexBuffer vbo;
     mfw::ShaderProgram shader;
-
-    glm::vec2 resolution = glm::vec2(720, 540);
 
 };
 

@@ -8,6 +8,11 @@
 #include "InputEvent.h"
 #include "WindowEvent.h"
 
+// TODO: BE CROSS PLATFORM
+#include "imgui/imgui.h"
+#include "imgui/imgui_impl_opengl3.h"
+#include "imgui/imgui_impl_win32.h"
+
 namespace mfw {
     Application* Application::Instance = nullptr;
 
@@ -71,18 +76,50 @@ namespace mfw {
     }
 
     void Application::run() {
+        IMGUI_CHECKVERSION();
+        ImGui::CreateContext();
+        ImGuiIO& io = ImGui::GetIO();
+        io.ConfigFlags |= ImGuiBackendFlags_HasMouseCursors;
+        io.ConfigFlags |= ImGuiBackendFlags_HasSetMousePos;
+
+        ImGui::StyleColorsDark();
+        ImGui_ImplWin32_InitForOpenGL(Application::Get().GetWindow().getHandle());
+        ImGui_ImplOpenGL3_Init("#version 410");
+
         Start();
         while (m_window->isRunning()) {
             m_window->update();
             Update();
+
             for (auto& layer : layerSystem.getLayers()) {
                 layer->OnUpdate();
             }
+
+            ImGui_ImplOpenGL3_NewFrame();
+            ImGui_ImplWin32_NewFrame();
+            ImGui::NewFrame();
+            for (auto& layer : uiLayerSystem.getLayers()) {
+                layer->OnUpdate();
+            }
+            ImGui::Render();
+            ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
             m_window->swapBuffers();
         }
+
+        ImGui_ImplOpenGL3_Shutdown();
+        ImGui_ImplWin32_Shutdown();
+        ImGui::DestroyContext();
     }
 
     void Application::Eventhandle(const Event& event) {
+        auto& uiLayers = uiLayerSystem.getLayers();
+        for (auto iter = uiLayers.rbegin(); iter != uiLayers.rend(); ++iter) {
+            if ((*iter)->handleEvent(event)) {
+                return;
+            }
+        }
+
         auto& layers = layerSystem.getLayers();
         for (auto iter = layers.rbegin(); iter != layers.rend(); ++iter) {
             if ((*iter)->handleEvent(event)) {
@@ -98,6 +135,19 @@ namespace mfw {
         eventListener.listen<CursorMoveEvent>(event);
         eventListener.listen<WindowFocusEvent>(event);
         eventListener.listen<WindowNotFocusEvent>(event);
+    }
+
+
+    void Application::Terminate() {
+        m_window->close();
+    }
+
+    void Application::addLayer(Layer* layer) {
+        layerSystem.addLayer(layer);
+    }
+
+    void Application::addUiLayer(UiLayer* uiLayer) {
+        uiLayerSystem.addLayer(uiLayer);
     }
 
 }

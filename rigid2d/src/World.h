@@ -48,7 +48,7 @@ public:
     template <typename T, typename... Args>
     inline T* addRigidBody(const Args& ...args) {
         T* result = new T(args...);
-        i32 typeId = T::GetTypeId();
+        const i32 typeId = T::GetTypeId();
         if (objectsTypeMap.find(typeId) == objectsTypeMap.end()) {
             extendObjectsContainer(typeId);
         }
@@ -60,7 +60,7 @@ public:
     template <typename T, typename... Args>
     inline T* addConstraint(const Args& ...args) {
         T* result = new T(args...);
-        i32 typeId = T::GetTypeId();
+        const i32 typeId = T::GetTypeId();
         if (objectsTypeMap.find(typeId) == objectsTypeMap.end()) {
             extendConstraintsContainer(typeId);
         }
@@ -71,7 +71,7 @@ public:
 
     template <typename T> [[nodiscard]]
     inline ObjectContainer& getObjects() {
-        i32 typeId = T::GetTypeId();
+        const i32 typeId = T::GetTypeId();
         if (objectsTypeMap.find(typeId) == objectsTypeMap.end()) {
             extendObjectsContainer(typeId);
         }
@@ -80,11 +80,34 @@ public:
 
     template <typename T> [[nodiscard]]
     inline ConstraintContainer& getConstraint() {
-        i32 typeId = T::GetTypeId();
+        const i32 typeId = T::GetTypeId();
         if (objectsTypeMap.find(typeId) == objectsTypeMap.end()) {
             extendConstraintsContainer(typeId);
         }
         return constraintsContainer[objectsTypeMap[T::GetTypeId()]];
+    }
+
+    template <typename T>
+    inline void destoryRigidBody(RigidBody* body) {
+        const i32 typeId = T::GetTypeId();
+        if (objectsTypeMap.find(typeId) == objectsTypeMap.end()) {
+            return;
+        }
+        auto& objects = objectsContainer[objectsTypeMap[T::GetTypeId()]];
+        for (u64 i = 0; i < objects.size(); ++i) {
+            if (objects[i] == body) {
+                delete objects[i];
+                objects.erase(objects.begin() + i, objects.begin() + i + 1);
+                break;
+            }
+        }
+        auto& renderLayer = renderLayers[renderLayersMap[typeId]];
+        for (u64 i = 0; i < renderLayers.size(); ++i) {
+            if (renderLayer[i] == static_cast<Drawable*>(body)) {
+                renderLayer.erase(renderLayer.begin() + i, renderLayer.begin() + i + 1);
+                return;
+            }
+        }
     }
 
 private:

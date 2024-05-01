@@ -9,45 +9,14 @@
 using namespace mfw;
 class DemoSandBox : public Application {
 private:
-    Test* test;
     bool fullScreen = false;
 
 public:
     DemoSandBox(): Application("demo", 1280, 720)
-    {
-        test = new ScreenBufferTest();
-    }
-
-    ~DemoSandBox() {
-        ImGui_ImplOpenGL3_Shutdown();
-        ImGui_ImplWin32_Shutdown();
-        ImGui::DestroyContext();
-    }
+    {}
 
     virtual void Start() override {
-        IMGUI_CHECKVERSION();
-        ImGui::CreateContext();
-        ImGuiIO& io = ImGui::GetIO();
-        io.ConfigFlags |= ImGuiBackendFlags_HasMouseCursors;
-        io.ConfigFlags |= ImGuiBackendFlags_HasSetMousePos;
-
-        ImGui::StyleColorsDark();
-        ImGui_ImplWin32_InitForOpenGL(Application::Get().GetWindow().getHandle());
-        ImGui_ImplOpenGL3_Init("#version 410");
-        test->Start();
-    }
-
-    virtual void Update() override {
-        test->Update();
-
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplWin32_NewFrame();
-        ImGui::NewFrame();
-        ImGui::Begin(test->name.c_str());
-        test->UpdateImgui();
-        ImGui::End();
-        ImGui::Render();
-        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+        addLayer(new ScreenBufferTest());
     }
 
     virtual bool OnInputKey(const KeyEvent& event) override {
@@ -83,10 +52,10 @@ public:
 
 };
 
-class TestLayer : public Layer {
+class DebugLayer : public Layer {
 public:
-    TestLayer(const std::string& name): Layer(name) {}
-    ~TestLayer() { LOG_INFO("{}\n", (char*)__func__); }
+    DebugLayer(const std::string& name): Layer(name) {}
+    ~DebugLayer() { LOG_INFO("{}\n", (char*)__func__); }
     virtual void OnStart() override { LOG_INFO("{}\n", (char*)__func__); }
     virtual bool OnMouseButton(const MouseButtonEvent& event) override { LOG_EVENT_INFO(event); return true; }
     virtual bool OnMouseScroll(const MouseScrollEvent& event) override { LOG_EVENT_INFO(event); return true; }
@@ -106,23 +75,42 @@ public:
 
 };
 
-class TestImgui : Layer {
+class ImguiLayer : public Layer {
 public:
-    TestImgui(): Layer("testImgui") {}
-    virtual void OnUpdate() override {
-        ImGui::Text("hi");
+    ImguiLayer(std::string name): Layer(name) {}
+    virtual void OnUpdateImgui() = 0;
+    bool focus = false;
+
+private:
+    inline virtual bool OnMouseButton(const MouseButtonEvent& event) override { TOVOID(event); return focus; }
+    inline virtual bool OnMouseScroll(const MouseScrollEvent& event) override { TOVOID(event); return focus; }
+    inline virtual bool OnWindowResize(const WindowResizeEvent& event) override { TOVOID(event); return focus; }
+    inline virtual bool OnWindowClose(const WindowCloseEvent& event) override { TOVOID(event); return focus; }
+    inline virtual bool OnCursorMove(const CursorMoveEvent& event) override { TOVOID(event); return focus; }
+    inline virtual bool OnWindowNotFocus(const WindowNotFocusEvent& event) override { TOVOID(event); return focus; }
+    inline virtual bool OnInputKey(const KeyEvent& event) override { TOVOID(event); return focus; }
+};
+
+class TestImguiLayer : public UiLayer {
+public:
+    TestImguiLayer(std::string name = "TestImguiLayer"): UiLayer(name) {}
+    virtual bool OnUiRender() override {
+        ImGui::Text("hi from %s", name.c_str());
+        return ImGui::IsWindowFocused();
     }
+
 };
 
 class App : public Application {
 public:
     App(): Application("demo", 960, 640)
-    {
-    }
+    {}
 
     virtual void Start() override {
-        //addLayer(imguiLayer);
         glViewport(0, 0, GetWindow().width(), GetWindow().height());
+        addLayer(new DebugLayer("testing"));
+        addUiLayer(new TestImguiLayer());
+        addUiLayer(new TestImguiLayer());
     }
 
     virtual void Update() override {

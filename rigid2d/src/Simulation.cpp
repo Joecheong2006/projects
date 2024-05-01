@@ -11,10 +11,10 @@ Simulation* Simulation::Instance = nullptr;
 Simulation::Simulation(const std::string& name, real worldScale)
     : name(name), unitScale(worldScale)
 {
-    initialize = [this]() {
-        world.initialize();
-        BuildObject<FixPoint>({});
-    };
+    // initialize = [this]() {
+    //     world.initialize();
+    //     BuildObject<FixPoint>({});
+    // };
 }
 
 void Simulation::update(const real& dt) {
