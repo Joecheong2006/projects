@@ -1,6 +1,7 @@
 #pragma once
 
 /* Printable keys */
+#define MF_KEY_NONE               -1
 #define MF_KEY_SPACE              32
 #define MF_KEY_APOSTROPHE         39  /* ' */
 #define MF_KEY_COMMA              44  /* , */

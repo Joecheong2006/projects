@@ -12,14 +12,14 @@ void Roller::update([[maybe_unused]] const real& dt) {
 }
 
 void Roller::draw(const mat4& proj, mfw::Renderer& renderer) {
-    Circle(m_position, m_color, d).draw(proj, renderer);
+    Circle(m_position, d, m_color).draw(proj, renderer);
 }
 
 color BuildObject<Roller>::default_color;
 real BuildObject<Roller>::default_d;
 
 BuildObject<Roller>::BuildObject(vec2 pos, real d, color color) {
-    const f32 worldScale = Simulation::Get()->getWorldScale();
+    const f32 worldScale = Simulation::Get()->getWorldUnit();
     object = Simulation::Get()->world.addConstraint<Roller>();
     object->m_position = pos;
     object->m_color = color;

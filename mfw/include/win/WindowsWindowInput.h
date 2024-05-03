@@ -1,5 +1,6 @@
 #pragma once
 #include "Input.h"
+#include "KeyCode.h"
 
 namespace mfw {
     class WindowsWindowInput : public Input {

@@ -1,11 +1,9 @@
 #include "World.h"
 #include "Simulation.h"
 #include "EulerOdeSolver.h"
+#include <mfw/mfwlog.h>
 
-void World::initialize(glm::dvec2 gravity) {
-    this->gravity = gravity;
-    solver = std::make_unique<EulerOdeSolver>();
-}
+std::unique_ptr<OdeSolver> World::solver = std::make_unique<EulerOdeSolver>();
 
 World::~World() {
     clear();
@@ -55,17 +53,18 @@ static void resolve_velocity(const CollisionState& state, RigidBody* objA, Rigid
         return;
     }
     const real e = glm::min(objA->m_restitution, objB->m_restitution);
+    // const real e = (objA->m_restitution + objB->m_restitution) * 0.5;
     const real J = -glm::dot(separate_velocity, normal) * (e + 1.0) * total_inverse_mass;
 
-    const real a_static = 1.0 - objA->isStatic;
-    const real b_static = 1.0 - objB->isStatic;
+    const real a_static = 1.0 - (real)objA->isStatic;
+    const real b_static = 1.0 - (real)objB->isStatic;
     objA->m_velocity += a_static * J * objA->m_inverse_mass * normal;
     objB->m_velocity -= b_static * J * objB->m_inverse_mass * normal;
 
+    return;
     apply_friction(objA, -glm::dot(objA->m_velocity, tangent) * tangent * a_static, normal);
     apply_friction(objB, -glm::dot(objB->m_velocity, tangent) * tangent * b_static, normal);
 
-    return;
     float friction_coefficient = 0.1;
     {
         vec2 tangent_velocity = glm::dot(objA->m_velocity, tangent) * tangent * a_static;
@@ -90,35 +89,21 @@ static void resolve_velocity(const CollisionState& state, RigidBody* objA, Rigid
 }
 
 void World::update(const real& dt) {
+    real sub_dt = dt / sub_step;
     for (auto& objects : objectsContainer) {
         for (auto& object : objects) {
             object->addForce(gravity * object->m_mass);
         }
     }
+    for (i32 i = 0; i < sub_step; ++i) {
+        update_physics(sub_dt);
+        update_collision();
+        update_constraint(sub_dt);
+    }
     for (auto& objects : objectsContainer) {
-        solver->solve(dt, objects);
-    }
-
-    for (auto& object1s : objectsContainer) {
-        for (auto& object1 : object1s) {
-            for (auto& object2s : objectsContainer) {
-                for (auto& object2 : object2s) {
-                    if (object1 == object2)
-                        break;
-                    if (object1->isStatic && object2->isStatic)
-                        continue;
-                    auto state = object1->collider->testCollision(object2->collider, object1, object2);
-                    if (state.depth < 0) {
-                        resolve_velocity(state, object1, object2);
-                    }
-                }
-            }
-        }
-    }
-
-    for (auto& constraints : constraintsContainer) {
-        for (auto& constraint : constraints) {
-            constraint->update(dt);
+        for (auto& object : objects) {
+            object->m_acceleration = {};
+            object->m_angular_acceleration = {};
         }
     }
 }
@@ -129,6 +114,48 @@ void World::render(const glm::mat4& proj, mfw::Renderer& renderer) {
             if (object->drawEnable) {
                 object->draw(proj, renderer);
             }
+        }
+    }
+}
+
+void World::setSubStep(i32 step) {
+    ASSERT(step > 0);
+    sub_step = step;
+}
+
+void World::update_physics(const real& dt) {
+    for (auto& objects : objectsContainer) {
+        solver->solve(dt, objects);
+    }
+}
+
+void World::update_collision() {
+    for (auto& object1s : objectsContainer) {
+        for (auto object1 : object1s) {
+            for (auto& object2s : objectsContainer) {
+                bool is_same = false;
+                for (auto object2 : object2s) {
+                    is_same = object1 == object2;
+                    if (is_same) 
+                        break;
+                    if (object1->isStatic && object2->isStatic)
+                        continue;
+                    auto state = object1->collider->testCollision(object2->collider, object1, object2);
+                    if (state.depth < 0) {
+                        resolve_velocity(state, object1, object2);
+                    }
+                }
+                if (is_same) 
+                    break;
+            }
+        }
+    }
+}
+
+void World::update_constraint(const real& dt) {
+    for (auto& constraints : constraintsContainer) {
+        for (auto& constraint : constraints) {
+            constraint->update(dt);
         }
     }
 }

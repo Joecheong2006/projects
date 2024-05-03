@@ -15,11 +15,11 @@ public:
     Simulation(const std::string& name, real worldScale);
 
     virtual ~Simulation() = default;
-    virtual void update(const real& dt);
-    virtual void render(mfw::Renderer& renderer);
-    real getWorldScale() { return unitScale; }
-
-    std::function<void(void)> initialize{};
+    virtual void OnStart() {}
+    virtual void OnUpdate(const real& dt) { (void)dt; }
+    virtual void OnRender(mfw::Renderer& renderer) { (void)renderer; }
+    real getWorldUnit() { return unitScale; }
+    void initialize();
 
     World world;
     Camera camera;
@@ -29,6 +29,10 @@ public:
 
 private:
     friend class PhysicsEmulator;
+
+    void update(const real& dt);
+    void render(mfw::Renderer& renderer);
+
     static Simulation* Instance;
     real unitScale;
 
@@ -42,4 +46,9 @@ void addDoublePendulum(real angle, real d);
 void SetupRotateBox();
 PointConstraint* addHorizontalPointConstraint(const vec2& pos);
 PointConstraint* addFixPointConstraint(const vec2& pos);
+
+real operator""_mu(const long double value);
+real operator""_du(const long double value);
+real operator""_cu(const long double value);
+real operator""_mmu(const long double value);
 

@@ -1,11 +1,10 @@
+#include <mfw/mfwpch.h>
 #pragma once
 
 #include "Constraint.h"
 #include "RigidBody2D.h"
 #include "OdeSolver.h"
-#include <mfw/mfwpch.h>
-
-#include "BuildObject.h"
+#include <mfw/mfwlog.h>
 
 enum class RenderLayer : i32 {
     Level1,
@@ -30,15 +29,16 @@ class World {
     using ObjectContainer = std::vector<RigidBody*>;
     using ConstraintContainer = std::vector<Constraint*>;
 public:
-    vec2 gravity;
+    vec2 gravity = vec2(0, -9.81);
 
     World() = default;
     ~World();
     
     void clear();
-    void initialize(vec2 gravity = glm::dvec2(0, -9.81));
     void update(const real& dt);
     void render(const glm::mat4& proj, mfw::Renderer& renderer);
+    void setSubStep(i32 step);
+    inline i32 getSubStep() { return sub_step; }
 
     template <typename T>
     inline void setObjectLayer(RenderLayer layer) {
@@ -93,19 +93,20 @@ public:
         if (objectsTypeMap.find(typeId) == objectsTypeMap.end()) {
             return;
         }
-        auto& objects = objectsContainer[objectsTypeMap[T::GetTypeId()]];
+
+        auto& renderLayer = renderLayers[renderLayersMap[typeId]];
+        for (u64 i = 0; i < renderLayers.size(); ++i) {
+            if (renderLayer[i] == static_cast<Drawable*>(body)) {
+                renderLayer.erase(renderLayer.begin() + i, renderLayer.begin() + i + 1);
+                break;
+            }
+        }
+        auto& objects = objectsContainer[objectsTypeMap[typeId]];
         for (u64 i = 0; i < objects.size(); ++i) {
             if (objects[i] == body) {
                 delete objects[i];
                 objects.erase(objects.begin() + i, objects.begin() + i + 1);
                 break;
-            }
-        }
-        auto& renderLayer = renderLayers[renderLayersMap[typeId]];
-        for (u64 i = 0; i < renderLayers.size(); ++i) {
-            if (renderLayer[i] == static_cast<Drawable*>(body)) {
-                renderLayer.erase(renderLayer.begin() + i, renderLayer.begin() + i + 1);
-                return;
             }
         }
     }
@@ -125,12 +126,17 @@ private:
         constraintsContainer.push_back({});
     }
 
+    void update_physics(const real& dt);
+    void update_collision();
+    void update_constraint(const real& dt);
+
     std::vector<ObjectContainer> objectsContainer;
     std::vector<ConstraintContainer> constraintsContainer;
     std::array<std::vector<Drawable*>, 16> renderLayers;
     std::unordered_map<i32, i32> renderLayersMap;
     std::unordered_map<i32, i32> objectsTypeMap;
-    std::unique_ptr<OdeSolver> solver;
+    static std::unique_ptr<OdeSolver> solver;
+    i32 sub_step = 1;
 
 };
 

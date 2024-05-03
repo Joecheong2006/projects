@@ -15,7 +15,7 @@
 #define LOG_FATAL(...) Log::Fatal(__VA_ARGS__);
 
 #else
-#define ASSERT(x) _VOID(x)
+#define ASSERT(x)
 #define LOG_TRACE(...) TOVOID(__VA_ARGS__)
 #define LOG_DEBUG(...) TOVOID(__VA_ARGS__)
 #define LOG_INFO(...)  TOVOID(__VA_ARGS__)

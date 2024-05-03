@@ -11,7 +11,7 @@ struct CircleCollider : Collider {
             const RigidBody* object1, 
             const RigidBody* object2) const override;
     virtual CollisionState testCollision(
-            const LineCollider* collider, 
+            const CylinderCollider* collider, 
             const RigidBody* object1, 
             const RigidBody* object2) const override;
 };

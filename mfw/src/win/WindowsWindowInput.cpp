@@ -1,7 +1,6 @@
 #include "win/WindowsWindowInput.h"
 #include "Application.h"
 #include "win/WindowsWindow.h"
-#include "KeyCode.h"
 
 namespace mfw {
     Input* Input::Instance = new WindowsWindowInput();

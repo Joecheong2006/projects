@@ -25,7 +25,7 @@ void DistanceConstraint::update(const f64& dt) {
 }
 
 void DistanceConstraint::draw(const mat4& proj, mfw::Renderer& renderer) {
-    real worldScale = Simulation::Get()->getWorldScale();
+    real worldScale = Simulation::Get()->getWorldUnit();
 
     renderer.renderCircle(proj, target[0]->m_position, w, vec4(0, 0, 0, 1));
     renderer.renderCircle(proj, target[0]->m_position,
@@ -46,7 +46,7 @@ color BuildObject<DistanceConstraint>::default_color;
 real BuildObject<DistanceConstraint>::default_w;
 
 BuildObject<DistanceConstraint>::BuildObject(RigidBody* target1, RigidBody* target2, real d, f32 w, color color) {
-    const real worldScale = Simulation::Get()->getWorldScale();
+    const real worldScale = Simulation::Get()->getWorldUnit();
     object = Simulation::Get()->world.addConstraint<DistanceConstraint>(target1, target2, d * worldScale, w * worldScale);
     object->color = color;
 }

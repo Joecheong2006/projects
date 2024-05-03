@@ -10,19 +10,7 @@ Simulation* Simulation::Instance = nullptr;
 
 Simulation::Simulation(const std::string& name, real worldScale)
     : name(name), unitScale(worldScale)
-{
-    // initialize = [this]() {
-    //     world.initialize();
-    //     BuildObject<FixPoint>({});
-    // };
-}
-
-void Simulation::update(const real& dt) {
-    world.update(dt);
-}
-void Simulation::render(mfw::Renderer& renderer) {
-    world.render(camera.getProjection(), renderer);
-}
+{}
 
 vec2 Simulation::mouseToWorldCoord() {
     auto&& main = mfw::Application::Get().GetWindow();
@@ -35,9 +23,10 @@ vec2 Simulation::mouseToWorldCoord() {
 void addString(const vec2& pos, u32 node, real length) {
     ASSERT(node > 1);
 
-    auto p1 = BuildObject<Circle>(pos);
+    auto& world = Simulation::Get()->world;
+    auto p1 = world.addRigidBody<Circle>(pos);
     for (real i = 1; i < node; i++) {
-        auto p2 = BuildObject<Circle>(vec2(0, -i * length) + pos);
+        auto p2 = world.addRigidBody<Circle>(vec2(0, -i * length) + pos);
         BuildObject<DistanceConstraint>(p1, p2, length);
         p1 = p2;
     }
@@ -46,19 +35,20 @@ void addString(const vec2& pos, u32 node, real length) {
 void addCircle(const vec2& pos, i32 n, real r, i32 nstep) {
     ASSERT(r > 0 && n > 2 && nstep > 0);
     static const real pi = 3.14159265359f;
+    auto& world = Simulation::Get()->world;
 
     real ri = 2 * pi / n;
     real nlen = glm::length(r * vec2(sin(0) - sin(ri), cos(0) - cos(ri)));
 
-    auto center = BuildObject<Circle>(pos);
+    auto center = world.addRigidBody<Circle>(pos);
 
-    RigidBody* p1 = BuildObject<Circle>(r * vec2(sin(0), cos(0)) + pos);
+    RigidBody* p1 = world.addRigidBody<Circle>(r * vec2(sin(0), cos(0)) + pos);
     RigidBody* first = p1;
     RigidBody* p2;
 
     for (i32 i = 1; i < n; i++) {
         real a = ri * i;
-        p2 = BuildObject<Circle>(r * vec2(sin(a), cos(a)) + pos);
+        p2 = world.addRigidBody<Circle>(r * vec2(sin(a), cos(a)) + pos);
         BuildObject<DistanceConstraint>(p1, center, r);
         BuildObject<DistanceConstraint>(p1, p2, nlen);
         p1 = p2;
@@ -92,13 +82,13 @@ PointConstraint* addFixPointConstraint(const vec2& pos) {
 }
 
 void addDoublePendulum(real angle, real d) {
+    auto& world = Simulation::Get()->world;
     real r = angle * 3.14 / 180;
-
     vec2 direction = glm::normalize(vec2(cos(r), sin(r))) * d;
 
-    auto p1 = BuildObject<Circle>({});
-    auto p2 = BuildObject<Circle>(direction);
-    auto p3 = BuildObject<Circle>(direction * 2.0);
+    auto p1 = world.addRigidBody<Circle>(vec2{});
+    auto p2 = world.addRigidBody<Circle>(direction);
+    auto p3 = world.addRigidBody<Circle>(direction * 2.0);
     BuildObject<DistanceConstraint>(p1, p2, d);
     BuildObject<DistanceConstraint>(p2, p3, d);
     BuildObject<FixPoint>({})
@@ -113,7 +103,7 @@ void addDoublePendulum(real angle, real d) {
 void SetupRotateBox() {
     auto sim = Simulation::Get();
     auto& world = sim->world;
-    const real worldScale = sim->getWorldScale();
+    const real worldScale = sim->getWorldUnit();
     addBox(vec2(), 3);
 
     auto& circles = world.getObjects<Circle>();
@@ -126,13 +116,43 @@ void SetupRotateBox() {
 
     auto h1 = BuildObject<Roller>(vec2(6, 0));
     auto h2 = BuildObject<Roller>(vec2(-6, 0));
-    auto p1 = BuildObject<Circle>(h1->m_position);
-    auto p2 = BuildObject<Circle>(h2->m_position);
+    auto p1 = world.addRigidBody<Circle>(h1->m_position);
+    auto p2 = world.addRigidBody<Circle>(h2->m_position);
     real l = glm::length(p1->m_position - c1->m_position) / worldScale;
     BuildObject<DistanceConstraint>(c1, p1, l);
     BuildObject<DistanceConstraint>(c2, p2, l);
     BuildObject<Spring>(p1, p2, glm::length(p1->m_position - p2->m_position) / worldScale, 1, 0.1);
     h1->target = p1;
     h2->target = p2;
+}
+
+void Simulation::update(const real& dt) {
+    world.update(dt);
+}
+
+void Simulation::render(mfw::Renderer& renderer) {
+    world.render(camera.getProjection(), renderer);
+}
+
+real operator""_mu(const long double value) {
+    ASSERT(Simulation::Get());
+    return static_cast<real>(
+            Simulation::Get()->getWorldUnit() * value
+            );
+}
+
+real operator""_du(const long double value) {
+    ASSERT(Simulation::Get());
+    return Simulation::Get()->getWorldUnit() * value * 0.1;
+}
+
+real operator""_cu(const long double value) {
+    ASSERT(Simulation::Get());
+    return Simulation::Get()->getWorldUnit() * value * 0.01;
+}
+
+real operator""_mmu(const long double value) {
+    ASSERT(Simulation::Get());
+    return Simulation::Get()->getWorldUnit() * value * 0.001;
 }
 

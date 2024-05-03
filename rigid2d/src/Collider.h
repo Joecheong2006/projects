@@ -8,7 +8,7 @@ struct CollisionState {
 
 class RigidBody;
 struct CircleCollider;
-struct LineCollider;
+struct CylinderCollider;
 struct Collider {
     virtual ~Collider() = default;
     virtual CollisionState testCollision(
@@ -20,7 +20,7 @@ struct Collider {
             const RigidBody* object1, 
             const RigidBody* object2) const = 0;
     virtual CollisionState testCollision(
-            const LineCollider* collider, 
+            const CylinderCollider* collider, 
             const RigidBody* object1, 
             const RigidBody* object2) const = 0;
 };

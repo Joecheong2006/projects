@@ -31,15 +31,15 @@ void Spring::update(const real& dt) {
 }
 
 #define DRAW_SPRING_SUB_STICK()\
-    renderer.renderCircle(proj, Circle(p[1], glm::vec3(0), w));\
-    renderer.renderCircle(proj, Circle(p[0], glm::vec3(0), w));\
-    renderer.renderCircle(proj, Circle(p[1], color, w * 0.6));\
-    renderer.renderCircle(proj, Circle(p[0], color, w * 0.6));\
+    renderer.renderCircle(proj, Circle(p[1], w, glm::vec3(0)));\
+    renderer.renderCircle(proj, Circle(p[0], w, glm::vec3(0)));\
+    renderer.renderCircle(proj, Circle(p[1], w * 0.6, color));\
+    renderer.renderCircle(proj, Circle(p[0], w * 0.6, color));\
     renderer.renderLine(proj, p[1], p[0], glm::vec3(0), w);\
     renderer.renderLine(proj, p[1], p[0], color, w * 0.6);
 
 void Spring::draw(const mat4& proj, mfw::Renderer& renderer) {
-    const real worldScale = Simulation::Get()->getWorldScale();
+    const real worldScale = Simulation::Get()->getWorldUnit();
     const vec2 pos1 = target[0]->m_position;
     const vec2 pos2 = target[1]-> m_position;
 
@@ -75,7 +75,7 @@ BuildObject<Spring>::BuildObject(
         RigidBody* target1, RigidBody* target2,
         real d, real stiffness, real damping,
         i32 count, real w,color color) {
-    const real worldScale = Simulation::Get()->getWorldScale();
+    const real worldScale = Simulation::Get()->getWorldUnit();
     object = Simulation::Get()->world.addConstraint<Spring>(target1, target2, d * worldScale, w * worldScale);
     object->color = color;
     object->stiffness = stiffness;

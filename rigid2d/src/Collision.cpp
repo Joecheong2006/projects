@@ -1,6 +1,6 @@
 #include "Collision.h"
 #include "Circle.h"
-#include "Line.h"
+#include "Cylinder.h"
 
 namespace Collision {
     CollisionState TestCircleToCircle(const RigidBody* object1, const RigidBody* object2) {
@@ -17,7 +17,7 @@ namespace Collision {
 
     CollisionState TestCircleToLine(const RigidBody* object1, const RigidBody* object2) {
         auto circle = static_cast<const Circle*>(object1);
-        auto line = static_cast<const Line*>(object2);
+        auto line = static_cast<const Cylinder*>(object2);
         
         const vec2 direction = glm::normalize(line->p[1] - line->p[0]);
         const vec2 contact = glm::clamp(
@@ -25,7 +25,7 @@ namespace Collision {
                 ) * direction + line->p[0];
 
         return {
-            glm::normalize(circle->m_position - contact), contact,
+            -glm::normalize(circle->m_position - contact), contact,
             glm::length(circle->m_position - contact) - line->width - circle->radius,
         };
     }

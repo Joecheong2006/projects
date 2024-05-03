@@ -27,7 +27,7 @@ real BuildObject<Rotator>::default_r;
 real BuildObject<Rotator>::default_w;
 
 BuildObject<Rotator>::BuildObject(RigidBody* center, RigidBody* target, real r, real w) {
-    const real worldScale = Simulation::Get()->getWorldScale();
+    const real worldScale = Simulation::Get()->getWorldUnit();
     object = Simulation::Get()->world.addConstraint<Rotator>(center, target);
     object->r = r * worldScale;
     object->w = w;

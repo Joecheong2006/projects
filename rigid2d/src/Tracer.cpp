@@ -27,8 +27,8 @@ void Tracer::draw(const mat4& proj, mfw::Renderer& renderer) {
         const glm::vec3 color = (m_color - background) * (i++ / positions_trace.size()) + background;
         f32 t = maxScale * (i / positions_trace.size());
         t = glm::clamp(t - maxScale * dr, minScale, maxScale);
-        renderer.renderCircleI(proj, { p2, color, t });
-        renderer.renderCircleI(proj, { p1, color, t });
+        renderer.renderCircleI(proj, { p2, t, color });
+        renderer.renderCircleI(proj, { p1, t, color });
         renderer.renderLineI(proj, p1, p2, color, t);
     }
 }
@@ -40,7 +40,7 @@ real BuildObject<Tracer>::default_dr;
 i32 BuildObject<Tracer>::default_maxSamples;
 
 BuildObject<Tracer>::BuildObject(RigidBody* target, real maxScale, real minScale, real dr, i32 maxSamples, color color) {
-    const real worldScale = Simulation::Get()->getWorldScale();
+    const real worldScale = Simulation::Get()->getWorldUnit();
     object = Simulation::Get()->world.addConstraint<Tracer>(target);
     object->maxScale = maxScale * worldScale;
     object->minScale = minScale * worldScale;

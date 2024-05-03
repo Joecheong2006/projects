@@ -44,5 +44,5 @@ namespace mfw {
     };
 }
 
-#define START_CLOCK_TIMER(message) mfw::Clock __duration(message)
+#define START_CLOCK_TIMER(message) mfw::Clock __timer(message)
 

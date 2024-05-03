@@ -25,7 +25,6 @@ public:
     real zoom_rate;
 
     struct Settings {
-        i32 sub_step = 100;
         bool pause = false,
              gravity = true,
              world_view = true,
@@ -70,6 +69,14 @@ private:
 
     void OnEdit(const mfw::MouseButtonEvent& event, const vec2& wpos);
     void OnNormal(const mfw::MouseButtonEvent& event, const vec2& wpos);
+
+    class Info : public mfw::UiLayer {
+    public:
+        Info(): UiLayer(__func__)
+        {}
+        virtual bool OnUiRender() override;
+
+    };
 
 };
 

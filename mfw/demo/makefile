@@ -29,7 +29,7 @@ clean:
 	@echo Cleaned
 
 build: bin
-	@cd ../ && make win_debug -s -j
+	@cd ../ && make win_release -s -j
 	@cp ../mfw.dll bin/mfw.dll
 
 bin:

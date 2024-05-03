@@ -1,6 +1,6 @@
 #include "CircleCollider.h"
 #include "Collision.h"
-#include "Circle.h"
+#include <mfw/mfwlog.h>
 
 CollisionState CircleCollider::testCollision(
         const Collider* collider, 
@@ -19,7 +19,7 @@ CollisionState CircleCollider::testCollision(
 }
 
 CollisionState CircleCollider::testCollision(
-        [[maybe_unused]] const LineCollider* collider, 
+        [[maybe_unused]] const CylinderCollider* collider, 
         const RigidBody* object1, 
         const RigidBody* object2) const
 {

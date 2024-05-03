@@ -6,6 +6,7 @@ class RigidBody : public Object {
 public:
     RigidBody() = default;
     RigidBody(const vec2& pos, const real& mass, const color& color);
+    ~RigidBody();
     void addForce(const vec2& force);
     void setMass(real newMass);
     void setStatic();
@@ -17,6 +18,7 @@ public:
          m_velocity,
          m_ovelocity,
          m_acceleration;
+
     real m_angle,
          m_angular_velocity,
          m_angular_acceleration,
@@ -24,6 +26,7 @@ public:
          m_inverse_mass,
          m_restitution,
          m_damping;
+
     color m_color;
     bool isStatic;
 

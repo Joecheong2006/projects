@@ -2,6 +2,7 @@
 #include "Window.h"
 #include "EventSystem.h"
 #include "LayerSystem.h"
+#include "UiLayerSystem.h"
 
 namespace mfw {
     class WindowResizeEvent;
@@ -21,6 +22,8 @@ namespace mfw {
         void run();
 
         Window& GetWindow() const { return *m_window; }
+        void addLayer(Layer* layer);
+        void addUiLayer(UiLayer* uiLayer);
 
     public:
         static Application& Get() { return *Instance; }
@@ -37,8 +40,7 @@ namespace mfw {
         inline virtual bool OnWindowFocus(const WindowFocusEvent& event) { (void)event; return false; }
         inline virtual bool OnWindowNotFocus(const WindowNotFocusEvent& event) { (void)event; return false; }
 
-        void Terminate() { m_window->close(); }
-        inline void addLayer(Layer* layer) { layerSystem.addLayer(layer); }
+        void Terminate();
 
     private:
         void Eventhandle(const Event& event);
@@ -54,6 +56,7 @@ namespace mfw {
         std::unique_ptr<Window> m_window;
         EventListener eventListener;
         LayerSystem layerSystem;
+        UiLayerSystem uiLayerSystem;
 
         static Application* Instance;
 

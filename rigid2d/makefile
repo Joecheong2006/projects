@@ -1,5 +1,6 @@
 CC = g++
-CFLAGS := -std=c++17 -Wall -Wextra -Wpedantic -Wstrict-aliasing -g -DDEBUG -O2
+CFLAGS := -std=c++17 -Wall -Wextra -Wpedantic -Wstrict-aliasing -g -O2 -DDEBUG 
+CFLAGS += -Wno-literal-suffix
 SOURCE = src src/**
 INCLUDE = -Ilib/ -Ilib/mfw/lib
 

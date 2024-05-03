@@ -1,4 +1,5 @@
 #include "RigidBody2D.h"
+#include <mfw/mfwlog.h>
 
 RigidBody::RigidBody(const vec2& pos, const real& mass, const color& color) 
     : m_position(pos)
@@ -15,6 +16,9 @@ RigidBody::RigidBody(const vec2& pos, const real& mass, const color& color)
     , isStatic(false)
 {
     setMass(mass);
+}
+
+RigidBody::~RigidBody() {
 }
 
 void RigidBody::addForce(const vec2& force) {
@@ -39,6 +43,7 @@ void RigidBody::setStatic() {
 
 void RigidBody::setDynamic() {
     isStatic = false;
+    ASSERT(m_mass > 0);
     m_inverse_mass = 1.0 / m_mass;
 }
 
