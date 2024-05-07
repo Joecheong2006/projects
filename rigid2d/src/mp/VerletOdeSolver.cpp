@@ -15,6 +15,8 @@ void VerletOdeSolver::solve(const real& dt, const std::vector<RigidBody*>& objec
 
         object->m_angular_velocity += object->m_angular_acceleration * dt;
         object->m_angle += object->m_angular_velocity * dt;
+        object->m_acceleration = {};
+        object->m_angular_acceleration = {};
     }
 }
 

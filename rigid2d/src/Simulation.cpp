@@ -1,7 +1,5 @@
 #include "Simulation.h"
 
-#include "mp/BuildObject.h"
-#include "mp/Renderer.h"
 #include <mfw/mfwlog.h>
 #include <mfw/Application.h>
 #include <mfw/Input.h>
@@ -106,7 +104,7 @@ void SetupRotateBox() {
     const real worldScale = sim->getWorldUnit();
     addBox(vec2(), 3);
 
-    auto& circles = world.getObjects<Circle>();
+    auto circles = world.findObjects<Circle>();
     i32 len = circles.size();
     auto boxCenter = circles[len - 5];
     auto c1 = circles[len - 2];
@@ -143,16 +141,50 @@ real operator""_mu(const long double value) {
 
 real operator""_du(const long double value) {
     ASSERT(Simulation::Get());
-    return Simulation::Get()->getWorldUnit() * value * 0.1;
+    return static_cast<real>(
+            Simulation::Get()->getWorldUnit() * value * 0.1
+            );
 }
 
 real operator""_cu(const long double value) {
     ASSERT(Simulation::Get());
-    return Simulation::Get()->getWorldUnit() * value * 0.01;
+    return static_cast<real>(
+            Simulation::Get()->getWorldUnit() * value * 0.01
+            );
 }
 
 real operator""_mmu(const long double value) {
     ASSERT(Simulation::Get());
-    return Simulation::Get()->getWorldUnit() * value * 0.001;
+    return static_cast<real>(
+            Simulation::Get()->getWorldUnit() * value * 0.001
+            );
+}
+
+void SetDefaultConfig() {
+    Circle::default_color = {COLOR(0x858AA6)};
+    Circle::default_radius = 0.2_mu;
+
+    Cylinder::default_color = vec3(1.0);
+    Cylinder::default_width = 0.04_mu;
+
+    DistanceConstraint::default_color = {COLOR(0xefefef)};
+    DistanceConstraint::default_w = 0.14_mu;
+
+    Tracer::default_color = {COLOR(0xc73e3e)};
+    Tracer::default_maxScale = 0.03_mu;
+    Tracer::default_minScale = 0.01_mu;
+    Tracer::default_dr = 0.75;
+    Tracer::default_maxSamples = 450;
+
+    FixPoint::default_color = {COLOR(0x486577)};
+    FixPoint::default_d = Circle::default_radius * 1.6f;
+
+    Roller::default_color = {COLOR(0x3c4467)};
+    Roller::default_d = FixPoint::default_d;
+
+    Spring::default_color = {COLOR(0xefefef)};
+    Spring::default_w = 0.06_mu;
+    Spring::default_stiffness = 14;
+    Spring::default_damping = 0.3;
 }
 

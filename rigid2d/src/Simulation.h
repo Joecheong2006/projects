@@ -2,6 +2,8 @@
 #include "mp/util.h"
 #include "mp/World.h"
 #include "mp/Camera.h"
+#include "mp/Renderer.h"
+#include "mp/BuildObject.h"
 
 namespace mfw {
     class Renderer;
@@ -51,4 +53,6 @@ real operator""_mu(const long double value);
 real operator""_du(const long double value);
 real operator""_cu(const long double value);
 real operator""_mmu(const long double value);
+
+void SetDefaultConfig();
 

@@ -24,7 +24,7 @@ namespace Log {
 
 std::vector<Circle*> FindCirclesByPosition(const vec2& pos) {
     std::vector<Circle*> result;
-    for (auto& obj : Simulation::Get()->world.getObjects<Circle>()) {
+    for (auto& obj : Simulation::Get()->world.findObjects<Circle>()) {
         auto circle = static_cast<Circle*>(obj);
         if (circle->radius > glm::length((const vec2&)circle->m_position - pos)) {
             result.push_back(circle);
@@ -34,22 +34,20 @@ std::vector<Circle*> FindCirclesByPosition(const vec2& pos) {
 }
 
 PointConstraint* FindPointConstraintByPosition(const vec2& pos) {
-    auto& objects = Simulation::Get()->world.getConstraint<PointConstraint>();
+    auto objects = Simulation::Get()->world.getConstraint<PointConstraint>();
     for (auto& obj : objects) {
-        auto point = static_cast<PointConstraint*>(obj);
-        if (point->d > glm::length((vec2)point->m_position - pos)) {
-            return point;
+        if (obj->d > glm::length((vec2)obj->m_position - pos)) {
+            return obj;
         }
     }
     return nullptr;
 }
 
 Circle* FindCircleByPosition(const vec2& pos) {
-    auto& objects = Simulation::Get()->world.getObjects<Circle>();
+    auto objects = Simulation::Get()->world.findObjects<Circle>();
     for (auto& obj : objects) {
-        auto point = static_cast<Circle*>(obj);
-        if (point->radius > glm::length((const vec2&)point->m_position - pos)) {
-            return point;
+        if (obj->radius > glm::length((const vec2&)obj->m_position - pos)) {
+            return obj;
         }
     }
     return nullptr;
@@ -57,8 +55,8 @@ Circle* FindCircleByPosition(const vec2& pos) {
 
 i32 GetObjectsCount() {
     auto simulation = Simulation::Get();
-    auto& dc = simulation->world.getConstraint<DistanceConstraint>();
-    auto& circles = simulation->world.getObjects<Circle>();
+    auto dc = simulation->world.getConstraint<DistanceConstraint>();
+    auto circles = simulation->world.findObjects<Circle>();
     return dc.size() + circles.size();
 }
 
@@ -246,18 +244,17 @@ void PhysicsEmulator::render() {
     }
 
     if (settings.velocity_view || settings.acceleration_view) {
-        auto& objects = simulation->world.getObjects<Circle>();
+        auto objects = simulation->world.findObjects<Circle>();
         for (auto& obj : objects) {
-            RigidBody* body = static_cast<RigidBody*>(obj);
             if (settings.acceleration_view) {
-                vec2 a = (body->m_velocity - body->m_ovelocity) * worldScale * 0.1 / sub_dt;
-                renderer.renderLine(proj, body->m_position,
-                        body->m_position + a * worldScale, blue, 0.02 * worldScale);
+                vec2 a = (obj->m_velocity - obj->m_ovelocity) * worldScale * 0.1 / sub_dt;
+                renderer.renderLine(proj, obj->m_position,
+                        obj->m_position + a * worldScale, blue, 0.02 * worldScale);
             }
             if (settings.velocity_view) {
-                vec2 v = body->m_velocity * worldScale;
-                renderer.renderLine(proj, body->m_position, 
-                        body->m_position + v * worldScale, red, 0.02 * worldScale);
+                vec2 v = obj->m_velocity * worldScale;
+                renderer.renderLine(proj, obj->m_position, 
+                        obj->m_position + v * worldScale, red, 0.02 * worldScale);
             }
         }
     }

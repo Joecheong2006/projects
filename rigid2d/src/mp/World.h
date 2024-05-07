@@ -48,11 +48,7 @@ public:
     template <typename T, typename... Args>
     inline T* addRigidBody(const Args& ...args) {
         T* result = new T(args...);
-        const i32 typeId = T::GetTypeId();
-        if (objectsTypeMap.find(typeId) == objectsTypeMap.end()) {
-            extendObjectsContainer(typeId);
-        }
-        objectsContainer[objectsTypeMap[typeId]].push_back(result);
+        rigidbodies.push_back(result);
         addObjectToRenderList(result);
         return result;
     }
@@ -60,55 +56,45 @@ public:
     template <typename T, typename... Args>
     inline T* addConstraint(const Args& ...args) {
         T* result = new T(args...);
-        const i32 typeId = T::GetTypeId();
-        if (objectsTypeMap.find(typeId) == objectsTypeMap.end()) {
-            extendConstraintsContainer(typeId);
-        }
-        constraintsContainer[objectsTypeMap[typeId]].push_back(result);
+        constraints.push_back(result);
         addObjectToRenderList(result);
         return result;
     }
 
     template <typename T> [[nodiscard]]
-    inline ObjectContainer& getObjects() {
-        const i32 typeId = T::GetTypeId();
-        if (objectsTypeMap.find(typeId) == objectsTypeMap.end()) {
-            extendObjectsContainer(typeId);
+    inline std::vector<T*> findObjects() const {
+        std::vector<T*> result{};
+        for (auto& object : rigidbodies) {
+            if (object->getTypeId() == T::GetTypeId()) {
+                result.push_back(static_cast<T*>(object));
+            }
         }
-        return objectsContainer[objectsTypeMap[typeId]];
+        return result;
     }
 
     template <typename T> [[nodiscard]]
-    inline ConstraintContainer& getConstraint() {
-        const i32 typeId = T::GetTypeId();
-        if (objectsTypeMap.find(typeId) == objectsTypeMap.end()) {
-            extendConstraintsContainer(typeId);
+    inline std::vector<T*> getConstraint() const {
+        std::vector<T*> result{};
+        for (auto& object : constraints) {
+            if (object->getTypeId() == T::GetTypeId()) {
+                result.push_back(static_cast<T*>(object));
+            }
         }
-        return constraintsContainer[objectsTypeMap[typeId]];
+        return result;
     }
 
-    template <typename T>
     inline void destoryRigidBody(RigidBody* body) {
-        const i32 typeId = T::GetTypeId();
-        if (objectsTypeMap.find(typeId) == objectsTypeMap.end()) {
-            return;
-        }
-
-        auto& objects = objectsContainer[objectsTypeMap[typeId]];
-        for (u64 i = 0; i < objects.size(); ++i) {
-            if (objects[i] == body) {
-                delete objects[i];
-                objects.erase(objects.begin() + i, objects.begin() + i + 1);
-                auto& renderLayer = renderLayers[renderLayersMap[typeId]];
-                renderLayer.erase(renderLayer.begin() + i, renderLayer.begin() + i + 1);
+        auto& renderLayer = renderLayers[renderLayersMap[body->getTypeId()]];
+        for (u64 j = 0; j < renderLayer.size(); ++j) {
+            if (renderLayer[j] == body) {
+                renderLayer.erase(renderLayer.begin() + j, renderLayer.begin() + j + 1);
                 break;
             }
         }
-        return;
-        auto& renderLayer = renderLayers[renderLayersMap[typeId]];
-        for (u64 i = 0; i < renderLayers.size(); ++i) {
-            if (renderLayer[i] == static_cast<Drawable*>(body)) {
-                renderLayer.erase(renderLayer.begin() + i, renderLayer.begin() + i + 1);
+        for (u64 j = 0; j < rigidbodies.size(); ++j) {
+            if (rigidbodies[j] == body) {
+                rigidbodies.erase(rigidbodies.begin() + j, rigidbodies.begin() + j + 1);
+                delete body;
                 break;
             }
         }
@@ -119,25 +105,14 @@ private:
         renderLayers[renderLayersMap[object->getTypeId()]].push_back(object);
     }
 
-    inline void extendObjectsContainer(i32 typeId) {
-        objectsTypeMap[typeId] = objectsContainer.size();
-        objectsContainer.push_back({});
-    }
-
-    inline void extendConstraintsContainer(i32 typeId) {
-        objectsTypeMap[typeId] = constraintsContainer.size();
-        constraintsContainer.push_back({});
-    }
-
     void update_physics(const real& dt);
     void update_collision();
     void update_constraint(const real& dt);
 
-    std::vector<ObjectContainer> objectsContainer;
-    std::vector<ConstraintContainer> constraintsContainer;
+    ObjectContainer rigidbodies;
+    ConstraintContainer constraints;
     std::array<std::vector<Drawable*>, 16> renderLayers;
     std::unordered_map<i32, i32> renderLayersMap;
-    std::unordered_map<i32, i32> objectsTypeMap;
     static std::unique_ptr<OdeSolver> solver;
     i32 sub_step = 1;
 
