@@ -1,22 +1,6 @@
 #include "PhysicsEmulator.h"
-#include "BuildObject.h"
+#include "mp/BuildObject.h"
 #include <mfw/Input.h>
-
-void CreateCradle(float count, float space, float length,
-        std::function<RigidBody*()> createCircle, vec2 offset = vec2(0)) {
-    auto sim = Simulation::Get();
-    const real worldScale = sim->getWorldUnit();
-    for (int i = 0; i < count; i++) {
-        auto circle1 = createCircle();
-        circle1->m_position = (vec2(i * space, 0) + offset) * worldScale;
-        auto circle2 = createCircle();
-        circle2->m_position = (vec2(i * space, -length) + offset) * worldScale;
-        auto fix = BuildObject<FixPoint>(circle1->m_position);
-        fix->target = circle1;
-        fix->drawEnable = false;
-        BuildObject<DistanceConstraint>(circle1, circle2, length);
-    }
-}
 
 void CreateBox(real width, real height, vec2 offset = vec2(0)) {
     auto& world = Simulation::Get()->world;
@@ -26,32 +10,88 @@ void CreateBox(real width, real height, vec2 offset = vec2(0)) {
     world.addRigidBody<Cylinder>(vec2{width, height} + offset, vec2{width, -height} + offset);
 }
 
+void cloth(vec2 size, vec2 count, real stiffness, real damping, vec2 offset = vec2(0)) {
+    auto& world = Simulation::Get()->world;
+    const vec2 persize = size / count;
+    auto& objects = world.getObjects<Circle>();
+    const i32 startIndex = objects.size();
 
-auto spring_double_pendulum = [] {
+    offset -= vec2(size.x * 0.5, 0);
+
+    for (i32 i = 0; i < count.y; i++) {
+        for (i32 j = 0; j < count.x; j++) {
+            auto obj = world.addRigidBody<Circle>(vec2(j, -i) * persize + offset);
+            obj->setMass(0.004);
+            obj->radius = 0.12_mu;
+            obj->m_damping = 0.6;
+            obj->RigidBody::collider = nullptr;
+        }
+    }
+
+    for (i32 i = 0; i < count.x; i++) {
+        auto target = static_cast<Circle*>(objects[startIndex + i]);
+        world.addConstraint<FixPoint>(target->m_position, target->radius * 1.5)->setTarget(target);
+    }
+
+    const real pre_len = Spring::default_w;
+    const color pre_color = Spring::default_color;
+    Spring::default_w = 0.03_mu;
+    Spring::default_color = {COLOR(0xaaaaaa)};
+    for (i32 i = 0; i < count.y; i++) {
+        for (i32 j = 0; j < count.x - 1; j++) {
+            world.addConstraint<Spring>(
+                    objects[startIndex + j + i * count.x],
+                    objects[startIndex + j + i * count.x + 1], persize.x, stiffness, damping)
+                ->count = 1;
+        }
+    }
+    for (i32 i = 0; i < count.y - 1; i++) {
+        for (i32 j = 0; j < count.x; j++) {
+            world.addConstraint<Spring>(
+                    objects[startIndex + j + i * count.x],
+                    objects[startIndex + j + (i + 1) * count.x], persize.y, stiffness, damping)
+                ->count = 1;
+        }
+    }
+    Spring::default_w = pre_len;
+    Spring::default_color = pre_color;
+}
+
+void spring_double_pendulum() {
+    const real len = 0.5;
+
     auto& world = Simulation::Get()->world;
     auto o1 = world.addRigidBody<Circle>(vec2{0, 0});
-    auto o2 = world.addRigidBody<Circle>(vec2{0, -2});
-    o2->setMass(0.003);
-    auto o3 = world.addRigidBody<Circle>(vec2{0, -4});
-    o3->setMass(0.003);
-    BuildObject<FixPoint>(o1->m_position)
-        ->target = o1;
-    BuildObject<Spring>(o1, o2, 2, 50, 0.1, 8);
-    BuildObject<Spring>(o2, o3, 2, 50, 0.1, 8);
+    o1->RigidBody::collider = nullptr;
+    world.addConstraint<FixPoint>(o1->m_position)
+        ->setTarget(o1);
 
-    auto o2_tracer = BuildObject<Tracer>(o2, 0.1, 0.01, 0.7, 50);
+    auto o2 = world.addRigidBody<Circle>(vec2{0, -len});
+    o2->setMass(0.001);
+    auto o3 = world.addRigidBody<Circle>(vec2{0, -len * 2});
+    o3->setMass(0.001);
+    world.addConstraint<Spring>(o1, o2, len, 50, 0.1, 8);
+    world.addConstraint<Spring>(o2, o3, len, 50, 0.1, 8);
+
+    auto o2_tracer = world.addConstraint<Tracer>(o2, 0.1_mu, 0.01_mu, 0.7, 50);
     o2_tracer->m_color = glm::vec3(COLOR(0x7b7694));
-    auto o3_tracer = BuildObject<Tracer>(o3, 0.1, 0.01, 0.7, 80);
+    auto o3_tracer = world.addConstraint<Tracer>(o3, 0.1_mu, 0.01_mu, 0.7, 80);
     o3_tracer->m_color = glm::vec3(COLOR(0xcba987));
 };
 
-auto cradle = [] {
-    CreateCradle(5, 0.6, 6, [=]() {
-                auto& world = Simulation::Get()->world;
-                auto circle = world.addRigidBody<Circle>(vec2(), 0.3);
-                circle->setMass(0.2);
-                return circle;
-            });
+void cradle(i32 count, real length, real space, vec2 offset = {0, 0}) {
+    offset -= count * space * 0.5;
+    auto& world = Simulation::Get()->world;
+    real radius = space * 0.5;
+    for (real i = 0; i < count; i++) {
+        auto circle1 = world.addRigidBody<Circle>(vec2(space, 0) * i + offset, radius);
+        circle1->setStatic();
+        auto circle2 = world.addRigidBody<Circle>(vec2(space * i, -length) + offset, radius);
+        circle2->setMass(0.1);
+        circle2->m_restitution = 0.96;
+        world.addConstraint<DistanceConstraint>(circle1, circle2, length, 0.14_mu)
+            ->color = {COLOR(0xefefef)};
+    }
 };
 
 color colors[] = {
@@ -72,7 +112,7 @@ color colors[] = {
     color(COLOR(0x554896))
 };
 
-auto pool_balls = [] {
+void pool_balls() {
     auto& world = Simulation::Get()->world;
     world.gravity = {};
 
@@ -111,6 +151,11 @@ namespace Log {
     };
 }
 
+class MonoBehaviour {
+    static void Destory(Object& object, real t = 0) {
+    }
+};
+
 class Demo : public Simulation {
 public:
     Demo(): Simulation("pool balls", 0.2) {}
@@ -123,67 +168,81 @@ public:
         Cylinder::default_color = vec3(1.0);
         Cylinder::default_width = 0.04_mu;
 
-        BuildObject<DistanceConstraint>::default_color = {COLOR(0xefefef)};
-        BuildObject<DistanceConstraint>::default_w = 0.14;
+        DistanceConstraint::default_color = {COLOR(0xefefef)};
+        DistanceConstraint::default_w = 0.14_mu;
 
-        BuildObject<Tracer>::default_color = {COLOR(0xc73e3e)};
-        BuildObject<Tracer>::default_maxScale = 0.03;
-        BuildObject<Tracer>::default_minScale = 0.01;
-        BuildObject<Tracer>::default_dr = 0.75;
-        BuildObject<Tracer>::default_maxSamples = 450;
+        Tracer::default_color = {COLOR(0xc73e3e)};
+        Tracer::default_maxScale = 0.03_mu;
+        Tracer::default_minScale = 0.01_mu;
+        Tracer::default_dr = 0.75;
+        Tracer::default_maxSamples = 450;
 
-        BuildObject<FixPoint>::default_color = {COLOR(0x486577)};
-        BuildObject<FixPoint>::default_d = Circle::default_radius * 1.6f;
+        FixPoint::default_color = {COLOR(0x486577)};
+        FixPoint::default_d = Circle::default_radius * 1.6f;
 
-        BuildObject<Roller>::default_color = {COLOR(0x3c4467)};
-        BuildObject<Roller>::default_d = BuildObject<FixPoint>::default_d;
+        Roller::default_color = {COLOR(0x3c4467)};
+        Roller::default_d = FixPoint::default_d;
 
-        BuildObject<Spring>::default_color = {COLOR(0xefefef)};
-        BuildObject<Spring>::default_w = 0.06;
-        BuildObject<Spring>::default_stiffness = 14;
-        BuildObject<Spring>::default_damping = 0.3;
+        Spring::default_color = {COLOR(0xefefef)};
+        Spring::default_w = 0.06_mu;
+        Spring::default_stiffness = 14;
+        Spring::default_damping = 0.3;
 
         world.setSubStep(5);
         world.setObjectLayer<DistanceConstraint>(RenderLayer::Level2);
-        world.setObjectLayer<Spring>(RenderLayer::Level2);
+        world.setObjectLayer<Spring>(RenderLayer::Level1);
         world.setObjectLayer<Circle>(RenderLayer::Level3);
         world.setObjectLayer<Cylinder>(RenderLayer::Level8);
+
         i32 count = 0;
         for (i32 i = -1; i <= 1; i += 2) {
             for (i32 j = -1; j < 2; j++) {
                 real r = 0.05;
                 vec2 pos = vec2(3.569 * j, 1.778 * i) - vec2(r * j, r * i);
-                holes[count] = Circle(pos, r, vec3(1));
-                holes[count].setMass(1);
-                count++;
-            }
-        }
-
-        for (i32 i = 0; i < 2; i++) {
-            for (i32 j = 0; j < 1; j++) {
-                auto circle = world.addRigidBody<Circle>(vec2(i, j) * 0.1 - vec2(0.7), 0.04, colors[(i + j) % 15]);
-                circle->m_restitution = 0.8;
-                circle->setMass(0.02);
+                holes[count++] = Circle(pos, r, vec3(1));
             }
         }
 
         pool_balls();
+        // cradle(5, 1, 0.2, vec2(0, 1));
+        // spring_double_pendulum();
 
-        // cradle();
+        // cloth({4, 3}, {40, 20}, 20, 0.1, {0, 1.4});
+        return;
+        const real len = 0.5;
+        auto c1 = world.addRigidBody<Circle>(vec2());
+        c1->RigidBody::collider = nullptr;
+        world.addConstraint<FixPoint>(c1->m_position)->setTarget(c1);
+        auto c2 = world.addRigidBody<Circle>(vec2(len, 0));
+        auto c3 = world.addRigidBody<Circle>(vec2(len * 2, 0));
+
+        world.addConstraint<DistanceConstraint>(c1, c2, len);
+        world.addConstraint<DistanceConstraint>(c2, c3, len);
+        world.addConstraint<Rotator>(c1, c2, len, 3.1415 * 1);
+        world.addConstraint<Rotator>(c2, c3, len, 3.1415 * 4);
+        world.addConstraint<Tracer>(c3, 0.2_mu, 0.02_mu, 0.7, 50);
     }
 
-    real angle = glm::asin(-1), strength = 1;
+    real angle = glm::acos(-1), strength = 3;
     vec2 direction;
     virtual void OnUpdate(const real& dt) override {
         return;
         static bool down = false;
         direction = vec2(glm::cos(angle), glm::sin(angle));
-        auto balls = world.getObjects<Circle>();
+        auto& balls = world.getObjects<Circle>();
 
         angle += dt * mfw::Input::KeyPress(MF_KEY_X) * 2;
         angle -= dt * mfw::Input::KeyPress(MF_KEY_C) * 2;
         strength += dt * mfw::Input::KeyPress(MF_KEY_S) * 10;
         strength -= dt * mfw::Input::KeyPress(MF_KEY_D) * 10;
+
+        static i32 count = 0;
+        if (mfw::Input::KeyPress(MF_KEY_S) && count++ % 4 == 0) {
+            auto circle = world.addRigidBody<Circle>(vec2(0, 1), 0.04, colors[count % 15]);
+            circle->setMass(0.01);
+            circle->addForce(vec2{10, 0});
+            circle->m_restitution = 0.4;
+        }
 
         if (mfw::Input::KeyPress(MF_KEY_Z)) {
             if (down)
@@ -203,8 +262,10 @@ public:
             }
         }
 
-        for (i32 i = 0; i < (i32)balls.size(); i++) {
-            auto& circle = balls[i];
+        return;
+        for (auto& circle : balls) {
+            if (circle == balls.back())
+                continue;
             for (auto& hole : holes) {
                 auto state = circle->collider->testCollision(&hole.collider, circle, &hole);
                 if (state.depth < 0) {

@@ -1,7 +1,7 @@
 #pragma once
-#include "util.h"
-#include "World.h"
-#include "Camera.h"
+#include "mp/util.h"
+#include "mp/World.h"
+#include "mp/Camera.h"
 
 namespace mfw {
     class Renderer;
@@ -21,7 +21,7 @@ public:
     real getWorldUnit() { return unitScale; }
     void initialize();
 
-    World world;
+    PhysicsWorld world;
     Camera camera;
     std::string name;
 

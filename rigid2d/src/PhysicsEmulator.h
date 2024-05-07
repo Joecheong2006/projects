@@ -1,8 +1,8 @@
 #include <mfw/Application.h>
 
-#include "Renderer.h"
-#include "RigidBody2D.h"
-#include "PointConstraint.h"
+#include "mp/Renderer.h"
+#include "mp/RigidBody2D.h"
+#include "mp/PointConstraint.h"
 #include "Simulation.h"
 
 class PhysicsEmulator : public mfw::Application {
@@ -30,7 +30,8 @@ public:
              world_view = true,
              velocity_view = false,
              acceleration_view = false;
-        real mouseSpringForce = 10;
+        real mouseSpringStiffness = 3,
+             mouseSpringDamping = 0.01;
     } settings;
 
 private:

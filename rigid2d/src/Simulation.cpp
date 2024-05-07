@@ -1,7 +1,7 @@
 #include "Simulation.h"
 
-#include "BuildObject.h"
-#include "Renderer.h"
+#include "mp/BuildObject.h"
+#include "mp/Renderer.h"
 #include <mfw/mfwlog.h>
 #include <mfw/Application.h>
 #include <mfw/Input.h>
@@ -27,7 +27,7 @@ void addString(const vec2& pos, u32 node, real length) {
     auto p1 = world.addRigidBody<Circle>(pos);
     for (real i = 1; i < node; i++) {
         auto p2 = world.addRigidBody<Circle>(vec2(0, -i * length) + pos);
-        BuildObject<DistanceConstraint>(p1, p2, length);
+        world.addConstraint<DistanceConstraint>(p1, p2, length);
         p1 = p2;
     }
 }
@@ -49,13 +49,13 @@ void addCircle(const vec2& pos, i32 n, real r, i32 nstep) {
     for (i32 i = 1; i < n; i++) {
         real a = ri * i;
         p2 = world.addRigidBody<Circle>(r * vec2(sin(a), cos(a)) + pos);
-        BuildObject<DistanceConstraint>(p1, center, r);
-        BuildObject<DistanceConstraint>(p1, p2, nlen);
+        world.addConstraint<DistanceConstraint>(p1, center, r);
+        world.addConstraint<DistanceConstraint>(p1, p2, nlen);
         p1 = p2;
     }
 
-    BuildObject<DistanceConstraint>(p1, center, r);
-    BuildObject<DistanceConstraint>(p1, first, nlen);
+    world.addConstraint<DistanceConstraint>(p1, center, r);
+    world.addConstraint<DistanceConstraint>(p1, first, nlen);
 }
 
 void addBox(const vec2& pos, real l)
@@ -89,15 +89,15 @@ void addDoublePendulum(real angle, real d) {
     auto p1 = world.addRigidBody<Circle>(vec2{});
     auto p2 = world.addRigidBody<Circle>(direction);
     auto p3 = world.addRigidBody<Circle>(direction * 2.0);
-    BuildObject<DistanceConstraint>(p1, p2, d);
-    BuildObject<DistanceConstraint>(p2, p3, d);
-    BuildObject<FixPoint>({})
+    world.addConstraint<DistanceConstraint>(p1, p2, d);
+    world.addConstraint<DistanceConstraint>(p2, p3, d);
+    world.addConstraint<FixPoint>(vec2())
         ->target = p1;
     p1->drawEnable = false;
     p2->drawEnable = false;
     p3->drawEnable = false;
 
-    BuildObject<Tracer>(p3, 0.1, 0.01, 0.7, 200);
+    world.addConstraint<Tracer>(p3, 0.1, 0.01, 0.7, 200);
 }
 
 void SetupRotateBox() {
@@ -111,17 +111,17 @@ void SetupRotateBox() {
     auto boxCenter = circles[len - 5];
     auto c1 = circles[len - 2];
     auto c2 = circles[len - 4];
-    BuildObject<FixPoint>({})
+    world.addConstraint<FixPoint>(vec2())
         ->target = boxCenter;
 
-    auto h1 = BuildObject<Roller>(vec2(6, 0));
-    auto h2 = BuildObject<Roller>(vec2(-6, 0));
+    auto h1 = world.addConstraint<Roller>(vec2(6, 0));
+    auto h2 = world.addConstraint<Roller>(vec2(-6, 0));
     auto p1 = world.addRigidBody<Circle>(h1->m_position);
     auto p2 = world.addRigidBody<Circle>(h2->m_position);
     real l = glm::length(p1->m_position - c1->m_position) / worldScale;
-    BuildObject<DistanceConstraint>(c1, p1, l);
-    BuildObject<DistanceConstraint>(c2, p2, l);
-    BuildObject<Spring>(p1, p2, glm::length(p1->m_position - p2->m_position) / worldScale, 1, 0.1);
+    world.addConstraint<DistanceConstraint>(c1, p1, l);
+    world.addConstraint<DistanceConstraint>(c2, p2, l);
+    world.addConstraint<Spring>(p1, p2, glm::length(p1->m_position - p2->m_position) / worldScale, 1, 0.1);
     h1->target = p1;
     h2->target = p2;
 }

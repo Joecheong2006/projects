@@ -1,6 +1,5 @@
 CC = g++
 CFLAGS := -std=c++17 -Wall -Wextra -Wpedantic -Wstrict-aliasing -g -O2 -DDEBUG 
-CFLAGS += -Wno-literal-suffix
 SOURCE = src src/**
 INCLUDE = -Ilib/ -Ilib/mfw/lib
 
@@ -9,7 +8,7 @@ LIBOBJ = $(wildcard $(patsubst %, %/*.o, $(LIBRARY)))
 OBJ = $(SRC:%.cpp=%.o)
 DEP = $(OBJ:%.o=%.d)
 BIN = bin
-LIB = $(BIN)/mfw.dll
+LIB = -Llib/mfw/ -lmfw
 OUT = $(BIN)/rigid2d.exe
 
 PROCESS_INDEX = -1
