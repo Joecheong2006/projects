@@ -102,10 +102,10 @@ void PhysicsEmulator::Start() {
     simulation->OnStart();
     sub_dt = frame / (real)simulation->world.getSubStep();
 
-    real worldScale = simulation->getWorldUnit();
-    world_scale *= worldScale;
-    shift_rate *= worldScale;
-    zoom_rate *= worldScale;
+    real worldUnit = simulation->getWorldUnit();
+    world_scale *= worldUnit;
+    shift_rate *= worldUnit;
+    // zoom_rate *= worldUnit;
 
     preview.reserve(16);
     SetWorldProjection(vec2(width, height));
@@ -165,6 +165,10 @@ void PhysicsEmulator::SetWorldProjection(vec2 view) {
 
 void PhysicsEmulator::ApplySpringForce() {
     const vec2 wpos = simulation->mouseToWorldCoord();
+    if (rigidBodyHolder->isStatic) {
+        rigidBodyHolder->m_position = wpos;
+        return;
+    }
     auto mouse_circle = Circle(wpos);
     auto mouse_spring = Spring(&mouse_circle, rigidBodyHolder, 0.0, 0.1);
     mouse_spring.damping = settings.mouseSpringDamping;
@@ -210,7 +214,7 @@ void PhysicsEmulator::render() {
     Timer timer;
     renderer.clear();
 
-    mat4 proj = simulation->camera.getProjection();
+    const mat4 proj = simulation->camera.getProjection();
 
     if (settings.world_view) {
         simulation->render(renderer);
@@ -222,9 +226,9 @@ void PhysicsEmulator::render() {
         const vec2 pos1 = simulation->mouseToWorldCoord();
         const vec2 pos2 = rigidBodyHolder->m_position;
 
-        const real count = 12, len = 0.8 * worldScale, w = 0.07 * worldScale;
-        const real n = glm::length(pos1 - pos2) / (count * worldScale);
-        const vec2 normal = glm::normalize(pos1 - pos2) * worldScale;
+        const real count = 12, len = 0.18_mu, w = 0.075_mu;
+        const real n = glm::length(pos1 - pos2) / (count);
+        const vec2 normal = glm::normalize(pos1 - pos2);
         const vec2 t1 = glm::cross(vec3(normal, 0), vec3(0, 0, 1)) * len;
         const vec2 t2 = glm::cross(vec3(normal, 0), vec3(0, 0, -1)) * len;
 
@@ -246,6 +250,7 @@ void PhysicsEmulator::render() {
     if (settings.velocity_view || settings.acceleration_view) {
         auto objects = simulation->world.findObjects<Circle>();
         for (auto& obj : objects) {
+            // RigidBody* body = static_cast<RigidBody*>(obj);
             if (settings.acceleration_view) {
                 vec2 a = (obj->m_velocity - obj->m_ovelocity) * worldScale * 0.1 / sub_dt;
                 renderer.renderLine(proj, obj->m_position,
@@ -265,6 +270,13 @@ void PhysicsEmulator::renderImgui() {
     ImGui::BeginTabBar("tabBar");
     static real startTime = 0;
     if (ImGui::BeginTabItem("config")) {
+        {
+            auto wpos = simulation->mouseToWorldCoord();
+            vec2 canvas_size = world_scale * vec2(GetWindow().width(), GetWindow().height()) / (real)GetWindow().height();
+            ImGui::Text("convas size[%.3g, %.3g]", canvas_size.x, canvas_size.y);
+            ImGui::Text("mouse to world coords[%.3g, %.3g]", wpos.x, wpos.y);
+        }
+
         ImGui::Text("objects:%d", GetObjectsCount());
         ImGui::Text("unit:%gcm", simulation->getWorldUnit() * 100);
         ImGui::Text("Step:%d", simulation->world.getSubStep());
@@ -483,16 +495,20 @@ void PhysicsEmulator::OnEdit(const MouseButtonEvent& event, const vec2& wpos) {
             auto dc = world.addConstraint<Spring>(p1, p2, d);
 
             if (point && preview_fix_point) {
-                point->target = static_cast<RigidBody*>(p2);
-                preview_fix_point->target = static_cast<RigidBody*>(p1);
+                point->setTarget(p2);
+                preview_fix_point->setTarget(p1);
+                // point->target = static_cast<RigidBody2D*>(p2);
+                // preview_fix_point->target = static_cast<RigidBody2D*>(p1);
                 dc->d = glm::length(point->m_position - preview_fix_point->m_position);
             }
             else if (preview_fix_point) {
-                preview_fix_point->target = static_cast<RigidBody*>(p1);
+                preview_fix_point->setTarget(p1);
+                // preview_fix_point->target = static_cast<RigidBody2D*>(p1);
                 dc->d = glm::length(preview_fix_point->m_position - wpos);
             }
             else if (point) {
-                point->target = static_cast<RigidBody*>(p2);
+                point->setTarget(p2);
+                // point->target = static_cast<RigidBody2D*>(p2);
                 dc->d = glm::length(p2->m_position - p1->m_position);
             }
             dc->count = dc->d * len_count_scale;

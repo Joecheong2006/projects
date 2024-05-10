@@ -19,7 +19,7 @@ public:
     virtual ~Simulation() = default;
     virtual void OnStart() {}
     virtual void OnUpdate(const real& dt) { (void)dt; }
-    virtual void OnRender(mfw::Renderer& renderer) { (void)renderer; }
+    inline virtual void OnRender(mfw::Renderer& renderer) { (void)renderer; }
     real getWorldUnit() { return unitScale; }
     void initialize();
 

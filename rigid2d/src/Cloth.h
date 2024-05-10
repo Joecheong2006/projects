@@ -12,11 +12,10 @@ public:
         world.setObjectLayer<Circle>(RenderLayer::Level3);
         world.setObjectLayer<Cylinder>(RenderLayer::Level8);
 
-        cloth({12.0_mu, 6.0_mu}, {40, 20}, 20, 0.1, {0, 3.0_mu});
+        cloth({15.0_mu, 7.0_mu}, {30, 20}, 50, 0.3, {0, 3.0_mu});
     }
 
     void cloth(vec2 size, vec2 count, real stiffness, real damping, vec2 offset = vec2(0)) {
-        auto& world = Simulation::Get()->world;
         const vec2 persize = size / count;
         auto objects = world.findObjects<Circle>();
         const i32 startIndex = objects.size();
@@ -28,8 +27,8 @@ public:
                 auto obj = world.addRigidBody<Circle>(vec2(j, -i) * persize + offset);
                 obj->setMass(0.004);
                 obj->radius = persize.x * 0.2;
-                obj->m_damping = 0.6;
-                obj->RigidBody::collider = nullptr;
+                obj->m_damping = 0.3;
+                obj->getCollider().enable = false;
             }
         }
 
@@ -64,3 +63,4 @@ public:
     }
 
 };
+

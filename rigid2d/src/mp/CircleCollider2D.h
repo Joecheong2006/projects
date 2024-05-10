@@ -1,9 +1,9 @@
 #pragma once
 #include "Collider2D.h"
 
-struct CylinderCollider2D : Collider2D {
+struct CircleCollider2D : Collider2D {
+    real radius;
     vec2 offset;
-    vec2 size;
     virtual AABB getBounds() const override;
     inline virtual CollisionState testCollision(
             const Collider2D* collider, 

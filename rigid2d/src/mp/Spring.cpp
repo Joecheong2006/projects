@@ -12,7 +12,7 @@ real Spring::default_damping;
 i32 Spring::default_count = 1;
 
 Spring::Spring(
-        RigidBody* target1, RigidBody* target2,
+        RigidBody2D* target1, RigidBody2D* target2,
         real d, real stiffness, real damping,
         i32 count, real w, ::color color)
     : DistanceConstraint(target1, target2, d, w)
@@ -51,15 +51,15 @@ void Spring::draw(const mat4& proj, mfw::Renderer& renderer) {
     const vec2 pos1 = target[0]->m_position;
     const vec2 pos2 = target[1]-> m_position;
 
+    renderer.renderLine(proj, pos1, pos2, color, w);
+    return;
     //const real count = i32(d * 12), len = 0.6 * worldScale;
-    const real len = 0.6 * worldScale;
-    const real n = glm::length(pos1 - pos2) / (count * worldScale);
-    const vec2 normal = glm::normalize(pos1 - pos2) * worldScale;
+    const real len = 0.5_mu * worldScale;
+    const real n = glm::length(pos1 - pos2) / (count);
+    const vec2 normal = glm::normalize(pos1 - pos2);
     const vec2 t1 = glm::cross(vec3(normal, 0), vec3(0, 0, 1)) * len;
     const vec2 t2 = glm::cross(vec3(normal, 0), vec3(0, 0, -1)) * len;
 
-    renderer.renderLine(proj, pos1, pos2, color, w * 0.5);
-    return;
     vec2 p[2];
     p[0] = t2 + pos2;
     p[1] = t1 + pos2;

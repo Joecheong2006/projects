@@ -11,7 +11,7 @@ private:
 public:
     GENERATE_OBJECT_IDENTIFIER();
 
-    Tracer(RigidBody* target,
+    Tracer(RigidBody2D* target,
                   real maxScale = default_maxScale,
                   real minScale = default_minScale,
                   real dr = default_dr,
@@ -23,7 +23,7 @@ public:
     real dr = 0.6f;
     color m_color;
 
-    RigidBody* target;
+    RigidBody2D* target;
     
     static color default_color;
     static real default_maxScale, default_minScale, default_dr;

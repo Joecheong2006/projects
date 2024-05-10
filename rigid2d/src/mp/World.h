@@ -26,9 +26,9 @@ enum class RenderLayer : i32 {
 };
 
 class PhysicsWorld {
-    using ObjectContainer = std::vector<RigidBody*>;
-    using ConstraintContainer = std::vector<Constraint*>;
 public:
+    using ObjectContainer = std::vector<RigidBody2D*>;
+    using ConstraintContainer = std::vector<Constraint*>;
     vec2 gravity = vec2(0, -9.81);
 
     PhysicsWorld() = default;
@@ -83,7 +83,7 @@ public:
         return result;
     }
 
-    inline void destoryRigidBody(RigidBody* body) {
+    inline void destoryRigidBody(RigidBody2D* body) {
         auto& renderLayer = renderLayers[renderLayersMap[body->getTypeId()]];
         for (u64 j = 0; j < renderLayer.size(); ++j) {
             if (renderLayer[j] == body) {
@@ -109,12 +109,16 @@ private:
     void update_collision();
     void update_constraint(const real& dt);
 
+    void SweepAndPrune();
+    void KDTreesSpacePartitioning();
+
     ObjectContainer rigidbodies;
     ConstraintContainer constraints;
     std::array<std::vector<Drawable*>, 16> renderLayers;
     std::unordered_map<i32, i32> renderLayersMap;
-    static std::unique_ptr<OdeSolver> solver;
+    static std::unique_ptr<Solver> solver;
     i32 sub_step = 1;
+
 
 };
 

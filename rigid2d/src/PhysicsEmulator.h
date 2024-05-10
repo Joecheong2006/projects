@@ -45,9 +45,9 @@ private:
     real sub_dt;
     vec2 catch_offset;
 
-    RigidBody* rigidBodyHolder = nullptr;
+    RigidBody2D* rigidBodyHolder = nullptr;
     PointConstraint* pointHolder = nullptr;
-    std::vector<RigidBody*> preview;
+    std::vector<RigidBody2D*> preview;
     Simulation* simulation;
 
     mfw::Renderer renderer;

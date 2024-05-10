@@ -6,7 +6,7 @@
 color DistanceConstraint::default_color;
 real DistanceConstraint::default_w;
 
-DistanceConstraint::DistanceConstraint(RigidBody* target1, RigidBody* target2, real d, f32 w, ::color color)
+DistanceConstraint::DistanceConstraint(RigidBody2D* target1, RigidBody2D* target2, real d, f32 w, ::color color)
     : d(d), w(w), color(color)
 {
     target[0] = target1;

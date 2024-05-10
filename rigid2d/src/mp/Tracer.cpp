@@ -8,7 +8,7 @@ real Tracer::default_minScale;
 real Tracer::default_dr;
 i32 Tracer::default_maxSamples;
 
-Tracer::Tracer(RigidBody* target, real maxScale, real minScale, real dr, i32 maxSamples, color color)
+Tracer::Tracer(RigidBody2D* target, real maxScale, real minScale, real dr, i32 maxSamples, color color)
     : maxSamples(maxSamples), maxScale(maxScale), minScale(minScale), dr(dr), m_color(color), target(target)
 {}
 

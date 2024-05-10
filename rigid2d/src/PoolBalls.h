@@ -27,7 +27,7 @@ public:
 
     virtual void OnStart() override {
         SetDefaultConfig();
-        world.setSubStep(6);
+        world.setSubStep(5);
         world.setObjectLayer<DistanceConstraint>(RenderLayer::Level2);
         world.setObjectLayer<Spring>(RenderLayer::Level1);
         world.setObjectLayer<Circle>(RenderLayer::Level3);
@@ -58,11 +58,19 @@ public:
         strength -= dt * mfw::Input::KeyPress(MF_KEY_D) * 10;
 
         static i32 count = 0;
-        if (mfw::Input::KeyPress(MF_KEY_S) && count++ % 4 == 0) {
-            auto circle = world.addRigidBody<Circle>(vec2(0, 1), 0.04, pool_ball_colors[count % 15]);
+        if (mfw::Input::KeyPress(MF_KEY_S) && count++ % 3 == 0) {
+            auto circle = world.addRigidBody<Circle>(vec2(0, 0.5), 
+                    0.04 + (std::rand() % 1) * 0.03, pool_ball_colors[count % 15]);
+            // circle->setMass(0.01 + (std::rand() % 10) * 0.01);
+            circle->setMass(0.01 + (std::rand() % 3) * 0.01);
+            circle->addForce(vec2{4, 0});
+            circle->m_restitution = 0.1 + (std::rand() % 4) * 0.1;
+            circle = world.addRigidBody<Circle>(vec2(0, 0.3), 
+                    0.03 + (std::rand() % 1) * 0.01, pool_ball_colors[count % 15]);
+            // circle->setMass(0.01 + (std::rand() % 10) * 0.01);
             circle->setMass(0.01);
-            circle->addForce(vec2{10, 0});
-            circle->m_restitution = 0.4;
+            circle->addForce(vec2{4, 0});
+            circle->m_restitution = 0.1 + (std::rand() % 4) * 0.1;
         }
 
         if (mfw::Input::KeyPress(MF_KEY_Z)) {
@@ -76,9 +84,10 @@ public:
             down = false;
         }
 
+        return;
         for (auto& circle : balls) {
             if (glm::length(circle->m_velocity) > 0) {
-                real N = circle->m_mass * 9.81;
+                real N = circle->getMass() * 9.81;
                 circle->addForce(glm::normalize(circle->m_velocity) * -0.0001 * N / dt);
             }
         }
@@ -87,7 +96,7 @@ public:
             if (circle == balls.back())
                 continue;
             for (auto& hole : holes) {
-                auto state = circle->RigidBody::collider->testCollision(&hole.collider, circle, &hole);
+                auto state = circle->getCollider().testCollision(&hole.collider, circle, &hole);
                 if (state.depth < 0) {
                     world.destoryRigidBody(circle);
                     break;
@@ -143,3 +152,4 @@ public:
     };
 
 };
+

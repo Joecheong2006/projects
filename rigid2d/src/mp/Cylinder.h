@@ -2,7 +2,7 @@
 #include "RigidBody2D.h"
 #include "CylinderCollider.h"
 
-class Cylinder : public RigidBody {
+class Cylinder : public RigidBody2D {
 public:
     GENERATE_OBJECT_IDENTIFIER();
 
@@ -11,7 +11,7 @@ public:
 
     vec2 p[2];
     real width;
-    CylinderCollider collider;
+    CylinderCollider2D collider;
 
     static color default_color;
     static real default_width;

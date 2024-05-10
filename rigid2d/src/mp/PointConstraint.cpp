@@ -4,7 +4,7 @@ PointConstraint::PointConstraint()
     : d(), target(nullptr)
 {}
 
-void PointConstraint::setTarget(RigidBody* body) {
+void PointConstraint::setTarget(RigidBody2D* body) {
     target = body;
     target->setStatic();
 }

@@ -40,9 +40,9 @@ void addCircle(const vec2& pos, i32 n, real r, i32 nstep) {
 
     auto center = world.addRigidBody<Circle>(pos);
 
-    RigidBody* p1 = world.addRigidBody<Circle>(r * vec2(sin(0), cos(0)) + pos);
-    RigidBody* first = p1;
-    RigidBody* p2;
+    RigidBody2D* p1 = world.addRigidBody<Circle>(r * vec2(sin(0), cos(0)) + pos);
+    RigidBody2D* first = p1;
+    RigidBody2D* p2;
 
     for (i32 i = 1; i < n; i++) {
         real a = ri * i;

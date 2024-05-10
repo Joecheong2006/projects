@@ -14,12 +14,12 @@ private:
 public:
     GENERATE_OBJECT_IDENTIFIER();
 
-    DistanceConstraint(RigidBody* target1, RigidBody* target2, real d, f32 w = default_w, color color = default_color);
+    DistanceConstraint(RigidBody2D* target1, RigidBody2D* target2, real d, f32 w = default_w, color color = default_color);
     virtual void update(const real& dt) override;
 
     real d, w;
     color color;
-    RigidBody* target[2];
+    RigidBody2D* target[2];
     
     static ::color default_color;
     static real default_w;

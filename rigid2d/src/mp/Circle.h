@@ -1,8 +1,8 @@
 #pragma once
 #include "RigidBody2D.h"
-#include "CircleCollider.h"
+#include "CircleCollider2D.h"
 
-class Circle : public RigidBody {
+class Circle : public RigidBody2D {
 public:
     GENERATE_OBJECT_IDENTIFIER();
 
@@ -12,7 +12,7 @@ public:
            color color = default_color);
 
     virtual void draw(const mat4& proj, mfw::Renderer& renderer) override;
-    CircleCollider collider;
+    CircleCollider2D collider;
     real radius;
 
     static color default_color;

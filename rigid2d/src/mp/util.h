@@ -1,5 +1,5 @@
 #pragma once
-#include "mfw/util.h"
+#include <mfw/util.h>
 #include "glm/glm.hpp"
 
 typedef glm::dvec2 vec2;

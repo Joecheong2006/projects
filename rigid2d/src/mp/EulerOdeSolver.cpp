@@ -1,7 +1,7 @@
 #include "EulerOdeSolver.h"
 #include "RigidBody2D.h"
 
-void EulerOdeSolver::solve(const real& dt, const std::vector<RigidBody*>& objects) {
+void EulerOdeSolver::solve(const real& dt, const std::vector<RigidBody2D*>& objects) {
     for (auto& object : objects) {
         if (object->isStatic)
             continue;

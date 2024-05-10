@@ -16,8 +16,8 @@ public:
     real d;
     vec2 m_position;
     color m_color;
-    RigidBody* target;
-    void setTarget(RigidBody* body);
+    RigidBody2D* target;
+    void setTarget(RigidBody2D* body);
     void releaseTarget();
     
 };

@@ -5,7 +5,7 @@
 real Rotator::default_r;
 real Rotator::default_w;
 
-Rotator::Rotator(RigidBody* center, RigidBody* target, real r, real w)
+Rotator::Rotator(RigidBody2D* center, RigidBody2D* target, real r, real w)
     : r(r), w(w), center(center), target(target)
 {
 }
