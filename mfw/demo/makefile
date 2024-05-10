@@ -1,5 +1,5 @@
 CC = g++
-CFLAGS := -std=c++17 -Wall -Wextra -Wpedantic -Wstrict-aliasing -g -DDEBUG -O2
+CFLAGS := -std=c++17 -Wall -Wextra -Wpedantic -Wstrict-aliasing -g -O2
 SOURCE = src src/**
 INCLUDE = -I../lib -I../include
 LIB = bin/mfw.dll

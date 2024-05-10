@@ -99,7 +99,8 @@ vec3 smoothLife() {
                         i, 0.147
                         ) - 1.0) * dt + current.b;
 
-    return clamp(vec3(k, i, x), 0, 1);
+    // return clamp(vec3(k, i, x), 0, 1);
+    return clamp(vec3(i * 0.8, x, x), 0, 1);
     // return clamp(vec3(k * i, y, x), 0, 1);
 }
 
