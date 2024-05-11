@@ -228,7 +228,6 @@ namespace mfw {
         SetCursorPos(m_state.x + x, m_state.y + y);
     }
 
-    // IT DOESN'T WORK FOR SOME REASOM ON SCHOOL COMPUTERS
     void WindowsWindow::setFullScreen(bool enable) {
         static WINDOWPLACEMENT windowPlacement;
         if (enable) {
