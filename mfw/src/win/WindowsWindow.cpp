@@ -53,11 +53,18 @@ namespace mfw {
                 m_state.isRunning = false;
             } return;
 
-        case WM_MOVE: {
-                m_state.x = GETLOWORD(lparam);
-                m_state.y = GETHIWORD(lparam);
-                m_state.m_callBackFunc(WindowMoveEvent(m_state.x, m_state.y));
-            } break;
+        // case WM_MOVE: {
+        //         m_state.x = GETLOWORD(lparam);
+        //         m_state.y = GETHIWORD(lparam);
+        //         m_state.m_callBackFunc(WindowMoveEvent(m_state.x, m_state.y));
+        //     } break;
+
+        case WM_WINDOWPOSCHANGED: {
+            WINDOWPOS* winpos = reinterpret_cast<WINDOWPOS*>(lparam);
+            m_state.x = winpos->x;
+            m_state.y = winpos->y;
+            m_state.m_callBackFunc(WindowMoveEvent(m_state.x, m_state.y));
+        } break;
 
         case WM_SIZE: {
                 m_state.width = GETLOWORD(lparam);
