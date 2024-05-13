@@ -1,0 +1,12 @@
+[
+  {
+    "arguments": [
+      "gcc",
+      "-std=c11",
+      "-Wall",
+      "-Wextra"
+    ],
+    "directory": "C:/Users/joech/program/c/script",
+    "file": "src/main.c"
+  }
+]
