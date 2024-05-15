@@ -2,9 +2,13 @@
   {
     "arguments": [
       "gcc",
-      "-std=c11",
+      "-std=c99",
       "-Wall",
-      "-Wextra"
+      "-Wextra",
+      "-Wstrict-aliasing",
+      "-Werror",
+      "-g3",
+      "-DDEBUG"
     ],
     "directory": "C:/Users/joech/program/c/script",
     "file": "src/main.c"

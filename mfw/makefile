@@ -16,10 +16,6 @@ OBJ = $(SRC:%.cpp=%.o)
 DEP = $(OBJ:%.o=%.d)
 OUT = mfw.dll
 
-PROCESS_INDEX = -1
-TOTAL_FILES = $(words $(SRC))
-PROCESS_PERCENTAGE = 0
-
 .PHONY: all clean
 
 all:
@@ -30,26 +26,22 @@ clean:
 
 build:
 	@echo "Compiling library"
-	@cd lib/stb_image && $(CC) -c stb_image.cpp
-	@cd lib/imgui && $(CC) -c -O2 ./*.cpp
-	@$(CC) -x c++-header $(INCLUDE) -o $(PCH).gch -c $(PCH)
+	cd lib/stb_image && $(CC) -c stb_image.cpp
+	cd lib/imgui && $(CC) -c -O2 ./*.cpp
+	$(CC) -x c++-header $(INCLUDE) -o $(PCH).gch -c $(PCH)
 	@echo "Complete"
 
 app: $(OBJ) 
-	@$(CC) -shared -o $(OUT) $(OBJ) $(LIBOBJ) $(LIB)
+	$(CC) -shared -o $(OUT) $(OBJ) $(LIBOBJ) $(LIB)
 	@echo "[100%] Compilation completed"
 
 %.o: %.cpp
-	$(eval PROCESS_INDEX := $(shell expr $(PROCESS_INDEX) + 1))
-	$(eval PROCESS_PERCENTAGE := $(shell echo "$$(($(PROCESS_INDEX) * 100))"))
-	$(eval PROCESS_PERCENTAGE := $(shell echo "$$(($(PROCESS_PERCENTAGE) / $(TOTAL_FILES)))"))
-	@echo "[$(PROCESS_PERCENTAGE)%] $<"
-	@$(CC) $(CFLAGS) $(INCLUDE) -o $@ -c $< -MMD
+	$(CC) $(CFLAGS) $(INCLUDE) -o $@ -c $< -MMD
 
 win_release:
-	@$(MAKE) app -s DEFINE="" FLAGS="-std=c++17 -O2"
+	@$(MAKE) app DEFINE="" FLAGS="-std=c++17 -O2"
 
 win_debug:
-	@$(MAKE) app -s DEFINE="-DDEBUG" FLAGS="-std=c++17 -Wall -Wextra -Wpedantic -Wstrict-aliasing -g"
+	@$(MAKE) app DEFINE="-DDEBUG" FLAGS="-std=c++17 -Wall -Wextra -Wpedantic -Wstrict-aliasing -g"
 
 -include $(DEP)
