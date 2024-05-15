@@ -1,2 +1,6 @@
-const int a = 0123456789
-float flaot = 3
+// this is comment
+const int a1=0123456789 // this is comment
+// this is comment
+
+float b = 3
+// this is comment
