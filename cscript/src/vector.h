@@ -30,6 +30,12 @@ struct vector_data
         _vector_new_value(vec, &(__typeof__(*(vec))){ __VA_ARGS__ }, sizeof(__typeof__(*(vec))));\
     }
 
+#define vector_pushe(vec, ...) {\
+        vec = _vector_add(vec, sizeof(__typeof__(*(vec))));\
+        _vector_new_value(vec, &( __VA_ARGS__ ), sizeof(__typeof__(*(vec))));\
+    }
+
+
 #define vector_copy(dest, src) {\
         u64 src_len = vector_size(src);\
         for (u64 i = 0; i < src_len; i++) {\

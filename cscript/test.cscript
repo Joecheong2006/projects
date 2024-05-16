@@ -1,6 +1,21 @@
-// this is comment
-const int a1=0123456789 // this is comment
-// this is comment
+const var number = 3 * (2 + 9) // arithmetic operation
 
-float b = 3
-// this is comment
+// string support
+var str = "hello, world"
+
+// base 16 support
+const int base16 = 0x123456789
+// base 2 support
+const int base2 = 0b100101001
+
+float b = 3.0
+
+var array = [1, 2, 3, 4]
+
+// (if) statement (then) body (end)
+if true then
+    body
+end
+
+def pow(float base, int e)->float
+    return base**e
