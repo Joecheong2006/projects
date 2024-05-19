@@ -1,24 +1,25 @@
-const int number=3*(2+9) # arithmetic operation
+const number:int=3*(2+9) # arithmetic operation
 
 # string support
-string str="hello, world"
-char c='c'
+str="hello, world"
+c='c'
 
 # base 16 support
-int base16=0x123456789
+base16=0x123456789
 
-float b = 3.0f
-float nb = -3.0f
+b = 3.0f
+nb = -3.0f
 
-const int array[] = [1,2,3,4]
+const array[] = [0,2,3,4]
 
 # (if) statement (then) body (end)
 if true then
     body
 end
 
-function pow(float base,
-             int e) -> float
+function pow(base,e)
     return base**e
 end
-function void() return end
+function void()
+    return
+end

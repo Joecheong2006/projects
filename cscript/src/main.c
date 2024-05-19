@@ -244,8 +244,6 @@ void print_token(token* token) {
     }
 }
 
-INLINE i32 is_data_type(token* token) { return token->type == TokenKeyword && token->name_location >= Int && token->name_location <= Char; }
-
 typedef struct {
     i32 type;
     void* info;
@@ -292,20 +290,47 @@ void print_token_name(token* token) {
     }
 }
 
+
+INLINE i32 is_data_type(token* token) {
+    return token->type == TokenKeyword && token->name_location >= Int && token->name_location <= Char;
+}
+
+INLINE i32 is_operator_type(token* token, i32 type) {
+    return token->type == TokenOperator && token->name_location == type;
+}
+
 INLINE i32 is_variable(token* token) {
     return token->type == TokenIdentifier;
 }
 
-INLINE i32 is_bracket_type(token* token, i32 type) {
+INLINE i32 is_separator_type(token* token, i32 type) {
     return token->type == TokenSeparator && token->name_location == type;
 }
 
+static i32 in_scope = 0;
 void parser_variable(vector(token) tokens, u64 index) {
-    if (index == 1 && tokens[index - 1].type == TokenKeyword && tokens[index - 1].name_location == Const)
-        printf("const variable -> ");
-    else
-        printf("variable -> ");
-    print_token_name(&tokens[index + 1]);
+    i32 assign_offset = 0;
+    if (is_separator_type(&tokens[index + 1], Colon)) {
+        if (is_data_type(&tokens[index + 2])) {
+            if (!in_scope && !is_operator_type(&tokens[index + 3], Assign)) {
+                printf("may be missing a '=' ? ");
+                return;
+            }
+            printf("%s ", Keyword[tokens[index + 2].name_location]);
+            assign_offset = 2;
+        }
+        else {
+            printf("error type ");
+            return;
+        }
+    }
+    if (!in_scope && !is_operator_type(&tokens[index + 1 + assign_offset], Assign)) {
+        printf("may be missing a '=' ? ");
+        return;
+    }
+
+    printf("variable -> ");
+    print_token_name(&tokens[index]);
     putchar('\n');
     hashmap_add(object_map, make_object(&(object){
                 .info = NULL,
@@ -316,47 +341,36 @@ void parser_variable(vector(token) tokens, u64 index) {
 }
 
 void parser_keyword(vector(token) tokens, u64 tokens_len, u64 index) {
-    static i32 in_scoop = 0;
-
     switch (tokens[index].name_location) {
-        // type checking may switch to if statement
-        case Int:
-        case Float:
-        case String:
-        case Char: {
-            if (tokens_len >= 2 && tokens[index + 1].type == TokenIdentifier) {
-                if (in_scoop)
-                    printf("   funciton ");
-                parser_variable(tokens, index);
-            }
-        } break;
         case Function: {
             if (tokens_len >= 3 && is_variable(&tokens[index + 1])
-                && is_bracket_type(&tokens[index + 2], OpenRoundBracket)) {
-                if (is_bracket_type(&tokens[tokens_len - 2], CloseRoundBracket)) {
+                && is_separator_type(&tokens[index + 2], OpenRoundBracket)) {
+                if (is_separator_type(&tokens[tokens_len - 2], CloseRoundBracket)) {
                     printf("None ");
-                }
-                else if (is_bracket_type(&tokens[tokens_len - 4], CloseRoundBracket)) {
-                    print_token_name(&tokens[tokens_len - 2]);
-                    putchar(' ');
                 }
                 printf("function -> ");
                 print_token_name(&tokens[index + 1]);
                 putchar('\n');
-                in_scoop = 1;
+                in_scope = 1;
             }
         } break;
         case If: {
-            in_scoop = 1;
+            in_scope = 1;
         } break;
         case End: {
-            if (in_scoop == 0) {
+            if (in_scope == 0) {
                 printf("end doesn't match any control flow or function!\n");
                 exit(1);
             }
-            in_scoop = 0;
+            in_scope = 0;
         } break;
         default: break;
+    }
+}
+
+void parser_identifier(vector(token) tokens, u64 tokens_len, u64 index) {
+    if (tokens_len >= 2 && !is_separator_type(&tokens[index + 1], OpenRoundBracket)) {
+        parser_variable(tokens, index);
     }
 }
 
@@ -365,8 +379,8 @@ void parser_test(vector(token) tokens) {
     for (u64 i = 0; i < len; ++i) {
         switch (tokens[i].type) {
         case TokenKeyword: {
-            parser_keyword(tokens, len, i);
-        } break;
+                parser_keyword(tokens, len, i);
+            } break;
         case TokenSeparator: {
             } break;
         case TokenOperator: {
@@ -374,10 +388,15 @@ void parser_test(vector(token) tokens) {
         case TokenLiteral: {
             } break;
         case TokenIdentifier: {
+                if (tokens[i].type == TokenIdentifier && compare_strings(SingleLineComment, 1, tokens[i].name)) {
+                    return;
+                }
+                parser_identifier(tokens, len, i);
             } break;
         default: break;
         }
     }
+    putchar('\n');
 }
 
 u64 cal_line_stride(const  char* buffer, i32 line_count) {
@@ -415,7 +434,7 @@ void command_line_mode(lexer* lexer) {
             if (tokens) free_vector(tokens);
             free_string(source_buffer);
             return;
-        }break;
+        }
         case 'b': {
             for (u64 i = 1; i <= max_line_count; ++i) {
                 printf("%s", i == line_count ? " -> " : "    ");
@@ -514,35 +533,35 @@ i32 main(i32 argc, char** argv) {
     // TEST(stack):
 
     // NOTE: states[0] can stay global variable
-    vector(vector(object)) states = make_vector();
-    vector_push(states, make_vector());
-
-    int value = 69;
-    int value1 = 6;
-
-    push_object(&states[0], sizeof(value), &value, Int, "value");
-    push_object(&states[0], sizeof(value1), &value1, Int, "value1");
-    void* info = get_object_info(&states[0], "value");
-    if (info) {
-        printf("%d\n", *(int*)info);
-    }
-
-    info = get_object_info(&states[0], "value1");
-    if (info) {
-        printf("%d\n", *(int*)info);
-    }
-
-    pop_object(&states[0]);
-    pop_object(&states[0]);
-
-    for (u64 i = 0; i < vector_size(states); ++i) {
-        free_vector(states[i]);
-    }
-
-    free_vector(states);
-    CHECK_MEMORY_LEAK();
-
-    return 0;
+    // vector(vector(object)) states = make_vector();
+    // vector_push(states, make_vector());
+    //
+    // int value = 69;
+    // int value1 = 6;
+    //
+    // push_object(&states[0], sizeof(value), &value, Int, "value");
+    // push_object(&states[0], sizeof(value1), &value1, Int, "value1");
+    // void* info = get_object_info(&states[0], "value");
+    // if (info) {
+    //     printf("%d\n", *(int*)info);
+    // }
+    //
+    // info = get_object_info(&states[0], "value1");
+    // if (info) {
+    //     printf("%d\n", *(int*)info);
+    // }
+    //
+    // pop_object(&states[0]);
+    // pop_object(&states[0]);
+    //
+    // for (u64 i = 0; i < vector_size(states); ++i) {
+    //     free_vector(states[i]);
+    // }
+    //
+    // free_vector(states);
+    // CHECK_MEMORY_LEAK();
+    //
+    // return 0;
     // ?init hashmap for variable function name or maybe user define data structure name
     object_map = make_hashmap(1 << 10, hash_object);
 
@@ -582,18 +601,19 @@ i32 main(i32 argc, char** argv) {
 
         vector(token) tokens = lexer_tokenize_str(&lexer, source.buffer + offset, first_n);
 
-        parser_test(tokens);
-
         // try match pattern else it's a error
         printf("<line:%llu> ", i + 1);
         for (u64 c = 0; c < first_n; ++c) {
             putchar((source.buffer + offset)[c]);
         }
-        for (u64 j = 0; j < vector_size(tokens); ++j) {
-            printf("[%llu:%llu]", i + 1, tokens[j].name - source.buffer - offset + 1);
-            print_token(&tokens[j]);
-        }
+        // for (u64 j = 0; j < vector_size(tokens); ++j) {
+        //     printf("[%llu:%llu]", i + 1, tokens[j].name - source.buffer - offset + 1);
+        //     print_token(&tokens[j]);
+        // }
+
+        parser_test(tokens);
         putchar('\n');
+
         free_vector(tokens);
         offset += first_n;
     }

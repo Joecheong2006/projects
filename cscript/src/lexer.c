@@ -25,7 +25,18 @@ i32 match_token(token_set* token_set, const char* str) {
     return -1;
 }
 
+i32 compare_strings(const char** strings, u64 strings_len, const char* str) {
+    for (u64 i = 0; i < strings_len; ++i) {
+        u64 len = strlen(strings[i]);
+        if (strncmp(strings[i], str, len) == 0) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 i32 compare_token_set(token_set* token_set, const char* str) {
+    return compare_strings(token_set->set_name, token_set->set_size, str);
     for (u64 i = 0; i < token_set->set_size; ++i) {
         u64 len = strlen(token_set->set_name[i]);
         if (strncmp(token_set->set_name[i], str, len) == 0) {
