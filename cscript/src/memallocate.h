@@ -12,10 +12,10 @@ void* memallocate(size_t _Size);
 void* cmemallocate(size_t _NumOfElements, size_t _SizeOfElements);
 void freemem(void *_Memory);
 #define CHECK_MEMORY_LEAK()\
-    int leak_count = check_memory_leak();\
+    {int leak_count = check_memory_leak();\
     if (leak_count) {\
         printf("memory leak! count: %d\n", leak_count);\
-    }
+    }}
 int check_memory_leak(void);
 #else
 #define MALLOC(_Size) malloc(_Size)

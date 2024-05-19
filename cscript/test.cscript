@@ -1,21 +1,24 @@
-const var number = 3 * (2 + 9) // arithmetic operation
+const int number=3*(2+9) # arithmetic operation
 
-// string support
-var str = "hello, world"
+# string support
+string str="hello, world"
+char c='c'
 
-// base 16 support
-const int base16 = 0x123456789
-// base 2 support
-const int base2 = 0b100101001
+# base 16 support
+int base16=0x123456789
 
-float b = 3.0
+float b = 3.0f
+float nb = -3.0f
 
-var array = [1, 2, 3, 4]
+const int array[] = [1,2,3,4]
 
-// (if) statement (then) body (end)
+# (if) statement (then) body (end)
 if true then
     body
 end
 
-def pow(float base, int e)->float
+function pow(float base,
+             int e) -> float
     return base**e
+end
+function void() return end
