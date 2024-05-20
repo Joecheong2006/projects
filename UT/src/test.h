@@ -37,7 +37,7 @@ int main() {
         const float duration = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
         std::printf("[%s][%s][%s](%gms)\n", e->unit_name.c_str(), e->test_name.c_str(), success ? "OK" : "FAILED", duration);
     }
-    std::printf("[%s][%d/%d]\n", tests.front()->unit_name.c_str(), total_tests_success, total_tests);
+    std::printf("[%s][REPORT][%d/%d]\n", tests.front()->unit_name.c_str(), total_tests_success, total_tests);
     // std::printf("failed %d in total %d test(s) with the success rate of %d%%", total_tests_failed, total_tests, 100 - (int)(100.f * (float)total_tests_failed / total_tests));
 }
 
