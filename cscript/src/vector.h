@@ -27,14 +27,13 @@ struct vector_data
 
 #define vector_push(vec, ...) {\
         vec = _vector_add(vec, sizeof(__typeof__(*(vec))));\
-        _vector_new_value(vec, &(__typeof__(*(vec))){ __VA_ARGS__ }, sizeof(__typeof__(*(vec))));\
+        _vector_new_value(vec, &(__typeof__(*(vec))){__VA_ARGS__}, sizeof(__typeof__(*(vec))));\
     }
 
 #define vector_pushe(vec, ...) {\
         vec = _vector_add(vec, sizeof(__typeof__(*(vec))));\
-        _vector_new_value(vec, &( __VA_ARGS__ ), sizeof(__typeof__(*(vec))));\
+        _vector_new_value(vec, &(__VA_ARGS__), sizeof(__typeof__(*(vec))));\
     }
-
 
 #define vector_copy(dest, src) {\
         u64 src_len = vector_size(src);\
@@ -43,18 +42,20 @@ struct vector_data
         }\
     }
 
+#define for_vector(vec, i) for (u64 i = 0; i < vector_size(vec); ++i)
+
 #define vector_pop(vec)\
     vector_status(vec).size--
 
 #define free_vector(vec)\
-    _free_vector(vec)
+    _free_vector((void**)(vec))
 
 
 void* _make_vector(void);
 void* _vector_reserve(void* vec, u64 size);
 void* _vector_add(void* vec, u64 size);
 void _vector_new_value(void* vec, void* data, u64 size);
-void _free_vector(void* vec);
+void _free_vector(void** vec);
 
 #endif
 

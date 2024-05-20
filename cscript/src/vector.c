@@ -37,9 +37,10 @@ void _vector_new_value(void* vec, void* data, u64 size)
     memcpy(((char*)vec) + (vector_size(vec) - 1) * size, data, size);
 }
 
-void _free_vector(void* vec)
+void _free_vector(void** vec)
 {
-    assert(vec != NULL);
-    FREE(&vector_status(vec));
+    assert(*vec != NULL);
+    FREE(&vector_status(*vec));
+    // (*vec) = NULL;
 }
 

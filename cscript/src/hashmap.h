@@ -12,7 +12,7 @@ hashmap make_hashmap(size_t size, size_t (*hash_function)(void* data, size_t siz
 void hashmap_add(hashmap map, void* data);
 vector(void*) hashmap_access_vector(hashmap map, void* data);
 void hashmap_free_items(hashmap map, void(free_item)(void* data));
-void free_hashmap(hashmap map);
+void free_hashmap(hashmap* map);
 
 size_t djb2(const char* str);
 size_t sdbm(const char* str);

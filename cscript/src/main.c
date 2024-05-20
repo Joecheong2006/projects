@@ -125,6 +125,8 @@ enum {
     Comma,
     SingleQuote,
     DoubleQuote,
+    NewLine,
+    Space
 };
 
 // must be in one character
@@ -137,8 +139,8 @@ const char* Separator[] = {
     [Comma] = ",",
     [SingleQuote] = "\'",
     [DoubleQuote] = "\"",
-    "\n",
-    " "
+    [NewLine] = "\n",
+    [Space] = " "
 };
 
 enum {
@@ -240,6 +242,7 @@ void print_token(token* token) {
     case TokenOperator: _print_token(token, "operator", Operator); break;
     case TokenLiteral: _print_token(token, "literal", NULL); break;
     case TokenIdentifier: _print_token(token, "identifier", NULL); break;
+    case TokenEnd: _print_token(token, "end", NULL); break;
     default: _print_token(token, "unkown", NULL); break;
     }
 }
@@ -247,7 +250,7 @@ void print_token(token* token) {
 typedef struct {
     i32 type;
     void* info;
-    const string name;
+    string name;
     i32 name_len;
 } object;
 
@@ -259,22 +262,15 @@ object* make_object(object* test_data) {
     return result;
 }
 
-size_t hash_string(const char* str, i32 str_len) {
-    size_t result = 5381;
-    for (i32 i = 0; i < str_len; ++i) {
-        result = ((result << 5) + result) + str[i];
-    }
-    return result;
-}
-
 size_t hash_object(void* data, size_t size) {
     object* test_data = data;
-    return hash_string(test_data->name, test_data->name_len) % size;
+    printf("hashing %s\n", test_data->name);
+    return djb2(test_data->name) % size;
 }
 
 void hashmap_free_test_data(void* data) {
     object* test_data = data;
-    free_string(test_data->name);
+    free_string(&test_data->name);
     // NOTE: not implement info yet
     // FREE(test_data->info);
     FREE(test_data);
@@ -334,9 +330,9 @@ void parser_variable(vector(token) tokens, u64 index) {
     putchar('\n');
     hashmap_add(object_map, make_object(&(object){
                 .info = NULL,
-                .type = tokens[index].name_location,
-                .name_len = tokens[index + 1].name_len,
-                .name = make_string((const string)tokens[index + 1].name) // tokens[index + 1].name
+                .type = assign_offset > 0 ? tokens[index + 2].name_location : -1,
+                .name_len = tokens[index].name_len,
+                .name = make_stringn((string)tokens[index].name, tokens[index].name_len)
             }));
 }
 
@@ -431,8 +427,8 @@ void command_line_mode(lexer* lexer) {
 
         switch (input[1]) {
         case 'q': {
-            if (tokens) free_vector(tokens);
-            free_string(source_buffer);
+            if (tokens) free_vector(&tokens);
+            free_string(&source_buffer);
             return;
         }
         case 'b': {
@@ -456,21 +452,15 @@ void command_line_mode(lexer* lexer) {
                 break;
             }
 
-            if (tokens) free_vector(tokens);
+            if (tokens) free_vector(&tokens);
 
-            printf("%llu ", vector_size(source_buffer));
-            printf("begin %llu end %llu\n", begin, end);
+            tokens = lexer_tokenize_until(lexer, source_buffer + begin, "\n");
 
             i32 len = end - begin;
-            tokens = lexer_tokenize_str(lexer, source_buffer + begin, len);
             printf("<line:%llu> ", line_count);
             for (i32 c = 0; c < len; ++c) {
                 putchar((source_buffer + begin)[c]);
             }
-            // for (u64 j = 0; j < vector_size(tokens); ++j) {
-            //     printf("[%llu:%llu]", line_count, tokens[j].name - source_buffer - begin);
-            //     print_token(&tokens[j]);
-            // }
             putchar('\n');
         } break;
         case 'j': {
@@ -481,7 +471,7 @@ void command_line_mode(lexer* lexer) {
                     break;
                 }
                 line_count = line;
-                if (tokens) free_vector(tokens);
+                if (tokens) free_vector(&tokens);
                 begin = cal_line_stride(source_buffer, line_count - 1);
                 end = cal_line_stride(source_buffer, line_count);
                 tokens = lexer_tokenize_str(lexer, source_buffer + begin, end - begin);
@@ -490,14 +480,14 @@ void command_line_mode(lexer* lexer) {
         default: break;
         }
     }
-    if (tokens) free_vector(tokens);
-    free_string(source_buffer);
+    if (tokens) free_vector(&tokens);
+    free_string(&source_buffer);
 }
 
 void push_object(vector(object)* state, u64 size, void* data, i32 type, const char* name) {
     assert(state != NULL);
     object o = {
-        .name = make_string((const string)name),
+        .name = make_string((string)name),
         .type = type,
         .info = MALLOC(size),
         .name_len = strlen(name)
@@ -510,7 +500,7 @@ void push_object(vector(object)* state, u64 size, void* data, i32 type, const ch
 void pop_object(vector(object)* state) {
     object* o = &(*state)[vector_size(*state) - 1];
     FREE(o->info);
-    free_string(o->name);
+    free_string(&o->name);
     vector_pop(*state);
 }
 
@@ -599,31 +589,26 @@ i32 main(i32 argc, char** argv) {
     for (u64 i = 0; i < source.line_count; ++i) {
         first_n = strchr(source.buffer + offset, '\n') - source.buffer - offset + 1;
 
-        vector(token) tokens = lexer_tokenize_str(&lexer, source.buffer + offset, first_n);
+        vector(token) tokens = lexer_tokenize_until(&lexer, source.buffer + offset, "\n");
 
         // try match pattern else it's a error
         printf("<line:%llu> ", i + 1);
         for (u64 c = 0; c < first_n; ++c) {
             putchar((source.buffer + offset)[c]);
         }
-        // for (u64 j = 0; j < vector_size(tokens); ++j) {
-        //     printf("[%llu:%llu]", i + 1, tokens[j].name - source.buffer - offset + 1);
-        //     print_token(&tokens[j]);
-        // }
 
         parser_test(tokens);
         putchar('\n');
 
-        free_vector(tokens);
+        free_vector(&tokens);
         offset += first_n;
     }
 
     vector(void*) result = hashmap_access_vector(object_map, &(object){
-                    .name_len = 3,
-                    .name = "str"
+                    .name = "number"
                 });
 
-    for (size_t i = 0; i < vector_size(result); ++i) {
+    for_vector(result, i) {
         object* item = result[i];
         print_token(&(token){
                     .name = item->name,
@@ -634,7 +619,7 @@ i32 main(i32 argc, char** argv) {
     }
 
     hashmap_free_items(object_map, hashmap_free_test_data);
-    free_hashmap(object_map);
+    free_hashmap(&object_map);
     free_source(&source);
     CHECK_MEMORY_LEAK();
 }

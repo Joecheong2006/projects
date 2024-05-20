@@ -10,8 +10,12 @@ typedef vector(char) string;
 #define make_string(ctx)\
     _make_string(ctx)
 
+#define make_stringn(ctx, len)\
+    _make_stringn(ctx, len)
+
 string _make_string(const string ctx);
-void _string_push(string*, const string string);
-void free_string(string);
+string _make_stringn(const string ctx, u64 len);
+void _string_push(string* dest, const string string);
+void free_string(string* str);
 
 #endif

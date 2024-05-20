@@ -32,12 +32,13 @@ void hashmap_free_items(hashmap map, void(free_item)(void* data)) {
     }
 }
 
-void free_hashmap(hashmap map) {
-    for (size_t i = 0; i < map.size; ++i) {
-        free_vector(map.data[i]);
+void free_hashmap(hashmap* map) {
+    assert(map != NULL);
+    for (size_t i = 0; i < map->size; ++i) {
+        free_vector(&map->data[i]);
     }
-    free_vector(map.data);
-    map.data = NULL;
+    free_vector(&map->data);
+    map->data = NULL;
 }
 
 size_t djb2(const char* str) {

@@ -110,7 +110,6 @@ i32 get_token_stride(lexer* lexer, const char* str) {
 
 vector(token) lexer_tokenize_str(lexer* lexer, const char* str, u64 str_size) {
     assert(lexer != NULL);
-
     u64 str_begin_offset = 0;
     i32 nword_len = 0;
 
@@ -145,5 +144,53 @@ vector(token) lexer_tokenize_str(lexer* lexer, const char* str, u64 str_size) {
     }
 
     return tokens;
+}
+
+vector(token) lexer_tokenize_until(lexer* lexer, const char* str, const char* terminal) {
+    vector(token) tokens = make_vector();
+    const char* begin = str;
+    token tok = { .name = "" };
+    u64 terminal_len = strlen(terminal);
+    while (strncmp(tok.name, terminal, terminal_len) != 0) {
+        if (begin[0] == ' ') {
+            begin++;
+            continue;
+        }
+        tok = lexer_tokenize_string(lexer, begin);
+        if (tok.name == NULL) {
+            tok.type = TokenEnd;
+            vector_pushe(tokens, tok);
+            break;
+        }
+        vector_pushe(tokens, tok);
+        begin += tok.name_len;
+    }
+
+    return tokens;
+}
+
+token lexer_tokenize_string(lexer* lexer, const char* str) {
+    assert(lexer != NULL);
+
+    i32 nword_len = 0;
+
+    nword_len = get_token_stride(lexer, str) - 1;
+    if (nword_len < 0) {
+        return (token){NULL, -1, -1, -1};
+    }
+
+    token result = compare_with_token_sets(lexer, str);
+    if (result.type >= 0) {
+        return result;
+    }
+
+    if (is_number(result.name[0])) {
+        result.type = TokenLiteral;
+    }
+    else {
+        result.type = TokenIdentifier;
+    }
+    result.name_len = nword_len;
+    return result;
 }
 
