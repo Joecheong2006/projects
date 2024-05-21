@@ -10,10 +10,12 @@ typedef enum {
     TokenOperator,
     TokenParserCount,
 
+    TokenStringBegin,
     TokenLiteral,
     TokenIdentifier,
     TokenCount,
-    TokenEnd
+    TokenEnd,
+    TokenError
 } Token;
 
 typedef struct {
@@ -42,7 +44,7 @@ i32 compare_token_set(token_set* token_set, const char* str);
 token compare_with_token_sets(lexer* lexer, const char* str);
 i32 get_token_stride(lexer* lexer, const char* str);
 vector(token) lexer_tokenize_str(lexer* lexer, const char* str, u64 str_size);
-vector(token) lexer_tokenize_until(lexer* lexer, const char* str, const char* terminal);
+vector(token) lexer_tokenize_until(lexer* lexer, const char* str, const char terminal);
 token lexer_tokenize_string(lexer* lexer, const char* str);
 
 #endif

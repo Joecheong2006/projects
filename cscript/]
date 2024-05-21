@@ -111,7 +111,7 @@ const char* Keyword[] = {
     [None] = "false",
     [Then] = "then", 
     [End] = "end", 
-    [Function] = "func", 
+    [Function] = "function", 
     [ReturnCarry] = "->", 
     [Power] = "**"
 };
@@ -298,33 +298,22 @@ typedef struct {
     u64 index, tokens_len;
 } parse_state;
 
-INLINE token* parser_peek(parse_state* state, i32 location) {
-    return state->tokens + state->index + location;
-}
-
-INLINE token* parser_peekpre(parse_state* state, i32 location) {
-    return state->tokens + state->tokens_len + location;
-}
-
 INLINE i32 is_variable(token* tok) { return tok->type == TokenIdentifier; }
 INLINE i32 is_keyword(token* tok, i32 type) { return tok->name_location == type; }
-INLINE i32 is_operator(token* tok) { return tok->type == TokenOperator; }
-INLINE i32 is_separator(token* tok) { return tok->type == TokenSeparator; }
-
-INLINE i32 is_keyword_type(token* tok, i32 type) { return tok->type == TokenKeyword && tok->name_location == type; }
 INLINE i32 is_data_type(token* tok) { return tok->type == TokenKeyword && tok->name_location >= Int && tok->name_location <= Char; }
 INLINE i32 is_operator_type(token* tok, i32 type) { return tok->type == TokenOperator && tok->name_location == type; }
+INLINE i32 is_keyword_type(token* tok, i32 type) { return tok->type == TokenKeyword && tok->name_location == type; }
 INLINE i32 is_separator_type(token* tok, i32 type) { return tok->type == TokenSeparator && tok->name_location == type; }
 
-void parse_variable(parse_state* state) {
+void parser_variable(parse_state* state) {
     i32 assign_offset = 0;
-    if (is_separator_type(parser_peek(state, 1), Colon)) {
-        if (is_data_type(parser_peek(state, 2))) {
-            if (!is_operator_type(parser_peek(state, 3), Assign)) {
-                printf(" may be missing a '=' ? ");
+    if (is_separator_type(state->tokens + state->index + 1, Colon)) {
+        if (is_data_type(state->tokens + state->index + 2)) {
+            if (!is_operator_type(state->tokens + state->index + 3, Assign)) {
+                printf("may be missing a '=' ? ");
                 return;
             }
-            printf("%s ", Keyword[parser_peek(state, 2)->name_location]);
+            printf("%s ", Keyword[state->tokens[state->index + 2].name_location]);
             assign_offset = 2;
         }
         else {
@@ -332,8 +321,8 @@ void parse_variable(parse_state* state) {
             return;
         }
     }
-    if (!is_operator_type(parser_peek(state, assign_offset + 1), Assign)) {
-        printf(" may be missing a '=' ? ");
+    if (!is_operator_type(state->tokens + state->index + 1 + assign_offset, Assign)) {
+        printf("may be missing a '=' ? ");
         return;
     }
 
@@ -342,7 +331,7 @@ void parse_variable(parse_state* state) {
     }
 
     printf("variable -> ");
-    print_token_name(parser_peek(state, 0));
+    print_token_name(state->tokens + state->index);
 
     // printing expression
     for_vector(state->tokens, i, assign_offset + state->index + 1) {
@@ -359,56 +348,23 @@ void parse_variable(parse_state* state) {
             }));
 }
 
-void parse_identifier(parse_state* state) {
-    if (state->index <= 1 && state->tokens_len >= 2 && !is_separator_type(parser_peek(state, 1), OpenRoundBracket)) {
-        parse_variable(state);
+void parser_identifier(parse_state* state) {
+    if (state->index <= 1 && state->tokens_len >= 2 && !is_separator_type(state->tokens + state->index + 1, OpenRoundBracket)) {
+        parser_variable(state);
     }
-}
-
-void parse_function_parameter(parse_state* state) {
-    i32 assign_offset = 0;
-    if (is_separator_type(parser_peek(state, 1), Colon)) {
-        if (is_data_type(parser_peek(state, 2))) {
-            printf("%s ", Keyword[parser_peek(state, 2)->name_location]);
-            assign_offset = 2;
-        }
-        else {
-            printf("error type ");
-            return;
-        }
-    }
-
-    if (state->index >= 1 && is_keyword_type(parser_peek(state, -1), Const)) {
-        printf("const ");
-    }
-
-    if (!is_separator_type(parser_peek(state, assign_offset + 1), Comma) &&
-        !is_separator_type(parser_peek(state, assign_offset + 1), CloseRoundBracket)) {
-        printf("missing ','");
-        return;
-    }
-
-    printf("-> ");
-    print_token_name(parser_peek(state, 0));
 }
 
 void parse_function(parse_state* state) {
-    if (is_separator_type(parser_peekpre(state, -1), CloseRoundBracket)) {
+    if (is_separator_type(state->tokens + state->tokens_len - 2, CloseRoundBracket)) {
         printf("None ");
     }
-    printf("function ");
-    print_token_name(parser_peek(state, 1));
-    printf(" -> param ->");
+    printf("function -> ");
 
-    for_vector(state->tokens, i, state->index + 2) {
-        if (is_variable(state->tokens + i)) {
-            parse_state new_state = *state;
-            new_state.index = i;
-            putchar(' ');
-            parse_function_parameter(&new_state);
-        }
+    for_vector(state->tokens, i, state->tokens + state->index + 2) {
+        print_token_name(state->tokens + i);
     }
 
+    print_token_name(state->tokens + state->index + 1);
     putchar('\n');
 }
 
@@ -424,9 +380,11 @@ void parser_keyword(parse_state* state) {
         } break;
         case Const: {
             if (state->tokens_len >= 3) {
-                parse_state new_state = *state;
-                new_state.index++;
-                parse_identifier(&new_state);
+                parser_identifier(&(parse_state){
+                        .tokens = state->tokens,
+                        .index = state->index + 1,
+                        .tokens_len = state->tokens_len
+                        });
             }
         } break;
         case If: {
@@ -466,7 +424,7 @@ void parser_test(vector(token) tokens) {
                 if (tokens[i].type == TokenIdentifier && compare_strings(SingleLineComment, 1, tokens[i].name)) {
                     return;
                 }
-                parse_identifier(&state);
+                parser_identifier(&state);
             } break;
         default: break;
         }
@@ -607,13 +565,6 @@ i32 main(i32 argc, char** argv) {
     LEXER_ADD_TOKEN(&lexer, Separator, TokenSeparator);
     LEXER_ADD_TOKEN(&lexer, Operator, TokenOperator);
     LEXER_ADD_TOKEN(&lexer, StringBegin, TokenStringBegin);
-
-    {
-        const char text[] = "func pow(const base:float,e:int)\n";
-        vector(token) tokens = lexer_tokenize_until(&lexer, text, '\n');
-        parser_test(tokens);
-        free_vector(&tokens);
-    } return 0;
 
     if (argc == 1) {
         command_line_mode(&lexer);

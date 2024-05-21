@@ -1,6 +1,6 @@
 CC = g++
 TYPE = cpp
-CFLAGS = -std=c++17 -Wall -Wextra -Wpedantic -Wstrict-aliasing -Werror -g3
+CFLAGS = -std=c++17 -Wall -Wextra -Wpedantic -Wstrict-aliasing -g3
 
 BIN = bin
 SRC = $(wildcard *.$(TYPE))

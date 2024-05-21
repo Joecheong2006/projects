@@ -5,10 +5,11 @@
 
 INLINE i32 is_alphabet(char c) { return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z'); }
 INLINE i32 is_number(char c) { return c >= '0' && c <= '9'; }
+INLINE i32 is_string_literal_begin(lexer* lexer, char c) { return lexer->token_sets[TokenStringBegin].set_name[0][0] == c; }
 
 void lexer_add_token(lexer* lexer, token_set set, Token token) {
     assert(lexer != NULL);
-    assert(token >=0 && token < TokenCount);
+    assert(token >= 0 && token < TokenCount);
     lexer->token_sets[token] = set;
 }
 
@@ -27,23 +28,15 @@ i32 match_token(token_set* token_set, const char* str) {
 
 i32 compare_strings(const char** strings, u64 strings_len, const char* str) {
     for (u64 i = 0; i < strings_len; ++i) {
-        u64 len = strlen(strings[i]);
-        if (strncmp(strings[i], str, len) == 0) {
+        if (strncmp(str, strings[i], strlen(strings[i])) == 0) {
             return 1;
         }
     }
     return 0;
 }
 
-i32 compare_token_set(token_set* token_set, const char* str) {
+INLINE i32 compare_token_set(token_set* token_set, const char* str) {
     return compare_strings(token_set->set_name, token_set->set_size, str);
-    for (u64 i = 0; i < token_set->set_size; ++i) {
-        u64 len = strlen(token_set->set_name[i]);
-        if (strncmp(token_set->set_name[i], str, len) == 0) {
-            return 1;
-        }
-    }
-    return 0;
 }
 
 token compare_with_token_sets(lexer* lexer, const char* str) {
@@ -82,25 +75,33 @@ i32 get_token_stride(lexer* lexer, const char* str) {
     }
     else if (is_number(str[0])) {
         for (u64 i = 0; str[i] != 0; ++i) {
+            if (str[i] == '.') {
+                continue;
+            }
             // default number literal separator
-            if (str[i] == ' ' || str[i] == '\n') {
+            if (str[i] == ' ' || str[i] == '\n' || 
+                compare_token_set(&lexer->token_sets[TokenOperator], str + i) ||
+                compare_token_set(&lexer->token_sets[TokenSeparator], str + i)) {
                 return i + 1;
             }
-            if (compare_token_set(&lexer->token_sets[TokenOperator], str + 1)) {
-                return i + 2;
-            }
-            if (compare_token_set(&lexer->token_sets[TokenSeparator], str + 1)) {
-                return i + 2;
+        }
+    }
+    else if (is_string_literal_begin(lexer, str[0])) {
+        u64 i = 0;
+        while (str[++i] != '"') {
+            if (str[i] == '\0') {
+                return -1;
             }
         }
+        return i + 2;
     }
     else {
         for (u64 i = 0; str[i] != 0; ++i) {
             if (is_alphabet(str[i]) || is_number(str[i])) {
                 return i + 1;
             }
-            if (compare_token_set(&lexer->token_sets[TokenSeparator], str + 1)) {
-                return i + 2;
+            if (compare_token_set(&lexer->token_sets[TokenSeparator], str + i)) {
+                return i + 1;
             }
         }
     }
@@ -146,19 +147,21 @@ vector(token) lexer_tokenize_str(lexer* lexer, const char* str, u64 str_size) {
     return tokens;
 }
 
-vector(token) lexer_tokenize_until(lexer* lexer, const char* str, const char* terminal) {
+vector(token) lexer_tokenize_until(lexer* lexer, const char* str, const char terminal) {
     vector(token) tokens = make_vector();
     const char* begin = str;
     token tok = { .name = "" };
-    u64 terminal_len = strlen(terminal);
-    while (strncmp(tok.name, terminal, terminal_len) != 0) {
+    u64 str_len = strlen(str);
+    while (tok.name[0] != terminal) {
         if (begin[0] == ' ') {
             begin++;
             continue;
         }
         tok = lexer_tokenize_string(lexer, begin);
         if (tok.name == NULL) {
-            tok.type = TokenEnd;
+            if ((u64)(begin - str) == str_len) {
+                tok.type = TokenEnd;
+            }
             vector_pushe(tokens, tok);
             break;
         }
@@ -166,17 +169,17 @@ vector(token) lexer_tokenize_until(lexer* lexer, const char* str, const char* te
         begin += tok.name_len;
     }
 
+    vector_pop(tokens);
+
     return tokens;
 }
 
 token lexer_tokenize_string(lexer* lexer, const char* str) {
     assert(lexer != NULL);
 
-    i32 nword_len = 0;
-
-    nword_len = get_token_stride(lexer, str) - 1;
+    i32 nword_len = get_token_stride(lexer, str) - 1;
     if (nword_len < 0) {
-        return (token){NULL, -1, -1, -1};
+        return (token){NULL, -1, -1, TokenError};
     }
 
     token result = compare_with_token_sets(lexer, str);
@@ -184,7 +187,7 @@ token lexer_tokenize_string(lexer* lexer, const char* str) {
         return result;
     }
 
-    if (is_number(result.name[0])) {
+    if (is_number(result.name[0]) || is_string_literal_begin(lexer, result.name[0])) {
         result.type = TokenLiteral;
     }
     else {

@@ -42,7 +42,7 @@ struct vector_data
         }\
     }
 
-#define for_vector(vec, i) for (u64 i = 0; i < vector_size(vec); ++i)
+#define for_vector(vec, i, start_index) for (u64 i = start_index; i < vector_size(vec); ++i)
 
 #define vector_pop(vec)\
     vector_status(vec).size--

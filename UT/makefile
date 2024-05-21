@@ -1,5 +1,5 @@
 CC = g++
-CFLAGS := -std=c++17 -Wall -Wextra -Wpedantic -Wstrict-aliasing -g
+CFLAGS := -std=c++17 -Wall -Wextra -Wpedantic -Wstrict-aliasing -g -DDEBUG
 SOURCE = src src/**
 
 SRC = $(wildcard $(patsubst %, %/*.cpp, $(SOURCE)))

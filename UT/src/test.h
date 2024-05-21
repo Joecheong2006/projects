@@ -16,14 +16,14 @@ struct TestObject {
 };
 
 #define UNIT(unit_name, test)\
-    class unit_name##_##test : TestObject {\
+    class testing_##unit_name##_##test : TestObject {\
     public:\
-        unit_name##_##test(std::string unit_name, std::string test_name): TestObject(unit_name, test_name) { tests.push_back(this); }\
+        testing_##unit_name##_##test(std::string unit_name, std::string test_name): TestObject(unit_name, test_name) { tests.push_back(this); }\
         inline virtual void run(int& success) override;\
     };\
     [[maybe_unused]]\
-    inline unit_name##_##test t(#unit_name, #test);\
-    inline void unit_name##_##test::run([[maybe_unused]] int& success)
+    inline testing_##unit_name##_##test testing_##unit_name##_##test##_t(#unit_name, #test);\
+    inline void testing_##unit_name##_##test::run([[maybe_unused]] int& success)
 
 int main() {
     const int total_tests = tests.size();
