@@ -240,16 +240,21 @@ void _print_token(token* token, const char* type_name, const char** type_names) 
         printf("', %d)\n", token->name_len);
 }
 
-void print_token(token* token) {
-    switch (token->type) {
-    case TokenKeyword: _print_token(token, "keyword", Keyword); break;
-    case TokenSeparator: _print_token(token, "separator", Separator); break;
-    case TokenOperator: _print_token(token, "operator", Operator); break;
-    case TokenLiteral: _print_token(token, "literal", NULL); break;
-    case TokenIdentifier: _print_token(token, "identifier", NULL); break;
-    case TokenEnd: _print_token(token, "end", NULL); break;
-    case TokenError: _print_token(token, "error", NULL); break;
-    default: _print_token(token, "unkown", NULL); break;
+void print_token(token* tok) {
+    switch (tok->type) {
+    case TokenKeyword: _print_token(tok, "keyword", Keyword); break;
+    case TokenSeparator: _print_token(tok, "separator", Separator); break;
+    case TokenOperator: _print_token(tok, "operator", Operator); break;
+    case TokenLiteral: _print_token(tok, "literal", NULL); break;
+    case TokenStringLiteral: {
+        token temp = *tok;
+        temp.name += 1;
+        _print_token(&temp, "string literal", NULL);
+    } break;
+    case TokenIdentifier: _print_token(tok, "identifier", NULL); break;
+    case TokenEnd: _print_token(tok, "end", NULL); break;
+    case TokenError: _print_token(tok, "error", NULL); break;
+    default: _print_token(tok, "unkown", NULL); break;
     }
 }
 
@@ -598,6 +603,42 @@ void* get_object_info(vector(object)* state, const char* name) {
     return o ? o->info : NULL;
 }
 
+enum {
+    NodePlus,
+    NodeMinus,
+    NodeMultiply,
+    NodeData,
+};
+
+typedef struct nodeI nodeI;
+struct nodeI {
+    i32 type;
+    int data;
+    nodeI* lhs;
+    nodeI* rhs;
+    int(*cal)(nodeI*);
+};
+
+int node_data_calI(nodeI* n) {
+    return n->data;
+}
+
+int node_multiply_calI(nodeI* n) {
+    return n->lhs->cal(n->lhs) * n->rhs->cal(n->rhs);
+}
+
+int node_plus_calI(nodeI* n) {
+    return n->lhs->cal(n->lhs) + n->rhs->cal(n->rhs);
+}
+
+INLINE nodeI init_node_dataI(int data) { return (nodeI){ .cal = node_data_calI, .type = NodeData, .data = data }; }
+INLINE nodeI init_node_plusI(nodeI* lhs, nodeI* rhs) { return (nodeI){ .cal = node_plus_calI, .type = NodePlus, .lhs = lhs, .rhs = rhs }; }
+INLINE nodeI init_node_multiplyI(nodeI* lhs, nodeI* rhs) { return (nodeI){ .cal = node_multiply_calI, .type = NodeMultiply, .lhs = lhs, .rhs = rhs }; }
+
+int cal_expressionI(nodeI* root) {
+    return root->cal(root);
+}
+
 i32 main(i32 argc, char** argv) {
     object_map = make_hashmap(1 << 10, hash_object);
 
@@ -608,10 +649,33 @@ i32 main(i32 argc, char** argv) {
     LEXER_ADD_TOKEN(&lexer, Operator, TokenOperator);
     LEXER_ADD_TOKEN(&lexer, StringBegin, TokenStringBegin);
 
+    /*
     {
-        const char text[] = "func pow(const base:float,e:int)\n";
+            //    + 
+            //   / \
+            //  4   *
+            //     / \
+            //    2   3
+            // -> 2 * 3 + 4 = 10
+
+        nodeI node4  = init_node_dataI(4);
+        nodeI node3 = init_node_dataI(3);
+        nodeI node2 = init_node_dataI(2);
+
+        nodeI mult = init_node_multiplyI(&node2, &node3);
+        nodeI plus = init_node_plusI(&node4, &mult);
+
+        printf("%d\n", cal_expressionI(&plus));
+
+    } return 0;
+    */
+    {
+        const char text[] = "str=\"hi\"\n";
         vector(token) tokens = lexer_tokenize_until(&lexer, text, '\n');
-        parser_test(tokens);
+        for_vector(tokens, i, 0) {
+            print_token(tokens + i);
+        }
+        // parser_test(tokens);
         free_vector(&tokens);
     } return 0;
 

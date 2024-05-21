@@ -2,13 +2,11 @@ const number:int=3*(2+9) # arithmetic operation
 
 # string support
 str="hello, world"
-c='c'
 
 # base 16 support
 base16=0x123456789
 
-b = 3.0f
-nb = -3.0f
+b = -3.0f
 
 const array[] = [0,2,3,4]
 
@@ -17,9 +15,10 @@ if true then
     body
 end
 
-function pow(base:float,e:int)
+func pow(base:float,e:int)
     return base**e
 end
-function void()
+func void()
     return
 end
+function = 1
