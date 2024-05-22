@@ -2,7 +2,6 @@
 #define LEXER_H
 
 #include "vector.h"
-#include <assert.h>
 
 typedef enum {
     TokenKeyword = 0,
@@ -16,14 +15,15 @@ typedef enum {
     TokenIdentifier,
     TokenCount,
     TokenEnd,
-    TokenError
+    TokenError,
+    TokenUnkown
 } Token;
 
 typedef struct {
     const char* name;
     i32 name_len;
     i32 name_location;
-    i32 type;
+    Token type;
 } token;
 
 typedef struct {

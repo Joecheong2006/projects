@@ -18,5 +18,6 @@ typedef float f32;
 typedef double f64;
 
 #define INLINE inline __attribute__((always_inline))
+#define PACKED __attribute__((packed))
 
 #endif

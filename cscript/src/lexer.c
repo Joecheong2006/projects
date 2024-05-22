@@ -1,5 +1,6 @@
 #include "lexer.h"
 
+#include <assert.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -182,6 +183,8 @@ vector(token) lexer_tokenize_until(lexer* lexer, const char* str, const char ter
 static token ncompare_with_token_sets(lexer* lexer, const char* str, u64 len) {
     for (u64 i = 0; i < TokenParserCount; ++i) {
         for (u64 j = 0; j < lexer->token_sets[i].set_size; ++j) {
+            if (len != strlen(lexer->token_sets[i].set_name[j]))
+                continue;
             if (strncmp(lexer->token_sets[i].set_name[j], str, len) == 0) {
                 return (token){
                     .name = str,
@@ -192,7 +195,7 @@ static token ncompare_with_token_sets(lexer* lexer, const char* str, u64 len) {
             }
         }
     }
-    return (token){ .name = str, .name_len = -1, .type = -1, .name_location = -1 };
+    return (token){ .name = str, .name_len = -1, .type = TokenUnkown, .name_location = -1 };
 }
 
 token lexer_tokenize_string(lexer* lexer, const char* str) {
@@ -204,7 +207,7 @@ token lexer_tokenize_string(lexer* lexer, const char* str) {
     }
 
     token result = ncompare_with_token_sets(lexer, str, nword_len);
-    if (result.type >= 0) {
+    if (result.type != TokenUnkown) {
         return result;
     }
 
@@ -213,7 +216,7 @@ token lexer_tokenize_string(lexer* lexer, const char* str) {
     }
     else if (is_string_literal_begin(lexer, result.name[0])) {
         result.type = TokenStringLiteral;
-        result.name_len = nword_len;
+        nword_len += 2;
     }
     else {
         result.type = TokenIdentifier;

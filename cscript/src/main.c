@@ -79,124 +79,124 @@ void free_source(source_file* source) {
 }
 
 enum {
-    If,
-    While,
-    Return,
-    Const,
-    Int,
-    Float,
-    String,
-    Char,
-    True,
-    Flase,
-    None,
-    Then,
-    End,
-    Function,
-    ReturnCarry,
-    Power
+    KeywordIf,
+    KeywordWhile,
+    KeywordReturn,
+    KeywordConst,
+    KeywordInt,
+    KeywordFloat,
+    KeywordString,
+    KeywordChar,
+    KeywordTrue,
+    KeywordFlase,
+    KeywordNone,
+    KeywordThen,
+    KeywordEnd,
+    KeywordFunction,
+    KeywordReturnCarry,
+    KeywordPower
 };
 
 const char* Keyword[] = {
-    [If] = "if",
-    [While] = "while",
-    [Return] = "return",
-    [Const] = "const",
-    [Int] = "int", 
-    [Float] = "float", 
-    [Char] = "char",
-    [String] = "string",
-    [True] = "None", 
-    [Flase] = "true", 
-    [None] = "false",
-    [Then] = "then", 
-    [End] = "end", 
-    [Function] = "func", 
-    [ReturnCarry] = "->", 
-    [Power] = "**"
+    [KeywordIf] = "if",
+    [KeywordWhile] = "while",
+    [KeywordReturn] = "return",
+    [KeywordConst] = "const",
+    [KeywordInt] = "int", 
+    [KeywordFloat] = "float", 
+    [KeywordChar] = "char",
+    [KeywordString] = "string",
+    [KeywordTrue] = "None", 
+    [KeywordFlase] = "true", 
+    [KeywordNone] = "false",
+    [KeywordThen] = "then", 
+    [KeywordEnd] = "end", 
+    [KeywordFunction] = "func", 
+    [KeywordReturnCarry] = "->", 
+    [KeywordPower] = "**"
 };
 
 enum {
-    OpenSquareBracket,
-    CloseSquareBracket,
-    OpenRoundBracket,
-    CloseRoundBracket,
-    Colon,
-    Comma,
-    FullStop,
-    NewLine,
+    SeparatorOpenSquareBracket,
+    SeparatorCloseSquareBracket,
+    SeparatorOpenRoundBracket,
+    SeparatorCloseRoundBracket,
+    SeparatorColon,
+    SeparatorComma,
+    SeparatorFullStop,
+    SeparatorNewLine,
 };
 
 // must be in one character
 const char* Separator[] = {
-    [OpenSquareBracket] = "[",
-    [CloseSquareBracket] = "]",
-    [OpenRoundBracket] = "(",
-    [CloseRoundBracket] = ")",
-    [Colon] = ":",
-    [Comma] = ",",
-    [FullStop] = ".",
-    [NewLine] = "\n",
+    [SeparatorOpenSquareBracket] = "[",
+    [SeparatorCloseSquareBracket] = "]",
+    [SeparatorOpenRoundBracket] = "(",
+    [SeparatorCloseRoundBracket] = ")",
+    [SeparatorColon] = ":",
+    [SeparatorComma] = ",",
+    [SeparatorFullStop] = ".",
+    [SeparatorNewLine] = "\n",
 };
 
 enum {
-    Assign,
-    Plus,
-    Minus,
-    Multiply,
-    Division,
-    PlusEqual,
-    MinusEqual,
-    MultiplyEqual,
-    DivisionEqual,
-    Or,
-    And,
-    Xor,
-    Not,
-    LeftShift,
-    RightShift,
-    Round,
-    Increment,
-    Decrement,
-    Equal,
-    NotEqual,
-    GreaterThan,
-    LessThan,
-    InclusiveGreaterThan,
-    InclusiveLessThan,
-    LogicalOr,
-    LogicalAnd,
-    LogicalNot,
+    OperatorAssign,
+    OperatorPlus,
+    OperatorMinus,
+    OperatorMultiply,
+    OperatorDivision,
+    OperatorPlusEqual,
+    OperatorMinusEqual,
+    OperatorMultiplyEqual,
+    OperatorDivisionEqual,
+    OperatorOr,
+    OperatorAnd,
+    OperatorXor,
+    OperatorNot,
+    OperatorLeftShift,
+    OperatorRightShift,
+    OperatorRound,
+    OperatorIncrement,
+    OperatorDecrement,
+    OperatorEqual,
+    OperatorNotEqual,
+    OperatorGreaterThan,
+    OperatorLessThan,
+    OperatorInclusiveGreaterThan,
+    OperatorInclusiveLessThan,
+    OperatorLogicalOr,
+    OperatorLogicalAnd,
+    OperatorLogicalNot,
 };
 
 const char* Operator[] = {
-    [Assign] = "=",
-    [Plus] = "+",
-    [Minus] = "-",
-    [Multiply] = "*",
-    [Division] = "/",
-    [PlusEqual] = "+=",
-    [MinusEqual] = "-=",
-    [MultiplyEqual] = "*=",
-    [DivisionEqual] = "/=",
-    [Or] = "|",
-    [And] = "&",
-    [Xor] = "^",
-    [Not] = "~",
-    [LeftShift] = "<<",
-    [RightShift] = ">>",
-    [Round] = "%",
-    [Increment] = "++",
-    [Decrement] = "--",
-    [Equal] = "==",
-    [NotEqual] = "!=",
-    [GreaterThan] = ">",
-    [LessThan] = "<",
-    [InclusiveGreaterThan] = ">=",
-    [InclusiveLessThan] = "<=",
-    [LogicalOr] = "and",
-    [LogicalAnd] = "or",
-    [LogicalNot] = "!"
+    [OperatorAssign] = "=",
+    [OperatorPlus] = "+",
+    [OperatorMinus] = "-",
+    [OperatorMultiply] = "*",
+    [OperatorDivision] = "/",
+    [OperatorPlusEqual] = "+=",
+    [OperatorMinusEqual] = "-=",
+    [OperatorMultiplyEqual] = "*=",
+    [OperatorDivisionEqual] = "/=",
+    [OperatorOr] = "|",
+    [OperatorAnd] = "&",
+    [OperatorXor] = "^",
+    [OperatorNot] = "~",
+    [OperatorLeftShift] = "<<",
+    [OperatorRightShift] = ">>",
+    [OperatorRound] = "%",
+    [OperatorIncrement] = "++",
+    [OperatorDecrement] = "--",
+    [OperatorEqual] = "==",
+    [OperatorNotEqual] = "!=",
+    [OperatorGreaterThan] = ">",
+    [OperatorLessThan] = "<",
+    [OperatorInclusiveGreaterThan] = ">=",
+    [OperatorInclusiveLessThan] = "<=",
+    [OperatorLogicalOr] = "and",
+    [OperatorLogicalAnd] = "or",
+    [OperatorLogicalNot] = "!"
 };
 
 enum {
@@ -249,6 +249,7 @@ void print_token(token* tok) {
     case TokenStringLiteral: {
         token temp = *tok;
         temp.name += 1;
+        temp.name_len -= 2;
         _print_token(&temp, "string literal", NULL);
     } break;
     case TokenIdentifier: _print_token(tok, "identifier", NULL); break;
@@ -258,8 +259,34 @@ void print_token(token* tok) {
     }
 }
 
+typedef enum {
+    DataTypeVariable,
+    DataTypeFunction,
+} DataType;
+
+typedef struct PACKED {
+    i16 type;
+    i16 attribute; // NOTE(const readonly writeonly):
+    void* value;
+} object_variable;
+
+object_variable* make_object_variable() {
+    object_variable* variable = MALLOC(sizeof(object_variable));
+    *variable = (object_variable){
+        .attribute = -1,
+        .type = -1,
+        .value = NULL,
+    };
+    return variable;
+}
+
+// TODO(object function implementation):
 typedef struct {
     i32 type;
+} object_function;
+
+typedef struct {
+    DataType type;
     void* info;
     string name;
     i32 name_len;
@@ -273,27 +300,58 @@ object* make_object(object* test_data) {
     return result;
 }
 
+object* get_object(const char* name) {
+    vector(void*) objs = hashmap_access_vector(object_map, &(object){ .name = (string)name });
+    for_vector(objs, i, 0) {
+        object* obj = objs[i];
+        if (strcmp(obj->name, name) == 0) {
+            return obj;
+        }
+    }
+    return NULL;
+}
+
 size_t hash_object(void* data, size_t size) {
     object* test_data = data;
     // printf("hashing %s\n", test_data->name);
     return djb2(test_data->name) % size;
 }
 
-void hashmap_free_test_data(void* data) {
-    object* test_data = data;
-    free_string(&test_data->name);
-    // NOTE: not implement info yet
-    // FREE(test_data->info);
-    FREE(test_data);
+void free_object_variable(object* obj) {
+    object_variable* var = obj->info;
+    FREE(var->value);
+    FREE(var);
 }
 
-void print_token_name(token* token) {
-    for (i32 n = 0; n < token->name_len; ++n) {
-        if (token->name[n] == '\n') {
+void free_object_function(object* obj) {
+    (void)obj;
+}
+
+void hashmap_free_test_data(void* data) {
+    object* obj = data;
+    free_string(&obj->name);
+    switch(obj->type) {
+    case DataTypeVariable: free_object_variable(obj); break;
+    case DataTypeFunction: free_object_function(obj); break;
+    default: printf("unkown object"); break;
+    }
+    FREE(obj);
+}
+
+i32 is_string_literal(token* tok);
+void print_token_name(token* tok) {
+    i32 n = 0, len = tok->name_len;
+    if (is_string_literal(tok)) {
+        n = 1;
+        len -= 1;
+    }
+
+    for (; n < len; ++n) {
+        if (tok->name[n] == '\n') {
             printf("\\n");
             break;
         }
-        putchar(token->name[n]);
+        putchar(tok->name[n]);
     }
 }
 
@@ -311,21 +369,30 @@ INLINE token* parser_peekpre(parse_state* state, i32 location) {
     return state->tokens + state->tokens_len + location;
 }
 
-INLINE i32 is_variable(token* tok) { return tok->type == TokenIdentifier; }
+INLINE i32 is_identifier(token* tok) { return tok->type == TokenIdentifier; }
 INLINE i32 is_keyword(token* tok, i32 type) { return tok->name_location == type; }
 INLINE i32 is_operator(token* tok) { return tok->type == TokenOperator; }
 INLINE i32 is_separator(token* tok) { return tok->type == TokenSeparator; }
 
 INLINE i32 is_keyword_type(token* tok, i32 type) { return tok->type == TokenKeyword && tok->name_location == type; }
-INLINE i32 is_data_type(token* tok) { return tok->type == TokenKeyword && tok->name_location >= Int && tok->name_location <= Char; }
+INLINE i32 is_data_type(token* tok) { return tok->type == TokenKeyword && tok->name_location >= KeywordInt && tok->name_location <= KeywordChar; }
 INLINE i32 is_operator_type(token* tok, i32 type) { return tok->type == TokenOperator && tok->name_location == type; }
 INLINE i32 is_separator_type(token* tok, i32 type) { return tok->type == TokenSeparator && tok->name_location == type; }
+INLINE i32 is_string_literal(token* tok) { return tok->type == TokenStringLiteral; }
+i32 is_real_number(token* tok) { 
+    if (!is_number(tok->name[0]))
+        return 0;
+    for (i32 i = 0; i < tok->name_len; ++i)
+        if (tok->name[i] == '.')
+            return 1;
+    return 0;
+}
 
 void parse_variable(parse_state* state) {
     i32 assign_offset = 0;
-    if (is_separator_type(parser_peek(state, 1), Colon)) {
+    if (is_separator_type(parser_peek(state, 1), SeparatorColon)) {
         if (is_data_type(parser_peek(state, 2))) {
-            if (!is_operator_type(parser_peek(state, 3), Assign)) {
+            if (!is_operator_type(parser_peek(state, 3), OperatorAssign)) {
                 printf(" may be missing a '=' ? ");
                 return;
             }
@@ -337,17 +404,21 @@ void parse_variable(parse_state* state) {
             return;
         }
     }
-    if (!is_operator_type(parser_peek(state, assign_offset + 1), Assign)) {
+    if (!is_operator_type(parser_peek(state, assign_offset + 1), OperatorAssign)) {
         printf(" may be missing a '=' ? ");
         return;
     }
 
-    if (state->index == 1 && is_keyword_type(state->tokens, Const)) {
+    object_variable* variable = make_object_variable();
+    if (state->index == 1 && is_keyword_type(state->tokens, KeywordConst)) {
+        variable->attribute = KeywordConst;
         printf("const ");
     }
 
     printf("variable -> ");
-    print_token_name(parser_peek(state, 0));
+
+    token* identifier = parser_peek(state, 0);
+    print_token_name(identifier);
 
     // printing expression
     for_vector(state->tokens, i, assign_offset + state->index + 1) {
@@ -355,24 +426,63 @@ void parse_variable(parse_state* state) {
         print_token_name(state->tokens + i);
     }
 
-    putchar('\n');
-    hashmap_add(object_map, make_object(&(object){
-                .info = NULL,
-                .type = assign_offset > 0 ? state->tokens[state->index + 2].name_location : -1,
+    token* ex = parser_peek(state, assign_offset + 2);
+    if (ex->type == TokenError) {
+        printf(" error type");
+        FREE(variable);
+        return;
+    }
+
+    i32 data_type = -1;
+    void* data = NULL;
+    (void)data;
+    if (is_real_number(ex)) {
+        data_type = KeywordFloat;
+        float number = atof(ex->name);
+        data = MALLOC(sizeof(float));
+        memcpy(data, &number, sizeof(float));
+    }
+    else if (is_number(ex->name[0])) {
+        data_type = KeywordInt;
+        int number = atoi(ex->name);
+        data = MALLOC(sizeof(int));
+        memcpy(data, &number, sizeof(int));
+    }
+    else if (is_string_literal(ex)) {
+        data_type = KeywordString;
+        char* str = MALLOC(ex->name_len - 1);
+        memcpy(str, ex->name + 1, ex->name_len - 2);
+        str[ex->name_len - 2] = 0;
+        data = str;
+    }
+    else if (is_identifier(ex)) {
+        // NOTE:variable expression
+    }
+
+    variable->type = assign_offset > 0 ? state->tokens[state->index + 2].name_location : data_type;
+    variable->value = data;
+
+    object* obj = make_object(&(object){
+                .info = variable,
+                .type = DataTypeVariable,
                 .name_len = state->tokens[state->index].name_len,
                 .name = make_stringn((string)state->tokens[state->index].name, state->tokens[state->index].name_len)
-            }));
+            });
+
+    hashmap_add(object_map, obj);
+
+    putchar('\n');
 }
 
 void parse_identifier(parse_state* state) {
-    if (state->index <= 1 && state->tokens_len >= 2 && !is_separator_type(parser_peek(state, 1), OpenRoundBracket)) {
+    if (state->index <= 1 && state->tokens_len >= 2 && !is_separator_type(parser_peek(state, 1), SeparatorOpenRoundBracket)) {
         parse_variable(state);
     }
 }
 
 void parse_function_parameter(parse_state* state) {
     i32 assign_offset = 0;
-    if (is_separator_type(parser_peek(state, 1), Colon)) {
+    if (is_separator_type(parser_peek(state, 1), SeparatorColon)) {
         if (is_data_type(parser_peek(state, 2))) {
             printf("%s ", Keyword[parser_peek(state, 2)->name_location]);
             assign_offset = 2;
@@ -383,12 +493,12 @@ void parse_function_parameter(parse_state* state) {
         }
     }
 
-    if (state->index >= 1 && is_keyword_type(parser_peek(state, -1), Const)) {
+    if (state->index >= 1 && is_keyword_type(parser_peek(state, -1), KeywordConst)) {
         printf("const ");
     }
 
-    if (!is_separator_type(parser_peek(state, assign_offset + 1), Comma) &&
-        !is_separator_type(parser_peek(state, assign_offset + 1), CloseRoundBracket)) {
+    if (!is_separator_type(parser_peek(state, assign_offset + 1), SeparatorComma) &&
+        !is_separator_type(parser_peek(state, assign_offset + 1), SeparatorCloseRoundBracket)) {
         printf("missing ','");
         return;
     }
@@ -398,7 +508,7 @@ void parse_function_parameter(parse_state* state) {
 }
 
 void parse_function(parse_state* state) {
-    if (is_separator_type(parser_peekpre(state, -1), CloseRoundBracket)) {
+    if (is_separator_type(parser_peekpre(state, -1), SeparatorCloseRoundBracket)) {
         printf("None ");
     }
     printf("function ");
@@ -406,7 +516,7 @@ void parse_function(parse_state* state) {
     printf(" -> param ->");
 
     for_vector(state->tokens, i, state->index + 2) {
-        if (is_variable(state->tokens + i)) {
+        if (is_identifier(state->tokens + i)) {
             parse_state new_state = *state;
             new_state.index = i;
             putchar(' ');
@@ -420,24 +530,24 @@ void parse_function(parse_state* state) {
 static i32 in_scope = 0;
 void parser_keyword(parse_state* state) {
     switch (state->tokens[state->index].name_location) {
-        case Function: {
-            if (state->tokens_len >= 3 && is_variable(state->tokens + state->index + 1)
-                && is_separator_type(state->tokens + state->index + 2, OpenRoundBracket)) {
+        case KeywordFunction: {
+            if (state->tokens_len >= 3 && is_identifier(state->tokens + state->index + 1)
+                && is_separator_type(state->tokens + state->index + 2, SeparatorOpenRoundBracket)) {
                 parse_function(state);
                 in_scope = 1;
             }
         } break;
-        case Const: {
+        case KeywordConst: {
             if (state->tokens_len >= 3) {
                 parse_state new_state = *state;
                 new_state.index++;
                 parse_identifier(&new_state);
             }
         } break;
-        case If: {
+        case KeywordIf: {
             in_scope = 1;
         } break;
-        case End: {
+        case KeywordEnd: {
             if (in_scope == 0) {
                 printf("end doesn't match any control flow or function!\n");
                 exit(1);
@@ -567,42 +677,6 @@ void command_line_mode(lexer* lexer) {
     if (tokens) free_vector(&tokens);
     free_string(&source_buffer);
 }
-
-void push_object(vector(object)* state, u64 size, void* data, i32 type, const char* name) {
-    assert(state != NULL);
-    object o = {
-        .name = make_string((string)name),
-        .type = type,
-        .info = MALLOC(size),
-        .name_len = strlen(name)
-    };
-    memcpy(o.info, data, size);
-
-    vector_pushe(*state, o);
-}
-
-void pop_object(vector(object)* state) {
-    object* o = &(*state)[vector_size(*state) - 1];
-    FREE(o->info);
-    free_string(&o->name);
-    vector_pop(*state);
-}
-
-object* get_object(vector(object)* state, const char* name) {
-    for (u64 i = 0; i < vector_size(*state); ++i) {
-        object* o = &(*state)[i];
-        if (strcmp(name, o->name) == 0) {
-            return o;
-        }
-    }
-    return NULL;
-}
-
-void* get_object_info(vector(object)* state, const char* name) {
-    object* o = get_object(state, name);
-    return o ? o->info : NULL;
-}
-
 enum {
     NodePlus,
     NodeMinus,
@@ -639,6 +713,27 @@ int cal_expressionI(nodeI* root) {
     return root->cal(root);
 }
 
+void print_object_variable(object* obj) {
+    object_variable* var = obj->info;
+    switch (var->type) {
+        case KeywordInt: printf("%d %s = %d\n", var->attribute, obj->name, *(int*)var->value); break;
+        case KeywordFloat: printf("%d %s = %g\n", var->attribute, obj->name, *(float*)var->value); break;
+        case KeywordString: printf("%d %s = %s\n", var->attribute, obj->name, (string)var->value); break;
+        case KeywordNone: printf("%s = None\n", obj->name); break;
+        default: printf("unkown object data type"); break;
+    }
+}
+
+void print_object(object* obj) {
+    switch (obj->type) {
+    case DataTypeVariable: print_object_variable(obj); break;
+    case DataTypeFunction: {
+        printf("not implement print function yet");
+    } break;
+    default: printf("unkown object data type"); break;
+    }
+}
+
 i32 main(i32 argc, char** argv) {
     object_map = make_hashmap(1 << 10, hash_object);
 
@@ -649,35 +744,43 @@ i32 main(i32 argc, char** argv) {
     LEXER_ADD_TOKEN(&lexer, Operator, TokenOperator);
     LEXER_ADD_TOKEN(&lexer, StringBegin, TokenStringBegin);
 
-    /*
+    
     {
-            //    + 
-            //   / \
-            //  4   *
-            //     / \
-            //    2   3
-            // -> 2 * 3 + 4 = 10
+        /*
+         *  2 * 3 + 4 = 10
+         *       + 
+         *      / \
+         *     4   *
+         *        / \
+         *       2   3
+         */
 
-        nodeI node4  = init_node_dataI(4);
-        nodeI node3 = init_node_dataI(3);
-        nodeI node2 = init_node_dataI(2);
-
-        nodeI mult = init_node_multiplyI(&node2, &node3);
-        nodeI plus = init_node_plusI(&node4, &mult);
-
-        printf("%d\n", cal_expressionI(&plus));
-
-    } return 0;
-    */
+        // nodeI node4  = init_node_dataI(4);
+        // nodeI node3 = init_node_dataI(3);
+        // nodeI node2 = init_node_dataI(2);
+        //
+        // nodeI mult = init_node_multiplyI(&node2, &node3);
+        // nodeI plus = init_node_plusI(&node4, &mult);
+        //
+        // printf("%d\n", cal_expressionI(&plus));
+        // return 0;
+    }
+   
     {
-        const char text[] = "str=\"hi\"\n";
+        const char text[] = "const val=1.2\n";
         vector(token) tokens = lexer_tokenize_until(&lexer, text, '\n');
-        for_vector(tokens, i, 0) {
-            print_token(tokens + i);
-        }
-        // parser_test(tokens);
+        parser_test(tokens);
+
+        object* obj = get_object("val");
+        if (obj)
+            print_object(obj);
+
         free_vector(&tokens);
-    } return 0;
+        hashmap_free_items(object_map, hashmap_free_test_data);
+        free_hashmap(&object_map);
+        CHECK_MEMORY_LEAK();
+        return 0;
+    }
 
     if (argc == 1) {
         command_line_mode(&lexer);
