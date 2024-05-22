@@ -14,6 +14,7 @@ typedef enum {
     TokenLiteral,
     TokenIdentifier,
     TokenCount,
+
     TokenEnd,
     TokenError,
     TokenUnkown

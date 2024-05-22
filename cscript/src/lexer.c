@@ -4,8 +4,33 @@
 #include <stdio.h>
 #include <string.h>
 
-INLINE i32 is_alphabet(char c) { return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z'); }
-INLINE i32 is_number(char c) { return c >= '0' && c <= '9'; }
+INLINE i32 is_alphabet(char c) {
+    switch (c) {
+    case 65: case 66: case 67: case 68: case 69:
+    case 70: case 71: case 72: case 73: case 74:
+    case 75: case 76: case 77: case 78: case 79:
+    case 80: case 81: case 82: case 83: case 84:
+    case 85: case 86: case 87: case 88: case 89:
+    case 90: case 97: case 98: case 99: case 100:
+    case 101: case 102: case 103: case 104: case 105:
+    case 106: case 107: case 108: case 109: case 110:
+    case 111: case 112: case 113: case 114: case 115:
+    case 116: case 117: case 118: case 119: case 120:
+    case 121: case 122: return 1;
+    default: return 0;
+    }
+}
+
+INLINE i32 is_number(char c) {
+    switch (c) {
+    case '0': case '1': case '2':
+    case '3': case '4': case '5':
+    case '6': case '7': case '8':
+    case '9': return 1;
+    default: return 0;
+    }
+}
+
 INLINE i32 is_string_literal_begin(lexer* lexer, char c) { return lexer->token_sets[TokenStringBegin].set_name[0][0] == c; }
 
 void lexer_add_token(lexer* lexer, token_set set, Token token) {
@@ -61,14 +86,6 @@ i32 get_token_stride(lexer* lexer, const char* str) {
     if (str[0] == 0)
         return -1;
 
-    if (!is_alphabet(str[0])) {
-        for (u64 j = 0; j < lexer->token_sets[TokenSeparator].set_size; ++j) {
-            if (str[0] == lexer->token_sets[TokenSeparator].set_name[j][0]) {
-                return 2;
-            }
-        }
-    }
-
     if (is_alphabet(str[0])) {
         for (u64 i = 0; str[i] != 0; ++i) {
             if (!is_alphabet(str[i]) && !is_number(str[i])) {
@@ -76,9 +93,14 @@ i32 get_token_stride(lexer* lexer, const char* str) {
             }
         }
     }
-    else if (is_number(str[0])) {
+    else if ((str[0] == '.' && is_number(str[1])) || is_number(str[0])) {
+        i32 comma_count = 0;
         for (u64 i = 0; str[i] != 0; ++i) {
             if (str[i] == '.') {
+                if (comma_count == 1) {
+                    return i + 1;
+                }
+                ++comma_count;
                 continue;
             }
             // default number literal separator
@@ -100,13 +122,13 @@ i32 get_token_stride(lexer* lexer, const char* str) {
     }
     else {
         for (u64 i = 0; str[i] != 0; ++i) {
-            if (str[i] == ' ' || is_alphabet(str[i]) || is_number(str[i])) {
-                return i + 1;
-            }
             if (compare_token_set(&lexer->token_sets[TokenSeparator], str + i)) {
                 return i + 1;
             }
             if (compare_token_set(&lexer->token_sets[TokenStringBegin], str + i)) {
+                return i + 1;
+            }
+            if (str[i] == ' ' || is_alphabet(str[i]) || is_number(str[i])) {
                 return i + 1;
             }
         }
@@ -211,7 +233,7 @@ token lexer_tokenize_string(lexer* lexer, const char* str) {
         return result;
     }
 
-    if (is_number(result.name[0])) {
+    if (is_number(result.name[0]) || result.name[0] == '.') {
         result.type = TokenLiteral;
     }
     else if (is_string_literal_begin(lexer, result.name[0])) {

@@ -140,21 +140,32 @@ const char* Separator[] = {
 };
 
 enum {
-    OperatorAssign,
     OperatorPlus,
     OperatorMinus,
     OperatorMultiply,
     OperatorDivision,
+    OperatorBitwiseOr,
+    OperatorBitwiseAnd,
+    OperatorBitwiseXor,
+    OperatorBitwiseNot,
+    OperatorLeftShift,
+    OperatorRightShift,
+
+    OperatorAssign,
+    OperatorAssignementBegin = OperatorAssign,
     OperatorPlusEqual,
     OperatorMinusEqual,
     OperatorMultiplyEqual,
     OperatorDivisionEqual,
-    OperatorOr,
-    OperatorAnd,
-    OperatorXor,
-    OperatorNot,
-    OperatorLeftShift,
-    OperatorRightShift,
+    OperatorBitwiseOrEqual,
+    OperatorBitwiseAndEqual,
+    OperatorBitwiseXorEqual,
+    OperatorBitwiseNotEqual,
+    OperatorLeftShiftEqual,
+    OperatorRightShiftEqual,
+    OperatorRoundEqual,
+    OperatorAssignmentEnd = OperatorRoundEqual,
+
     OperatorRound,
     OperatorIncrement,
     OperatorDecrement,
@@ -164,10 +175,13 @@ enum {
     OperatorLessThan,
     OperatorInclusiveGreaterThan,
     OperatorInclusiveLessThan,
-    OperatorLogicalOr,
-    OperatorLogicalAnd,
-    OperatorLogicalNot,
+    OperatorOr,
+    OperatorAnd,
+    OperatorNot,
 };
+
+// a = 1;
+// a > 1;
 
 const char* Operator[] = {
     [OperatorAssign] = "=",
@@ -179,13 +193,20 @@ const char* Operator[] = {
     [OperatorMinusEqual] = "-=",
     [OperatorMultiplyEqual] = "*=",
     [OperatorDivisionEqual] = "/=",
-    [OperatorOr] = "|",
-    [OperatorAnd] = "&",
-    [OperatorXor] = "^",
-    [OperatorNot] = "~",
+    [OperatorBitwiseOr] = "|",
+    [OperatorBitwiseAnd] = "&",
+    [OperatorBitwiseXor] = "^",
+    [OperatorBitwiseNot] = "~",
+    [OperatorBitwiseOrEqual] = "|=",
+    [OperatorBitwiseAndEqual] = "&=",
+    [OperatorBitwiseXorEqual] = "^=",
+    [OperatorBitwiseNotEqual] = "~=",
     [OperatorLeftShift] = "<<",
     [OperatorRightShift] = ">>",
+    [OperatorLeftShiftEqual] = "<<=",
+    [OperatorRightShiftEqual] = ">>=",
     [OperatorRound] = "%",
+    [OperatorRoundEqual] = "%=",
     [OperatorIncrement] = "++",
     [OperatorDecrement] = "--",
     [OperatorEqual] = "==",
@@ -194,9 +215,9 @@ const char* Operator[] = {
     [OperatorLessThan] = "<",
     [OperatorInclusiveGreaterThan] = ">=",
     [OperatorInclusiveLessThan] = "<=",
-    [OperatorLogicalOr] = "and",
-    [OperatorLogicalAnd] = "or",
-    [OperatorLogicalNot] = "!"
+    [OperatorOr] = "and",
+    [OperatorAnd] = "or",
+    [OperatorNot] = "!"
 };
 
 enum {
@@ -355,40 +376,58 @@ void print_token_name(token* tok) {
     }
 }
 
-// parser implementation
-typedef struct {
-    vector(token) tokens;
-    u64 index, tokens_len;
-} parse_state;
-
-INLINE token* parser_peek(parse_state* state, i32 location) {
-    return state->tokens + state->index + location;
-}
-
-INLINE token* parser_peekpre(parse_state* state, i32 location) {
-    return state->tokens + state->tokens_len + location;
-}
-
 INLINE i32 is_identifier(token* tok) { return tok->type == TokenIdentifier; }
 INLINE i32 is_keyword(token* tok, i32 type) { return tok->name_location == type; }
 INLINE i32 is_operator(token* tok) { return tok->type == TokenOperator; }
 INLINE i32 is_separator(token* tok) { return tok->type == TokenSeparator; }
 
 INLINE i32 is_keyword_type(token* tok, i32 type) { return tok->type == TokenKeyword && tok->name_location == type; }
-INLINE i32 is_data_type(token* tok) { return tok->type == TokenKeyword && tok->name_location >= KeywordInt && tok->name_location <= KeywordChar; }
 INLINE i32 is_operator_type(token* tok, i32 type) { return tok->type == TokenOperator && tok->name_location == type; }
 INLINE i32 is_separator_type(token* tok, i32 type) { return tok->type == TokenSeparator && tok->name_location == type; }
 INLINE i32 is_string_literal(token* tok) { return tok->type == TokenStringLiteral; }
+
+INLINE i32 is_data_type(token* tok) { return tok->type == TokenKeyword && tok->name_location >= KeywordInt && tok->name_location <= KeywordChar; }
+INLINE i32 is_assigment_operator(token* tok) { return is_operator(tok) && (tok->name_location >= OperatorAssignementBegin && tok->name_location <= OperatorAssignmentEnd); }
+
 i32 is_real_number(token* tok) { 
-    if (!is_number(tok->name[0]))
-        return 0;
+    if (is_number(tok->name[0] || (tok->name[0] == '.' && is_number(tok->name[1])))) {
+        return 1;
+    }
+
     for (i32 i = 0; i < tok->name_len; ++i)
         if (tok->name[i] == '.')
             return 1;
     return 0;
 }
 
-void parse_variable(parse_state* state) {
+// parser implementation
+typedef enum {
+    ParseErrorNoError,
+    ParseErrorMissingToken,
+    ParseErrorMissingRhs,
+} ParseError;
+
+typedef struct {
+    vector(token) tokens;
+    u64 index, tokens_len;
+    ParseError error;
+} parser;
+
+INLINE void set_parse_error(parser* par, i32 error) {
+    if (par->error != ParseErrorNoError)
+        return;
+    par->error = error;
+}
+
+INLINE token* parser_peek(parser* par, i32 location) {
+    return par->tokens + par->index + location;
+}
+
+INLINE token* parser_peekpre(parser* par, i32 location) {
+    return par->tokens + par->tokens_len + location;
+}
+
+void parse_variable(parser* state) {
     i32 assign_offset = 0;
     if (is_separator_type(parser_peek(state, 1), SeparatorColon)) {
         if (is_data_type(parser_peek(state, 2))) {
@@ -474,13 +513,13 @@ void parse_variable(parse_state* state) {
     putchar('\n');
 }
 
-void parse_identifier(parse_state* state) {
+void parse_identifier(parser* state) {
     if (state->index <= 1 && state->tokens_len >= 2 && !is_separator_type(parser_peek(state, 1), SeparatorOpenRoundBracket)) {
         parse_variable(state);
     }
 }
 
-void parse_function_parameter(parse_state* state) {
+void parse_function_parameter(parser* state) {
     i32 assign_offset = 0;
     if (is_separator_type(parser_peek(state, 1), SeparatorColon)) {
         if (is_data_type(parser_peek(state, 2))) {
@@ -507,7 +546,7 @@ void parse_function_parameter(parse_state* state) {
     print_token_name(parser_peek(state, 0));
 }
 
-void parse_function(parse_state* state) {
+void parse_function(parser* state) {
     if (is_separator_type(parser_peekpre(state, -1), SeparatorCloseRoundBracket)) {
         printf("None ");
     }
@@ -517,7 +556,7 @@ void parse_function(parse_state* state) {
 
     for_vector(state->tokens, i, state->index + 2) {
         if (is_identifier(state->tokens + i)) {
-            parse_state new_state = *state;
+            parser new_state = *state;
             new_state.index = i;
             putchar(' ');
             parse_function_parameter(&new_state);
@@ -528,7 +567,7 @@ void parse_function(parse_state* state) {
 }
 
 static i32 in_scope = 0;
-void parser_keyword(parse_state* state) {
+void parser_keyword(parser* state) {
     switch (state->tokens[state->index].name_location) {
         case KeywordFunction: {
             if (state->tokens_len >= 3 && is_identifier(state->tokens + state->index + 1)
@@ -539,7 +578,7 @@ void parser_keyword(parse_state* state) {
         } break;
         case KeywordConst: {
             if (state->tokens_len >= 3) {
-                parse_state new_state = *state;
+                parser new_state = *state;
                 new_state.index++;
                 parse_identifier(&new_state);
             }
@@ -560,7 +599,7 @@ void parser_keyword(parse_state* state) {
 
 void parser_test(vector(token) tokens) {
 
-    parse_state state = {
+    parser state = {
         .tokens = tokens,
         .tokens_len = vector_size(tokens)
     };
@@ -677,41 +716,6 @@ void command_line_mode(lexer* lexer) {
     if (tokens) free_vector(&tokens);
     free_string(&source_buffer);
 }
-enum {
-    NodePlus,
-    NodeMinus,
-    NodeMultiply,
-    NodeData,
-};
-
-typedef struct nodeI nodeI;
-struct nodeI {
-    i32 type;
-    int data;
-    nodeI* lhs;
-    nodeI* rhs;
-    int(*cal)(nodeI*);
-};
-
-int node_data_calI(nodeI* n) {
-    return n->data;
-}
-
-int node_multiply_calI(nodeI* n) {
-    return n->lhs->cal(n->lhs) * n->rhs->cal(n->rhs);
-}
-
-int node_plus_calI(nodeI* n) {
-    return n->lhs->cal(n->lhs) + n->rhs->cal(n->rhs);
-}
-
-INLINE nodeI init_node_dataI(int data) { return (nodeI){ .cal = node_data_calI, .type = NodeData, .data = data }; }
-INLINE nodeI init_node_plusI(nodeI* lhs, nodeI* rhs) { return (nodeI){ .cal = node_plus_calI, .type = NodePlus, .lhs = lhs, .rhs = rhs }; }
-INLINE nodeI init_node_multiplyI(nodeI* lhs, nodeI* rhs) { return (nodeI){ .cal = node_multiply_calI, .type = NodeMultiply, .lhs = lhs, .rhs = rhs }; }
-
-int cal_expressionI(nodeI* root) {
-    return root->cal(root);
-}
 
 void print_object_variable(object* obj) {
     object_variable* var = obj->info;
@@ -734,6 +738,176 @@ void print_object(object* obj) {
     }
 }
 
+// decent parsing implementation
+typedef enum {
+    NodeVariable,
+    NodeOperator,
+    NodeNumber,
+} Nodetype;
+
+typedef struct tree_node tree_node;
+struct tree_node {
+    Nodetype type;
+    i32 object_type;
+    const char* name;
+    i32 name_len;
+    vector(tree_node*) nodes;
+};
+
+tree_node* make_tree_node(Nodetype type, i32 object_type, const char* name, i32 name_len) {
+    tree_node* node = MALLOC(sizeof(tree_node));
+    memcpy(node, &(tree_node) {
+        .type = type,
+        .object_type = object_type,
+        .name = name,
+        .name_len = name_len,
+        .nodes = make_vector()
+    }, sizeof(tree_node));
+    return node;
+}
+
+void free_node(tree_node* node) {
+    free_vector(&node->nodes);
+    FREE(node);
+}
+
+void print_node(tree_node* node) {
+    printf("node ");
+    switch (node->type) {
+    case NodeVariable: printf("variable"); break;
+    case NodeOperator: printf("operator"); break;
+    case NodeNumber: printf("number"); break;
+    default: break;
+    }
+    putchar(' ');
+    print_token_name(&(token) {
+                .name = node->name,
+                .name_len = node->name_len,
+            });
+    printf(" %d\n", node->object_type);
+}
+
+void bfs(tree_node* root, void(*take_action)(tree_node*)) {
+    take_action(root);
+    for_vector(root->nodes, i, 0) {
+        bfs(root->nodes[i], take_action);
+    }
+}
+
+void dfs(tree_node* root, void(*take_action)(tree_node*)) {
+    for_vector(root->nodes, i, 0) {
+        dfs(root->nodes[i], take_action);
+    }
+    take_action(root);
+}
+
+void free_tree(tree_node* node) {
+    free_node(node);
+}
+
+// a = 1 + 3
+
+tree_node* try_parse_identifier(parser* par) {
+    token* tok = parser_peek(par, 0);
+    return make_tree_node(NodeVariable, tok->name_location, tok->name, tok->name_len);
+}
+
+tree_node* try_parse_number(parser* par) {
+    token* tok = parser_peek(par, 0);
+    return make_tree_node(NodeNumber, tok->name_location, tok->name, tok->name_len);
+}
+
+tree_node* try_parse_operator(parser* par) {
+    token* tok = parser_peek(par, 0);
+    return make_tree_node(NodeOperator, tok->name_location, tok->name, tok->name_len);
+}
+
+tree_node* try_parse_round_bracket_pair(parser* state) {
+    (void)state;
+    return NULL;
+}
+
+tree_node* try_parse_expression(parser* par) {
+    tree_node* lhs = NULL;
+    if (is_identifier(parser_peek(par, 0))) {
+        lhs = try_parse_identifier(par);
+    }
+    else if (is_separator_type(parser_peek(par, 0), SeparatorOpenRoundBracket)) {
+        ++par->index;
+        try_parse_round_bracket_pair(par);
+    }
+    else if (is_number(parser_peek(par, 0)->name[0]) || is_real_number(parser_peek(par, 0))) {
+        lhs = try_parse_number(par);
+    }
+    else {
+        return NULL;
+    }
+
+    ++par->index;
+    tree_node* operator = NULL;
+
+    if (is_separator_type(parser_peek(par, 0), SeparatorCloseRoundBracket) ||
+        par->index == par->tokens_len) {
+        return lhs;
+    }
+
+    if (is_operator(parser_peek(par, 0))) {
+        operator = try_parse_operator(par);
+    }
+
+    if (!operator) {
+        free_node(lhs);
+        set_parse_error(par, ParseErrorMissingToken);
+        return NULL;
+    }
+
+    vector_pushe(operator->nodes, lhs);
+    ++par->index;
+    tree_node* rhs = try_parse_expression(par);
+    if (!rhs) {
+        set_parse_error(par, ParseErrorMissingRhs);
+        free_node(lhs);
+        free_node(operator);
+        return NULL;
+    }
+    vector_pushe(operator->nodes, rhs);
+    return operator;
+}
+
+void try_parse_variable_assignment(parser* state) {
+    (void)state;
+}
+
+tree_node* try_parse_variable(parser* par) {
+    token* var_tok = parser_peek(par, 0);
+    tree_node* var = make_tree_node(NodeVariable, -1, var_tok->name, var_tok->name_len);
+    if (is_assigment_operator(parser_peek(par, 1))) {
+        token* assign_tok = parser_peek(par, 1);
+        tree_node* assign_operator = make_tree_node(NodeOperator, assign_tok->name_location, assign_tok->name, assign_tok->name_len);
+        par->index += 2;
+        tree_node* expression = try_parse_expression(par);
+        if (!expression) {
+            free_node(var);
+            free_node(assign_operator);
+            return NULL;
+        }
+        vector_pushe(var->nodes, assign_operator);
+        vector_pushe(var->nodes[0]->nodes, expression);
+    }
+    return var;
+}
+
+tree_node* parse_test(parser* par) {
+    switch (par->tokens[0].type) {
+    case TokenIdentifier: {
+        return try_parse_variable(par);
+    } break;
+    default:
+        break;
+    }
+    return NULL;
+}
+
 i32 main(i32 argc, char** argv) {
     object_map = make_hashmap(1 << 10, hash_object);
 
@@ -743,27 +917,46 @@ i32 main(i32 argc, char** argv) {
     LEXER_ADD_TOKEN(&lexer, Separator, TokenSeparator);
     LEXER_ADD_TOKEN(&lexer, Operator, TokenOperator);
     LEXER_ADD_TOKEN(&lexer, StringBegin, TokenStringBegin);
-
     
     {
-        /*
-         *  2 * 3 + 4 = 10
-         *       + 
-         *      / \
-         *     4   *
-         *        / \
-         *       2   3
+        /*          val
+         *           |
+         *           =
+         *           |
+         *           -
+         *          / \
+         *        1.2  +
+         *            / \
+         *           2   3
+         *
+         *
          */
+        const char text[] = "val-=1.2-.2+3\n";
+        vector(token) tokens = lexer_tokenize_until(&lexer, text, '\n');
+        for_vector(tokens, i, 0) {
+            print_token_name(tokens + i);
+            putchar(' ');
+        }
+        putchar('\n');
 
-        // nodeI node4  = init_node_dataI(4);
-        // nodeI node3 = init_node_dataI(3);
-        // nodeI node2 = init_node_dataI(2);
-        //
-        // nodeI mult = init_node_multiplyI(&node2, &node3);
-        // nodeI plus = init_node_plusI(&node4, &mult);
-        //
-        // printf("%d\n", cal_expressionI(&plus));
-        // return 0;
+        parser par = {
+            .index = 0,
+            .tokens = tokens,
+            .tokens_len = vector_size(tokens),
+            .error = ParseErrorNoError,
+        };
+        tree_node* node = parse_test(&par);
+        if (node) {
+            bfs(node, print_node);
+            dfs(node, free_tree);
+        }
+        printf("error %d\n", par.error);
+
+        free_vector(&tokens);
+        hashmap_free_items(object_map, hashmap_free_test_data);
+        free_hashmap(&object_map);
+        CHECK_MEMORY_LEAK();
+        return 0;
     }
    
     {
