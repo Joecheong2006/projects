@@ -31,25 +31,30 @@ INLINE i32 is_number(char c) {
     }
 }
 
-INLINE i32 is_string_literal_begin(lexer* lexer, char c) { return lexer->token_sets[TokenStringBegin].set_name[0][0] == c; }
+static INLINE i32 is_string_literal_begin(lexer* lexer, char c) { return lexer->token_sets[TokenStringBegin].set_name[0][0] == c; }
+
+static i32 is_operator_begin(lexer* lexer, char c) {
+    for (u64 i = 0; i < lexer->token_sets[TokenOperator].set_size; ++i) {
+        if (lexer->token_sets[TokenOperator].set_name[i][0] == c) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+static i32 is_separator_begin(lexer* lexer, char c) {
+    for (u64 i = 0; i < lexer->token_sets[TokenSeparator].set_size; ++i) {
+        if (lexer->token_sets[TokenSeparator].set_name[i][0] == c) {
+            return 1;
+        }
+    }
+    return 0;
+}
 
 void lexer_add_token(lexer* lexer, token_set set, Token token) {
     assert(lexer != NULL);
     assert(token >= 0 && token < TokenCount);
     lexer->token_sets[token] = set;
-}
-
-i32 match_token(token_set* token_set, const char* str) {
-    for (u64 i = 0; i < token_set->set_size; ++i) {
-        char* cp = strchr(str, token_set->set_name[i][0]);
-        if (cp != NULL) {
-            u64 len = strlen(token_set->set_name[i]);
-            if (strncmp(token_set->set_name[i], cp, len) == 0) {
-                return cp - str + 1;
-            }
-        }
-    }
-    return -1;
 }
 
 i32 compare_strings(const char** strings, u64 strings_len, const char* str) {
@@ -65,185 +70,205 @@ INLINE i32 compare_token_set(token_set* token_set, const char* str) {
     return compare_strings(token_set->set_name, token_set->set_size, str);
 }
 
-token compare_with_token_sets(lexer* lexer, const char* str) {
-    for (u64 i = 0; i < TokenParserCount; ++i) {
-        for (u64 j = 0; j < lexer->token_sets[i].set_size; ++j) {
-            u64 len = strlen(lexer->token_sets[i].set_name[j]);
-            if (strncmp(lexer->token_sets[i].set_name[j], str, len) == 0) {
-                return (token){
-                    .name = str,
-                    .name_len = len,
-                    .name_location = j,
-                    .type = lexer->token_sets[i].token,
-                };
-            }
+static i32 get_word_stride_test(const char* str) {
+    for (u64 i = 0; str[i++] != 0;) {
+        if (str[i] == 0)
+            return i + 1;
+        if (str[i] == '\n' || (str[i] != '_' && !is_alphabet(str[i]) && !is_number(str[i]))) {
+            return i + 1;
         }
     }
-    return (token){ .name = str, .name_len = -1, .type = -1, .name_location = -1 };
+    return 2;
 }
 
-i32 get_token_stride(lexer* lexer, const char* str) {
-    if (str[0] == 0)
-        return -1;
+static i32 is_number_vaild_prefix(const char* str) {
+    switch (str[0]) {
+    case '0': {
+        switch (str[1]) {
+        case 'b': case 'o': case 'd': case 'x':
+            return 1;
+        default:
+            return 0;
+        }
+    }
+    default:
+        return 0;
+    }
+}
 
-    if (is_alphabet(str[0])) {
-        for (u64 i = 0; str[i] != 0; ++i) {
-            if (!is_alphabet(str[i]) && !is_number(str[i])) {
-                return i + 1;
-            }
-        }
+INLINE static i32 is_hex(char c) {
+    switch (c) {
+    case 97: case 98: case 99:
+    case 100: case 101: case 102:
+        return 1;
+    default:
+        return 0;
     }
-    else if ((str[0] == '.' && is_number(str[1])) || is_number(str[0])) {
-        i32 comma_count = 0;
-        for (u64 i = 0; str[i] != 0; ++i) {
-            if (str[i] == '.') {
-                if (comma_count == 1) {
-                    return i + 1;
-                }
-                ++comma_count;
-                continue;
-            }
-            // default number literal separator
-            if (str[i] == ' ' || str[i] == '\n' || 
-                compare_token_set(&lexer->token_sets[TokenOperator], str + i) ||
-                compare_token_set(&lexer->token_sets[TokenSeparator], str + i)) {
-                return i + 1;
-            }
-        }
-    }
-    else if (is_string_literal_begin(lexer, str[0])) {
-        u64 i = 0;
-        while (!is_string_literal_begin(lexer, str[++i])) {
-            if (str[i] == '\0') {
-                return -1;
-            }
-        }
-        return i;
-    }
-    else {
-        for (u64 i = 0; str[i] != 0; ++i) {
-            if (compare_token_set(&lexer->token_sets[TokenSeparator], str + i)) {
-                return i + 1;
-            }
-            if (compare_token_set(&lexer->token_sets[TokenStringBegin], str + i)) {
-                return i + 1;
-            }
-            if (str[i] == ' ' || is_alphabet(str[i]) || is_number(str[i])) {
-                return i + 1;
-            }
-        }
-    }
+}
 
+static i32 get_number_literal_stride_test(const char* str) {
+    i32 comma_count = 0;
+    u64 i = 0;
+    if (is_number_vaild_prefix(str)) {
+        i = 2;
+    }
+    for (; str[i++] != 0;) {
+        if (str[i] == 0)
+            return i + 1;
+        if (str[i] == '.') {
+            if (++comma_count == 0) {
+                return i + 1;
+            }
+            continue;
+        }
+
+        // default number literal separator
+        if (!(is_hex(str[i]) || is_number(str[i])) || str[i] == ' ' || str[i] == '\n') {
+            return i + 1;
+        }
+    }
+    return 2;
+}
+
+static i32 get_string_literal_stride_test(lexer* lexer, const char* str) {
+    u64 i = 0;
+    while (!is_string_literal_begin(lexer, str[++i])) {
+        if (str[i] == 0) {
+            return -1;
+        }
+    }
+    return i + 2;
+}
+
+static i32 get_token_type_location(lexer* lexer, Token type, const char* str, u64 len) {
+    for (u64 i = 0; i < lexer->token_sets[type].set_size; ++i) {
+        if (len != strlen(lexer->token_sets[type].set_name[i]))
+            continue;
+        if (strncmp(lexer->token_sets[type].set_name[i], str, len) == 0) {
+            return i;
+        }
+    }
     return -1;
 }
 
-vector(token) lexer_tokenize_str(lexer* lexer, const char* str, u64 str_size) {
-    assert(lexer != NULL);
-    u64 str_begin_offset = 0;
-    i32 nword_len = 0;
-
-    vector(token) tokens = make_vector();
-
-    while (str_begin_offset < str_size) {
-        nword_len = get_token_stride(lexer, str + str_begin_offset) - 1;
-        if (nword_len < 0) {
-            return tokens;
-        }
-
-        if (*(str + str_begin_offset) == ' ') {
-            str_begin_offset++;
-            continue;
-        }
-
-        token result = compare_with_token_sets(lexer, str + str_begin_offset);
-        str_begin_offset += nword_len;
-        if (result.type >= 0) {
-            vector_pushe(tokens, result);
-            continue;
-        }
-        if (is_number(result.name[0])) {
-            result.type = TokenLiteral;
-        }
-        else {
+static token get_word_token(lexer* lexer, const char* str) {
+    token result = { .name = str, .name_len = get_word_stride_test(str) - 1, .type = TokenKeyword, .name_location = -1 };
+    if (result.name_len > -1) {
+        result.name_location = get_token_type_location(lexer, TokenKeyword, str, result.name_len);
+        if (result.name_location == -1)
             result.type = TokenIdentifier;
+        return result;
+    }
+    return (token){ .type = TokenError };
+}
+
+INLINE static token get_literal_token(const char* str) {
+    return (token){ .name = str, .name_len = get_number_literal_stride_test(str) - 1, .type = TokenLiteral, .name_location = -1 };
+}
+
+INLINE static token get_string_literal_token(lexer* lexer, const char* str) {
+    return (token){ .name = str, .name_len = get_string_literal_stride_test(lexer, str) - 1, .type = TokenStringLiteral, .name_location = -1 };
+}
+
+static token get_operator_token(lexer* lexer, const char* str) {
+    token tok = { .type = TokenOperator, .name = str, .name_len = 0 };
+    for (u64 i = 0; i < lexer->token_sets[TokenOperator].set_size; ++i) {
+        u64 operator_len = strlen(lexer->token_sets[TokenOperator].set_name[i]);
+        if ((u64)tok.name_len < operator_len &&
+            strncmp(tok.name, lexer->token_sets[TokenOperator].set_name[i], operator_len) == 0) {
+            tok.name_len = operator_len;
+            tok.name_location = i;
         }
-        result.name_len = nword_len;
-        vector_pushe(tokens, result);
-        // vector_push(tokens, str + str_begin_offset, nword_len, -1, -1);
+    }
+    return tok.name_location > -1 ? tok : (token){ .type = TokenError };
+}
+
+static token get_separator_token(lexer* lexer, const char* str) {
+    token tok = { .type = TokenSeparator, .name = str, .name_len = 0 };
+    for (u64 i = 0; i < lexer->token_sets[TokenSeparator].set_size; ++i) {
+        u64 operator_len = strlen(lexer->token_sets[TokenSeparator].set_name[i]);
+        if ((u64)tok.name_len < operator_len && 
+            strncmp(str, lexer->token_sets[TokenSeparator].set_name[i], operator_len) == 0) {
+            tok.name_len = operator_len;
+            tok.name_location = i;
+        }
+    }
+    return tok.name_location > -1 ? tok : (token){ .type = TokenError };
+}
+
+token get_token_test(lexer* lexer, const char* str) {
+    if (str[0] == 0)
+        return (token){ .type = TokenError };
+    if (is_alphabet(str[0]) || str[0] == '_') {
+        return get_word_token(lexer, str);
+    }
+    if (is_number(str[0])) {
+        return get_literal_token(str);
+    }
+    if (is_string_literal_begin(lexer, str[0])) {
+        return get_string_literal_token(lexer, str);
+    }
+    if (is_operator_begin(lexer, str[0])) {
+        return get_operator_token(lexer, str);
+    }
+    if (is_separator_begin(lexer, str[0])) {
+        return get_separator_token(lexer, str);
+    }
+    return (token){ .type = TokenError };
+}
+
+token lexer_tokenize_string(lexer* lexer, const char* str) {
+    assert(lexer != NULL);
+
+    token tok = { .type = TokenError };
+    if (is_separator_begin(lexer, str[0])) {
+        tok = get_separator_token(lexer, str);
+    }
+    if (tok.type == TokenError) {
+        switch (str[0]) {
+            case '{': return (token){ .type = TokenOpenBrace, .name_len = 1, .name = "{" };
+            case '}': return (token){ .type = TokenCloseBrace, .name_len = 1, .name = "}" };
+            case '(': return (token){ .type = TokenOpenSquareBracket, .name_len = 1, .name = "(" };
+            case ')': return (token){ .type = TokenCloseSquareBracket, .name_len = 1, .name = ")" };
+            case '[': return (token){ .type = TokenOpenRoundBracket, .name_len = 1, .name = "[" };
+            case ']': return (token){ .type = TokenCloseRoundBracket, .name_len = 1, .name = "]" };
+            case ';': return (token){ .type = TokenSemicolon, .name_len = 1, .name = ";" };
+            case ',': return (token){ .type = TokenComma, .name_len = 1, .name = "," };
+            case '.': return (token){ .type = TokenFullStop, .name_len = 1, .name = "." };
+            case '\n': return (token){ .type = TokenNewLine, .name_len = 1, .name = "\n" };
+            default: break;
+        }
     }
 
-    return tokens;
+    tok = get_token_test(lexer, str);
+    if (tok.name_len < 0) {
+        tok.type = TokenError;
+    }
+
+    return tok;
 }
 
 vector(token) lexer_tokenize_until(lexer* lexer, const char* str, const char terminal) {
     vector(token) tokens = make_vector();
     const char* begin = str;
     token tok = { .name = "" };
-    u64 str_len = strlen(str);
     while (tok.name[0] != terminal) {
         if (begin[0] == ' ') {
             begin++;
             continue;
         }
-        tok = lexer_tokenize_string(lexer, begin);
-        if (tok.name == NULL) {
-            if ((u64)(begin - str) == str_len) {
-                tok.type = TokenEnd;
-            }
-            vector_pushe(tokens, tok);
-            break;
+        if (begin[0] == 0) {
+            vector_pushe(tokens, (token){ .type = TokenEnd, .name_len = -1 });
+            return tokens;
         }
+        tok = lexer_tokenize_string(lexer, begin);
         vector_pushe(tokens, tok);
+        if (tok.type == TokenError) {
+            return tokens;
+        }
         begin += tok.name_len;
     }
 
-    vector_pop(tokens);
-
     return tokens;
-}
-
-static token ncompare_with_token_sets(lexer* lexer, const char* str, u64 len) {
-    for (u64 i = 0; i < TokenParserCount; ++i) {
-        for (u64 j = 0; j < lexer->token_sets[i].set_size; ++j) {
-            if (len != strlen(lexer->token_sets[i].set_name[j]))
-                continue;
-            if (strncmp(lexer->token_sets[i].set_name[j], str, len) == 0) {
-                return (token){
-                    .name = str,
-                    .name_len = len,
-                    .name_location = j,
-                    .type = lexer->token_sets[i].token,
-                };
-            }
-        }
-    }
-    return (token){ .name = str, .name_len = -1, .type = TokenUnkown, .name_location = -1 };
-}
-
-token lexer_tokenize_string(lexer* lexer, const char* str) {
-    assert(lexer != NULL);
-
-    i32 nword_len = get_token_stride(lexer, str) - 1;
-    if (nword_len < 0) {
-        return (token){NULL, -1, -1, TokenError};
-    }
-
-    token result = ncompare_with_token_sets(lexer, str, nword_len);
-    if (result.type != TokenUnkown) {
-        return result;
-    }
-
-    if (is_number(result.name[0]) || result.name[0] == '.') {
-        result.type = TokenLiteral;
-    }
-    else if (is_string_literal_begin(lexer, result.name[0])) {
-        result.type = TokenStringLiteral;
-        nword_len += 2;
-    }
-    else {
-        result.type = TokenIdentifier;
-    }
-    result.name_len = nword_len;
-    return result;
 }
 

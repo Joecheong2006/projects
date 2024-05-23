@@ -1,24 +1,24 @@
 const number:int=3*(2+9) # arithmetic operation
 
 # string support
-str="hello, world"
+str="hello, world\\n"
 
 # base 16 support
 base16=0x123456789
 
-b = -3.0f
+b = -3.0 << 1
 
 const array[] = [0,2,3,4]
 
 # (if) statement (then) body (end)
-if true then
+if true {
     body
-end
+}
 
-func pow(base:float,e:int)
+fn pow(base:float,e:int): float {
     return base**e
-end
-func void()
-    return
-end
-function = 1
+}
+
+fn void() {}
+
+function=1

@@ -90,11 +90,7 @@ enum {
     KeywordTrue,
     KeywordFlase,
     KeywordNone,
-    KeywordThen,
-    KeywordEnd,
     KeywordFunction,
-    KeywordReturnCarry,
-    KeywordPower
 };
 
 const char* Keyword[] = {
@@ -106,37 +102,21 @@ const char* Keyword[] = {
     [KeywordFloat] = "float", 
     [KeywordChar] = "char",
     [KeywordString] = "string",
-    [KeywordTrue] = "None", 
+    [KeywordTrue] = "null", 
     [KeywordFlase] = "true", 
     [KeywordNone] = "false",
-    [KeywordThen] = "then", 
-    [KeywordEnd] = "end", 
-    [KeywordFunction] = "func", 
-    [KeywordReturnCarry] = "->", 
-    [KeywordPower] = "**"
+    [KeywordFunction] = "fn", 
 };
 
 enum {
-    SeparatorOpenSquareBracket,
-    SeparatorCloseSquareBracket,
-    SeparatorOpenRoundBracket,
-    SeparatorCloseRoundBracket,
     SeparatorColon,
-    SeparatorComma,
-    SeparatorFullStop,
-    SeparatorNewLine,
+    SeparatorDDD,
 };
 
 // must be in one character
 const char* Separator[] = {
-    [SeparatorOpenSquareBracket] = "[",
-    [SeparatorCloseSquareBracket] = "]",
-    [SeparatorOpenRoundBracket] = "(",
-    [SeparatorCloseRoundBracket] = ")",
     [SeparatorColon] = ":",
-    [SeparatorComma] = ",",
-    [SeparatorFullStop] = ".",
-    [SeparatorNewLine] = "\n",
+    [SeparatorDDD] = "..."
 };
 
 enum {
@@ -178,6 +158,8 @@ enum {
     OperatorOr,
     OperatorAnd,
     OperatorNot,
+
+    OperatorPower
 };
 
 // a = 1;
@@ -217,7 +199,8 @@ const char* Operator[] = {
     [OperatorInclusiveLessThan] = "<=",
     [OperatorOr] = "and",
     [OperatorAnd] = "or",
-    [OperatorNot] = "!"
+    [OperatorNot] = "!",
+    [OperatorPower] = "**",
 };
 
 enum {
@@ -263,6 +246,17 @@ void _print_token(token* token, const char* type_name, const char** type_names) 
 
 void print_token(token* tok) {
     switch (tok->type) {
+    case TokenOpenBrace:
+    case TokenCloseBrace:
+    case TokenOpenSquareBracket:
+    case TokenCloseSquareBracket:
+    case TokenOpenRoundBracket:
+    case TokenCloseRoundBracket:
+    case TokenSemicolon:
+    case TokenComma:
+    case TokenFullStop:
+    case TokenNewLine:
+                   _print_token(tok, "default separator", NULL); break;
     case TokenKeyword: _print_token(tok, "keyword", Keyword); break;
     case TokenSeparator: _print_token(tok, "separator", Separator); break;
     case TokenOperator: _print_token(tok, "operator", Operator); break;
@@ -384,6 +378,7 @@ INLINE i32 is_separator(token* tok) { return tok->type == TokenSeparator; }
 INLINE i32 is_keyword_type(token* tok, i32 type) { return tok->type == TokenKeyword && tok->name_location == type; }
 INLINE i32 is_operator_type(token* tok, i32 type) { return tok->type == TokenOperator && tok->name_location == type; }
 INLINE i32 is_separator_type(token* tok, i32 type) { return tok->type == TokenSeparator && tok->name_location == type; }
+INLINE i32 is_default_separator_type(token* tok, Token type) { return tok->type == type; }
 INLINE i32 is_string_literal(token* tok) { return tok->type == TokenStringLiteral; }
 
 INLINE i32 is_data_type(token* tok) { return tok->type == TokenKeyword && tok->name_location >= KeywordInt && tok->name_location <= KeywordChar; }
@@ -514,7 +509,7 @@ void parse_variable(parser* state) {
 }
 
 void parse_identifier(parser* state) {
-    if (state->index <= 1 && state->tokens_len >= 2 && !is_separator_type(parser_peek(state, 1), SeparatorOpenRoundBracket)) {
+    if (state->index <= 1 && state->tokens_len >= 2 && !is_default_separator_type(parser_peek(state, 1), TokenOpenRoundBracket)) {
         parse_variable(state);
     }
 }
@@ -536,8 +531,8 @@ void parse_function_parameter(parser* state) {
         printf("const ");
     }
 
-    if (!is_separator_type(parser_peek(state, assign_offset + 1), SeparatorComma) &&
-        !is_separator_type(parser_peek(state, assign_offset + 1), SeparatorCloseRoundBracket)) {
+    if (!is_default_separator_type(parser_peek(state, assign_offset + 1), TokenComma) &&
+        !is_default_separator_type(parser_peek(state, assign_offset + 1), TokenCloseRoundBracket)) {
         printf("missing ','");
         return;
     }
@@ -547,7 +542,7 @@ void parse_function_parameter(parser* state) {
 }
 
 void parse_function(parser* state) {
-    if (is_separator_type(parser_peekpre(state, -1), SeparatorCloseRoundBracket)) {
+    if (is_default_separator_type(parser_peekpre(state, -1), TokenCloseRoundBracket)) {
         printf("None ");
     }
     printf("function ");
@@ -571,7 +566,7 @@ void parser_keyword(parser* state) {
     switch (state->tokens[state->index].name_location) {
         case KeywordFunction: {
             if (state->tokens_len >= 3 && is_identifier(state->tokens + state->index + 1)
-                && is_separator_type(state->tokens + state->index + 2, SeparatorOpenRoundBracket)) {
+                && is_default_separator_type(state->tokens + state->index + 2, TokenOpenRoundBracket)) {
                 parse_function(state);
                 in_scope = 1;
             }
@@ -585,13 +580,6 @@ void parser_keyword(parser* state) {
         } break;
         case KeywordIf: {
             in_scope = 1;
-        } break;
-        case KeywordEnd: {
-            if (in_scope == 0) {
-                printf("end doesn't match any control flow or function!\n");
-                exit(1);
-            }
-            in_scope = 0;
         } break;
         default: break;
     }
@@ -635,86 +623,6 @@ u64 cal_line_stride(const  char* buffer, i32 line_count) {
         first_n = strchr(buffer + first_n, '\n') - buffer + 1;
     }
     return first_n;
-}
-
-void command_line_mode(lexer* lexer) {
-    u64 line_count = 0, max_line_count = 0;
-    u64 begin = 0, end = 0;
-    vector(token) tokens = NULL;
-
-    string source_buffer = make_string("");
-
-    while(1) {
-        char input[100];
-        printf(">");
-        fgets(input, sizeof(input), stdin);
-        if (input[0] != '.') {
-            string_push(source_buffer, input);
-            max_line_count++;
-            continue;
-        }
-
-        if (strlen(input) <= 1) {
-            continue;
-        }
-
-        switch (input[1]) {
-        case 'q': {
-            if (tokens) free_vector(&tokens);
-            free_string(&source_buffer);
-            return;
-        }
-        case 'b': {
-            for (u64 i = 1; i <= max_line_count; ++i) {
-                printf("%s", i == line_count ? " -> " : "    ");
-                for (u64 j = cal_line_stride(source_buffer, i - 1);
-                         j < cal_line_stride(source_buffer, i); ++j) {
-                    putchar(source_buffer[j]);
-                }
-            }
-        } break;
-        case 'p': if (tokens) parser_test(tokens); break;
-        case 'n': {
-            begin = cal_line_stride(source_buffer, line_count);
-            end = cal_line_stride(source_buffer, line_count + 1);
-
-            ++line_count;
-            if (line_count > max_line_count) {
-                --line_count;
-                printf("no next line\n");
-                break;
-            }
-
-            if (tokens) free_vector(&tokens);
-
-            tokens = lexer_tokenize_until(lexer, source_buffer + begin, '\n');
-
-            i32 len = end - begin;
-            printf("<line:%llu> ", line_count);
-            for (i32 c = 0; c < len; ++c) {
-                putchar((source_buffer + begin)[c]);
-            }
-            putchar('\n');
-        } break;
-        case 'j': {
-            if (is_number(input[2])) {
-                u64 line = atoi(&input[2]);
-                if (line > max_line_count) {
-                    printf("out of line\n");
-                    break;
-                }
-                line_count = line;
-                if (tokens) free_vector(&tokens);
-                begin = cal_line_stride(source_buffer, line_count - 1);
-                end = cal_line_stride(source_buffer, line_count);
-                tokens = lexer_tokenize_str(lexer, source_buffer + begin, end - begin);
-            }
-        } break;
-        default: break;
-        }
-    }
-    if (tokens) free_vector(&tokens);
-    free_string(&source_buffer);
 }
 
 void print_object_variable(object* obj) {
@@ -829,10 +737,11 @@ tree_node* try_parse_round_bracket_pair(parser* state) {
 
 tree_node* try_parse_expression(parser* par) {
     tree_node* lhs = NULL;
+
     if (is_identifier(parser_peek(par, 0))) {
         lhs = try_parse_identifier(par);
     }
-    else if (is_separator_type(parser_peek(par, 0), SeparatorOpenRoundBracket)) {
+    else if (is_default_separator_type(parser_peek(par, 0), TokenOpenRoundBracket)) {
         ++par->index;
         try_parse_round_bracket_pair(par);
     }
@@ -846,7 +755,8 @@ tree_node* try_parse_expression(parser* par) {
     ++par->index;
     tree_node* operator = NULL;
 
-    if (is_separator_type(parser_peek(par, 0), SeparatorCloseRoundBracket) ||
+    if (is_default_separator_type(parser_peek(par, 0), TokenCloseRoundBracket) ||
+        parser_peek(par, 0)->type == TokenNewLine || 
         par->index == par->tokens_len) {
         return lhs;
     }
@@ -908,6 +818,97 @@ tree_node* parse_test(parser* par) {
     return NULL;
 }
 
+void command_line_mode(lexer* lexer) {
+    u64 line_count = 0, max_line_count = 0;
+    u64 begin = 0, end = 0;
+    vector(token) tokens = NULL;
+
+    string source_buffer = make_string("");
+
+    while(1) {
+        char input[100];
+        printf(">");
+        fgets(input, sizeof(input), stdin);
+        if (input[0] != '.') {
+            string_push(source_buffer, input);
+            max_line_count++;
+            continue;
+        }
+
+        if (strlen(input) <= 1) {
+            continue;
+        }
+
+        switch (input[1]) {
+        case 'q': {
+            if (tokens) free_vector(&tokens);
+            free_string(&source_buffer);
+            return;
+        }
+        case 'b': {
+            for (u64 i = 1; i <= max_line_count; ++i) {
+                printf("%s", i == line_count ? " -> " : "    ");
+                for (u64 j = cal_line_stride(source_buffer, i - 1);
+                         j < cal_line_stride(source_buffer, i); ++j) {
+                    putchar(source_buffer[j]);
+                }
+            }
+        } break;
+        case 'p': {
+            if (tokens) {
+                parser par = { .index = 0, .tokens = tokens, .tokens_len = vector_size(tokens), .error = ParseErrorNoError };
+                tree_node* node = parse_test(&par);
+                if (node) {
+                    bfs(node, print_node);
+                    dfs(node, free_tree);
+                }
+                printf("error %d\n", par.error);
+            }
+        } break;
+        case 'n': {
+            begin = cal_line_stride(source_buffer, line_count);
+            end = cal_line_stride(source_buffer, line_count + 1);
+
+            ++line_count;
+            if (line_count > max_line_count) {
+                --line_count;
+                printf("no next line\n");
+                break;
+            }
+
+            if (tokens) free_vector(&tokens);
+
+            tokens = lexer_tokenize_until(lexer, source_buffer + begin, '\n');
+
+            i32 len = end - begin;
+            printf("<line:%llu> ", line_count);
+            for (i32 c = 0; c < len; ++c) {
+                putchar((source_buffer + begin)[c]);
+            }
+            putchar('\n');
+        } break;
+        case 'j': {
+            if (is_number(input[2])) {
+                u64 line = atoi(&input[2]);
+                if (line > max_line_count) {
+                    printf("out of line\n");
+                    break;
+                }
+                line_count = line;
+                if (tokens) free_vector(&tokens);
+                begin = cal_line_stride(source_buffer, line_count - 1);
+                end = cal_line_stride(source_buffer, line_count);
+                tokens = lexer_tokenize_until(lexer, source_buffer + begin, '\n');
+            }
+        } break;
+        default: break;
+        }
+    }
+    if (tokens) free_vector(&tokens);
+    free_string(&source_buffer);
+    CHECK_MEMORY_LEAK();
+}
+
 i32 main(i32 argc, char** argv) {
     object_map = make_hashmap(1 << 10, hash_object);
 
@@ -918,6 +919,16 @@ i32 main(i32 argc, char** argv) {
     LEXER_ADD_TOKEN(&lexer, Operator, TokenOperator);
     LEXER_ADD_TOKEN(&lexer, StringBegin, TokenStringBegin);
     
+#if 1
+    // {
+    //     char text[] = "...>>:=(1[2{3}2]1)0xabcdef(1)\n";
+    //     vector(token) tokens = lexer_tokenize_test(&lexer, text, '\n');
+    //     for_vector(tokens, i, 0) {
+    //         print_token(tokens + i);
+    //     }
+    //     free_vector(&tokens);
+    //     return 0;
+    // }
     {
         /*          val
          *           |
@@ -931,8 +942,9 @@ i32 main(i32 argc, char** argv) {
          *
          *
          */
-        const char text[] = "val-=1.2-.2+3\n";
+        const char text[] = "val-=1.2-2+3\n";
         vector(token) tokens = lexer_tokenize_until(&lexer, text, '\n');
+
         for_vector(tokens, i, 0) {
             print_token_name(tokens + i);
             putchar(' ');
@@ -958,7 +970,6 @@ i32 main(i32 argc, char** argv) {
         CHECK_MEMORY_LEAK();
         return 0;
     }
-   
     {
         const char text[] = "const val=1.2\n";
         vector(token) tokens = lexer_tokenize_until(&lexer, text, '\n');
@@ -974,6 +985,7 @@ i32 main(i32 argc, char** argv) {
         CHECK_MEMORY_LEAK();
         return 0;
     }
+#endif
 
     if (argc == 1) {
         command_line_mode(&lexer);
@@ -1003,6 +1015,7 @@ i32 main(i32 argc, char** argv) {
     for (u64 i = 0; i < source.line_count; ++i) {
         first_n = strchr(source.buffer + offset, '\n') - source.buffer - offset + 1;
 
+        // vector(token) tokens = lexer_tokenize_until(&lexer, source.buffer + offset, '\n');
         vector(token) tokens = lexer_tokenize_until(&lexer, source.buffer + offset, '\n');
 
         // try match pattern else it's a error
