@@ -228,10 +228,10 @@ token lexer_tokenize_string(lexer* lexer, const char* str) {
         switch (str[0]) {
             case '{': return (token){ .type = TokenOpenBrace, .name_len = 1, .name = "{" };
             case '}': return (token){ .type = TokenCloseBrace, .name_len = 1, .name = "}" };
-            case '(': return (token){ .type = TokenOpenSquareBracket, .name_len = 1, .name = "(" };
-            case ')': return (token){ .type = TokenCloseSquareBracket, .name_len = 1, .name = ")" };
-            case '[': return (token){ .type = TokenOpenRoundBracket, .name_len = 1, .name = "[" };
-            case ']': return (token){ .type = TokenCloseRoundBracket, .name_len = 1, .name = "]" };
+            case '(': return (token){ .type = TokenOpenRoundBracket, .name_len = 1, .name = "(" };
+            case ')': return (token){ .type = TokenCloseRoundBracket, .name_len = 1, .name = ")" };
+            case '[': return (token){ .type = TokenOpenSquareBracket, .name_len = 1, .name = "[" };
+            case ']': return (token){ .type = TokenCloseSquareBracket, .name_len = 1, .name = "]" };
             case ';': return (token){ .type = TokenSemicolon, .name_len = 1, .name = ";" };
             case ',': return (token){ .type = TokenComma, .name_len = 1, .name = "," };
             case '.': return (token){ .type = TokenFullStop, .name_len = 1, .name = "." };

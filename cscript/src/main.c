@@ -1,82 +1,11 @@
-#include <assert.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
+#include "source_file.h"
 #include "string.h"
 #include "hashmap.h"
 #include "memallocate.h"
 #include "lexer.h"
-
-#define MAX_LINE_BUFFER_SIZE (1 << 10)
-#define MAX_WORD_BUFFER_SIZE (1 << 8)
-
-typedef struct {
-    char* buffer;
-    u64 buffer_size, line_count;
-} source_file;
-
-i32 is_space_strn(const char* str, u64 size) {
-    for (u64 i = 0; i < size; ++i) {
-        if (str[i] != ' ') {
-            return 0;
-        }
-    }
-    return 1;
-}
-
-i32 load_source(source_file* source, const char* path, token_set* single_line_comment, token_set* multi_line_comment) {
-    FILE* file = fopen(path, "r");
-    if (file == NULL) {
-        printf("cannot fount %s\n", path);
-        return 0;
-    }
-    // const char* hello = "hi";
-    (void)single_line_comment;
-    (void)multi_line_comment;
-
-    fseek(file, 0, SEEK_END);
-    source->buffer_size = ftell(file);
-    rewind(file);
-
-    source->buffer = MALLOC(source->buffer_size + 1);
-
-    u64 line_count = 0, count = 0;
-    char line_buffer[MAX_LINE_BUFFER_SIZE];
-
-    while (fgets(line_buffer, MAX_LINE_BUFFER_SIZE, file)) {
-        u64 line_len = strlen(line_buffer);
-
-        // i32 sc_pos = match_token(single_line_comment, line_buffer);
-        // if (sc_pos >= 0) {
-        //     if (sc_pos == 1 || is_space_strn(line_buffer, sc_pos - 2))
-        //         continue;
-        //     line_len = sc_pos - 1;
-        //     line_buffer[line_len++] = '\n';
-        // }
-
-        // printf("%llu\n", line_len);
-        // line_len++;
-        memcpy(source->buffer + count, line_buffer, line_len);
-        count += line_len;
-        ++line_count;
-    }
-
-    source->buffer_size = count;
-    source->line_count = line_count;
-
-    source->buffer[source->buffer_size] = 0;
-
-    fclose(file);
-
-    return 1;
-}
-
-void free_source(source_file* source) {
-    assert(source->buffer);
-    FREE(source->buffer);
-    memset(source, 0, sizeof(source_file));
-}
 
 enum {
     KeywordIf,
@@ -238,10 +167,7 @@ void _print_token(token* token, const char* type_name, const char** type_names) 
         putchar(token->name[n]);
     }
     (void)(type_names);
-    // if (type_names)
-    //     printf("', '%s', %d)\n", type_names[token->name_location], token->name_len);
-    // else 
-        printf("', %d)\n", token->name_len);
+    printf("', %d)\n", token->name_len);
 }
 
 void print_token(token* tok) {
@@ -274,34 +200,7 @@ void print_token(token* tok) {
     }
 }
 
-typedef enum {
-    DataTypeVariable,
-    DataTypeFunction,
-} DataType;
-
-typedef struct PACKED {
-    i16 type;
-    i16 attribute; // NOTE(const readonly writeonly):
-    void* value;
-} object_variable;
-
-object_variable* make_object_variable() {
-    object_variable* variable = MALLOC(sizeof(object_variable));
-    *variable = (object_variable){
-        .attribute = -1,
-        .type = -1,
-        .value = NULL,
-    };
-    return variable;
-}
-
-// TODO(object function implementation):
 typedef struct {
-    i32 type;
-} object_function;
-
-typedef struct {
-    DataType type;
     void* info;
     string name;
     i32 name_len;
@@ -332,24 +231,10 @@ size_t hash_object(void* data, size_t size) {
     return djb2(test_data->name) % size;
 }
 
-void free_object_variable(object* obj) {
-    object_variable* var = obj->info;
-    FREE(var->value);
-    FREE(var);
-}
-
-void free_object_function(object* obj) {
-    (void)obj;
-}
-
 void hashmap_free_test_data(void* data) {
     object* obj = data;
     free_string(&obj->name);
-    switch(obj->type) {
-    case DataTypeVariable: free_object_variable(obj); break;
-    case DataTypeFunction: free_object_function(obj); break;
-    default: printf("unkown object"); break;
-    }
+    // NOTE(free obj->info):
     FREE(obj);
 }
 
@@ -422,200 +307,6 @@ INLINE token* parser_peekpre(parser* par, i32 location) {
     return par->tokens + par->tokens_len + location;
 }
 
-void parse_variable(parser* state) {
-    i32 assign_offset = 0;
-    if (is_separator_type(parser_peek(state, 1), SeparatorColon)) {
-        if (is_data_type(parser_peek(state, 2))) {
-            if (!is_operator_type(parser_peek(state, 3), OperatorAssign)) {
-                printf(" may be missing a '=' ? ");
-                return;
-            }
-            printf("%s ", Keyword[parser_peek(state, 2)->name_location]);
-            assign_offset = 2;
-        }
-        else {
-            printf("error type ");
-            return;
-        }
-    }
-    if (!is_operator_type(parser_peek(state, assign_offset + 1), OperatorAssign)) {
-        printf(" may be missing a '=' ? ");
-        return;
-    }
-
-    object_variable* variable = make_object_variable();
-    if (state->index == 1 && is_keyword_type(state->tokens, KeywordConst)) {
-        variable->attribute = KeywordConst;
-        printf("const ");
-    }
-
-    printf("variable -> ");
-
-    token* identifier = parser_peek(state, 0);
-    print_token_name(identifier);
-
-    // printing expression
-    for_vector(state->tokens, i, assign_offset + state->index + 1) {
-        putchar(' ');
-        print_token_name(state->tokens + i);
-    }
-
-    token* ex = parser_peek(state, assign_offset + 2);
-    if (ex->type == TokenError) {
-        printf(" error type");
-        FREE(variable);
-        return;
-    }
-
-    i32 data_type = -1;
-    void* data = NULL;
-    (void)data;
-    if (is_real_number(ex)) {
-        data_type = KeywordFloat;
-        float number = atof(ex->name);
-        data = MALLOC(sizeof(float));
-        memcpy(data, &number, sizeof(float));
-    }
-    else if (is_number(ex->name[0])) {
-        data_type = KeywordInt;
-        int number = atoi(ex->name);
-        data = MALLOC(sizeof(int));
-        memcpy(data, &number, sizeof(int));
-    }
-    else if (is_string_literal(ex)) {
-        data_type = KeywordString;
-        char* str = MALLOC(ex->name_len - 1);
-        memcpy(str, ex->name + 1, ex->name_len - 2);
-        str[ex->name_len - 2] = 0;
-        data = str;
-    }
-    else if (is_identifier(ex)) {
-        // NOTE:variable expression
-    }
-
-    variable->type = assign_offset > 0 ? state->tokens[state->index + 2].name_location : data_type;
-    variable->value = data;
-
-    object* obj = make_object(&(object){
-                .info = variable,
-                .type = DataTypeVariable,
-                .name_len = state->tokens[state->index].name_len,
-                .name = make_stringn((string)state->tokens[state->index].name, state->tokens[state->index].name_len)
-            });
-
-    hashmap_add(object_map, obj);
-
-    putchar('\n');
-}
-
-void parse_identifier(parser* state) {
-    if (state->index <= 1 && state->tokens_len >= 2 && !is_default_separator_type(parser_peek(state, 1), TokenOpenRoundBracket)) {
-        parse_variable(state);
-    }
-}
-
-void parse_function_parameter(parser* state) {
-    i32 assign_offset = 0;
-    if (is_separator_type(parser_peek(state, 1), SeparatorColon)) {
-        if (is_data_type(parser_peek(state, 2))) {
-            printf("%s ", Keyword[parser_peek(state, 2)->name_location]);
-            assign_offset = 2;
-        }
-        else {
-            printf("error type ");
-            return;
-        }
-    }
-
-    if (state->index >= 1 && is_keyword_type(parser_peek(state, -1), KeywordConst)) {
-        printf("const ");
-    }
-
-    if (!is_default_separator_type(parser_peek(state, assign_offset + 1), TokenComma) &&
-        !is_default_separator_type(parser_peek(state, assign_offset + 1), TokenCloseRoundBracket)) {
-        printf("missing ','");
-        return;
-    }
-
-    printf("-> ");
-    print_token_name(parser_peek(state, 0));
-}
-
-void parse_function(parser* state) {
-    if (is_default_separator_type(parser_peekpre(state, -1), TokenCloseRoundBracket)) {
-        printf("None ");
-    }
-    printf("function ");
-    print_token_name(parser_peek(state, 1));
-    printf(" -> param ->");
-
-    for_vector(state->tokens, i, state->index + 2) {
-        if (is_identifier(state->tokens + i)) {
-            parser new_state = *state;
-            new_state.index = i;
-            putchar(' ');
-            parse_function_parameter(&new_state);
-        }
-    }
-
-    putchar('\n');
-}
-
-static i32 in_scope = 0;
-void parser_keyword(parser* state) {
-    switch (state->tokens[state->index].name_location) {
-        case KeywordFunction: {
-            if (state->tokens_len >= 3 && is_identifier(state->tokens + state->index + 1)
-                && is_default_separator_type(state->tokens + state->index + 2, TokenOpenRoundBracket)) {
-                parse_function(state);
-                in_scope = 1;
-            }
-        } break;
-        case KeywordConst: {
-            if (state->tokens_len >= 3) {
-                parser new_state = *state;
-                new_state.index++;
-                parse_identifier(&new_state);
-            }
-        } break;
-        case KeywordIf: {
-            in_scope = 1;
-        } break;
-        default: break;
-    }
-}
-
-void parser_test(vector(token) tokens) {
-
-    parser state = {
-        .tokens = tokens,
-        .tokens_len = vector_size(tokens)
-    };
-
-    for (u64 i = 0; i < 1; ++i) {
-        state.index = i;
-        switch (tokens[i].type) {
-        case TokenKeyword: {
-                parser_keyword(&state);
-            } break;
-        case TokenSeparator: {
-            } break;
-        case TokenOperator: {
-            } break;
-        case TokenLiteral: {
-            } break;
-        case TokenIdentifier: {
-                if (tokens[i].type == TokenIdentifier && compare_strings(SingleLineComment, 1, tokens[i].name)) {
-                    return;
-                }
-                parse_identifier(&state);
-            } break;
-        default: break;
-        }
-    }
-    putchar('\n');
-}
-
 u64 cal_line_stride(const  char* buffer, i32 line_count) {
     u64 first_n = 0;
 
@@ -624,28 +315,6 @@ u64 cal_line_stride(const  char* buffer, i32 line_count) {
     }
     return first_n;
 }
-
-void print_object_variable(object* obj) {
-    object_variable* var = obj->info;
-    switch (var->type) {
-        case KeywordInt: printf("%d %s = %d\n", var->attribute, obj->name, *(int*)var->value); break;
-        case KeywordFloat: printf("%d %s = %g\n", var->attribute, obj->name, *(float*)var->value); break;
-        case KeywordString: printf("%d %s = %s\n", var->attribute, obj->name, (string)var->value); break;
-        case KeywordNone: printf("%s = None\n", obj->name); break;
-        default: printf("unkown object data type"); break;
-    }
-}
-
-void print_object(object* obj) {
-    switch (obj->type) {
-    case DataTypeVariable: print_object_variable(obj); break;
-    case DataTypeFunction: {
-        printf("not implement print function yet");
-    } break;
-    default: printf("unkown object data type"); break;
-    }
-}
-
 // decent parsing implementation
 typedef enum {
     NodeVariable,
@@ -730,20 +399,27 @@ tree_node* try_parse_operator(parser* par) {
     return make_tree_node(NodeOperator, tok->name_location, tok->name, tok->name_len);
 }
 
-tree_node* try_parse_round_bracket_pair(parser* state) {
-    (void)state;
-    return NULL;
+tree_node* try_parse_expression(parser* par);
+
+tree_node* try_parse_round_bracket_pair(parser* par) {
+    tree_node* expr = try_parse_expression(par);
+    if (!expr) {
+        return NULL;
+    }
+    return expr;
 }
 
 tree_node* try_parse_expression(parser* par) {
     tree_node* lhs = NULL;
+    i32 has_bracket = 0;
 
     if (is_identifier(parser_peek(par, 0))) {
         lhs = try_parse_identifier(par);
     }
     else if (is_default_separator_type(parser_peek(par, 0), TokenOpenRoundBracket)) {
         ++par->index;
-        try_parse_round_bracket_pair(par);
+        has_bracket = 1;
+        lhs = try_parse_round_bracket_pair(par);
     }
     else if (is_number(parser_peek(par, 0)->name[0]) || is_real_number(parser_peek(par, 0))) {
         lhs = try_parse_number(par);
@@ -780,12 +456,16 @@ tree_node* try_parse_expression(parser* par) {
         free_node(operator);
         return NULL;
     }
-    vector_pushe(operator->nodes, rhs);
-    return operator;
-}
 
-void try_parse_variable_assignment(parser* state) {
-    (void)state;
+    if (has_bracket && vector_size(rhs->nodes) > 0 && operator->object_type > rhs->object_type) {
+        vector_pushe(operator->nodes, rhs->nodes[0]);
+        rhs->nodes[0] = operator;
+        return rhs;
+    }
+    else {
+        vector_pushe(operator->nodes, rhs);
+        return operator;
+    }
 }
 
 tree_node* try_parse_variable(parser* par) {
@@ -936,13 +616,12 @@ i32 main(i32 argc, char** argv) {
          *           |
          *           -
          *          / \
-         *        1.2  +
-         *            / \
-         *           2   3
-         *
+         *         *   3
+         *        / \
+         *      1.2  2
          *
          */
-        const char text[] = "val-=1.2-2+3\n";
+        const char text[] = "val-=1.2-(2+1)*3\n";
         vector(token) tokens = lexer_tokenize_until(&lexer, text, '\n');
 
         for_vector(tokens, i, 0) {
@@ -970,21 +649,6 @@ i32 main(i32 argc, char** argv) {
         CHECK_MEMORY_LEAK();
         return 0;
     }
-    {
-        const char text[] = "const val=1.2\n";
-        vector(token) tokens = lexer_tokenize_until(&lexer, text, '\n');
-        parser_test(tokens);
-
-        object* obj = get_object("val");
-        if (obj)
-            print_object(obj);
-
-        free_vector(&tokens);
-        hashmap_free_items(object_map, hashmap_free_test_data);
-        free_hashmap(&object_map);
-        CHECK_MEMORY_LEAK();
-        return 0;
-    }
 #endif
 
     if (argc == 1) {
@@ -994,13 +658,7 @@ i32 main(i32 argc, char** argv) {
 
     // TODO: to pack source file
     source_file source;
-    i32 success = load_source(&source, argv[1], &(token_set){
-                .set_name = SingleLineComment,
-                .set_size = sizeof(SingleLineComment) / sizeof(void*)
-            }, &(token_set){
-                .set_name = MultiLineComment,
-                .set_size = sizeof(MultiLineComment) / sizeof(void*)
-            });
+    i32 success = load_source(&source, argv[1]);
 
     if (!success) {
         printf("failed load source\n");
@@ -1044,7 +702,6 @@ i32 main(i32 argc, char** argv) {
                     .name = item->name,
                     .name_len = item->name_len,
                     .type = TokenIdentifier,
-                    .name_location = item->type,
                 });
     }
 
