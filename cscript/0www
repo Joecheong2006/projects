@@ -62,6 +62,7 @@ void print_token(token* tok) {
 typedef struct {
     void* info;
     string name;
+    i32 name_len;
 } object;
 
 hashmap object_map;
@@ -85,13 +86,14 @@ object* get_object(const char* name) {
 
 size_t hash_object(void* data, size_t size) {
     object* test_data = data;
+    // printf("hashing %s\n", test_data->name);
     return djb2(test_data->name) % size;
 }
 
 void hashmap_free_test_data(void* data) {
     object* obj = data;
     free_string(&obj->name);
-    // NOTE: free obj->info
+    // NOTE(free obj->info):
     FREE(obj);
 }
 
@@ -141,7 +143,6 @@ i32 is_real_number(token* tok) {
 typedef enum {
     ParseErrorNoError,
     ParseErrorMissingToken,
-    ParseErrorMissingLhs,
     ParseErrorMissingRhs,
 } ParseError;
 
@@ -167,27 +168,29 @@ INLINE token* parser_peekpre(parser* par, i32 location) {
 
 u64 cal_line_stride(const  char* buffer, i32 line_count) {
     u64 first_n = 0;
+
     for (i32 i = 0; i < line_count; ++i) {
         first_n = strchr(buffer + first_n, '\n') - buffer + 1;
     }
     return first_n;
 }
-
 // decent parsing implementation
 typedef enum {
     NodeVariable,
     NodeVariableAssign,
     NodeOperator,
-    NodeAssignmentOperator,
+    NodeOperatoAssignment,
     NodeNumber,
 } NodeType;
+
 
 typedef struct tree_node tree_node;
 struct tree_node {
     NodeType type;
-    i8 object_type;
+    i32 object_type;
     const char* name;
-    i8 name_len;
+    i32 name_len;
+    void* info;
     vector(tree_node*) nodes;
 };
 
@@ -199,6 +202,7 @@ tree_node* make_tree_node(NodeType type, i32 object_type, const char* name, i32 
         .name = name,
         .name_len = name_len,
         .nodes = make_vector(),
+        .info = NULL
     }, sizeof(tree_node));
     return node;
 }
@@ -213,7 +217,6 @@ void print_node(tree_node* node) {
     switch (node->type) {
     case NodeVariable: printf("variable"); break;
     case NodeOperator: printf("operator"); break;
-    case NodeAssignmentOperator: printf("assignement operator"); break;
     case NodeNumber: printf("number"); break;
     default: break;
     }
@@ -222,19 +225,17 @@ void print_node(tree_node* node) {
                 .name = node->name,
                 .name_len = node->name_len,
             });
-    putchar('\n');
+    printf(" %d\n", node->object_type);
 }
 
-typedef void(*action)(tree_node*);
-
-void bfs(tree_node* root, action take_action) {
+void bfs(tree_node* root, void(*take_action)(tree_node*)) {
     take_action(root);
     for_vector(root->nodes, i, 0) {
         bfs(root->nodes[i], take_action);
     }
 }
 
-void dfs(tree_node* root, action take_action) {
+void dfs(tree_node* root, void(*take_action)(tree_node*)) {
     for_vector(root->nodes, i, 0) {
         dfs(root->nodes[i], take_action);
     }
@@ -269,79 +270,26 @@ tree_node* try_parse_operator(parser* par) {
 }
 
 tree_node* try_parse_expression(parser* par);
-tree_node* try_parse_expression_with_bracket(parser* par) {
-    tree_node* lhs = NULL;
 
-    if (is_identifier(parser_peek(par, 0))) {
-        lhs = try_parse_identifier(par);
-    }
-    else if (is_default_separator_type(parser_peek(par, 0), TokenOpenRoundBracket)) {
-        ++par->index;
-        lhs = try_parse_expression_with_bracket(par);
-    }
-    else if (is_number(parser_peek(par, 0)->name[0]) || is_real_number(parser_peek(par, 0))) {
-        lhs = try_parse_number(par);
-    }
-    else {
+tree_node* try_parse_round_bracket_pair(parser* par) {
+    tree_node* expr = try_parse_expression(par);
+    if (!expr) {
         return NULL;
     }
-
-    if (!lhs) {
-        set_parse_error(par, ParseErrorMissingLhs);
-        return NULL;
-    }
-
-    ++par->index;
-    tree_node* operator = NULL;
-
-    if (is_default_separator_type(parser_peek(par, 0), TokenCloseRoundBracket)) {
-        return lhs;
-    }
-    if (parser_peek(par, 0)->type == TokenNewLine || par->index == par->tokens_len) {
-        dfs(lhs, free_node);
-        set_parse_error(par, ParseErrorMissingToken);
-        return NULL;
-    }
-
-    if (is_operator(parser_peek(par, 0))) {
-        operator = try_parse_operator(par);
-    }
-
-    if (!operator) {
-        dfs(lhs, free_node);
-        set_parse_error(par, ParseErrorMissingToken);
-        return NULL;
-    }
-
-    vector_pushe(operator->nodes, lhs);
-    ++par->index;
-    i32 has_bracket = is_default_separator_type(parser_peek(par, 0), TokenOpenRoundBracket);
-    (void)has_bracket;
-    tree_node* rhs = try_parse_expression_with_bracket(par);
-    if (!rhs) {
-        set_parse_error(par, ParseErrorMissingRhs);
-        dfs(operator, free_node);
-        return NULL;
-    }
-
-    if (vector_size(rhs->nodes) > 0 && operator->object_type > rhs->object_type) {
-        vector_pushe(operator->nodes, rhs->nodes[0]);
-        rhs->nodes[0] = operator;
-        return rhs;
-    }
-    vector_pushe(operator->nodes, rhs);
-    return operator;
+    return expr;
 }
 
 tree_node* try_parse_expression(parser* par) {
     tree_node* lhs = NULL;
+    i32 has_bracket = 0;
 
     if (is_identifier(parser_peek(par, 0))) {
         lhs = try_parse_identifier(par);
     }
     else if (is_default_separator_type(parser_peek(par, 0), TokenOpenRoundBracket)) {
         ++par->index;
-        lhs = try_parse_expression_with_bracket(par);
+        has_bracket = 1;
+        lhs = try_parse_round_bracket_pair(par);
     }
     else if (is_number(parser_peek(par, 0)->name[0]) || is_real_number(parser_peek(par, 0))) {
         lhs = try_parse_number(par);
@@ -350,15 +298,12 @@ tree_node* try_parse_expression(parser* par) {
         return NULL;
     }
 
-    if (!lhs) {
-        set_parse_error(par, ParseErrorMissingLhs);
-        return NULL;
-    }
-
     ++par->index;
     tree_node* operator = NULL;
 
-    if (parser_peek(par, 0)->type == TokenNewLine || par->index == par->tokens_len) {
+    if (is_default_separator_type(parser_peek(par, 0), TokenCloseRoundBracket) ||
+        parser_peek(par, 0)->type == TokenNewLine || 
+        par->index == par->tokens_len) {
         return lhs;
     }
 
@@ -367,44 +312,30 @@ tree_node* try_parse_expression(parser* par) {
     }
 
     if (!operator) {
-        dfs(lhs, free_node);
+        free_node(lhs);
         set_parse_error(par, ParseErrorMissingToken);
         return NULL;
     }
 
     vector_pushe(operator->nodes, lhs);
     ++par->index;
-    i32 has_bracket = is_default_separator_type(parser_peek(par, 0), TokenOpenRoundBracket);
-    (void)has_bracket;
     tree_node* rhs = try_parse_expression(par);
     if (!rhs) {
         set_parse_error(par, ParseErrorMissingRhs);
-        dfs(operator, free_node);
+        free_node(lhs);
+        free_node(operator);
         return NULL;
     }
 
-    // if (!has_bracket && operator->object_type == OperatorMinus) {
-    //     switch (rhs->object_type) {
-    //     case OperatorMinus: rhs->object_type = OperatorPlus; break;
-    //     case OperatorPlus: rhs->object_type = OperatorMinus; break;
-    //     default: break;
-    //     }
-    // }
-
-    if (vector_size(rhs->nodes) > 0 && operator->object_type > rhs->object_type) {
+    if (has_bracket && vector_size(rhs->nodes) > 0 && operator->object_type > rhs->object_type) {
         vector_pushe(operator->nodes, rhs->nodes[0]);
         rhs->nodes[0] = operator;
         return rhs;
-        tree_node** mrhs = &rhs;
-        while (vector_size(mrhs[0]->nodes) != 0) {
-            mrhs = mrhs[0]->nodes;
-        }
-        vector_pushe(operator->nodes, *mrhs);
-        *mrhs = operator;
-        return rhs;
     }
-    vector_pushe(operator->nodes, rhs);
-    return operator;
+    else {
+        vector_pushe(operator->nodes, rhs);
+        return operator;
+    }
 }
 
 tree_node* try_parse_variable(parser* par) {
@@ -412,7 +343,7 @@ tree_node* try_parse_variable(parser* par) {
     tree_node* var = make_tree_node(NodeVariable, -1, var_tok->name, var_tok->name_len);
     if (is_assigment_operator(parser_peek(par, 1))) {
         token* assign_tok = parser_peek(par, 1);
-        tree_node* assign_operator = make_tree_node(NodeAssignmentOperator, assign_tok->name_location, assign_tok->name, assign_tok->name_len);
+        tree_node* assign_operator = make_tree_node(NodeOperator, assign_tok->name_location, assign_tok->name, assign_tok->name_len);
         par->index += 2;
         tree_node* expression = try_parse_expression(par);
         if (!expression) {
@@ -542,115 +473,51 @@ float get_node_number_value_float(tree_node* node) {
     return atof(node->name);
 }
 
-#define INTERPRET_OPERATE_NUMBERS(type, data, operator)\
-        type lhs_value = get_node_number_value_##type(lhs);\
-        type rhs_value = get_node_number_value_##type(rhs);\
-        type sum = lhs_value operator rhs_value + *(type*)out;\
-        memcpy(data, &sum, sizeof(type));
-
-void interpret_operator_plus_int(int* out, int* lhs, int* rhs) {
-    int sum = *lhs + *rhs;
-    memcpy(out, &sum, sizeof(int));
-}
-
-void interpret_operator_minus_int(int* out, int* lhs, int* rhs) {
-    int sum = *lhs - *rhs;
-    memcpy(out, &sum, sizeof(int));
-}
-
-void interpret_operator_multiply_int(int* out, int* lhs, int* rhs) {
-    int sum = *lhs * *rhs;
-    memcpy(out, &sum, sizeof(int));
-}
-
-void interpret_operator_division_int(int* out, int* lhs, int* rhs) {
-    int sum = *lhs / *rhs;
-    memcpy(out, &sum, sizeof(int));
-}
-
-void interpret_operator_plus_float(float* out, float* lhs, float* rhs) {
-    float sum = *lhs + *rhs;
-    memcpy(out, &sum, sizeof(float));
-}
-
-void interpret_operator_minus_float(float* out, float* lhs, float* rhs) {
-    float sum = *lhs - *rhs;
-    memcpy(out, &sum, sizeof(float));
-}
-
-void interpret_operator_multiply_float(float* out, float* lhs, float* rhs) {
-    float sum = *lhs * *rhs;
-    memcpy(out, &sum, sizeof(float));
-}
-
-void interpret_operator_division_float(float* out, float* lhs, float* rhs) {
-    float sum = *lhs / *rhs;
-    memcpy(out, &sum, sizeof(float));
-}
-
-void interpret_operator_arithmetic_int(OperatorType type, int* out, int* lhs, int* rhs) {
-    switch (type) {
-    case OperatorPlus: interpret_operator_plus_int(out, lhs, rhs); break;
-    case OperatorMinus: interpret_operator_minus_int(out, lhs, rhs); break;
-    case OperatorMultiply: interpret_operator_multiply_int(out, lhs, rhs); break;
-    case OperatorDivision: interpret_operator_division_int(out, lhs, rhs); break;
-    default: break;
-    }
-}
-
-void interpret_operator_arithmetic_float(OperatorType type, float* out, float* lhs, float* rhs) {
-    switch (type) {
-    case OperatorPlus: interpret_operator_plus_float(out, lhs, rhs); break;
-    case OperatorMinus: interpret_operator_minus_float(out, lhs, rhs); break;
-    case OperatorMultiply: interpret_operator_multiply_float(out, lhs, rhs); break;
-    case OperatorDivision: interpret_operator_division_float(out, lhs, rhs); break;
-    default: break;
-    }
-}
-
-void interpret_cal_expression_int(int* out, tree_node* node) {
-    switch (node->type) {
-    case NodeOperator: {
-        int lhs, rhs;
-        interpret_cal_expression_int(&lhs, node->nodes[0]);
-        interpret_cal_expression_int(&rhs, node->nodes[1]);
-        interpret_operator_arithmetic_int(node->object_type, out, &lhs, &rhs);
-    } break;
-    case NodeNumber: {
-        int value = get_node_number_value_int(node);
-        memcpy(out, &value, sizeof(int));
-    }break;
-    default: break;
-    }
-}
-
-void interpret_cal_expression_float(float* out, tree_node* node) {
-    switch (node->type) {
-    case NodeOperator: {
-        float lhs, rhs;
-        interpret_cal_expression_float(&lhs, node->nodes[0]);
-        interpret_cal_expression_float(&rhs, node->nodes[1]);
-        interpret_operator_arithmetic_float(node->object_type, out, &lhs, &rhs);
-    } break;
-    case NodeNumber: {
-        float value = get_node_number_value_float(node);
-        memcpy(out, &value, sizeof(float));
-    }break;
-    default: break;
-    }
-}
-
-void interpret_cal_expression(void* out, KeywordType data_type, tree_node* node) {
+tree_node* interpret_operator_plus(void* out, KeywordType data_type, tree_node* lhs, tree_node* rhs) {
+    (void)lhs, (void)rhs, (void)data_type;
+    tree_node* result = make_tree_node(NodeNumber, data_type, "", -1);
     switch (data_type) {
     case KeywordInt: {
-        interpret_cal_expression_int(out, node);
-    } break;
+        int lhs_value = get_node_number_value_int(lhs);
+        int rhs_value = get_node_number_value_int(rhs);
+        int sum = lhs_value + rhs_value;
+        printf("%d %d\n", lhs_value, rhs_value);
+        memcpy(out, &sum, sizeof(int));
+    }break;
     case KeywordFloat: {
-        interpret_cal_expression_float(out, node);
     } break;
-    default: {
-    } break;
+    default: break;
     }
+    return result;
+}
+
+tree_node* interpret_operator_minus(KeywordType data_type, tree_node* lhs, tree_node* rhs) {
+    (void)lhs, (void)rhs, (void)data_type;
+    tree_node* result = NULL;
+    return result;
+}
+
+tree_node* interpret_operator_multiply(KeywordType data_type, tree_node* lhs, tree_node* rhs) {
+    (void)lhs, (void)rhs, (void)data_type;
+    tree_node* result = NULL;
+    return result;
+}
+
+tree_node* interpret_operator_division(KeywordType data_type, tree_node* lhs, tree_node* rhs) {
+    (void)lhs, (void)rhs, (void)data_type;
+    tree_node* result = NULL;
+    return result;
+}
+
+tree_node* interpret_operator_arithmetic(void* out, KeywordType data_type, OperatorType type, tree_node* lhs, tree_node* rhs) {
+    switch (type) {
+    case OperatorPlus: return interpret_operator_plus(out, data_type, lhs, rhs); break;
+    case OperatorMinus: return interpret_operator_minus(data_type, lhs, rhs); break;
+    case OperatorMultiply: return interpret_operator_multiply(data_type, lhs, rhs); break;
+    case OperatorDivision: return interpret_operator_division(data_type, lhs, rhs); break;
+    default: break;
+    }
+    return NULL;
 }
 
 void get_expression_data_type(KeywordType* out, tree_node* expression) {
@@ -662,11 +529,29 @@ void get_expression_data_type(KeywordType* out, tree_node* expression) {
     }
 }
 
+tree_node* interpret_cal_expression(void* out, KeywordType data_type, tree_node* node) {
+    switch (node->type) {
+    case NodeOperator: {
+        tree_node* lhs = interpret_cal_expression(out, data_type, node->nodes[0]);
+        tree_node* rhs = interpret_cal_expression(out, data_type, node->nodes[1]);
+        tree_node* result = interpret_operator_arithmetic(out, data_type, node->object_type, lhs, rhs);
+        return result;
+    } break; 
+    case NodeNumber: return node;
+    default: break;
+    }
+    return NULL;
+}
+
+void interpret_node_operator_assignment(tree_node* node) {
+    (void)node;
+}
+
 void* interpret(tree_node* instruction) {
     switch (instruction->type) {
     case NodeVariableAssign: break;
     case NodeOperator: break;
-    case NodeAssignmentOperator: break;
+    case NodeOperatoAssignment: break;
     case NodeNumber: break;
     default: break;
     };
@@ -694,7 +579,18 @@ i32 main(i32 argc, char** argv) {
     //     return 0;
     // }
     {
-        const char text[] = "val=2*(2-1)-1+1\n";
+        /*          val
+         *           |
+         *           =
+         *           |
+         *           -
+         *          / \
+         *         *   3
+         *        / \
+         *      1.2  2
+         *
+         */
+        const char text[] = "val=3+3+4\n";
         vector(token) tokens = lexer_tokenize_until(&lexer, text, '\n');
 
         for_vector(tokens, i, 0) {
@@ -712,13 +608,10 @@ i32 main(i32 argc, char** argv) {
         tree_node* node = parser_parse(&par);
         if (node) {
             bfs(node, print_node);
-            putchar('\n');
 
             KeywordType type = 0;
             get_expression_data_type(&type, node->nodes[0]->nodes[0]);
-
             void* expr_result = MALLOC(sizeof(int));
-            memset(expr_result, 0, 4);
             interpret_cal_expression(expr_result, type, node->nodes[0]->nodes[0]);
 
             switch (type) {
@@ -791,6 +684,7 @@ i32 main(i32 argc, char** argv) {
         object* item = result[i];
         print_token(&(token){
                     .name = item->name,
+                    .name_len = item->name_len,
                     .type = TokenIdentifier,
                 });
     }
