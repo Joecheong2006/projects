@@ -19,14 +19,6 @@ INLINE token* parser_peekpre(parser* par, i32 location) {
     return par->tokens + par->tokens_len + location;
 }
 
-u64 cal_line_stride(const  char* buffer, i32 line_count) {
-    u64 first_n = 0;
-    for (i32 i = 0; i < line_count; ++i) {
-        first_n = strchr(buffer + first_n, '\n') - buffer + 1;
-    }
-    return first_n;
-}
-
 tree_node* make_tree_node(NodeType type, i32 object_type, const char* name, i32 name_len) {
     tree_node* node = MALLOC(sizeof(tree_node));
     memcpy(node, &(tree_node) {
@@ -62,18 +54,18 @@ void print_node(tree_node* node) {
     putchar('\n');
 }
 
-void bfs(tree_node* root, action take_action) {
-    take_action(root);
+void bfs(tree_node* root, action func) {
+    func(root);
     for_vector(root->nodes, i, 0) {
-        bfs(root->nodes[i], take_action);
+        bfs(root->nodes[i], func);
     }
 }
 
-void dfs(tree_node* root, action take_action) {
+void dfs(tree_node* root, action func) {
     for_vector(root->nodes, i, 0) {
-        dfs(root->nodes[i], take_action);
+        dfs(root->nodes[i], func);
     }
-    take_action(root);
+    func(root);
 }
 
 void free_tree(tree_node* node) {
@@ -185,30 +177,30 @@ tree_node* try_parse_expression_with_bracket(parser* par) {
     }
 
     if (vector_size(rhs->nodes) > 0 && operator->object_type > rhs->object_type) {
+        if (has_bracket && vector_size(rhs->nodes[0]->nodes) == 0) {
+            vector_pushe(operator->nodes, rhs);
+            return operator;
+        }
         vector_pushe(operator->nodes, rhs->nodes[0]);
         rhs->nodes[0] = operator;
-        return rhs;
-        tree_node** mrhs = &rhs;
-        while (vector_size(mrhs[0]->nodes) != 0) {
-            mrhs = mrhs[0]->nodes;
-        }
-        vector_pushe(operator->nodes, *mrhs);
-        *mrhs = operator;
         return rhs;
     }
 
     if (has_negate_operator) {
-        if (vector_size(rhs->nodes) == 0 || has_bracket) {
-            tree_node* negate = try_parse_negate_operator(par);
-            vector_pushe(negate->nodes, rhs);
-            rhs = negate;
-        }
-        else {
+        if ((has_bracket && vector_size(rhs->nodes[0]->nodes) > 0) ||
+            (vector_size(rhs->nodes) != 0 && !has_bracket)) {
             tree_node* negate = try_parse_negate_operator(par);
             vector_pushe(negate->nodes, rhs->nodes[0]);
             rhs->nodes[0] = negate;
+            vector_pushe(operator->nodes, rhs);
+            return operator;
         }
+        tree_node* negate = try_parse_negate_operator(par);
+        vector_pushe(negate->nodes, rhs);
+        vector_pushe(operator->nodes, negate);
+        return operator;
     }
+
     vector_pushe(operator->nodes, rhs);
     return operator;
 }
@@ -286,30 +278,30 @@ tree_node* try_parse_expression(parser* par) {
     }
 
     if (vector_size(rhs->nodes) > 0 && operator->object_type > rhs->object_type) {
+        if (has_bracket && vector_size(rhs->nodes[0]->nodes) == 0) {
+            vector_pushe(operator->nodes, rhs);
+            return operator;
+        }
         vector_pushe(operator->nodes, rhs->nodes[0]);
         rhs->nodes[0] = operator;
-        return rhs;
-        tree_node** mrhs = &rhs;
-        while (vector_size(mrhs[0]->nodes) != 0) {
-            mrhs = mrhs[0]->nodes;
-        }
-        vector_pushe(operator->nodes, *mrhs);
-        *mrhs = operator;
         return rhs;
     }
 
     if (has_negate_operator) {
-        if (vector_size(rhs->nodes) == 0 || has_bracket) {
-            tree_node* negate = try_parse_negate_operator(par);
-            vector_pushe(negate->nodes, rhs);
-            rhs = negate;
-        }
-        else {
+        if ((has_bracket && vector_size(rhs->nodes[0]->nodes) > 0) ||
+            (vector_size(rhs->nodes) != 0 && !has_bracket)) {
             tree_node* negate = try_parse_negate_operator(par);
             vector_pushe(negate->nodes, rhs->nodes[0]);
             rhs->nodes[0] = negate;
+            vector_pushe(operator->nodes, rhs);
+            return operator;
         }
+        tree_node* negate = try_parse_negate_operator(par);
+        vector_pushe(negate->nodes, rhs);
+        vector_pushe(operator->nodes, negate);
+        return operator;
     }
+
     vector_pushe(operator->nodes, rhs);
     return operator;
 }

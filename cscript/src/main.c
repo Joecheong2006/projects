@@ -96,6 +96,15 @@ void hashmap_free_test_data(void* data) {
     FREE(obj);
 }
 
+u64 cal_line_stride(const  char* buffer, i32 line_count) {
+    u64 first_n = 0;
+    for (i32 i = 0; i < line_count; ++i) {
+        first_n = strchr(buffer + first_n, '\n') - buffer + 1;
+    }
+    return first_n;
+}
+
+
 void command_line_mode(lexer* lexer) {
     u64 line_count = 0, max_line_count = 0;
     u64 begin = 0, end = 0;
@@ -362,7 +371,7 @@ i32 main(i32 argc, char** argv) {
     // }
     {
         // TODO: implement base16 and base8 and base2 transformation
-        const char text[] = "val=1.0/60*10\n";
+        const char text[] = "val=-((1+2)*(4-1)-(1+2)*(4-1)+(1+2)*(4-1)-(1+2)*(4-1)-1)\n";
         vector(token) tokens = lexer_tokenize_until(&lexer, text, '\n');
 
         for_vector(tokens, i, 0) {
@@ -379,8 +388,8 @@ i32 main(i32 argc, char** argv) {
         };
         tree_node* node = parser_parse(&par);
         if (node) {
-            bfs(node, print_node);
-            putchar('\n');
+            // bfs(node, print_node);
+            // putchar('\n');
 
             KeywordType type = 0;
             get_expression_data_type(&type, node->nodes[0]->nodes[0]);

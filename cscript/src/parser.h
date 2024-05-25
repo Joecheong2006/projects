@@ -18,7 +18,6 @@ typedef struct {
 void set_parse_error(parser* par, i32 error);
 token* parser_peek(parser* par, i32 location);
 token* parser_peekpre(parser* par, i32 location);
-u64 cal_line_stride(const  char* buffer, i32 line_count);
 
 typedef enum {
     NodeVariable,
@@ -33,8 +32,8 @@ typedef struct tree_node tree_node;
 struct tree_node {
     NodeType type;
     i8 object_type;
-    const char* name;
     i8 name_len;
+    const char* name;
     vector(tree_node*) nodes;
 };
 
@@ -44,8 +43,8 @@ void print_node(tree_node* node);
 
 typedef void(*action)(tree_node*);
 
-void bfs(tree_node* root, action take_action);
-void dfs(tree_node* root, action take_action);
+void bfs(tree_node* root, action func);
+void dfs(tree_node* root, action func);
 void free_tree(tree_node* node);
 
 tree_node* try_parse_identifier(parser* par);
