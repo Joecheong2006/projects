@@ -180,6 +180,7 @@ typedef enum {
     NodeOperator,
     NodeAssignmentOperator,
     NodeNumber,
+    NodeNegateOperator
 } NodeType;
 
 typedef struct tree_node tree_node;
@@ -213,6 +214,7 @@ void print_node(tree_node* node) {
     switch (node->type) {
     case NodeVariable: printf("variable"); break;
     case NodeOperator: printf("operator"); break;
+    case NodeNegateOperator: printf("negate operator\n"); return; break;
     case NodeAssignmentOperator: printf("assignement operator"); break;
     case NodeNumber: printf("number"); break;
     default: break;
@@ -268,6 +270,11 @@ tree_node* try_parse_operator(parser* par) {
     return make_tree_node(NodeOperator, tok->name_location, tok->name, tok->name_len);
 }
 
+tree_node* try_parse_negate_operator(parser* par) {
+    token* tok = parser_peek(par, 0);
+    return make_tree_node(NodeNegateOperator, tok->name_location, tok->name, tok->name_len);
+}
+
 tree_node* try_parse_expression(parser* par);
 tree_node* try_parse_expression_with_bracket(parser* par) {
     tree_node* lhs = NULL;
@@ -282,7 +289,23 @@ tree_node* try_parse_expression_with_bracket(parser* par) {
     else if (is_number(parser_peek(par, 0)->name[0]) || is_real_number(parser_peek(par, 0))) {
         lhs = try_parse_number(par);
     }
+    else if (is_operator_type(parser_peek(par, 0), OperatorMinus)) {
+        lhs = try_parse_negate_operator(par);
+        ++par->index;
+        if (is_number(parser_peek(par, 0)->name[0]) || is_real_number(parser_peek(par, 0))) {
+            vector_push(lhs->nodes, try_parse_number(par));
+        }
+        else if (is_default_separator_type(parser_peek(par, 0), TokenOpenRoundBracket)) {
+            ++par->index;
+            vector_push(lhs->nodes, try_parse_expression_with_bracket(par));
+        }
+        if (!lhs->nodes[0]) {
+            set_parse_error(par, ParseErrorMissingLhs);
+            return NULL;
+        }
+    }
     else {
+        set_parse_error(par, ParseErrorMissingToken);
         return NULL;
     }
 
@@ -313,10 +336,16 @@ tree_node* try_parse_expression_with_bracket(parser* par) {
         return NULL;
     }
 
+    i32 has_negate_operator = 0;
+    if (operator->object_type == OperatorMinus) {
+        operator->object_type = OperatorPlus;
+        operator->name = "+";
+        has_negate_operator = 1;
+    }
+
     vector_pushe(operator->nodes, lhs);
     ++par->index;
     i32 has_bracket = is_default_separator_type(parser_peek(par, 0), TokenOpenRoundBracket);
-    (void)has_bracket;
     tree_node* rhs = try_parse_expression_with_bracket(par);
     if (!rhs) {
         set_parse_error(par, ParseErrorMissingRhs);
@@ -328,6 +357,26 @@ tree_node* try_parse_expression_with_bracket(parser* par) {
         vector_pushe(operator->nodes, rhs->nodes[0]);
         rhs->nodes[0] = operator;
         return rhs;
+        tree_node** mrhs = &rhs;
+        while (vector_size(mrhs[0]->nodes) != 0) {
+            mrhs = mrhs[0]->nodes;
+        }
+        vector_pushe(operator->nodes, *mrhs);
+        *mrhs = operator;
+        return rhs;
+    }
+
+    if (has_negate_operator) {
+        if (vector_size(rhs->nodes) == 0 || has_bracket) {
+            tree_node* negate = try_parse_negate_operator(par);
+            vector_pushe(negate->nodes, rhs);
+            rhs = negate;
+        }
+        else {
+            tree_node* negate = try_parse_negate_operator(par);
+            vector_pushe(negate->nodes, rhs->nodes[0]);
+            rhs->nodes[0] = negate;
+        }
     }
     vector_pushe(operator->nodes, rhs);
     return operator;
@@ -346,7 +395,23 @@ tree_node* try_parse_expression(parser* par) {
     else if (is_number(parser_peek(par, 0)->name[0]) || is_real_number(parser_peek(par, 0))) {
         lhs = try_parse_number(par);
     }
+    else if (is_operator_type(parser_peek(par, 0), OperatorMinus)) {
+        lhs = try_parse_negate_operator(par);
+        ++par->index;
+        if (is_number(parser_peek(par, 0)->name[0]) || is_real_number(parser_peek(par, 0))) {
+            vector_push(lhs->nodes, try_parse_number(par));
+        }
+        else if (is_default_separator_type(parser_peek(par, 0), TokenOpenRoundBracket)) {
+            ++par->index;
+            vector_push(lhs->nodes, try_parse_expression_with_bracket(par));
+        }
+        if (!lhs->nodes[0]) {
+            set_parse_error(par, ParseErrorMissingLhs);
+            return NULL;
+        }
+    }
     else {
+        set_parse_error(par, ParseErrorMissingToken);
         return NULL;
     }
 
@@ -372,24 +437,22 @@ tree_node* try_parse_expression(parser* par) {
         return NULL;
     }
 
+    i32 has_negate_operator = 0;
+    if (operator->object_type == OperatorMinus) {
+        operator->object_type = OperatorPlus;
+        operator->name = "+";
+        has_negate_operator = 1;
+    }
+
     vector_pushe(operator->nodes, lhs);
     ++par->index;
     i32 has_bracket = is_default_separator_type(parser_peek(par, 0), TokenOpenRoundBracket);
-    (void)has_bracket;
     tree_node* rhs = try_parse_expression(par);
     if (!rhs) {
         set_parse_error(par, ParseErrorMissingRhs);
         dfs(operator, free_node);
         return NULL;
     }
-
-    // if (!has_bracket && operator->object_type == OperatorMinus) {
-    //     switch (rhs->object_type) {
-    //     case OperatorMinus: rhs->object_type = OperatorPlus; break;
-    //     case OperatorPlus: rhs->object_type = OperatorMinus; break;
-    //     default: break;
-    //     }
-    // }
 
     if (vector_size(rhs->nodes) > 0 && operator->object_type > rhs->object_type) {
         vector_pushe(operator->nodes, rhs->nodes[0]);
@@ -402,6 +465,19 @@ tree_node* try_parse_expression(parser* par) {
         vector_pushe(operator->nodes, *mrhs);
         *mrhs = operator;
         return rhs;
+    }
+
+    if (has_negate_operator) {
+        if (vector_size(rhs->nodes) == 0 || has_bracket) {
+            tree_node* negate = try_parse_negate_operator(par);
+            vector_pushe(negate->nodes, rhs);
+            rhs = negate;
+        }
+        else {
+            tree_node* negate = try_parse_negate_operator(par);
+            vector_pushe(negate->nodes, rhs->nodes[0]);
+            rhs->nodes[0] = negate;
+        }
     }
     vector_pushe(operator->nodes, rhs);
     return operator;
@@ -616,10 +692,14 @@ void interpret_cal_expression_int(int* out, tree_node* node) {
         interpret_cal_expression_int(&rhs, node->nodes[1]);
         interpret_operator_arithmetic_int(node->object_type, out, &lhs, &rhs);
     } break;
+    case NodeNegateOperator: {
+        interpret_cal_expression_int(out, node->nodes[0]);
+        *out = -*out;
+    } break;
     case NodeNumber: {
         int value = get_node_number_value_int(node);
         memcpy(out, &value, sizeof(int));
-    }break;
+    } break;
     default: break;
     }
 }
@@ -631,6 +711,10 @@ void interpret_cal_expression_float(float* out, tree_node* node) {
         interpret_cal_expression_float(&lhs, node->nodes[0]);
         interpret_cal_expression_float(&rhs, node->nodes[1]);
         interpret_operator_arithmetic_float(node->object_type, out, &lhs, &rhs);
+    } break;
+    case NodeNegateOperator: {
+        interpret_cal_expression_float(out, node->nodes[0]);
+        *out = -*out;
     } break;
     case NodeNumber: {
         float value = get_node_number_value_float(node);
@@ -694,7 +778,7 @@ i32 main(i32 argc, char** argv) {
     //     return 0;
     // }
     {
-        const char text[] = "val=2*(2-1)-1+1\n";
+        const char text[] = "val=-((-(2*3-1.1/2-2+2-0.01)))\n";
         vector(token) tokens = lexer_tokenize_until(&lexer, text, '\n');
 
         for_vector(tokens, i, 0) {
