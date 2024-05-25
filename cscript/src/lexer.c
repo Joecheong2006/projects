@@ -31,6 +31,27 @@ INLINE i32 is_number(char c) {
     }
 }
 
+INLINE i32 is_identifier(token* tok) { return tok->type == TokenIdentifier; }
+INLINE i32 is_keyword(token* tok, i32 type) { return tok->name_location == type; }
+INLINE i32 is_operator(token* tok) { return tok->type == TokenOperator; }
+INLINE i32 is_separator(token* tok) { return tok->type == TokenSeparator; }
+
+INLINE i32 is_keyword_type(token* tok, i32 type) { return tok->type == TokenKeyword && tok->name_location == type; }
+INLINE i32 is_operator_type(token* tok, i32 type) { return tok->type == TokenOperator && tok->name_location == type; }
+INLINE i32 is_separator_type(token* tok, i32 type) { return tok->type == TokenSeparator && tok->name_location == type; }
+INLINE i32 is_default_separator_type(token* tok, Token type) { return tok->type == type; }
+INLINE i32 is_string_literal(token* tok) { return tok->type == TokenStringLiteral; }
+i32 is_real_number(token* tok) { 
+    if (is_number(tok->name[0] || (tok->name[0] == '.' && is_number(tok->name[1])))) {
+        return 1;
+    }
+
+    for (i32 i = 0; i < tok->name_len; ++i)
+        if (tok->name[i] == '.')
+            return 1;
+    return 0;
+}
+
 static INLINE i32 is_string_literal_begin(lexer* lexer, char c) { return lexer->token_sets[TokenStringBegin].set_name[0][0] == c; }
 
 static i32 is_operator_begin(lexer* lexer, char c) {
@@ -270,5 +291,21 @@ vector(token) lexer_tokenize_until(lexer* lexer, const char* str, const char ter
     }
 
     return tokens;
+}
+
+void print_token_name(token* tok) {
+    i32 n = 0, len = tok->name_len;
+    if (is_string_literal(tok)) {
+        n = 1;
+        len -= 1;
+    }
+
+    for (; n < len; ++n) {
+        if (tok->name[n] == '\n') {
+            printf("\\n");
+            break;
+        }
+        putchar(tok->name[n]);
+    }
 }
 

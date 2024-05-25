@@ -14,32 +14,13 @@ typedef enum {
     KeywordFlase,
     KeywordNone,
     KeywordFunction,
+    KeywordTokenCount
 } KeywordType;
-
-const char* Keyword[] = {
-    [KeywordIf] = "if",
-    [KeywordWhile] = "while",
-    [KeywordReturn] = "return",
-    [KeywordConst] = "const",
-    [KeywordInt] = "int", 
-    [KeywordFloat] = "float", 
-    [KeywordChar] = "char",
-    [KeywordString] = "string",
-    [KeywordTrue] = "null", 
-    [KeywordFlase] = "true", 
-    [KeywordNone] = "false",
-    [KeywordFunction] = "fn", 
-};
 
 enum {
     SeparatorColon,
     SeparatorDDD,
-};
-
-// must be in one character
-const char* Separator[] = {
-    [SeparatorColon] = ":",
-    [SeparatorDDD] = "..."
+    SeparatorTokenCount
 };
 
 typedef enum {
@@ -82,66 +63,21 @@ typedef enum {
     OperatorAnd,
     OperatorNot,
 
-    OperatorPower
+    OperatorPower,
+    OperatorTokenCount
 } OperatorType;
-
-// a = 1;
-// a > 1;
-
-const char* Operator[] = {
-    [OperatorAssign] = "=",
-    [OperatorPlus] = "+",
-    [OperatorMinus] = "-",
-    [OperatorMultiply] = "*",
-    [OperatorDivision] = "/",
-    [OperatorPlusEqual] = "+=",
-    [OperatorMinusEqual] = "-=",
-    [OperatorMultiplyEqual] = "*=",
-    [OperatorDivisionEqual] = "/=",
-    [OperatorBitwiseOr] = "|",
-    [OperatorBitwiseAnd] = "&",
-    [OperatorBitwiseXor] = "^",
-    [OperatorBitwiseNot] = "~",
-    [OperatorBitwiseOrEqual] = "|=",
-    [OperatorBitwiseAndEqual] = "&=",
-    [OperatorBitwiseXorEqual] = "^=",
-    [OperatorBitwiseNotEqual] = "~=",
-    [OperatorLeftShift] = "<<",
-    [OperatorRightShift] = ">>",
-    [OperatorLeftShiftEqual] = "<<=",
-    [OperatorRightShiftEqual] = ">>=",
-    [OperatorRound] = "%",
-    [OperatorRoundEqual] = "%=",
-    [OperatorIncrement] = "++",
-    [OperatorDecrement] = "--",
-    [OperatorEqual] = "==",
-    [OperatorNotEqual] = "!=",
-    [OperatorGreaterThan] = ">",
-    [OperatorLessThan] = "<",
-    [OperatorInclusiveGreaterThan] = ">=",
-    [OperatorInclusiveLessThan] = "<=",
-    [OperatorOr] = "and",
-    [OperatorAnd] = "or",
-    [OperatorNot] = "!",
-    [OperatorPower] = "**",
-};
 
 enum {
     DoubleQuote,
     SingleQuote,
+    CommentTokenCount,
 };
 
-const char* StringBegin[] = {
-    [DoubleQuote] = "\"",
-};
-
-const char* SingleLineComment[] = {
-    "#"
-};
-
-// must be a string pair
-const char* MultiLineComment[] = {
-    "/*", "*/"
-};
+extern const char* Keyword[KeywordTokenCount];
+extern const char* Separator[SeparatorTokenCount];
+extern const char* Operator[OperatorTokenCount];
+extern const char* StringBegin[CommentTokenCount];
+extern const char* SingleLineComment[1];
+extern const char* MultiLineComment[2];
 
 #endif

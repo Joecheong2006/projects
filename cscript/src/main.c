@@ -1,12 +1,13 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "keys_define.h"
+#include "parser.h"
 #include "source_file.h"
 #include "string.h"
 #include "hashmap.h"
 #include "memallocate.h"
 #include "lexer.h"
-#include "keys_define.h"
 #include "util.h"
 
 #define LEXER_ADD_TOKEN(lexer, str_set, type)\
@@ -93,424 +94,6 @@ void hashmap_free_test_data(void* data) {
     free_string(&obj->name);
     // NOTE: free obj->info
     FREE(obj);
-}
-
-i32 is_string_literal(token* tok);
-void print_token_name(token* tok) {
-    i32 n = 0, len = tok->name_len;
-    if (is_string_literal(tok)) {
-        n = 1;
-        len -= 1;
-    }
-
-    for (; n < len; ++n) {
-        if (tok->name[n] == '\n') {
-            printf("\\n");
-            break;
-        }
-        putchar(tok->name[n]);
-    }
-}
-
-INLINE i32 is_identifier(token* tok) { return tok->type == TokenIdentifier; }
-INLINE i32 is_keyword(token* tok, i32 type) { return tok->name_location == type; }
-INLINE i32 is_operator(token* tok) { return tok->type == TokenOperator; }
-INLINE i32 is_separator(token* tok) { return tok->type == TokenSeparator; }
-
-INLINE i32 is_keyword_type(token* tok, i32 type) { return tok->type == TokenKeyword && tok->name_location == type; }
-INLINE i32 is_operator_type(token* tok, i32 type) { return tok->type == TokenOperator && tok->name_location == type; }
-INLINE i32 is_separator_type(token* tok, i32 type) { return tok->type == TokenSeparator && tok->name_location == type; }
-INLINE i32 is_default_separator_type(token* tok, Token type) { return tok->type == type; }
-INLINE i32 is_string_literal(token* tok) { return tok->type == TokenStringLiteral; }
-
-INLINE i32 is_data_type(token* tok) { return tok->type == TokenKeyword && tok->name_location >= KeywordInt && tok->name_location <= KeywordChar; }
-INLINE i32 is_assigment_operator(token* tok) { return is_operator(tok) && (tok->name_location >= OperatorAssignementBegin && tok->name_location <= OperatorAssignmentEnd); }
-
-i32 is_real_number(token* tok) { 
-    if (is_number(tok->name[0] || (tok->name[0] == '.' && is_number(tok->name[1])))) {
-        return 1;
-    }
-
-    for (i32 i = 0; i < tok->name_len; ++i)
-        if (tok->name[i] == '.')
-            return 1;
-    return 0;
-}
-
-// parser implementation
-typedef enum {
-    ParseErrorNoError,
-    ParseErrorMissingToken,
-    ParseErrorMissingLhs,
-    ParseErrorMissingRhs,
-} ParseError;
-
-typedef struct {
-    vector(token) tokens;
-    u64 index, tokens_len;
-    ParseError error;
-} parser;
-
-INLINE void set_parse_error(parser* par, i32 error) {
-    if (par->error != ParseErrorNoError)
-        return;
-    par->error = error;
-}
-
-INLINE token* parser_peek(parser* par, i32 location) {
-    return par->tokens + par->index + location;
-}
-
-INLINE token* parser_peekpre(parser* par, i32 location) {
-    return par->tokens + par->tokens_len + location;
-}
-
-u64 cal_line_stride(const  char* buffer, i32 line_count) {
-    u64 first_n = 0;
-    for (i32 i = 0; i < line_count; ++i) {
-        first_n = strchr(buffer + first_n, '\n') - buffer + 1;
-    }
-    return first_n;
-}
-
-// decent parsing implementation
-typedef enum {
-    NodeVariable,
-    NodeVariableAssign,
-    NodeOperator,
-    NodeAssignmentOperator,
-    NodeNumber,
-    NodeNegateOperator
-} NodeType;
-
-typedef struct tree_node tree_node;
-struct tree_node {
-    NodeType type;
-    i8 object_type;
-    const char* name;
-    i8 name_len;
-    vector(tree_node*) nodes;
-};
-
-tree_node* make_tree_node(NodeType type, i32 object_type, const char* name, i32 name_len) {
-    tree_node* node = MALLOC(sizeof(tree_node));
-    memcpy(node, &(tree_node) {
-        .type = type,
-        .object_type = object_type,
-        .name = name,
-        .name_len = name_len,
-        .nodes = make_vector(),
-    }, sizeof(tree_node));
-    return node;
-}
-
-void free_node(tree_node* node) {
-    free_vector(&node->nodes);
-    FREE(node);
-}
-
-void print_node(tree_node* node) {
-    printf("node ");
-    switch (node->type) {
-    case NodeVariable: printf("variable"); break;
-    case NodeOperator: printf("operator"); break;
-    case NodeNegateOperator: printf("negate operator\n"); return; break;
-    case NodeAssignmentOperator: printf("assignement operator"); break;
-    case NodeNumber: printf("number"); break;
-    default: break;
-    }
-    putchar(' ');
-    print_token_name(&(token) {
-                .name = node->name,
-                .name_len = node->name_len,
-            });
-    putchar('\n');
-}
-
-typedef void(*action)(tree_node*);
-
-void bfs(tree_node* root, action take_action) {
-    take_action(root);
-    for_vector(root->nodes, i, 0) {
-        bfs(root->nodes[i], take_action);
-    }
-}
-
-void dfs(tree_node* root, action take_action) {
-    for_vector(root->nodes, i, 0) {
-        dfs(root->nodes[i], take_action);
-    }
-    take_action(root);
-}
-
-void free_tree(tree_node* node) {
-    free_node(node);
-}
-
-// a = 1 + 3
-
-tree_node* try_parse_identifier(parser* par) {
-    token* tok = parser_peek(par, 0);
-    return make_tree_node(NodeVariable, tok->name_location, tok->name, tok->name_len);
-}
-
-tree_node* try_parse_number(parser* par) {
-    token* tok = parser_peek(par, 0);
-    if (is_real_number(tok)) {
-        return make_tree_node(NodeNumber, KeywordFloat, tok->name, tok->name_len);
-    }
-    if (is_number(tok->name[0])) {
-        return make_tree_node(NodeNumber, KeywordInt, tok->name, tok->name_len);
-    }
-    return NULL;
-}
-
-tree_node* try_parse_operator(parser* par) {
-    token* tok = parser_peek(par, 0);
-    return make_tree_node(NodeOperator, tok->name_location, tok->name, tok->name_len);
-}
-
-tree_node* try_parse_negate_operator(parser* par) {
-    token* tok = parser_peek(par, 0);
-    return make_tree_node(NodeNegateOperator, tok->name_location, tok->name, tok->name_len);
-}
-
-tree_node* try_parse_expression(parser* par);
-tree_node* try_parse_expression_with_bracket(parser* par) {
-    tree_node* lhs = NULL;
-
-    if (is_identifier(parser_peek(par, 0))) {
-        lhs = try_parse_identifier(par);
-    }
-    else if (is_default_separator_type(parser_peek(par, 0), TokenOpenRoundBracket)) {
-        ++par->index;
-        lhs = try_parse_expression_with_bracket(par);
-    }
-    else if (is_number(parser_peek(par, 0)->name[0]) || is_real_number(parser_peek(par, 0))) {
-        lhs = try_parse_number(par);
-    }
-    else if (is_operator_type(parser_peek(par, 0), OperatorMinus)) {
-        lhs = try_parse_negate_operator(par);
-        ++par->index;
-        if (is_number(parser_peek(par, 0)->name[0]) || is_real_number(parser_peek(par, 0))) {
-            vector_push(lhs->nodes, try_parse_number(par));
-        }
-        else if (is_default_separator_type(parser_peek(par, 0), TokenOpenRoundBracket)) {
-            ++par->index;
-            vector_push(lhs->nodes, try_parse_expression_with_bracket(par));
-        }
-        if (!lhs->nodes[0]) {
-            set_parse_error(par, ParseErrorMissingLhs);
-            return NULL;
-        }
-    }
-    else {
-        set_parse_error(par, ParseErrorMissingToken);
-        return NULL;
-    }
-
-    if (!lhs) {
-        set_parse_error(par, ParseErrorMissingLhs);
-        return NULL;
-    }
-
-    ++par->index;
-    tree_node* operator = NULL;
-
-    if (is_default_separator_type(parser_peek(par, 0), TokenCloseRoundBracket)) {
-        return lhs;
-    }
-    if (parser_peek(par, 0)->type == TokenNewLine || par->index == par->tokens_len) {
-        dfs(lhs, free_node);
-        set_parse_error(par, ParseErrorMissingToken);
-        return NULL;
-    }
-
-    if (is_operator(parser_peek(par, 0))) {
-        operator = try_parse_operator(par);
-    }
-
-    if (!operator) {
-        dfs(lhs, free_node);
-        set_parse_error(par, ParseErrorMissingToken);
-        return NULL;
-    }
-
-    i32 has_negate_operator = 0;
-    if (operator->object_type == OperatorMinus) {
-        operator->object_type = OperatorPlus;
-        operator->name = "+";
-        has_negate_operator = 1;
-    }
-
-    vector_pushe(operator->nodes, lhs);
-    ++par->index;
-    i32 has_bracket = is_default_separator_type(parser_peek(par, 0), TokenOpenRoundBracket);
-    tree_node* rhs = try_parse_expression_with_bracket(par);
-    if (!rhs) {
-        set_parse_error(par, ParseErrorMissingRhs);
-        dfs(operator, free_node);
-        return NULL;
-    }
-
-    if (vector_size(rhs->nodes) > 0 && operator->object_type > rhs->object_type) {
-        vector_pushe(operator->nodes, rhs->nodes[0]);
-        rhs->nodes[0] = operator;
-        return rhs;
-        tree_node** mrhs = &rhs;
-        while (vector_size(mrhs[0]->nodes) != 0) {
-            mrhs = mrhs[0]->nodes;
-        }
-        vector_pushe(operator->nodes, *mrhs);
-        *mrhs = operator;
-        return rhs;
-    }
-
-    if (has_negate_operator) {
-        if (vector_size(rhs->nodes) == 0 || has_bracket) {
-            tree_node* negate = try_parse_negate_operator(par);
-            vector_pushe(negate->nodes, rhs);
-            rhs = negate;
-        }
-        else {
-            tree_node* negate = try_parse_negate_operator(par);
-            vector_pushe(negate->nodes, rhs->nodes[0]);
-            rhs->nodes[0] = negate;
-        }
-    }
-    vector_pushe(operator->nodes, rhs);
-    return operator;
-}
-
-tree_node* try_parse_expression(parser* par) {
-    tree_node* lhs = NULL;
-
-    if (is_identifier(parser_peek(par, 0))) {
-        lhs = try_parse_identifier(par);
-    }
-    else if (is_default_separator_type(parser_peek(par, 0), TokenOpenRoundBracket)) {
-        ++par->index;
-        lhs = try_parse_expression_with_bracket(par);
-    }
-    else if (is_number(parser_peek(par, 0)->name[0]) || is_real_number(parser_peek(par, 0))) {
-        lhs = try_parse_number(par);
-    }
-    else if (is_operator_type(parser_peek(par, 0), OperatorMinus)) {
-        lhs = try_parse_negate_operator(par);
-        ++par->index;
-        if (is_number(parser_peek(par, 0)->name[0]) || is_real_number(parser_peek(par, 0))) {
-            vector_push(lhs->nodes, try_parse_number(par));
-        }
-        else if (is_default_separator_type(parser_peek(par, 0), TokenOpenRoundBracket)) {
-            ++par->index;
-            vector_push(lhs->nodes, try_parse_expression_with_bracket(par));
-        }
-        if (!lhs->nodes[0]) {
-            set_parse_error(par, ParseErrorMissingLhs);
-            return NULL;
-        }
-    }
-    else {
-        set_parse_error(par, ParseErrorMissingToken);
-        return NULL;
-    }
-
-    if (!lhs) {
-        set_parse_error(par, ParseErrorMissingLhs);
-        return NULL;
-    }
-
-    ++par->index;
-    tree_node* operator = NULL;
-
-    if (parser_peek(par, 0)->type == TokenNewLine || par->index == par->tokens_len) {
-        return lhs;
-    }
-
-    if (is_operator(parser_peek(par, 0))) {
-        operator = try_parse_operator(par);
-    }
-
-    if (!operator) {
-        dfs(lhs, free_node);
-        set_parse_error(par, ParseErrorMissingToken);
-        return NULL;
-    }
-
-    i32 has_negate_operator = 0;
-    if (operator->object_type == OperatorMinus) {
-        operator->object_type = OperatorPlus;
-        operator->name = "+";
-        has_negate_operator = 1;
-    }
-
-    vector_pushe(operator->nodes, lhs);
-    ++par->index;
-    i32 has_bracket = is_default_separator_type(parser_peek(par, 0), TokenOpenRoundBracket);
-    tree_node* rhs = try_parse_expression(par);
-    if (!rhs) {
-        set_parse_error(par, ParseErrorMissingRhs);
-        dfs(operator, free_node);
-        return NULL;
-    }
-
-    if (vector_size(rhs->nodes) > 0 && operator->object_type > rhs->object_type) {
-        vector_pushe(operator->nodes, rhs->nodes[0]);
-        rhs->nodes[0] = operator;
-        return rhs;
-        tree_node** mrhs = &rhs;
-        while (vector_size(mrhs[0]->nodes) != 0) {
-            mrhs = mrhs[0]->nodes;
-        }
-        vector_pushe(operator->nodes, *mrhs);
-        *mrhs = operator;
-        return rhs;
-    }
-
-    if (has_negate_operator) {
-        if (vector_size(rhs->nodes) == 0 || has_bracket) {
-            tree_node* negate = try_parse_negate_operator(par);
-            vector_pushe(negate->nodes, rhs);
-            rhs = negate;
-        }
-        else {
-            tree_node* negate = try_parse_negate_operator(par);
-            vector_pushe(negate->nodes, rhs->nodes[0]);
-            rhs->nodes[0] = negate;
-        }
-    }
-    vector_pushe(operator->nodes, rhs);
-    return operator;
-}
-
-tree_node* try_parse_variable(parser* par) {
-    token* var_tok = parser_peek(par, 0);
-    tree_node* var = make_tree_node(NodeVariable, -1, var_tok->name, var_tok->name_len);
-    if (is_assigment_operator(parser_peek(par, 1))) {
-        token* assign_tok = parser_peek(par, 1);
-        tree_node* assign_operator = make_tree_node(NodeAssignmentOperator, assign_tok->name_location, assign_tok->name, assign_tok->name_len);
-        par->index += 2;
-        tree_node* expression = try_parse_expression(par);
-        if (!expression) {
-            free_node(var);
-            free_node(assign_operator);
-            return NULL;
-        }
-        vector_pushe(var->nodes, assign_operator);
-        vector_pushe(var->nodes[0]->nodes, expression);
-    }
-    return var;
-}
-
-tree_node* parser_parse(parser* par) {
-    switch (par->tokens[0].type) {
-    case TokenIdentifier: {
-        return try_parse_variable(par);
-    } break;
-    default:
-        break;
-    }
-    return NULL;
 }
 
 void command_line_mode(lexer* lexer) {
@@ -624,42 +207,42 @@ float get_node_number_value_float(tree_node* node) {
         type sum = lhs_value operator rhs_value + *(type*)out;\
         memcpy(data, &sum, sizeof(type));
 
-void interpret_operator_plus_int(int* out, int* lhs, int* rhs) {
+INLINE void interpret_operator_plus_int(int* out, int* lhs, int* rhs) {
     int sum = *lhs + *rhs;
     memcpy(out, &sum, sizeof(int));
 }
 
-void interpret_operator_minus_int(int* out, int* lhs, int* rhs) {
+INLINE void interpret_operator_minus_int(int* out, int* lhs, int* rhs) {
     int sum = *lhs - *rhs;
     memcpy(out, &sum, sizeof(int));
 }
 
-void interpret_operator_multiply_int(int* out, int* lhs, int* rhs) {
+INLINE void interpret_operator_multiply_int(int* out, int* lhs, int* rhs) {
     int sum = *lhs * *rhs;
     memcpy(out, &sum, sizeof(int));
 }
 
-void interpret_operator_division_int(int* out, int* lhs, int* rhs) {
+INLINE void interpret_operator_division_int(int* out, int* lhs, int* rhs) {
     int sum = *lhs / *rhs;
     memcpy(out, &sum, sizeof(int));
 }
 
-void interpret_operator_plus_float(float* out, float* lhs, float* rhs) {
+INLINE void interpret_operator_plus_float(float* out, float* lhs, float* rhs) {
     float sum = *lhs + *rhs;
     memcpy(out, &sum, sizeof(float));
 }
 
-void interpret_operator_minus_float(float* out, float* lhs, float* rhs) {
+INLINE void interpret_operator_minus_float(float* out, float* lhs, float* rhs) {
     float sum = *lhs - *rhs;
     memcpy(out, &sum, sizeof(float));
 }
 
-void interpret_operator_multiply_float(float* out, float* lhs, float* rhs) {
+INLINE void interpret_operator_multiply_float(float* out, float* lhs, float* rhs) {
     float sum = *lhs * *rhs;
     memcpy(out, &sum, sizeof(float));
 }
 
-void interpret_operator_division_float(float* out, float* lhs, float* rhs) {
+INLINE void interpret_operator_division_float(float* out, float* lhs, float* rhs) {
     float sum = *lhs / *rhs;
     memcpy(out, &sum, sizeof(float));
 }
@@ -778,7 +361,8 @@ i32 main(i32 argc, char** argv) {
     //     return 0;
     // }
     {
-        const char text[] = "val=-((-(2*3-1.1/2-2+2-0.01)))\n";
+        // TODO: implement base16 and base8 and base2 transformation
+        const char text[] = "val=1.0/60*10\n";
         vector(token) tokens = lexer_tokenize_until(&lexer, text, '\n');
 
         for_vector(tokens, i, 0) {
