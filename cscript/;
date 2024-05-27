@@ -84,10 +84,7 @@ void print_token(token* tok) {
     case TokenKeyword: _print_token(tok, "keyword", Keyword); break;
     case TokenSeparator: _print_token(tok, "separator", Separator); break;
     case TokenOperator: _print_token(tok, "operator", Operator); break;
-    case TokenDecLiteral: _print_token(tok, "dec", NULL); break;
-    case TokenHexLiteral: _print_token(tok, "hex", NULL); break;
-    case TokenOctLiteral: _print_token(tok, "oct", NULL); break;
-    case TokenBinLiteral: _print_token(tok, "string", NULL); break;
+    // case TokenLiteral: _print_token(tok, "literal", NULL); break;
     case TokenStringLiteral: {
         token temp = *tok;
         temp.name += 1;
@@ -101,15 +98,9 @@ void print_token(token* tok) {
     }
 }
 
-typedef enum {
-    ObjectVariable,
-    ObjectFunction,
-} ObjectType;
-
 typedef struct {
     void* info;
     string name;
-    ObjectType type;
 } object;
 
 hashmap object_map;
@@ -425,8 +416,8 @@ i32 main(i32 argc, char** argv) {
     // }
     {
         // TODO: checking lexer error from parser
-        const char text[] = "val=-((1+2)*(4-1)+(4+2)*(4-1)-(1+2)*(4-1)-(4+2)*(4-1)-1-1-1);\n";
-        // const char text[] = "val=0xabcdef * (0b1010 * 0o7) * 0.01\n";
+        // const char text[] = "val=-((1+2)*(4-1)-(1+2)*(4-1)+(4+2)*(4-1)-(4+2)*(4-1)-1-1-1);\n";
+        const char text[] = "val=0xfffffff * (0b1010 * 0o7) * 0.01\n";
         vector(token) tokens = lexer_tokenize_until(&lexer, text, '\n');
 
         for_vector(tokens, i, 0) {

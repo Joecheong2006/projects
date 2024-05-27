@@ -7,6 +7,10 @@ typedef enum {
     ParseErrorMissingToken,
     ParseErrorMissingLhs,
     ParseErrorMissingRhs,
+    ParseErrorMissingOpenBracket,
+    ParseErrorMissingCloseBracket,
+    ParseErrorMissingOperator,
+    ParseErrorExpectedExpression,
 } ParseError;
 
 typedef struct {
@@ -24,8 +28,11 @@ typedef enum {
     NodeVariableAssign,
     NodeOperator,
     NodeAssignmentOperator,
-    NodeNumber,
-    NodeNegateOperator
+    NodeDecNumber,
+    NodeHexNumber,
+    NodeOctNumber,
+    NodeBinNumber,
+    NodeNegateOperator,
 } NodeType;
 
 typedef struct tree_node tree_node;
@@ -41,18 +48,10 @@ tree_node* make_tree_node(NodeType type, i32 object_type, const char* name, i32 
 void free_node(tree_node* node);
 void print_node(tree_node* node);
 
-typedef void(*action)(tree_node*);
+void bfs(tree_node* root, void(*act)(tree_node*));
+void dfs(tree_node* root, void(*act)(tree_node*));
 
-void bfs(tree_node* root, action func);
-void dfs(tree_node* root, action func);
-void free_tree(tree_node* node);
-
-tree_node* try_parse_identifier(parser* par);
-tree_node* try_parse_number(parser* par);
-tree_node* try_parse_operator(parser* par);
-tree_node* try_parse_negate_operator(parser* par);
-tree_node* try_parse_expression_with_bracket(parser* par);
-tree_node* try_parse_expression(parser* par);
+i32 is_node_number(NodeType type);
 tree_node* parser_parse(parser* par);
 
 #endif

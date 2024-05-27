@@ -11,7 +11,10 @@ typedef enum {
 
     TokenStringBegin,
     TokenStringLiteral,
-    TokenLiteral,
+    TokenDecLiteral,
+    TokenHexLiteral,
+    TokenOctLiteral,
+    TokenBinLiteral,
     TokenIdentifier,
     TokenCount,
 
@@ -21,7 +24,8 @@ typedef enum {
     TokenCloseSquareBracket,
     TokenOpenRoundBracket,
     TokenCloseRoundBracket,
-    TokenSemicolon, TokenComma,
+    TokenSemicolon,
+    TokenComma,
     TokenFullStop,
     TokenNewLine,
 
@@ -56,7 +60,6 @@ i32 is_separator(token* tok);
 i32 is_keyword_type(token* tok, i32 type);
 i32 is_operator_type(token* tok, i32 type);
 i32 is_separator_type(token* tok, i32 type);
-i32 is_default_separator_type(token* tok, Token type);
 i32 is_string_literal(token* tok);
 i32 is_real_number(token* tok);
 
