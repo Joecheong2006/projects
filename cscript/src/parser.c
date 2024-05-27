@@ -2,10 +2,12 @@
 #include "keys_define.h"
 #include <string.h>
 #include "lexer.h"
-#include "memallocate.h"
+#include "basic/memallocate.h"
 
-INLINE i32 is_assigment_operator(token* tok) { return is_operator(tok) && (tok->name_location >= OperatorAssignementBegin && tok->name_location <= OperatorAssignmentEnd); }
-INLINE i32 is_arithmetic_operator(OperatorType type) { return type >= OperatorMinus && type <= OperatorDivision; }
+static INLINE i32 is_assigment_operator(token* tok) { return is_operator(tok) && (tok->name_location >= OperatorAssignementBegin && tok->name_location <= OperatorAssignmentEnd); }
+static INLINE i32 is_arithmetic_operator(OperatorType type) { return type >= OperatorMinus && type <= OperatorDivision; }
+
+INLINE i32 is_node_number(NodeType type) { return type >= NodeDecNumber && type <= NodeBinNumber; }
 
 INLINE void set_parse_error(parser* par, i32 error) {
     if (par->error != ParseErrorNoError)
@@ -21,7 +23,7 @@ INLINE token* parser_peekpre(parser* par, i32 location) {
     return par->tokens + par->tokens_len + location;
 }
 
-tree_node* make_tree_node(NodeType type, i32 object_type, const char* name, i32 name_len) {
+tree_node* make_tree_node(NodeType type, i32 object_type, char* name, i32 name_len) {
     tree_node* node = MALLOC(sizeof(tree_node));
     memcpy(node, &(tree_node) {
         .type = type,
@@ -52,7 +54,7 @@ void print_node(tree_node* node) {
     default: break;
     }
     putchar(' ');
-    print_token_name(&(token) {
+    print_token(&(token) {
                 .name = node->name,
                 .name_len = node->name_len,
             });
@@ -73,7 +75,12 @@ void dfs(tree_node* root, void(*act)(tree_node*)) {
     act(root);
 }
 
-static tree_node* try_parse_identifier(parser* par) {
+static void set_scope_location(parser* par, tree_node* node) {
+    node->scope_level = par->scope_level;
+    node->scope_id = par->scope_id;
+}
+
+static tree_node* parse_variable(parser* par) {
     token* tok = parser_peek(par, 0);
     return make_tree_node(NodeVariable, tok->name_location, tok->name, tok->name_len);
 }
@@ -81,10 +88,15 @@ static tree_node* try_parse_identifier(parser* par) {
 static tree_node* try_parse_number(parser* par) {
     token* tok = parser_peek(par, 0);
     switch (tok->type) {
-    case TokenDecLiteral: return make_tree_node(NodeDecNumber, KeywordFloat, tok->name, tok->name_len);
-    case TokenHexLiteral: return make_tree_node(NodeHexNumber, KeywordFloat, tok->name, tok->name_len);
-    case TokenOctLiteral: return make_tree_node(NodeOctNumber, KeywordFloat, tok->name, tok->name_len);
-    case TokenBinLiteral: return make_tree_node(NodeBinNumber, KeywordFloat, tok->name, tok->name_len);
+    case TokenDecLiteral: {
+        if (is_real_number(tok)) {
+            return make_tree_node(NodeDecNumber, KeywordFloat, tok->name, tok->name_len);
+        }
+        return make_tree_node(NodeDecNumber, KeywordInt, tok->name, tok->name_len);
+    }
+    case TokenHexLiteral: return make_tree_node(NodeHexNumber, KeywordInt, tok->name, tok->name_len);
+    case TokenOctLiteral: return make_tree_node(NodeOctNumber, KeywordInt, tok->name, tok->name_len);
+    case TokenBinLiteral: return make_tree_node(NodeBinNumber, KeywordInt, tok->name, tok->name_len);
     default: return NULL;
     }
 }
@@ -99,21 +111,21 @@ static tree_node* parse_negate_operator(parser* par) {
     return make_tree_node(NodeNegateOperator, tok->name_location, tok->name, tok->name_len);
 }
 
-static tree_node* try_parse_expression_with_bracket(parser* par) {
-    tree_node* lhs = NULL;
+static tree_node* try_parse_expression_with_bracket(parser* par);
 
+static tree_node* try_parse_expression_lhs(parser* par) {
     if (is_identifier(parser_peek(par, 0))) {
-        lhs = try_parse_identifier(par);
+        return parse_variable(par);
     }
     else if (parser_peek(par, 0)->type == TokenOpenRoundBracket) {
         ++par->index;
-        lhs = try_parse_expression_with_bracket(par);
+        return try_parse_expression_with_bracket(par);
     }
     else if (is_number(parser_peek(par, 0)->name[0]) || is_real_number(parser_peek(par, 0))) {
-        lhs = try_parse_number(par);
+        return try_parse_number(par);
     }
     else if (is_operator_type(parser_peek(par, 0), OperatorMinus)) {
-        lhs = parse_negate_operator(par);
+        tree_node* lhs = parse_negate_operator(par);
         ++par->index;
         if (is_number(parser_peek(par, 0)->name[0]) || is_real_number(parser_peek(par, 0))) {
             vector_push(lhs->nodes, try_parse_number(par));
@@ -126,12 +138,17 @@ static tree_node* try_parse_expression_with_bracket(parser* par) {
             set_parse_error(par, ParseErrorMissingLhs);
             return NULL;
         }
+        return lhs;
     }
     else {
         set_parse_error(par, parser_peek(par, 0)->type == TokenCloseRoundBracket
                 ? ParseErrorExpectedExpression : ParseErrorMissingCloseBracket);
         return NULL;
     }
+}
+
+static tree_node* try_parse_expression_with_bracket(parser* par) {
+    tree_node* lhs = try_parse_expression_lhs(par);
 
     if (!lhs) {
         set_parse_error(par, ParseErrorMissingLhs);
@@ -207,39 +224,7 @@ static tree_node* try_parse_expression_with_bracket(parser* par) {
 }
 
 static tree_node* try_parse_expression(parser* par) {
-    tree_node* lhs = NULL;
-
-    // int a = null;
-    if (is_identifier(parser_peek(par, 0))) {
-        lhs = try_parse_identifier(par);
-    }
-    else if (parser_peek(par, 0)->type == TokenOpenRoundBracket) {
-        ++par->index;
-        lhs = try_parse_expression_with_bracket(par);
-    }
-    else if (is_number(parser_peek(par, 0)->name[0]) || is_real_number(parser_peek(par, 0))) {
-        lhs = try_parse_number(par);
-    }
-    else if (is_operator_type(parser_peek(par, 0), OperatorMinus)) {
-        lhs = parse_negate_operator(par);
-        ++par->index;
-        if (is_number(parser_peek(par, 0)->name[0]) || is_real_number(parser_peek(par, 0))) {
-            vector_push(lhs->nodes, try_parse_number(par));
-        }
-        else if (parser_peek(par, 0)->type == TokenOpenRoundBracket) {
-            ++par->index;
-            vector_push(lhs->nodes, try_parse_expression_with_bracket(par));
-        }
-        if (!lhs->nodes[0]) {
-            set_parse_error(par, ParseErrorMissingLhs);
-            return NULL;
-        }
-    }
-    else {
-        set_parse_error(par, parser_peek(par, 0)->type == TokenCloseRoundBracket
-                ? ParseErrorExpectedExpression : ParseErrorMissingCloseBracket);
-        return NULL;
-    }
+    tree_node* lhs = try_parse_expression_lhs(par);
 
     if (!lhs) {
         set_parse_error(par, ParseErrorMissingLhs);
@@ -315,13 +300,42 @@ static tree_node* try_parse_expression(parser* par) {
     return operator;
 }
 
-tree_node* try_parse_variable(parser* par) {
-    token* var_tok = parser_peek(par, 0);
-    tree_node* var = make_tree_node(NodeVariable, -1, var_tok->name, var_tok->name_len);
-    if (is_assigment_operator(parser_peek(par, 1))) {
-        token* assign_tok = parser_peek(par, 1);
+static i32 is_vailed_data_type(token* tok) {
+    (void)tok;
+    return 1;
+}
+
+static i32 try_parse_data_type(parser* par) {
+    ++par->index;
+    token* tok = parser_peek(par, 0);
+    if (tok->type == TokenKeyword && is_vailed_data_type(tok)) {
+        return tok->name_location;
+    }
+    return 0;
+}
+
+static i32 try_parse_type_dec(parser* par) {
+    ++par->index;
+    if (is_separator_type(parser_peek(par, 0), SeparatorColon)) {
+        return try_parse_data_type(par);
+    }
+    return 0;
+}
+
+static tree_node* try_parse_identifier(parser* par) {
+    tree_node* var = parse_variable(par);
+    set_scope_location(par, var);
+
+    if ((var->object_type = try_parse_type_dec(par)) == 0) {
+        set_parse_error(par, ParseErrorMissingSeparator);
+        return NULL;
+    }
+
+    ++par->index;
+    if (is_assigment_operator(parser_peek(par, 0))) {
+        token* assign_tok = parser_peek(par, 0);
         tree_node* assign_operator = make_tree_node(NodeAssignmentOperator, assign_tok->name_location, assign_tok->name, assign_tok->name_len);
-        par->index += 2;
+        par->index += 1;
         tree_node* expression = try_parse_expression(par);
         if (!expression) {
             free_node(var);
@@ -330,16 +344,61 @@ tree_node* try_parse_variable(parser* par) {
         }
         vector_pushe(var->nodes, assign_operator);
         vector_pushe(var->nodes[0]->nodes, expression);
+        return var;
     }
-    return var;
+    return NULL;
 }
 
-INLINE i32 is_node_number(NodeType type) { return type >= NodeDecNumber && type <= NodeBinNumber; }
+tree_node* try_parse_function_parameter(parser* par) {
+    if (parser_peek(par, 0)->type == TokenCloseRoundBracket)
+        return make_tree_node(NodeEmpty, -1, "", -1);
+    tree_node* param = NULL;
+    return param;
+}
+
+tree_node* try_parse_functin_return_type(parser* par) {
+    if (parser_peek(par, 0)->type == TokenNewLine)
+        return make_tree_node(NodeEmpty, -1, "", -1);
+    return NULL;
+}
+
+static tree_node* try_parse_function(parser* par) {
+    token* tok = parser_peek(par, 0);
+    tree_node* node = make_tree_node(NodeVariable, tok->name_location, tok->name, tok->name_len);
+    ++par->index;
+    if (parser_peek(par, 0)->type != TokenOpenRoundBracket)
+        return NULL;
+    ++par->index;
+    vector_push(node->nodes, try_parse_function_parameter(par));
+    return NULL;
+}
+
+static tree_node* try_parse_keyword(parser* par) {
+    token* tok = parser_peek(par, 0);
+    switch (tok->name_location) {
+    case KeywordFunction: {
+        return try_parse_function(par);
+    } break;
+    default: return NULL;
+    }
+}
+
+void init_parser(parser* par, vector(token) tokens) {
+    par->scope_id = 0;
+    par->scope_level = 0;
+    par->index = 0;
+    par->error = ParseErrorNoError;
+    par->tokens = tokens;
+    par->tokens_len = vector_size(tokens);
+}
 
 tree_node* parser_parse(parser* par) {
     switch (par->tokens[0].type) {
     case TokenIdentifier: {
-        return try_parse_variable(par);
+        return try_parse_identifier(par);
+    } break;
+    case TokenKeyword: {
+        return try_parse_keyword(par);
     } break;
     default:
         break;

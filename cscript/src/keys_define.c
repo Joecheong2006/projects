@@ -17,7 +17,9 @@ const char* Keyword[] = {
 
 const char* Separator[] = {
     [SeparatorColon] = ":",
-    [SeparatorDDD] = "..."
+    [SeparatorColonColon] = "::",
+    [SeparatorExtend] = "->",
+    [SeparatorDDD] = "...",
 };
 
 const char* Operator[] = {

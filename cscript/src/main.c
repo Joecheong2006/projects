@@ -1,52 +1,13 @@
 #include <stdio.h>
-#include <string.h>
 
 #include "keys_define.h"
-#include "parser.h"
+#include "interpretor.h"
 #include "source_file.h"
 #include "string.h"
-#include "hashmap.h"
-#include "memallocate.h"
+#include "basic/hashmap.h"
+#include "basic/memallocate.h"
+#include "basic/string.h"
 #include "lexer.h"
-#include "util.h"
-
-#include <math.h>
-int base_n_to_dec(tree_node* node, int base_n, i32(*is_digit)(const char c)) {
-    int result = 0;
-    const char* str = node->name + 2;
-    int len = node->name_len - 2;
-
-    for (; str[0] == '0'; str++, len--) {}
-
-    for (i32 i = 0; i < len; ++i) {
-        result += powl(base_n, i) * is_digit(str[len - i - 1]);
-    }
-    return result;
-}
-
-i32 hex_to_dec_ch(const char c) {
-    return c >= 'a' && c <= 'f' ? c - 'W' : c - '0';
-}
-
-i32 hex_to_dec(tree_node* tok) {
-    return base_n_to_dec(tok, 16, hex_to_dec_ch);
-}
-
-i32 bin_to_dec_ch(const char c) {
-    return c == '1';
-}
-
-i32 bin_to_dec(tree_node* tok) {
-    return base_n_to_dec(tok, 2, bin_to_dec_ch);
-}
-
-i32 oct_to_dec_ch(const char c) {
-    return c - '0';
-}
-
-i32 oct_to_dec(tree_node* tok) {
-    return base_n_to_dec(tok, 8, oct_to_dec_ch);
-}
 
 #define LEXER_ADD_TOKEN(lexer, str_set, type)\
     lexer_add_token((lexer), (token_set){\
@@ -54,52 +15,6 @@ i32 oct_to_dec(tree_node* tok) {
                 .set_size = sizeof(str_set) / sizeof(void*),\
                 .token = type\
             }, type);
-
-void _print_token(token* token, const char* type_name, const char** type_names) {
-    printf("(%s, '", type_name);
-    for (i32 n = 0; n < token->name_len; ++n) {
-        if (token->name[n] == '\n') {
-            printf("\\n");
-            break;
-        }
-        putchar(token->name[n]);
-    }
-    (void)(type_names);
-    printf("', %d)\n", token->name_len);
-}
-
-void print_token(token* tok) {
-    switch (tok->type) {
-    case TokenOpenBrace:
-    case TokenCloseBrace:
-    case TokenOpenSquareBracket:
-    case TokenCloseSquareBracket:
-    case TokenOpenRoundBracket:
-    case TokenCloseRoundBracket:
-    case TokenSemicolon:
-    case TokenComma:
-    case TokenFullStop:
-    case TokenNewLine:
-                   _print_token(tok, "default separator", NULL); break;
-    case TokenKeyword: _print_token(tok, "keyword", Keyword); break;
-    case TokenSeparator: _print_token(tok, "separator", Separator); break;
-    case TokenOperator: _print_token(tok, "operator", Operator); break;
-    case TokenDecLiteral: _print_token(tok, "dec", NULL); break;
-    case TokenHexLiteral: _print_token(tok, "hex", NULL); break;
-    case TokenOctLiteral: _print_token(tok, "oct", NULL); break;
-    case TokenBinLiteral: _print_token(tok, "string", NULL); break;
-    case TokenStringLiteral: {
-        token temp = *tok;
-        temp.name += 1;
-        temp.name_len -= 2;
-        _print_token(&temp, "string literal", NULL);
-    } break;
-    case TokenIdentifier: _print_token(tok, "identifier", NULL); break;
-    case TokenEnd: _print_token(tok, "end", NULL); break;
-    case TokenError: _print_token(tok, "error", NULL); break;
-    default: _print_token(tok, "unkown", NULL); break;
-    }
-}
 
 typedef enum {
     ObjectVariable,
@@ -136,7 +51,7 @@ size_t hash_object(void* data, size_t size) {
     return djb2(test_data->name) % size;
 }
 
-void hashmap_free_test_data(void* data) {
+void free_object(void* data) {
     object* obj = data;
     free_string(&obj->name);
     // NOTE: free obj->info
@@ -243,164 +158,123 @@ void command_line_mode(lexer* lexer) {
     CHECK_MEMORY_LEAK();
 }
 
-int get_node_number_value_int(tree_node* node) {
-    return atoi(node->name);
-}
-
-float get_node_number_value_float(tree_node* node) {
-    return atof(node->name);
-}
-
-#define INTERPRET_OPERATE_NUMBERS(type, data, operator)\
-        type lhs_value = get_node_number_value_##type(lhs);\
-        type rhs_value = get_node_number_value_##type(rhs);\
-        type sum = lhs_value operator rhs_value + *(type*)out;\
-        memcpy(data, &sum, sizeof(type));
-
-INLINE void interpret_operator_plus_int(int* out, int* lhs, int* rhs) {
-    int sum = *lhs + *rhs;
-    memcpy(out, &sum, sizeof(int));
-}
-
-INLINE void interpret_operator_minus_int(int* out, int* lhs, int* rhs) {
-    int sum = *lhs - *rhs;
-    memcpy(out, &sum, sizeof(int));
-}
-
-INLINE void interpret_operator_multiply_int(int* out, int* lhs, int* rhs) {
-    int sum = *lhs * *rhs;
-    memcpy(out, &sum, sizeof(int));
-}
-
-INLINE void interpret_operator_division_int(int* out, int* lhs, int* rhs) {
-    int sum = *lhs / *rhs;
-    memcpy(out, &sum, sizeof(int));
-}
-
-INLINE void interpret_operator_plus_float(float* out, float* lhs, float* rhs) {
-    float sum = *lhs + *rhs;
-    memcpy(out, &sum, sizeof(float));
-}
-
-INLINE void interpret_operator_minus_float(float* out, float* lhs, float* rhs) {
-    float sum = *lhs - *rhs;
-    memcpy(out, &sum, sizeof(float));
-}
-
-INLINE void interpret_operator_multiply_float(float* out, float* lhs, float* rhs) {
-    float sum = *lhs * *rhs;
-    memcpy(out, &sum, sizeof(float));
-}
-
-INLINE void interpret_operator_division_float(float* out, float* lhs, float* rhs) {
-    float sum = *lhs / *rhs;
-    memcpy(out, &sum, sizeof(float));
-}
-
-void interpret_operator_arithmetic_int(OperatorType type, int* out, int* lhs, int* rhs) {
-    switch (type) {
-    case OperatorPlus: interpret_operator_plus_int(out, lhs, rhs); break;
-    case OperatorMinus: interpret_operator_minus_int(out, lhs, rhs); break;
-    case OperatorMultiply: interpret_operator_multiply_int(out, lhs, rhs); break;
-    case OperatorDivision: interpret_operator_division_int(out, lhs, rhs); break;
-    default: break;
-    }
-}
-
-void interpret_operator_arithmetic_float(OperatorType type, float* out, float* lhs, float* rhs) {
-    switch (type) {
-    case OperatorPlus: interpret_operator_plus_float(out, lhs, rhs); break;
-    case OperatorMinus: interpret_operator_minus_float(out, lhs, rhs); break;
-    case OperatorMultiply: interpret_operator_multiply_float(out, lhs, rhs); break;
-    case OperatorDivision: interpret_operator_division_float(out, lhs, rhs); break;
-    default: break;
-    }
-}
-
-void interpret_cal_expression_int(int* out, tree_node* node) {
-    switch (node->type) {
-    case NodeOperator: {
-        int lhs, rhs;
-        interpret_cal_expression_int(&lhs, node->nodes[0]);
-        interpret_cal_expression_int(&rhs, node->nodes[1]);
-        interpret_operator_arithmetic_int(node->object_type, out, &lhs, &rhs);
-    } break;
-    case NodeNegateOperator: {
-        interpret_cal_expression_int(out, node->nodes[0]);
-        *out = -*out;
-    } break;
-    case NodeDecNumber: {
-        int value = get_node_number_value_int(node);
-        memcpy(out, &value, sizeof(int));
-    } break;
-    case NodeHexNumber: {
-        int value = hex_to_dec(node);
-        memcpy(out, &value, sizeof(int));
-    } break;
-    case NodeOctNumber: {
-        int value = oct_to_dec(node);
-        memcpy(out, &value, sizeof(int));
-    } break;
-    case NodeBinNumber: {
-        int value = bin_to_dec(node);
-        memcpy(out, &value, sizeof(int));
-    } break;
-    default: break;
-    }
-}
-
-void interpret_cal_expression_float(float* out, tree_node* node) {
-    switch (node->type) {
-    case NodeOperator: {
-        float lhs, rhs;
-        interpret_cal_expression_float(&lhs, node->nodes[0]);
-        interpret_cal_expression_float(&rhs, node->nodes[1]);
-        interpret_operator_arithmetic_float(node->object_type, out, &lhs, &rhs);
-    } break;
-    case NodeNegateOperator: {
-        interpret_cal_expression_float(out, node->nodes[0]);
-        *out = -*out;
-    } break;
-    case NodeDecNumber: {
-        float value = get_node_number_value_float(node);
-        memcpy(out, &value, sizeof(float));
-    }break;
-    case NodeHexNumber: {
-        float value = hex_to_dec(node);
-        memcpy(out, &value, sizeof(int));
-    } break;
-    case NodeOctNumber: {
-        float value = oct_to_dec(node);
-        memcpy(out, &value, sizeof(int));
-    } break;
-    case NodeBinNumber: {
-        float value = bin_to_dec(node);
-        memcpy(out, &value, sizeof(int));
-    } break;
-    default: break;
-    }
-}
-
-void interpret_cal_expression(void* out, KeywordType data_type, tree_node* node) {
-    switch (data_type) {
-    case KeywordInt: {
-        interpret_cal_expression_int(out, node);
-    } break;
-    case KeywordFloat: {
-        interpret_cal_expression_float(out, node);
-    } break;
-    default: {
-    } break;
-    }
-}
-
 void get_expression_data_type(KeywordType* out, tree_node* expression) {
     for_vector(expression->nodes, i, 0) {
         get_expression_data_type(out, expression->nodes[i]);
     }
-    if (is_node_number(expression->type) && expression->object_type > (i32)*out) {
+    if (expression->type == NodeDecNumber && expression->object_type > (i32)*out) {
         *out = expression->object_type;
     }
+}
+
+void construct_object(object* obj);
+void destruct_object(object* obj);
+
+void construct_object(object* obj) {
+    (void)obj;
+    // NOTE: call constrcutor if necessary
+}
+
+void destruct_object(object* obj) {
+    (void)obj;
+    // NOTE: call destrcutor if necessary
+}
+
+typedef vector(object) scope;
+void init_scope(scope* s);
+void scope_push(scope* s, object* obj);
+void scope_pop(scope* s);
+void free_scope(scope* s);
+
+scope make_scope() {
+    return make_vector();
+}
+
+void scope_push(scope* s, object* obj) {
+    vector_pushe(*s, *obj);
+    construct_object(obj);
+}
+
+void scope_pop(scope* s) {
+    object* obj = &vector_back(*s);
+    vector_pop(*s);
+    destruct_object(obj);
+}
+
+void free_scope(scope* s) {
+    for_vector(*s, i, 0) {
+        FREE((*s)[i].info); // need to call specif func
+        free_string(&(*s)[i].name);
+    }
+    free_vector(s);
+}
+
+// TODO: checking lexer error from parser
+void test(lexer* lex) {
+    vector(scope) scopes = make_vector();
+    vector(tree_node*) instructions = make_vector();
+
+    char text[] = "val:float=-((1+2)*(4-1)+(4+2)*(4-1)-(1+2)*(4-1)-(4+2)*(4-1)-1-1-1)*1.5;";
+    // const char text[] = "val=0xabcdef * (0b1010 * 0o7) * 0.01\n";
+    vector(token) tokens = lexer_tokenize_until(lex, text, '\n');
+
+    for_vector(tokens, i, 0) {
+        print_token_name(tokens + i);
+        putchar(' ');
+    }
+    putchar('\n');
+
+    parser par;
+    init_parser(&par, tokens);
+
+    tree_node* node = parser_parse(&par);
+    if (node) {
+        void* expr_result = MALLOC(sizeof(int));
+        memset(expr_result, 0, sizeof(int));
+        interpret_cal_expression(expr_result, node->object_type, node->nodes[0]->nodes[0]);
+
+        vector_push(instructions, node);
+        vector_push(scopes, make_scope());
+
+        struct variable_info {
+            void* value;
+            i32 type; // Keyword
+        };
+
+        vector_push(vector_back(scopes),
+                    .name = make_stringn(instructions[0]->name, instructions[0]->name_len),
+                    .type = ObjectVariable,
+                    .info = MALLOC(sizeof(struct variable_info)),
+                );
+
+        object* val = &scopes[instructions[0]->scope_level][instructions[0]->scope_id];
+        struct variable_info* info = val->info;
+        info->value = expr_result;
+        info->type = instructions[0]->object_type;
+
+        switch (info->type) {
+        case KeywordInt: printf("%s = %d\n", val->name, *(i32*)info->value); break;
+        case KeywordFloat: printf("%s = %g\n", val->name, *(f32*)info->value); break;
+        default: break;
+        }
+
+        FREE(expr_result);
+
+        dfs(node, free_node);
+    }
+
+    printf("error %d\n", par.error);
+    free_vector(&tokens);
+    free_vector(&instructions);
+
+    for_vector(scopes, i, 0) {
+        free_scope(&scopes[i]);
+    }
+    free_vector(&scopes);
+
+    hashmap_free_items(object_map, free_object);
+    free_hashmap(&object_map);
+    CHECK_MEMORY_LEAK();
 }
 
 i32 main(i32 argc, char** argv) {
@@ -412,68 +286,10 @@ i32 main(i32 argc, char** argv) {
     LEXER_ADD_TOKEN(&lexer, Separator, TokenSeparator);
     LEXER_ADD_TOKEN(&lexer, Operator, TokenOperator);
     LEXER_ADD_TOKEN(&lexer, StringBegin, TokenStringBegin);
-    
-#if 1
-    // {
-    //     char text[] = "...>>:=(1[2{3}2]1)0xabcdef(1)\n";
-    //     vector(token) tokens = lexer_tokenize_test(&lexer, text, '\n');
-    //     for_vector(tokens, i, 0) {
-    //         print_token(tokens + i);
-    //     }
-    //     free_vector(&tokens);
-    //     return 0;
-    // }
-    {
-        // TODO: checking lexer error from parser
-        const char text[] = "val=-((1+2)*(4-1)+(4+2)*(4-1)-(1+2)*(4-1)-(4+2)*(4-1)-1-1-1);\n";
-        // const char text[] = "val=0xabcdef * (0b1010 * 0o7) * 0.01\n";
-        vector(token) tokens = lexer_tokenize_until(&lexer, text, '\n');
-
-        for_vector(tokens, i, 0) {
-            print_token_name(tokens + i);
-            putchar(' ');
-        }
-        putchar('\n');
-
-        parser par = {
-            .index = 0,
-            .tokens = tokens,
-            .tokens_len = vector_size(tokens),
-            .error = ParseErrorNoError,
-        };
-        tree_node* node = parser_parse(&par);
-        if (node) {
-            // bfs(node, print_node);
-            // putchar('\n');
-
-            KeywordType type = 0;
-            get_expression_data_type(&type, node->nodes[0]->nodes[0]);
-
-            void* expr_result = MALLOC(sizeof(int));
-            memset(expr_result, 0, 4);
-            interpret_cal_expression(expr_result, type, node->nodes[0]->nodes[0]);
-
-            switch (type) {
-            case KeywordInt: printf("expression %d\n", *(int*)expr_result); break;
-            case KeywordFloat: printf("expression %g\n", *(float*)expr_result); break;
-            default: break;
-            }
-            FREE(expr_result);
-
-            printf("%d\n", type);
-
-            dfs(node, free_node);
-        }
-        printf("error %d\n", par.error);
-
-        free_vector(&tokens);
-        hashmap_free_items(object_map, hashmap_free_test_data);
-        free_hashmap(&object_map);
-        CHECK_MEMORY_LEAK();
-        return 0;
-    }
-#endif
-
+    //
+    // test(&lexer);
+    // return 0;
+    //
     if (argc == 1) {
         command_line_mode(&lexer);
         exit(0);
@@ -527,7 +343,7 @@ i32 main(i32 argc, char** argv) {
                 });
     }
 
-    hashmap_free_items(object_map, hashmap_free_test_data);
+    hashmap_free_items(object_map, free_object);
     free_hashmap(&object_map);
     free_source(&source);
     CHECK_MEMORY_LEAK();

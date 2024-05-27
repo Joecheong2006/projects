@@ -19,6 +19,8 @@ typedef enum {
 
 enum {
     SeparatorColon,
+    SeparatorColonColon,
+    SeparatorExtend,
     SeparatorDDD,
     SeparatorTokenCount
 };

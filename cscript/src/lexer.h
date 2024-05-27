@@ -1,7 +1,7 @@
 #ifndef LEXER_H
 #define LEXER_H
 
-#include "vector.h"
+#include "basic/vector.h"
 
 typedef enum {
     TokenKeyword = 0,
@@ -35,7 +35,7 @@ typedef enum {
 } Token;
 
 typedef struct {
-    const char* name;
+    char* name;
     i32 name_len;
     i32 name_location;
     Token type;
@@ -67,9 +67,10 @@ void lexer_add_token(lexer* lexer, token_set set, Token token);
 i32 compare_strings(const char** strings, u64 strings_len, const char* str);
 i32 compare_token_set(token_set* token_set, const char* str);
 
-token lexer_tokenize_string(lexer* lexer, const char* str);
-vector(token) lexer_tokenize_until(lexer* lexer, const char* str, const char terminal);
+token lexer_tokenize_string(lexer* lexer, char* str);
+vector(token) lexer_tokenize_until(lexer* lexer, char* str, char terminal);
 
 void print_token_name(token* tok);
+void print_token(token* tok);
 
 #endif

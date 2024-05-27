@@ -2,7 +2,7 @@ CC = gcc
 CFLAGS = -std=c99 -Wall -Wextra -Wpedantic -Wstrict-aliasing -Werror -g3 -DDEBUG
 DEBUGGER = gdb
 
-SRC = $(wildcard src/*.c)
+SRC = $(wildcard src/*.c src/**/*.c)
 OBJ = $(SRC:%.c=%.o)
 DEP = $(OBJ:%.o=%.d)
 OUT = cscript
