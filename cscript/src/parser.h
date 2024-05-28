@@ -1,6 +1,7 @@
 #ifndef PARSER_H
 #define PARSER_H
 #include "lexer.h"
+#include "basic/string.h"
 
 typedef enum {
     ParseErrorNoError,
@@ -10,6 +11,7 @@ typedef enum {
     ParseErrorMissingOpenBracket,
     ParseErrorMissingCloseBracket,
     ParseErrorMissingOperator,
+    ParseErrorMissingAssignOperator,
     ParseErrorMissingSeparator,
     ParseErrorExpectedExpression,
 } ParseError;
@@ -17,8 +19,8 @@ typedef enum {
 typedef struct {
     vector(token) tokens;
     u64 index, tokens_len;
-    ParseError error;
     i32 scope_level, scope_id;
+    vector(string) error_messgaes;
 } parser;
 
 void set_parse_error(parser* par, i32 error);
@@ -27,6 +29,7 @@ token* parser_peekpre(parser* par, i32 location);
 
 typedef enum {
     NodeVariable,
+    NodeVariableInitialize,
     NodeVariableAssignment,
     NodeOperator,
     NodeAssignmentOperator,
@@ -56,7 +59,10 @@ void dfs(tree_node* root, void(*act)(tree_node*));
 
 i32 is_node_number(NodeType type);
 
-void init_parser(parser* par, vector(token) token);
+void print_parser_error(parser* par);
+void init_parser(parser* par);
+void parser_set_tokens(parser* par, vector(token) tokens);
 tree_node* parser_parse(parser* par);
+void free_parser(parser* par);
 
 #endif

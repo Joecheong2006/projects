@@ -118,7 +118,7 @@ static void interpret_operator_arithmetic_float(OperatorType type, float* out, f
 static void interpret_cal_expression_int(int* out, tree_node* node) {
     switch (node->type) {
     case NodeOperator: {
-        int lhs, rhs;
+        int lhs = 0, rhs = 0;
         interpret_cal_expression_int(&lhs, node->nodes[0]);
         interpret_cal_expression_int(&rhs, node->nodes[1]);
         interpret_operator_arithmetic_int(node->object_type, out, &lhs, &rhs);

@@ -1,6 +1,5 @@
 #ifndef LEXER_H
 #define LEXER_H
-
 #include "basic/vector.h"
 
 typedef enum {
@@ -34,14 +33,14 @@ typedef enum {
     TokenUnkown
 } Token;
 
-typedef struct {
-    char* name;
-    i32 name_len;
-    i32 name_location;
+typedef struct PACKED {
     Token type;
+    char* name;
+    i16 sub_type;
+    i16 name_len;
 } token;
 
-typedef struct {
+typedef struct PACKED {
     const char** set_name;
     u64 set_size;
     Token token;

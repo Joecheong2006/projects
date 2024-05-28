@@ -1,6 +1,7 @@
 #ifndef HASHMAP_H
 #define HASHMAP_H
 #include "vector.h"
+#include <stddef.h>
 
 typedef struct {
     size_t size;

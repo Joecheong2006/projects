@@ -33,13 +33,13 @@ INLINE i32 is_number(char c) {
 }
 
 INLINE i32 is_identifier(token* tok) { return tok->type == TokenIdentifier; }
-INLINE i32 is_keyword(token* tok, i32 type) { return tok->name_location == type; }
+INLINE i32 is_keyword(token* tok, i32 type) { return tok->sub_type == type; }
 INLINE i32 is_operator(token* tok) { return tok->type == TokenOperator; }
 INLINE i32 is_separator(token* tok) { return tok->type == TokenSeparator; }
 
-INLINE i32 is_keyword_type(token* tok, i32 type) { return tok->type == TokenKeyword && tok->name_location == type; }
-INLINE i32 is_operator_type(token* tok, i32 type) { return tok->type == TokenOperator && tok->name_location == type; }
-INLINE i32 is_separator_type(token* tok, i32 type) { return tok->type == TokenSeparator && tok->name_location == type; }
+INLINE i32 is_keyword_type(token* tok, i32 type) { return tok->type == TokenKeyword && tok->sub_type == type; }
+INLINE i32 is_operator_type(token* tok, i32 type) { return tok->type == TokenOperator && tok->sub_type == type; }
+INLINE i32 is_separator_type(token* tok, i32 type) { return tok->type == TokenSeparator && tok->sub_type == type; }
 INLINE i32 is_string_literal(token* tok) { return tok->type == TokenStringLiteral; }
 i32 is_real_number(token* tok) { 
     if (is_number(tok->name[0] || (tok->name[0] == '.' && is_number(tok->name[1])))) {
@@ -91,7 +91,7 @@ INLINE i32 compare_token_set(token_set* token_set, const char* str) {
     return compare_strings(token_set->set_name, token_set->set_size, str);
 }
 
-static i32 get_word_stride_test(const char* str) {
+static i32 get_word_stride(const char* str) {
     for (u64 i = 0; str[i++] != 0;) {
         if (str[i] == 0)
             return i + 1;
@@ -194,7 +194,7 @@ static i32 get_dec_literal_stride(const char* str) {
     }
 }
 
-static i32 get_string_literal_stride_test(lexer* lexer, const char* str) {
+static i32 get_string_literal_stride(lexer* lexer, const char* str) {
     i32 i = 0;
     while (!is_string_literal_begin(lexer, str[++i])) {
         if (str[i] == 0) {
@@ -216,10 +216,10 @@ static i32 get_token_type_location(lexer* lexer, Token type, const char* str, u6
 }
 
 static token get_word_token(lexer* lexer, char* str) {
-    token result = { .name = str, .name_len = get_word_stride_test(str) - 1, .type = TokenKeyword, .name_location = -1 };
+    token result = { .name = str, .name_len = get_word_stride(str) - 1, .type = TokenKeyword, .sub_type = -1 };
     if (result.name_len > 0) {
-        result.name_location = get_token_type_location(lexer, TokenKeyword, str, result.name_len);
-        if (result.name_location == -1)
+        result.sub_type = get_token_type_location(lexer, TokenKeyword, str, result.name_len);
+        if (result.sub_type == -1)
             result.type = TokenIdentifier;
         return result;
     }
@@ -230,64 +230,55 @@ INLINE static token get_literal_token(char* str) {
     switch (str[0]) {
     case '0': {
         switch (str[1]) {
-        case 'b': return (token){ .name = str, .name_len = get_bin_literal_stride(str) - 1, .type = TokenBinLiteral, .name_location = -1 };
-        case 'o': return (token){ .name = str, .name_len = get_oct_literal_stride(str) - 1, .type = TokenOctLiteral, .name_location = -1 };
-        case 'x': return (token){ .name = str, .name_len = get_hex_literal_stride(str) - 1, .type = TokenHexLiteral, .name_location = -1 };
-        default: return (token){ .name = str, .name_len = get_dec_literal_stride(str) - 1, .type = TokenDecLiteral, .name_location = -1 };
+        case 'b': return (token){ .name = str, .name_len = get_bin_literal_stride(str) - 1, .type = TokenBinLiteral, .sub_type = -1 };
+        case 'o': return (token){ .name = str, .name_len = get_oct_literal_stride(str) - 1, .type = TokenOctLiteral, .sub_type = -1 };
+        case 'x': return (token){ .name = str, .name_len = get_hex_literal_stride(str) - 1, .type = TokenHexLiteral, .sub_type = -1 };
+        default: return (token){ .name = str, .name_len = get_dec_literal_stride(str) - 1, .type = TokenDecLiteral, .sub_type = -1 };
         }
     }
-    default: return (token){ .name = str, .name_len = get_dec_literal_stride(str) - 1, .type = TokenDecLiteral, .name_location = -1 };
+    default: return (token){ .name = str, .name_len = get_dec_literal_stride(str) - 1, .type = TokenDecLiteral, .sub_type = -1 };
     }
 }
 
 INLINE static token get_string_literal_token(lexer* lexer, char* str) {
-    return (token){ .name = str, .name_len = get_string_literal_stride_test(lexer, str) - 1, .type = TokenStringLiteral, .name_location = -1 };
+    return (token){ .name = str, .name_len = get_string_literal_stride(lexer, str) - 1, .type = TokenStringLiteral, .sub_type = -1 };
 }
 
 static token get_operator_token(lexer* lexer, char* str) {
-    token tok = { .type = TokenOperator, .name = str, .name_len = 0, tok.name_location = -1 };
+    token tok = { .type = TokenOperator, .name = str, tok.sub_type = -1, .name_len = 0, };
     for (u64 i = 0; i < lexer->token_sets[TokenOperator].set_size; ++i) {
         u64 operator_len = strlen(lexer->token_sets[TokenOperator].set_name[i]);
         if ((u64)tok.name_len < operator_len &&
             strncmp(tok.name, lexer->token_sets[TokenOperator].set_name[i], operator_len) == 0) {
             tok.name_len = operator_len;
-            tok.name_location = i;
+            tok.sub_type = i;
         }
     }
-    return tok.name_location > -1 ? tok : (token){ .type = TokenError };
+    return tok.sub_type > -1 ? tok : (token){ .type = TokenError };
 }
 
 static token get_separator_token(lexer* lexer, char* str) {
-    token tok = { .type = TokenSeparator, .name = str, .name_len = 0, tok.name_location = -1 };
+    token tok = { .type = TokenSeparator, .name = str, tok.sub_type = -1, .name_len = 0 };
     for (u64 i = 0; i < lexer->token_sets[TokenSeparator].set_size; ++i) {
         u64 operator_len = strlen(lexer->token_sets[TokenSeparator].set_name[i]);
         if ((u64)tok.name_len < operator_len && 
             strncmp(str, lexer->token_sets[TokenSeparator].set_name[i], operator_len) == 0) {
             tok.name_len = operator_len;
-            tok.name_location = i;
+            tok.sub_type = i;
         }
     }
-    return tok.name_location > -1 ? tok : (token){ .type = TokenError };
+    return tok.sub_type > -1 ? tok : (token){ .type = TokenError };
 }
 
-token get_token_test(lexer* lexer, char* str) {
+token get_token(lexer* lexer, char* str) {
     if (str[0] == 0)
         return (token){ .type = TokenError };
-    // if (is_alphabet(str[0]) || str[0] == '_') {
-    //     return get_word_token(lexer, str);
-    // }
-    // if (is_number(str[0])) {
-    //     return get_literal_token(str);
-    // }
     if (is_string_literal_begin(lexer, str[0])) {
         return get_string_literal_token(lexer, str);
     }
     if (is_operator_begin(lexer, str[0])) {
         return get_operator_token(lexer, str);
     }
-    // if (is_separator_begin(lexer, str[0])) {
-    //     return get_separator_token(lexer, str);
-    // }
     return (token){ .type = TokenError };
 }
 
@@ -327,31 +318,35 @@ token lexer_tokenize_string(lexer* lexer, char* str) {
         case '3': case '4': case '5':
         case '6': case '7': case '8':
         case '9': return get_literal_token(str);
-        default: break;
+        default: return get_token(lexer, str);
     }
-
-    tok = get_token_test(lexer, str);
-    if (tok.name_len < 1) {
-        tok.type = TokenError;
-    }
-
-    return tok;
 }
 
 vector(token) lexer_tokenize_until(lexer* lexer, char* str, char terminal) {
     vector(token) tokens = make_vector();
+
+    if (str[0] == 0) {
+        vector_pushe(tokens, (token){
+                .type = TokenEnd
+                });
+        return tokens;
+    }
+
     char* begin = str;
     token tok = { .name = "" };
     while (tok.name[0] != terminal) {
-        if (begin[0] == ' ') {
-            begin++;
-            continue;
-        }
         if (begin[0] == 0) {
             vector_pushe(tokens, (token){ .type = TokenEnd, .name_len = -1 });
             return tokens;
         }
+        if (begin[0] == ' ') {
+            begin++;
+            continue;
+        }
         tok = lexer_tokenize_string(lexer, begin);
+        if (tok.name_len < 1) {
+            tok.type = TokenError;
+        }
         vector_pushe(tokens, tok);
         if (tok.type == TokenError) {
             return tokens;

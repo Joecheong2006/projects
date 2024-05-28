@@ -1,13 +1,17 @@
 #include <stdio.h>
+#include <assert.h>
 
+#include "environment.h"
 #include "keys_define.h"
 #include "interpretor.h"
+#include "parser.h"
 #include "source_file.h"
 #include "string.h"
 #include "basic/hashmap.h"
 #include "basic/memallocate.h"
 #include "basic/string.h"
 #include "lexer.h"
+#include "object.h"
 
 #define LEXER_ADD_TOKEN(lexer, str_set, type)\
     lexer_add_token((lexer), (token_set){\
@@ -16,46 +20,268 @@
                 .token = type\
             }, type);
 
-typedef enum {
-    ObjectVariable,
-    ObjectFunction,
-} ObjectType;
-
-typedef struct {
-    void* info;
-    string name;
-    ObjectType type;
-} object;
-
-hashmap object_map;
-
-object* make_object(object* test_data) {
-    object* result = MALLOC(sizeof(object));
-    memcpy(result, test_data, sizeof(object));
-    return result;
+u64 hash_object(const char* name, i32 len, u64 size) {
+    size_t result = 5381;
+    for (i32 i = 0; i < len; ++i) {
+        result = ((result << 5) + result) + name[i];
+    }
+    return result % size;
 }
 
-object* get_object(const char* name) {
-    vector(void*) objs = hashmap_access_vector(object_map, &(object){ .name = (string)name });
-    for_vector(objs, i, 0) {
+object* get_object(const char* name, u64 len) {
+    vector(void*) objs = env.object_map.data[hash_object(name, len, env.object_map.size)];
+    for (i64 i = vector_size(objs) - 1; i > -1; --i) {
         object* obj = objs[i];
-        if (strcmp(obj->name, name) == 0) {
+        u64 obj_name = strlen(obj->name);
+        if (obj_name == len && strncmp(obj->name, name, len) == 0) {
             return obj;
         }
     }
     return NULL;
 }
 
-size_t hash_object(void* data, size_t size) {
-    object* test_data = data;
-    return djb2(test_data->name) % size;
+void evaluate_expression_type(i32* out, tree_node* expression) {
+    for_vector(expression->nodes, i, 0) {
+        evaluate_expression_type(out, expression->nodes[i]);
+    }
+    if (expression->type >= NodeDecNumber && expression->type <= NodeBinNumber && expression->object_type > *out) {
+        *out = expression->object_type;
+    }
 }
 
-void free_object(void* data) {
-    object* obj = data;
-    free_string(&obj->name);
-    // NOTE: free obj->info
-    FREE(obj);
+#define TYPE_CONVERSION(type_a, type_b, value_ptr)\
+        {type_a vala = *(type_a*)value_ptr;\
+        type_b valb = vala;\
+        memcpy(value_ptr, &valb, sizeof(type_b));}
+
+i32 test_check_error(char* text, lexer* lex) {
+    i32 error = 0;
+    parser par;
+    init_parser(&par);
+    for (u64 start = 0;;) {
+        vector(token) tokens = lexer_tokenize_until(lex, text + start, '\n');
+        if (tokens[0].type == TokenEnd) {
+            free_vector(&tokens);
+            break;
+        }
+
+        for_vector(tokens, j, 0) {
+            if (tokens[j].type == TokenError) {
+                ++error;
+            }
+        }
+
+        start = strchr(text + start, '\n') - text + 1;
+
+        parser_set_tokens(&par, tokens);
+        tree_node* node = parser_parse(&par);
+        free_vector(&tokens);
+
+        if (!node) {
+            ++error;
+            continue;
+        }
+        dfs(node, free_node);
+    }
+    free_parser(&par);
+    return error;
+}
+
+void interpret_variable_initialize(tree_node* node) {
+    vector_push(vector_back(env.scopes), make_object(&(object){
+            .name = make_stringn(node->name, node->name_len),
+            .type = ObjectVariable,
+            .info = make_object_variable(&(object_variable){
+                .value = MALLOC(sizeof(int)),
+                .type = node->object_type
+                }),
+            }));
+
+    object* obj = vector_back(env.scopes[node->scope_level]);
+    printf("scope: %d, %d\n", node->scope_level, node->scope_id);
+    hashmap_add(env.object_map, obj);
+
+    i32 expr_type = -1;
+    object_variable* info = obj->info;
+    evaluate_expression_type(&expr_type, node->nodes[0]->nodes[0]);
+    interpret_cal_expression(info->value, expr_type, node->nodes[0]->nodes[0]);
+
+    switch (expr_type - node->object_type) {
+        case KeywordInt - KeywordFloat: TYPE_CONVERSION(int, float, info->value); break;
+        case KeywordFloat - KeywordInt: TYPE_CONVERSION(float, int, info->value); break;
+        default: break;
+    }
+
+    switch (info->type) {
+        case KeywordInt: printf("%s = %d\n", obj->name, *(i32*)info->value); break;
+        case KeywordFloat: printf("%s = %g\n", obj->name, *(f32*)info->value); break;
+        default: break;
+    }
+}
+
+void interpret_variable_assignment(tree_node* node) {
+    object* obj = get_object(node->name, node->name_len);
+    if (!obj) {
+        printf("not found object ");
+        print_token_name(&(token){ .name = node->name, .name_len = node->name_len });
+        putchar('\n');
+        exit(1);
+    }
+
+    i32 expr_type = -1;
+    object_variable* info = obj->info;
+    evaluate_expression_type(&expr_type, node->nodes[0]->nodes[0]);
+    interpret_cal_expression(info->value, expr_type, node->nodes[0]->nodes[0]);
+
+    switch (expr_type - node->object_type) {
+        case KeywordInt - KeywordFloat: TYPE_CONVERSION(int, float, info->value); break;
+        case KeywordFloat - KeywordInt: TYPE_CONVERSION(float, int, info->value); break;
+        default: break;
+    }
+
+    switch (info->type) {
+        case KeywordInt: printf("%s = %d\n", obj->name, *(i32*)info->value); break;
+        case KeywordFloat: printf("%s = %g\n", obj->name, *(f32*)info->value); break;
+        default: break;
+    }
+}
+
+void test_interpret(tree_node* node) {
+    switch (node->type) {
+    case NodeVariableInitialize: interpret_variable_initialize(node); break;
+    case NodeVariableAssignment: interpret_variable_assignment(node); break;
+    default: printf("not implement node instruction %d yet\n", node->type);  break;
+    }
+}
+
+void test() {
+    // char text[] = "val:float=-((1+2)*(4-1)+(4+2)*(4-1)-(1+2)*(4-1)-(4+2)*(4-1)-1-1-1)*1.5;";
+    char text[] = "a:int=1\n"
+                  "val:int=1.11*10.0+a\n"
+                  "a=13\n"
+                  ;
+
+    lexer lex;
+    LEXER_ADD_TOKEN(&lex, Keyword, TokenKeyword);
+    LEXER_ADD_TOKEN(&lex, Separator, TokenSeparator);
+    LEXER_ADD_TOKEN(&lex, Operator, TokenOperator);
+    LEXER_ADD_TOKEN(&lex, StringBegin, TokenStringBegin);
+
+    if (test_check_error(text, &lex)) {
+        exit(1);
+    }
+    printf("runnnig\n");
+
+    parser par;
+    init_parser(&par);
+    vector(tree_node*) instructions = make_vector();
+
+    // test_check_error(text);
+    init_environment();
+    vector_push(env.scopes, make_scope());
+
+    for (u64 start = 0, line = 1;; ++line) {
+        vector(token) tokens = lexer_tokenize_until(&lex, text + start, '\n');
+        if (tokens[0].type == TokenEnd) {
+            free_vector(&tokens);
+            break;
+        }
+
+        printf("<line:%llu> ", line);
+        for_vector(tokens, j, 0) {
+            print_token_name(tokens + j);
+            putchar(' ');
+        }
+        putchar('\n');
+        start = strchr(text + start, '\n') - text + 1;
+
+        parser_set_tokens(&par, tokens);
+        tree_node* node = parser_parse(&par);
+        free_vector(&tokens);
+
+        vector_push(instructions, node);
+        test_interpret(node);
+
+        dfs(node, free_node);
+    }
+
+    print_parser_error(&par);
+    free_parser(&par);
+    free_vector(&instructions);
+
+    delete_environment();
+    CHECK_MEMORY_LEAK();
+}
+
+void command_line_mode(lexer* lexer);
+i32 main(i32 argc, char** argv) {
+    // {
+    //     init_environment();
+    //     vector_push(env.scopes, make_scope());
+    //     vector_push(vector_back(env.scopes),
+    //             .name = make_string("hi"),
+    //             .type = 1,
+    //             .info = NULL
+    //             );
+    //     object* val = &vector_back(env.scopes[0]);
+    //     hashmap_add(env.object_map, val);
+    //     (void)get_object("hi", 2)->name;
+    //     delete_environment();
+    //     return 0;
+    // }
+    test();
+    return 0;
+
+    init_environment();
+    lexer lexer;
+
+    LEXER_ADD_TOKEN(&lexer, Keyword, TokenKeyword);
+    LEXER_ADD_TOKEN(&lexer, Separator, TokenSeparator);
+    LEXER_ADD_TOKEN(&lexer, Operator, TokenOperator);
+    LEXER_ADD_TOKEN(&lexer, StringBegin, TokenStringBegin);
+
+    if (argc == 1) {
+        command_line_mode(&lexer);
+        delete_environment();
+        CHECK_MEMORY_LEAK();
+        exit(0);
+    }
+
+    // TODO: pack source file
+    source_file source;
+    i32 success = load_source(&source, argv[1]);
+
+    if (!success) {
+        printf("failed load source\n");
+        exit(1);
+    }
+
+    printf("size = %llu, line count = %llu\n", source.buffer_size, source.line_count);
+    printf("----- source begin ------\n%s----- source end -----\n\n", source.buffer);
+
+    u64 offset = 0;
+    u64 first_n = 0;
+    for (u64 i = 0; i < source.line_count; ++i) {
+        first_n = strchr(source.buffer + offset, '\n') - source.buffer - offset + 1;
+
+        vector(token) tokens = lexer_tokenize_until(&lexer, source.buffer + offset, '\n');
+
+        printf("<line:%llu> ", i + 1);
+        for (u64 c = 0; c < first_n; ++c) {
+            putchar((source.buffer + offset)[c]);
+        }
+        for_vector(tokens, i, 0) {
+            print_token(tokens + i);
+        }
+        putchar('\n');
+
+        free_vector(&tokens);
+        offset += first_n;
+    }
+
+    free_source(&source);
+    delete_environment();
+    CHECK_MEMORY_LEAK();
 }
 
 u64 cal_line_stride(const  char* buffer, i32 line_count) {
@@ -65,7 +291,6 @@ u64 cal_line_stride(const  char* buffer, i32 line_count) {
     }
     return first_n;
 }
-
 
 void command_line_mode(lexer* lexer) {
     u64 line_count = 0, max_line_count = 0;
@@ -105,13 +330,12 @@ void command_line_mode(lexer* lexer) {
         } break;
         case 'p': {
             if (tokens) {
-                parser par = { .index = 0, .tokens = tokens, .tokens_len = vector_size(tokens), .error = ParseErrorNoError };
+                parser par = { .index = 0, .tokens = tokens, .tokens_len = vector_size(tokens) };
                 tree_node* node = parser_parse(&par);
                 if (node) {
                     bfs(node, print_node);
                     dfs(node, free_node);
                 }
-                printf("error %d\n", par.error);
             }
         } break;
         case 'n': {
@@ -155,197 +379,6 @@ void command_line_mode(lexer* lexer) {
     }
     if (tokens) free_vector(&tokens);
     free_string(&source_buffer);
-    CHECK_MEMORY_LEAK();
 }
 
-void get_expression_data_type(KeywordType* out, tree_node* expression) {
-    for_vector(expression->nodes, i, 0) {
-        get_expression_data_type(out, expression->nodes[i]);
-    }
-    if (expression->type == NodeDecNumber && expression->object_type > (i32)*out) {
-        *out = expression->object_type;
-    }
-}
-
-void construct_object(object* obj);
-void destruct_object(object* obj);
-
-void construct_object(object* obj) {
-    (void)obj;
-    // NOTE: call constrcutor if necessary
-}
-
-void destruct_object(object* obj) {
-    (void)obj;
-    // NOTE: call destrcutor if necessary
-}
-
-typedef vector(object) scope;
-void init_scope(scope* s);
-void scope_push(scope* s, object* obj);
-void scope_pop(scope* s);
-void free_scope(scope* s);
-
-scope make_scope() {
-    return make_vector();
-}
-
-void scope_push(scope* s, object* obj) {
-    vector_pushe(*s, *obj);
-    construct_object(obj);
-}
-
-void scope_pop(scope* s) {
-    object* obj = &vector_back(*s);
-    vector_pop(*s);
-    destruct_object(obj);
-}
-
-void free_scope(scope* s) {
-    for_vector(*s, i, 0) {
-        FREE((*s)[i].info); // need to call specif func
-        free_string(&(*s)[i].name);
-    }
-    free_vector(s);
-}
-
-// TODO: checking lexer error from parser
-void test(lexer* lex) {
-    vector(scope) scopes = make_vector();
-    vector(tree_node*) instructions = make_vector();
-
-    char text[] = "val:float=-((1+2)*(4-1)+(4+2)*(4-1)-(1+2)*(4-1)-(4+2)*(4-1)-1-1-1)*1.5;";
-    // const char text[] = "val=0xabcdef * (0b1010 * 0o7) * 0.01\n";
-    vector(token) tokens = lexer_tokenize_until(lex, text, '\n');
-
-    for_vector(tokens, i, 0) {
-        print_token_name(tokens + i);
-        putchar(' ');
-    }
-    putchar('\n');
-
-    parser par;
-    init_parser(&par, tokens);
-
-    tree_node* node = parser_parse(&par);
-    if (node) {
-        void* expr_result = MALLOC(sizeof(int));
-        memset(expr_result, 0, sizeof(int));
-        interpret_cal_expression(expr_result, node->object_type, node->nodes[0]->nodes[0]);
-
-        vector_push(instructions, node);
-        vector_push(scopes, make_scope());
-
-        struct variable_info {
-            void* value;
-            i32 type; // Keyword
-        };
-
-        vector_push(vector_back(scopes),
-                    .name = make_stringn(instructions[0]->name, instructions[0]->name_len),
-                    .type = ObjectVariable,
-                    .info = MALLOC(sizeof(struct variable_info)),
-                );
-
-        object* val = &scopes[instructions[0]->scope_level][instructions[0]->scope_id];
-        struct variable_info* info = val->info;
-        info->value = expr_result;
-        info->type = instructions[0]->object_type;
-
-        switch (info->type) {
-        case KeywordInt: printf("%s = %d\n", val->name, *(i32*)info->value); break;
-        case KeywordFloat: printf("%s = %g\n", val->name, *(f32*)info->value); break;
-        default: break;
-        }
-
-        FREE(expr_result);
-
-        dfs(node, free_node);
-    }
-
-    printf("error %d\n", par.error);
-    free_vector(&tokens);
-    free_vector(&instructions);
-
-    for_vector(scopes, i, 0) {
-        free_scope(&scopes[i]);
-    }
-    free_vector(&scopes);
-
-    hashmap_free_items(object_map, free_object);
-    free_hashmap(&object_map);
-    CHECK_MEMORY_LEAK();
-}
-
-i32 main(i32 argc, char** argv) {
-    object_map = make_hashmap(1 << 10, hash_object);
-
-    lexer lexer;
-
-    LEXER_ADD_TOKEN(&lexer, Keyword, TokenKeyword);
-    LEXER_ADD_TOKEN(&lexer, Separator, TokenSeparator);
-    LEXER_ADD_TOKEN(&lexer, Operator, TokenOperator);
-    LEXER_ADD_TOKEN(&lexer, StringBegin, TokenStringBegin);
-    //
-    // test(&lexer);
-    // return 0;
-    //
-    if (argc == 1) {
-        command_line_mode(&lexer);
-        exit(0);
-    }
-
-    // TODO: to pack source file
-    source_file source;
-    i32 success = load_source(&source, argv[1]);
-
-    if (!success) {
-        printf("failed load source\n");
-        exit(1);
-    }
-
-    printf("size = %llu, line count = %llu\n", source.buffer_size, source.line_count);
-    printf("----- source begin ------\n%s----- source end -----\n\n", source.buffer);
-
-    u64 offset = 0;
-    u64 first_n = 0;
-    for (u64 i = 0; i < source.line_count; ++i) {
-        first_n = strchr(source.buffer + offset, '\n') - source.buffer - offset + 1;
-
-        // vector(token) tokens = lexer_tokenize_until(&lexer, source.buffer + offset, '\n');
-        vector(token) tokens = lexer_tokenize_until(&lexer, source.buffer + offset, '\n');
-
-        // try match pattern else it's a error
-        printf("<line:%llu> ", i + 1);
-        for (u64 c = 0; c < first_n; ++c) {
-            putchar((source.buffer + offset)[c]);
-        }
-        for_vector(tokens, i, 0) {
-            print_token(tokens + i);
-        }
-
-        // parser_test(tokens);
-        putchar('\n');
-
-        free_vector(&tokens);
-        offset += first_n;
-    }
-
-    vector(void*) result = hashmap_access_vector(object_map, &(object){
-                    .name = "number"
-                });
-
-    for_vector(result, i, 0) {
-        object* item = result[i];
-        print_token(&(token){
-                    .name = item->name,
-                    .type = TokenIdentifier,
-                });
-    }
-
-    hashmap_free_items(object_map, free_object);
-    free_hashmap(&object_map);
-    free_source(&source);
-    CHECK_MEMORY_LEAK();
-}
 

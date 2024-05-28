@@ -1,5 +1,6 @@
 CC = gcc
-CFLAGS = -std=c99 -Wall -Wextra -Wpedantic -Wstrict-aliasing -Werror -g3 -DDEBUG
+# CFLAGS = -std=c99 -Wall -Wextra -Wpedantic -Wstrict-aliasing -Werror -g3 -DNDEBUG
+CFLAGS = -std=c99 -Wall -Wextra -Wpedantic -Wstrict-aliasing -Werror -g3
 DEBUGGER = gdb
 
 SRC = $(wildcard src/*.c src/**/*.c)
