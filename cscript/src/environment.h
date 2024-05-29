@@ -12,6 +12,8 @@ struct _environment {
 
 extern struct _environment env;
 
+object* get_object(const char* name, u64 len);
+
 void init_environment(void);
 void delete_environment(void);
 

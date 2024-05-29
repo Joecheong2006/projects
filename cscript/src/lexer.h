@@ -8,7 +8,7 @@ typedef enum {
     TokenOperator,
     TokenParserCount,
 
-    TokenStringBegin,
+    TokenCharLiteral,
     TokenStringLiteral,
     TokenDecLiteral,
     TokenHexLiteral,
@@ -33,16 +33,15 @@ typedef enum {
     TokenUnkown
 } Token;
 
-typedef struct PACKED {
+typedef struct {
     Token type;
     char* name;
-    i16 sub_type;
-    i16 name_len;
+    i16 sub_type, name_len;
 } token;
 
-typedef struct PACKED {
+typedef struct {
     const char** set_name;
-    u64 set_size;
+    i32 set_size;
     Token token;
 } token_set;
 
@@ -60,6 +59,7 @@ i32 is_keyword_type(token* tok, i32 type);
 i32 is_operator_type(token* tok, i32 type);
 i32 is_separator_type(token* tok, i32 type);
 i32 is_string_literal(token* tok);
+i32 is_char_literal(token* tok);
 i32 is_real_number(token* tok);
 
 void lexer_add_token(lexer* lexer, token_set set, Token token);

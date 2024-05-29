@@ -4,22 +4,23 @@
 #include "basic/string.h"
 
 typedef enum {
-    ParseErrorNoError,
-    ParseErrorMissingToken,
-    ParseErrorMissingLhs,
-    ParseErrorMissingRhs,
-    ParseErrorMissingOpenBracket,
-    ParseErrorMissingCloseBracket,
-    ParseErrorMissingOperator,
-    ParseErrorMissingAssignOperator,
-    ParseErrorMissingSeparator,
-    ParseErrorExpectedExpression,
-} ParseError;
+    ParserErrorNoError,
+    ParserErrorMissingToken,
+    ParserErrorMissingLhs,
+    ParserErrorMissingRhs,
+    ParserErrorMissingOpenBracket,
+    ParserErrorMissingCloseBracket,
+    ParserErrorMissingOperator,
+    ParserErrorMissingAssignOperator,
+    ParserErrorMissingSeparator,
+    ParserErrorExpectedExpression,
+    ParserErrorInvalidOperandsType,
+    ParserErrorUndefineName,
+} ParserError;
 
 typedef struct {
     vector(token) tokens;
-    u64 index, tokens_len;
-    i32 scope_level, scope_id;
+    i16 index, tokens_len;
     vector(string) error_messgaes;
 } parser;
 
@@ -33,10 +34,17 @@ typedef enum {
     NodeVariableAssignment,
     NodeOperator,
     NodeAssignmentOperator,
+    NodeTypeInt,
+    NodeStringLiteral,
+    NodeCharLiteral,
+    NodeTypeFloat,
     NodeDecNumber,
     NodeHexNumber,
     NodeOctNumber,
     NodeBinNumber,
+    NodeTypeString,
+    NodeTypeChar,
+    NodeUserType,
     NodeNegateOperator,
     NodeEmpty,
 } NodeType;
@@ -46,8 +54,7 @@ struct tree_node {
     char* name;
     vector(tree_node*) nodes;
     NodeType type;
-    i32 scope_level, scope_id;
-    i32 object_type, name_len;
+    i16 object_type, name_len;
 };
 
 tree_node* make_tree_node(NodeType type, i32 object_type, char* name, i32 name_len);

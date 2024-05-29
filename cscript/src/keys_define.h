@@ -8,8 +8,9 @@ typedef enum {
     KeywordConst,
     KeywordInt,
     KeywordFloat,
-    KeywordString,
+    KeywordBool,
     KeywordChar,
+    KeywordString,
     KeywordTrue,
     KeywordFlase,
     KeywordNone,
@@ -69,16 +70,9 @@ typedef enum {
     OperatorTokenCount
 } OperatorType;
 
-enum {
-    DoubleQuote,
-    SingleQuote,
-    CommentTokenCount,
-};
-
 extern const char* Keyword[KeywordTokenCount];
 extern const char* Separator[SeparatorTokenCount];
 extern const char* Operator[OperatorTokenCount];
-extern const char* StringBegin[CommentTokenCount];
 extern const char* SingleLineComment[1];
 extern const char* MultiLineComment[2];
 

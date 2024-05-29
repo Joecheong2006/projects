@@ -1,7 +1,6 @@
-#ifndef INTERPRETOR_H
-#define INTERPRETOR_H
+#ifndef INTERPRETER_H
+#define INTERPRETER_H
 #include "parser.h"
-#include "keys_define.h"
 
 typedef struct {
     u64 index;
@@ -9,6 +8,6 @@ typedef struct {
 } interpretor;
 
 void interpret(interpretor* inter);
-void interpret_cal_expression(void* out, KeywordType data_type, tree_node* node);
+void interpret_cal_expression(void* out, NodeType data_type, tree_node* node);
 
 #endif

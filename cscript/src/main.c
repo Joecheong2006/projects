@@ -3,7 +3,7 @@
 
 #include "environment.h"
 #include "keys_define.h"
-#include "interpretor.h"
+#include "interpreter.h"
 #include "parser.h"
 #include "source_file.h"
 #include "string.h"
@@ -20,31 +20,21 @@
                 .token = type\
             }, type);
 
-u64 hash_object(const char* name, i32 len, u64 size) {
-    size_t result = 5381;
-    for (i32 i = 0; i < len; ++i) {
-        result = ((result << 5) + result) + name[i];
+static void print_variable(object* obj) {
+    object_variable* info = obj->info;
+    switch (info->type) {
+        case NodeTypeInt: printf("%s = %d\n", obj->name, *(i32*)info->value); break;
+        case NodeTypeFloat: printf("%s = %g\n", obj->name, *(f32*)info->value); break;
+        case NodeTypeChar: printf("%s = %c\n", obj->name, *(char*)info->value); break;
+        default: break;
     }
-    return result % size;
-}
-
-object* get_object(const char* name, u64 len) {
-    vector(void*) objs = env.object_map.data[hash_object(name, len, env.object_map.size)];
-    for (i64 i = vector_size(objs) - 1; i > -1; --i) {
-        object* obj = objs[i];
-        u64 obj_name = strlen(obj->name);
-        if (obj_name == len && strncmp(obj->name, name, len) == 0) {
-            return obj;
-        }
-    }
-    return NULL;
 }
 
 void evaluate_expression_type(i32* out, tree_node* expression) {
     for_vector(expression->nodes, i, 0) {
         evaluate_expression_type(out, expression->nodes[i]);
     }
-    if (expression->type >= NodeDecNumber && expression->type <= NodeBinNumber && expression->object_type > *out) {
+    if (expression->type >= NodeTypeInt && expression->type <= NodeTypeChar && expression->object_type > *out) {
         *out = expression->object_type;
     }
 }
@@ -54,11 +44,19 @@ void evaluate_expression_type(i32* out, tree_node* expression) {
         type_b valb = vala;\
         memcpy(value_ptr, &valb, sizeof(type_b));}
 
+void type_cast(i32 type_a, i32 type_b, void* value) {
+    switch (type_a - type_b) {
+        case NodeTypeInt - NodeTypeFloat: TYPE_CONVERSION(int, float, value); break;
+        case NodeTypeFloat - NodeTypeInt: TYPE_CONVERSION(float, int, value); break;
+        default: break;
+    }
+}
+
 i32 test_check_error(char* text, lexer* lex) {
     i32 error = 0;
     parser par;
     init_parser(&par);
-    for (u64 start = 0;;) {
+    for (i32 start = 0;;) {
         vector(token) tokens = lexer_tokenize_until(lex, text + start, '\n');
         if (tokens[0].type == TokenEnd) {
             free_vector(&tokens);
@@ -83,6 +81,7 @@ i32 test_check_error(char* text, lexer* lex) {
         }
         dfs(node, free_node);
     }
+    print_parser_error(&par);
     free_parser(&par);
     return error;
 }
@@ -91,14 +90,10 @@ void interpret_variable_initialize(tree_node* node) {
     vector_push(vector_back(env.scopes), make_object(&(object){
             .name = make_stringn(node->name, node->name_len),
             .type = ObjectVariable,
-            .info = make_object_variable(&(object_variable){
-                .value = MALLOC(sizeof(int)),
-                .type = node->object_type
-                }),
+            .info = make_object_variable(node),
             }));
 
-    object* obj = vector_back(env.scopes[node->scope_level]);
-    printf("scope: %d, %d\n", node->scope_level, node->scope_id);
+    object* obj = vector_back(vector_back(env.scopes));
     hashmap_add(env.object_map, obj);
 
     i32 expr_type = -1;
@@ -106,17 +101,9 @@ void interpret_variable_initialize(tree_node* node) {
     evaluate_expression_type(&expr_type, node->nodes[0]->nodes[0]);
     interpret_cal_expression(info->value, expr_type, node->nodes[0]->nodes[0]);
 
-    switch (expr_type - node->object_type) {
-        case KeywordInt - KeywordFloat: TYPE_CONVERSION(int, float, info->value); break;
-        case KeywordFloat - KeywordInt: TYPE_CONVERSION(float, int, info->value); break;
-        default: break;
-    }
+    type_cast(expr_type, node->object_type, info->value);
 
-    switch (info->type) {
-        case KeywordInt: printf("%s = %d\n", obj->name, *(i32*)info->value); break;
-        case KeywordFloat: printf("%s = %g\n", obj->name, *(f32*)info->value); break;
-        default: break;
-    }
+    print_variable(obj);
 }
 
 void interpret_variable_assignment(tree_node* node) {
@@ -130,20 +117,16 @@ void interpret_variable_assignment(tree_node* node) {
 
     i32 expr_type = -1;
     object_variable* info = obj->info;
-    evaluate_expression_type(&expr_type, node->nodes[0]->nodes[0]);
+    if (info->type != NodeTypeChar) {
+        evaluate_expression_type(&expr_type, node->nodes[0]->nodes[0]);
+    }
+    else {
+        expr_type = info->type;
+    }
     interpret_cal_expression(info->value, expr_type, node->nodes[0]->nodes[0]);
+    type_cast(expr_type, info->type, info->value);
 
-    switch (expr_type - node->object_type) {
-        case KeywordInt - KeywordFloat: TYPE_CONVERSION(int, float, info->value); break;
-        case KeywordFloat - KeywordInt: TYPE_CONVERSION(float, int, info->value); break;
-        default: break;
-    }
-
-    switch (info->type) {
-        case KeywordInt: printf("%s = %d\n", obj->name, *(i32*)info->value); break;
-        case KeywordFloat: printf("%s = %g\n", obj->name, *(f32*)info->value); break;
-        default: break;
-    }
+    print_variable(obj);
 }
 
 void test_interpret(tree_node* node) {
@@ -156,16 +139,17 @@ void test_interpret(tree_node* node) {
 
 void test() {
     // char text[] = "val:float=-((1+2)*(4-1)+(4+2)*(4-1)-(1+2)*(4-1)-(4+2)*(4-1)-1-1-1)*1.5;";
-    char text[] = "a:int=1\n"
-                  "val:int=1.11*10.0+a\n"
-                  "a=13\n"
+    char text[] = "a:float=2\n"
+                  "c:char='a'+1\n"
+                  "c=97\n"
+                  "val:int=1.11*10.0+a+c\n"
+                  "a=69\n"
                   ;
 
     lexer lex;
     LEXER_ADD_TOKEN(&lex, Keyword, TokenKeyword);
     LEXER_ADD_TOKEN(&lex, Separator, TokenSeparator);
     LEXER_ADD_TOKEN(&lex, Operator, TokenOperator);
-    LEXER_ADD_TOKEN(&lex, StringBegin, TokenStringBegin);
 
     if (test_check_error(text, &lex)) {
         exit(1);
@@ -176,7 +160,6 @@ void test() {
     init_parser(&par);
     vector(tree_node*) instructions = make_vector();
 
-    // test_check_error(text);
     init_environment();
     vector_push(env.scopes, make_scope());
 
@@ -215,20 +198,6 @@ void test() {
 
 void command_line_mode(lexer* lexer);
 i32 main(i32 argc, char** argv) {
-    // {
-    //     init_environment();
-    //     vector_push(env.scopes, make_scope());
-    //     vector_push(vector_back(env.scopes),
-    //             .name = make_string("hi"),
-    //             .type = 1,
-    //             .info = NULL
-    //             );
-    //     object* val = &vector_back(env.scopes[0]);
-    //     hashmap_add(env.object_map, val);
-    //     (void)get_object("hi", 2)->name;
-    //     delete_environment();
-    //     return 0;
-    // }
     test();
     return 0;
 
@@ -238,7 +207,6 @@ i32 main(i32 argc, char** argv) {
     LEXER_ADD_TOKEN(&lexer, Keyword, TokenKeyword);
     LEXER_ADD_TOKEN(&lexer, Separator, TokenSeparator);
     LEXER_ADD_TOKEN(&lexer, Operator, TokenOperator);
-    LEXER_ADD_TOKEN(&lexer, StringBegin, TokenStringBegin);
 
     if (argc == 1) {
         command_line_mode(&lexer);

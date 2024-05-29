@@ -7,6 +7,7 @@ const char* Keyword[] = {
     [KeywordConst] = "const",
     [KeywordInt] = "int", 
     [KeywordFloat] = "float", 
+    [KeywordBool] = "bool",
     [KeywordChar] = "char",
     [KeywordString] = "string",
     [KeywordTrue] = "null", 
@@ -58,10 +59,6 @@ const char* Operator[] = {
     [OperatorAnd] = "or",
     [OperatorNot] = "!",
     [OperatorPower] = "**",
-};
-
-const char* StringBegin[] = {
-    [DoubleQuote] = "\"",
 };
 
 const char* SingleLineComment[] = {

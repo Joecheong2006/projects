@@ -1,6 +1,26 @@
 #include "environment.h"
+#include <string.h>
 
 struct _environment env;
+
+static u64 hash_object_len(const char* name, i32 len, u64 size) {
+    size_t result = 5381;
+    for (i32 i = 0; i < len; ++i) {
+        result = ((result << 5) + result) + name[i];
+    }
+    return result % size;
+}
+
+object* get_object(const char* name, u64 len) {
+    vector(object*) objs = (vector(object*))env.object_map.data[hash_object_len(name, len, env.object_map.size)];
+    for (i64 i = vector_size(objs) - 1; i > -1; --i) {
+        u64 obj_name = vector_size(objs[i]->name);
+        if (obj_name == len && strncmp(objs[i]->name, name, len) == 0) {
+            return objs[i];
+        }
+    }
+    return NULL;
+}
 
 static u64 hash_object(void* data, u64 size) {
     size_t result = 5381;

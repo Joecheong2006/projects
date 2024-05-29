@@ -12,16 +12,18 @@ INLINE i32 is_node_number(NodeType type) { return type >= NodeDecNumber && type 
 
 INLINE void set_parse_error(parser* par, i32 error) {
     switch (error) {
-    case ParseErrorNoError: vector_push(par->error_messgaes, make_string("no error")); break;
-    case ParseErrorMissingToken: vector_push(par->error_messgaes, make_string("parser error missing token")); break;
-    case ParseErrorMissingLhs: vector_push(par->error_messgaes, make_string("parser error missing lhs")); break;
-    case ParseErrorMissingRhs: vector_push(par->error_messgaes, make_string("parser error missing rhs")); break;
-    case ParseErrorMissingOpenBracket: vector_push(par->error_messgaes, make_string("parser error missing open bracket")); break;
-    case ParseErrorMissingCloseBracket: vector_push(par->error_messgaes, make_string("parser error missing close bracket")); break;
-    case ParseErrorMissingOperator: vector_push(par->error_messgaes, make_string("parser error missing operator")); break;
-    case ParseErrorMissingAssignOperator: vector_push(par->error_messgaes, make_string("parser error missing assign operator")); break;
-    case ParseErrorMissingSeparator: vector_push(par->error_messgaes, make_string("parser error missing separaotr")); break;
-    case ParseErrorExpectedExpression: vector_push(par->error_messgaes, make_string("parser error expected expression")); break;
+    case ParserErrorNoError: vector_push(par->error_messgaes, make_string("no error")); break;
+    case ParserErrorMissingToken: vector_push(par->error_messgaes, make_string("parser error missing token")); break;
+    case ParserErrorMissingLhs: vector_push(par->error_messgaes, make_string("parser error missing lhs")); break;
+    case ParserErrorMissingRhs: vector_push(par->error_messgaes, make_string("parser error missing rhs")); break;
+    case ParserErrorMissingOpenBracket: vector_push(par->error_messgaes, make_string("parser error missing open bracket")); break;
+    case ParserErrorMissingCloseBracket: vector_push(par->error_messgaes, make_string("parser error missing close bracket")); break;
+    case ParserErrorMissingOperator: vector_push(par->error_messgaes, make_string("parser error missing operator")); break;
+    case ParserErrorMissingAssignOperator: vector_push(par->error_messgaes, make_string("parser error missing assign operator")); break;
+    case ParserErrorMissingSeparator: vector_push(par->error_messgaes, make_string("parser error missing separaotr")); break;
+    case ParserErrorExpectedExpression: vector_push(par->error_messgaes, make_string("parser error expected expression")); break;
+    case ParserErrorInvalidOperandsType: vector_push(par->error_messgaes, make_string("parser error invalid operands type")); break;
+    case ParserErrorUndefineName: vector_push(par->error_messgaes, make_string("parser error undefine name")); break;
     default: break;
     }
 }
@@ -86,14 +88,32 @@ void dfs(tree_node* root, void(*act)(tree_node*)) {
     act(root);
 }
 
-static void set_scope_location(parser* par, tree_node* node) {
-    node->scope_level = par->scope_level;
-    node->scope_id = par->scope_id;
+static i32 cast_keyword_to_node_type(token* tok) {
+    switch (tok->type) {
+    case TokenDecLiteral: return NodeDecNumber; break;
+    case TokenHexLiteral: return NodeHexNumber; break;
+    case TokenOctLiteral: return NodeOctNumber; break;
+    case TokenBinLiteral: return NodeBinNumber; break;
+    default: break;
+    }
+    switch (tok->sub_type) {
+    case KeywordInt: return NodeTypeInt; break;
+    case KeywordFloat: return NodeTypeFloat; break;
+    case KeywordString: return NodeTypeString; break;
+    case KeywordChar: return NodeTypeChar; break;
+    default: break;
+    }
+    return -1;
 }
 
-static tree_node* parse_variable(parser* par) {
+INLINE static tree_node* parse_rvariable(parser* par) {
     token* tok = parser_peek(par, 0);
     return make_tree_node(NodeVariable, tok->sub_type, tok->name, tok->name_len);
+}
+
+INLINE static tree_node* parse_char_literal(parser* par) {
+    token* tok = parser_peek(par, 0);
+    return make_tree_node(NodeCharLiteral, NodeTypeChar, tok->name + 1, tok->name_len - 2);
 }
 
 static tree_node* try_parse_number(parser* par) {
@@ -101,13 +121,13 @@ static tree_node* try_parse_number(parser* par) {
     switch (tok->type) {
     case TokenDecLiteral: {
         if (is_real_number(tok)) {
-            return make_tree_node(NodeDecNumber, KeywordFloat, tok->name, tok->name_len);
+            return make_tree_node(NodeDecNumber, NodeTypeFloat, tok->name, tok->name_len);
         }
-        return make_tree_node(NodeDecNumber, KeywordInt, tok->name, tok->name_len);
+        return make_tree_node(NodeDecNumber, NodeTypeInt, tok->name, tok->name_len);
     }
-    case TokenHexLiteral: return make_tree_node(NodeHexNumber, KeywordInt, tok->name, tok->name_len);
-    case TokenOctLiteral: return make_tree_node(NodeOctNumber, KeywordInt, tok->name, tok->name_len);
-    case TokenBinLiteral: return make_tree_node(NodeBinNumber, KeywordInt, tok->name, tok->name_len);
+    case TokenHexLiteral: return make_tree_node(NodeHexNumber, NodeTypeInt, tok->name, tok->name_len);
+    case TokenOctLiteral: return make_tree_node(NodeOctNumber, NodeTypeInt, tok->name, tok->name_len);
+    case TokenBinLiteral: return make_tree_node(NodeBinNumber, NodeTypeInt, tok->name, tok->name_len);
     default: return NULL;
     }
 }
@@ -126,22 +146,24 @@ static tree_node* parse_negate_operator(parser* par) {
     return make_tree_node(NodeNegateOperator, tok->sub_type, tok->name, tok->name_len);
 }
 
-static tree_node* try_parse_expression_with_bracket(parser* par);
-
-static tree_node* try_parse_expression_lhs(parser* par) {
+static tree_node* try_parse_binary_expression_with_bracket(parser* par);
+static tree_node* try_parse_binary_expression_lhs(parser* par) {
     ++par->index;
     if (is_identifier(parser_peek(par, 0))) {
-        return parse_variable(par);
+        return parse_rvariable(par);
+    }
+    if (is_char_literal(parser_peek(par, 0))) {
+        return parse_char_literal(par);
     }
     if (parser_peek(par, 0)->type == TokenOpenRoundBracket) {
-        return try_parse_expression_with_bracket(par);
+        return try_parse_binary_expression_with_bracket(par);
     }
     if (is_number(parser_peek(par, 0)->name[0]) || is_real_number(parser_peek(par, 0))) {
         return try_parse_number(par);
     }
     if (is_operator_type(parser_peek(par, 0), OperatorMinus)) {
         tree_node* lhs = parse_negate_operator(par);
-        tree_node* lhs_lhs = try_parse_expression_lhs(par);
+        tree_node* lhs_lhs = try_parse_binary_expression_lhs(par);
         if (!lhs_lhs) {
             return NULL;
         }
@@ -149,21 +171,21 @@ static tree_node* try_parse_expression_lhs(parser* par) {
         return lhs;
     }
     set_parse_error(par, parser_peek(par, 0)->type == TokenCloseRoundBracket
-            ? ParseErrorExpectedExpression : ParseErrorMissingCloseBracket);
+            ? ParserErrorExpectedExpression : ParserErrorMissingCloseBracket);
     return NULL;
 }
 
-static tree_node* try_parse_expression_with_bracket(parser* par) {
-    tree_node* lhs = try_parse_expression_lhs(par);
+static tree_node* try_parse_binary_expression_with_bracket(parser* par) {
+    tree_node* lhs = try_parse_binary_expression_lhs(par);
 
     if (!lhs) {
-        set_parse_error(par, ParseErrorMissingLhs);
+        set_parse_error(par, ParserErrorMissingLhs);
         return NULL;
     }
 
     if (parser_peek(par, 1)->type == TokenNewLine || parser_peek(par, 1)->type == TokenSemicolon || par->index == par->tokens_len) {
         dfs(lhs, free_node);
-        set_parse_error(par, ParseErrorMissingCloseBracket);
+        set_parse_error(par, ParserErrorMissingCloseBracket);
         return NULL;
     }
     if (parser_peek(par, 1)->type == TokenCloseRoundBracket) {
@@ -174,7 +196,7 @@ static tree_node* try_parse_expression_with_bracket(parser* par) {
     tree_node* operator = try_parse_operator(par);
     if (!operator) {
         dfs(lhs, free_node);
-        set_parse_error(par, ParseErrorMissingOperator);
+        set_parse_error(par, ParserErrorMissingOperator);
         return NULL;
     }
 
@@ -186,9 +208,9 @@ static tree_node* try_parse_expression_with_bracket(parser* par) {
 
     vector_pushe(operator->nodes, lhs);
     i32 has_bracket = parser_peek(par, 1)->type == TokenOpenRoundBracket;
-    tree_node* rhs = try_parse_expression_with_bracket(par);
+    tree_node* rhs = try_parse_binary_expression_with_bracket(par);
     if (!rhs) {
-        set_parse_error(par, ParseErrorMissingRhs);
+        set_parse_error(par, ParserErrorMissingRhs);
         dfs(operator, free_node);
         return NULL;
     }
@@ -221,17 +243,17 @@ static tree_node* try_parse_expression_with_bracket(parser* par) {
     return operator;
 }
 
-static tree_node* try_parse_expression(parser* par) {
-    tree_node* lhs = try_parse_expression_lhs(par);
+static tree_node* try_parse_binary_expression(parser* par) {
+    tree_node* lhs = try_parse_binary_expression_lhs(par);
 
     if (!lhs) {
-        set_parse_error(par, ParseErrorMissingLhs);
+        set_parse_error(par, ParserErrorMissingLhs);
         return NULL;
     }
 
     if (parser_peek(par, 1)->type == TokenCloseRoundBracket) {
         dfs(lhs, free_node);
-        set_parse_error(par, ParseErrorMissingOpenBracket);
+        set_parse_error(par, ParserErrorMissingOpenBracket);
         return NULL;
     }
     if (parser_peek(par, 1)->type == TokenNewLine || parser_peek(par, 1)->type == TokenSemicolon || par->index == par->tokens_len) {
@@ -241,7 +263,7 @@ static tree_node* try_parse_expression(parser* par) {
     tree_node* operator = try_parse_operator(par);
     if (!operator) {
         dfs(lhs, free_node);
-        set_parse_error(par, ParseErrorMissingOperator);
+        set_parse_error(par, ParserErrorMissingOperator);
         return NULL;
     }
 
@@ -253,9 +275,9 @@ static tree_node* try_parse_expression(parser* par) {
 
     vector_pushe(operator->nodes, lhs);
     i32 has_bracket = parser_peek(par, 1)->type == TokenOpenRoundBracket;
-    tree_node* rhs = try_parse_expression(par);
+    tree_node* rhs = try_parse_binary_expression(par);
     if (!rhs) {
-        set_parse_error(par, ParseErrorMissingRhs);
+        set_parse_error(par, ParserErrorMissingRhs);
         dfs(operator, free_node);
         return NULL;
     }
@@ -300,6 +322,7 @@ static i32 try_parse_data_type(parser* par) {
     if (tok->type == TokenKeyword && is_vailed_data_type(tok)) {
         return tok->sub_type;
     }
+    set_parse_error(par, ParserErrorUndefineName);
     --par->index;
     return 0;
 }
@@ -307,13 +330,14 @@ static i32 try_parse_data_type(parser* par) {
 static i32 try_parse_type_dec(parser* par) {
     ++par->index;
     if (is_separator_type(parser_peek(par, 0), SeparatorColon)) {
-        return try_parse_data_type(par);
+        i32 data_type = try_parse_data_type(par);
+        return data_type == 0 ? -1 : data_type;
     }
     --par->index;
     return 0;
 }
 
-static tree_node* try_parse_assignment_operator(parser* par) {
+static tree_node* try_parse_assign_operator(parser* par) {
     ++par->index;
     token* tok = parser_peek(par, 0);
     if (is_assigment_operator(tok)) {
@@ -323,24 +347,31 @@ static tree_node* try_parse_assignment_operator(parser* par) {
 }
 
 static tree_node* try_parse_identifier(parser* par) {
-    tree_node* var = parse_variable(par);
-    set_scope_location(par, var);
+    token* tok = parser_peek(par, 0);
+    tree_node* var = make_tree_node(NodeVariable, -1, tok->name, tok->name_len);
 
     if ((var->object_type = try_parse_type_dec(par)) == 0) {
         var->type = NodeVariableAssignment;
     }
-    else {
+    else if (var->object_type != -1) {
         var->type = NodeVariableInitialize;
+        var->object_type = cast_keyword_to_node_type(parser_peek(par, 0));
+        // if (var->object_type == -1) {
+        //     // TODO: check user type
+        // }
     }
-
-    tree_node* assign_operator = try_parse_assignment_operator(par);
-    if (!assign_operator) {
-        free_node(var);
-        set_parse_error(par, ParseErrorMissingAssignOperator);
+    else {
         return NULL;
     }
 
-    tree_node* expression = try_parse_expression(par);
+    tree_node* assign_operator = try_parse_assign_operator(par);
+    if (!assign_operator) {
+        free_node(var);
+        set_parse_error(par, ParserErrorMissingAssignOperator);
+        return NULL;
+    }
+
+    tree_node* expression = try_parse_binary_expression(par);
     if (!expression) {
         free_node(var);
         free_node(assign_operator);
@@ -348,7 +379,6 @@ static tree_node* try_parse_identifier(parser* par) {
     }
     vector_pushe(var->nodes, assign_operator);
     vector_pushe(var->nodes[0]->nodes, expression);
-    ++par->scope_id;
 
     return var;
 }

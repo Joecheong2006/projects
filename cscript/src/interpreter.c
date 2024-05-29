@@ -1,4 +1,10 @@
-#include "interpretor.h"
+#include "interpreter.h"
+#include "keys_define.h"
+#include "environment.h"
+#include "object.h"
+#include "parser.h"
+
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
@@ -143,6 +149,27 @@ static void interpret_cal_expression_int(int* out, tree_node* node) {
         int value = bin_to_dec(node);
         memcpy(out, &value, sizeof(int));
     } break;
+    case NodeCharLiteral: {
+        int value = node->name[0];
+        memcpy(out, &value, sizeof(int));
+    } break;
+    case NodeVariable: {
+        object* obj = get_object(node->name, node->name_len);
+        if (obj) {
+            object_variable* var = obj->info;
+            switch (var->type) {
+            case NodeTypeInt: {
+                *out = *(int*)var->value;
+            } break;
+            case NodeTypeChar: {
+                *out = *(char*)var->value;
+            } break;
+            default: break;
+            }
+            break;
+        }
+        // NOTE: run time error
+    } break;
     default: break;
     }
 }
@@ -150,7 +177,7 @@ static void interpret_cal_expression_int(int* out, tree_node* node) {
 static void interpret_cal_expression_float(float* out, tree_node* node) {
     switch (node->type) {
     case NodeOperator: {
-        float lhs, rhs;
+        float lhs = 0, rhs = 0;
         interpret_cal_expression_float(&lhs, node->nodes[0]);
         interpret_cal_expression_float(&rhs, node->nodes[1]);
         interpret_operator_arithmetic_float(node->object_type, out, &lhs, &rhs);
@@ -165,30 +192,106 @@ static void interpret_cal_expression_float(float* out, tree_node* node) {
     }break;
     case NodeHexNumber: {
         float value = hex_to_dec(node);
-        memcpy(out, &value, sizeof(int));
+        memcpy(out, &value, sizeof(float));
     } break;
     case NodeOctNumber: {
         float value = oct_to_dec(node);
-        memcpy(out, &value, sizeof(int));
+        memcpy(out, &value, sizeof(float));
     } break;
     case NodeBinNumber: {
         float value = bin_to_dec(node);
-        memcpy(out, &value, sizeof(int));
+        memcpy(out, &value, sizeof(float));
+    } break;
+    case NodeCharLiteral: {
+        float value = node->name[0];
+        memcpy(out, &value, sizeof(float));
+    } break;
+    case NodeVariable: {
+        object* obj = get_object(node->name, node->name_len);
+        if (obj) {
+            object_variable* var = obj->info;
+            switch (var->type) {
+            case NodeTypeInt: {
+                int val = *(int*)var->value;
+                float float_val = val;
+                *out = float_val;
+            } break;
+            case NodeTypeFloat: {
+                *out = *(float*)var->value;
+            } break;
+            case NodeTypeChar: {
+                *out = *(char*)var->value;
+            } break;
+            default: break;
+            }
+            break;
+        }
+        // NOTE: run time error
     } break;
     default: break;
     }
 }
 
-void interpret_cal_expression(void* out, KeywordType data_type, tree_node* node) {
+void interpret_cal_expression_char(char* out, tree_node* node) {
+    switch (node->type) {
+    case NodeOperator: {
+        int lhs = 0, rhs = 0;
+        interpret_cal_expression_int(&lhs, node->nodes[0]);
+        interpret_cal_expression_int(&rhs, node->nodes[1]);
+        int int_out = 0;
+        interpret_operator_arithmetic_int(node->object_type, &int_out, &lhs, &rhs);
+        *out = int_out;
+    } break;
+    case NodeDecNumber: {
+        char value = get_node_number_value_int(node);
+        memcpy(out, &value, sizeof(char));
+    } break;
+    case NodeHexNumber: {
+        char value = hex_to_dec(node);
+        memcpy(out, &value, sizeof(char));
+    } break;
+    case NodeOctNumber: {
+        char value = oct_to_dec(node);
+        memcpy(out, &value, sizeof(char));
+    } break;
+    case NodeBinNumber: {
+        char value = bin_to_dec(node);
+        memcpy(out, &value, sizeof(char));
+    } break;
+    case NodeCharLiteral: {
+        *out = node->name[0];
+    } break;
+    case NodeVariable: {
+        object* obj = get_object(node->name, node->name_len);
+        if (obj) {
+            object_variable* var = obj->info;
+            switch (var->type) {
+            case NodeTypeFloat: {
+                char c = *(float*)var->value;
+                *out = c;
+            } break;
+            case NodeTypeInt: {
+                *out = *(int*)var->value;
+            } break;
+            case NodeTypeChar: {
+                *out = *(char*)var->value;
+            } break;
+            default: break;
+            }
+            break;
+        }
+        // NOTE: run time error
+    } break;
+    default: break;
+    }
+}
+
+void interpret_cal_expression(void* out, NodeType data_type, tree_node* node) {
     switch (data_type) {
-    case KeywordInt: {
-        interpret_cal_expression_int(out, node);
-    } break;
-    case KeywordFloat: {
-        interpret_cal_expression_float(out, node);
-    } break;
-    default: {
-    } break;
+    case NodeTypeChar: interpret_cal_expression_char(out, node); break;
+    case NodeTypeInt: interpret_cal_expression_int(out, node); break;
+    case NodeTypeFloat: interpret_cal_expression_float(out, node); break;
+    default: break;
     }
 }
 

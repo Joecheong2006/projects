@@ -9,9 +9,15 @@ object* make_object(object* obj) {
     return result;
 }
 
-object_variable* make_object_variable(object_variable* obj) {
+object_variable* make_object_variable(tree_node* node) {
     object_variable* result = MALLOC(sizeof(object_variable));
-    memcpy(result, obj, sizeof(object_variable));
+    result->type = node->object_type;
+    switch (result->type) {
+    case NodeTypeInt: result->value = MALLOC(sizeof(int)); break;
+    case NodeTypeFloat: result->value = MALLOC(sizeof(float)); break;
+    case NodeTypeChar: result->value = MALLOC(sizeof(char)); break;
+    default: break;
+    }
     return result;
 }
 

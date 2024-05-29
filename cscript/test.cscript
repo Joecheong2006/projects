@@ -59,4 +59,4 @@ fn pow(base:float,e:int): float {
 
 fn void() {}
 
-function:i32=1
+function:string='f'

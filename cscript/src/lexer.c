@@ -41,6 +41,7 @@ INLINE i32 is_keyword_type(token* tok, i32 type) { return tok->type == TokenKeyw
 INLINE i32 is_operator_type(token* tok, i32 type) { return tok->type == TokenOperator && tok->sub_type == type; }
 INLINE i32 is_separator_type(token* tok, i32 type) { return tok->type == TokenSeparator && tok->sub_type == type; }
 INLINE i32 is_string_literal(token* tok) { return tok->type == TokenStringLiteral; }
+INLINE i32 is_char_literal(token* tok) { return tok->type == TokenCharLiteral; }
 i32 is_real_number(token* tok) { 
     if (is_number(tok->name[0] || (tok->name[0] == '.' && is_number(tok->name[1])))) {
         return 1;
@@ -52,10 +53,10 @@ i32 is_real_number(token* tok) {
     return 0;
 }
 
-static INLINE i32 is_string_literal_begin(lexer* lexer, char c) { return lexer->token_sets[TokenStringBegin].set_name[0][0] == c; }
+static INLINE i32 is_string_literal_begin(char c) { return c == '\'' || c == '"'; }
 
 static i32 is_operator_begin(lexer* lexer, char c) {
-    for (u64 i = 0; i < lexer->token_sets[TokenOperator].set_size; ++i) {
+    for (i32 i = 0; i < lexer->token_sets[TokenOperator].set_size; ++i) {
         if (lexer->token_sets[TokenOperator].set_name[i][0] == c) {
             return 1;
         }
@@ -64,7 +65,7 @@ static i32 is_operator_begin(lexer* lexer, char c) {
 }
 
 static i32 is_separator_begin(lexer* lexer, char c) {
-    for (u64 i = 0; i < lexer->token_sets[TokenSeparator].set_size; ++i) {
+    for (i32 i = 0; i < lexer->token_sets[TokenSeparator].set_size; ++i) {
         if (lexer->token_sets[TokenSeparator].set_name[i][0] == c) {
             return 1;
         }
@@ -194,9 +195,9 @@ static i32 get_dec_literal_stride(const char* str) {
     }
 }
 
-static i32 get_string_literal_stride(lexer* lexer, const char* str) {
+static i32 get_string_literal_stride(const char* str) {
     i32 i = 0;
-    while (!is_string_literal_begin(lexer, str[++i])) {
+    while (!is_string_literal_begin(str[++i])) {
         if (str[i] == 0) {
             return -1;
         }
@@ -205,7 +206,7 @@ static i32 get_string_literal_stride(lexer* lexer, const char* str) {
 }
 
 static i32 get_token_type_location(lexer* lexer, Token type, const char* str, u64 len) {
-    for (u64 i = 0; i < lexer->token_sets[type].set_size; ++i) {
+    for (i32 i = 0; i < lexer->token_sets[type].set_size; ++i) {
         if (len != strlen(lexer->token_sets[type].set_name[i]))
             continue;
         if (strncmp(lexer->token_sets[type].set_name[i], str, len) == 0) {
@@ -240,15 +241,19 @@ INLINE static token get_literal_token(char* str) {
     }
 }
 
-INLINE static token get_string_literal_token(lexer* lexer, char* str) {
-    return (token){ .name = str, .name_len = get_string_literal_stride(lexer, str) - 1, .type = TokenStringLiteral, .sub_type = -1 };
+INLINE static token get_string_literal_token(char* str) {
+    token result = { .name = str, .name_len = get_string_literal_stride(str) - 1, .type = TokenStringLiteral, .sub_type = -1 };
+    if (result.name_len == 3) {
+        result.type = TokenCharLiteral;
+    }
+    return result;
 }
 
 static token get_operator_token(lexer* lexer, char* str) {
     token tok = { .type = TokenOperator, .name = str, tok.sub_type = -1, .name_len = 0, };
-    for (u64 i = 0; i < lexer->token_sets[TokenOperator].set_size; ++i) {
-        u64 operator_len = strlen(lexer->token_sets[TokenOperator].set_name[i]);
-        if ((u64)tok.name_len < operator_len &&
+    for (i32 i = 0; i < lexer->token_sets[TokenOperator].set_size; ++i) {
+        i32 operator_len = strlen(lexer->token_sets[TokenOperator].set_name[i]);
+        if (tok.name_len < operator_len &&
             strncmp(tok.name, lexer->token_sets[TokenOperator].set_name[i], operator_len) == 0) {
             tok.name_len = operator_len;
             tok.sub_type = i;
@@ -259,9 +264,9 @@ static token get_operator_token(lexer* lexer, char* str) {
 
 static token get_separator_token(lexer* lexer, char* str) {
     token tok = { .type = TokenSeparator, .name = str, tok.sub_type = -1, .name_len = 0 };
-    for (u64 i = 0; i < lexer->token_sets[TokenSeparator].set_size; ++i) {
-        u64 operator_len = strlen(lexer->token_sets[TokenSeparator].set_name[i]);
-        if ((u64)tok.name_len < operator_len && 
+    for (i32 i = 0; i < lexer->token_sets[TokenSeparator].set_size; ++i) {
+        i32 operator_len = strlen(lexer->token_sets[TokenSeparator].set_name[i]);
+        if (tok.name_len < operator_len && 
             strncmp(str, lexer->token_sets[TokenSeparator].set_name[i], operator_len) == 0) {
             tok.name_len = operator_len;
             tok.sub_type = i;
@@ -273,9 +278,6 @@ static token get_separator_token(lexer* lexer, char* str) {
 token get_token(lexer* lexer, char* str) {
     if (str[0] == 0)
         return (token){ .type = TokenError };
-    if (is_string_literal_begin(lexer, str[0])) {
-        return get_string_literal_token(lexer, str);
-    }
     if (is_operator_begin(lexer, str[0])) {
         return get_operator_token(lexer, str);
     }
@@ -303,6 +305,7 @@ token lexer_tokenize_string(lexer* lexer, char* str) {
         case ',': return (token){ .type = TokenComma, .name_len = 1, .name = "," };
         case '.': return (token){ .type = TokenFullStop, .name_len = 1, .name = "." };
         case '\n': return (token){ .type = TokenNewLine, .name_len = 1, .name = "\n" };
+        case '\'': case '"': return get_string_literal_token(str);
         case 65: case 66: case 67: case 68: case 69:
         case 70: case 71: case 72: case 73: case 74:
         case 75: case 76: case 77: case 78: case 79:
@@ -406,6 +409,7 @@ void print_token(token* tok) {
     case TokenHexLiteral: _print_token(tok, "hex", NULL); break;
     case TokenOctLiteral: _print_token(tok, "oct", NULL); break;
     case TokenBinLiteral: _print_token(tok, "string", NULL); break;
+    case TokenCharLiteral:
     case TokenStringLiteral: {
         token temp = *tok;
         temp.name += 1;
