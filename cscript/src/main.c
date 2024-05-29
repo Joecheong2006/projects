@@ -21,6 +21,7 @@
             }, type);
 
 static void print_variable(object* obj) {
+    printf(" ");
     object_variable* info = obj->info;
     switch (info->type) {
         case NodeTypeInt: printf("%s = %d\n", obj->name, *(i32*)info->value); break;
@@ -63,6 +64,12 @@ i32 test_check_error(char* text, lexer* lex) {
             break;
         }
 
+        if (tokens[0].type == TokenNewLine) {
+            free_vector(&tokens);
+            start++;
+            continue;
+        }
+
         for_vector(tokens, j, 0) {
             if (tokens[j].type == TokenError) {
                 ++error;
@@ -86,19 +93,40 @@ i32 test_check_error(char* text, lexer* lex) {
     return error;
 }
 
+void interpret_variable_initialize(tree_node* node);
+void interpret_variable_assignment(tree_node* node);
+
 void interpret_variable_initialize(tree_node* node) {
-    vector_push(vector_back(env.scopes), make_object(&(object){
-            .name = make_stringn(node->name, node->name_len),
-            .type = ObjectVariable,
-            .info = make_object_variable(node),
-            }));
+    object* obj_exist = get_object(node->name, node->name_len);
+    if (obj_exist) {
+        object_variable* info = obj_exist->info;
+        if (info->type != node->object_type) {
+            free_object_variable(obj_exist->info);
+            obj_exist->info = make_object_variable(node);
+        }
+        interpret_variable_assignment(node);
+        return;
+    }
+    else {
+        vector_push(vector_back(env.scopes), make_object(&(object){
+                .name = make_stringn(node->name, node->name_len),
+                .type = ObjectVariable,
+                .info = make_object_variable(node),
+                }));
+
+        object* obj = vector_back(vector_back(env.scopes));
+        hashmap_add(env.object_map, obj);
+    }
 
     object* obj = vector_back(vector_back(env.scopes));
-    hashmap_add(env.object_map, obj);
-
     i32 expr_type = -1;
     object_variable* info = obj->info;
-    evaluate_expression_type(&expr_type, node->nodes[0]->nodes[0]);
+    if (info->type != NodeTypeChar) {
+        evaluate_expression_type(&expr_type, node->nodes[0]->nodes[0]);
+    }
+    else {
+        expr_type = info->type;
+    }
     interpret_cal_expression(info->value, expr_type, node->nodes[0]->nodes[0]);
 
     type_cast(expr_type, node->object_type, info->value);
@@ -139,22 +167,25 @@ void test_interpret(tree_node* node) {
 
 void test() {
     // char text[] = "val:float=-((1+2)*(4-1)+(4+2)*(4-1)-(1+2)*(4-1)-(4+2)*(4-1)-1-1-1)*1.5;";
-    char text[] = "a:float=2\n"
-                  "c:char='a'+1\n"
-                  "c=97\n"
-                  "val:int=1.11*10.0+a+c\n"
-                  "a=69\n"
-                  ;
+
+    source_file source;
+    i32 success = load_source(&source, "test1.cscript");
+
+    if (!success) {
+        printf("failed load source\n");
+        exit(1);
+    }
 
     lexer lex;
     LEXER_ADD_TOKEN(&lex, Keyword, TokenKeyword);
     LEXER_ADD_TOKEN(&lex, Separator, TokenSeparator);
     LEXER_ADD_TOKEN(&lex, Operator, TokenOperator);
 
-    if (test_check_error(text, &lex)) {
+    if (test_check_error(source.buffer, &lex)) {
+        free_source(&source);
+        CHECK_MEMORY_LEAK();
         exit(1);
     }
-    printf("runnnig\n");
 
     parser par;
     init_parser(&par);
@@ -164,10 +195,15 @@ void test() {
     vector_push(env.scopes, make_scope());
 
     for (u64 start = 0, line = 1;; ++line) {
-        vector(token) tokens = lexer_tokenize_until(&lex, text + start, '\n');
+        vector(token) tokens = lexer_tokenize_until(&lex, source.buffer + start, '\n');
         if (tokens[0].type == TokenEnd) {
             free_vector(&tokens);
             break;
+        }
+        if (tokens[0].type == TokenNewLine) {
+            free_vector(&tokens);
+            start++;
+            continue;
         }
 
         printf("<line:%llu> ", line);
@@ -176,7 +212,7 @@ void test() {
             putchar(' ');
         }
         putchar('\n');
-        start = strchr(text + start, '\n') - text + 1;
+        start = strchr(source.buffer + start, '\n') - source.buffer + 1;
 
         parser_set_tokens(&par, tokens);
         tree_node* node = parser_parse(&par);
@@ -188,6 +224,7 @@ void test() {
         dfs(node, free_node);
     }
 
+    free_source(&source);
     print_parser_error(&par);
     free_parser(&par);
     free_vector(&instructions);
