@@ -11,7 +11,6 @@
 #include "basic/memallocate.h"
 #include "basic/string.h"
 #include "lexer.h"
-#include "object.h"
 
 #define LEXER_ADD_TOKEN(lexer, str_set, type)\
     lexer_add_token((lexer), (token_set){\
@@ -21,7 +20,6 @@
             }, type);
 
 static void print_variable(object* obj) {
-    printf(" ");
     object_variable* info = obj->info;
     switch (info->type) {
         case NodeTypeInt: printf("%s = %d\n", obj->name, *(i32*)info->value); break;
@@ -31,34 +29,34 @@ static void print_variable(object* obj) {
     }
 }
 
-void evaluate_expression_type(i32* out, tree_node* expression) {
-    for_vector(expression->nodes, i, 0) {
-        evaluate_expression_type(out, expression->nodes[i]);
-    }
-    if (expression->type >= NodeTypeInt && expression->type <= NodeTypeChar && expression->object_type > *out) {
-        *out = expression->object_type;
-    }
-}
-
-#define TYPE_CONVERSION(type_a, type_b, value_ptr)\
-        {type_a vala = *(type_a*)value_ptr;\
-        type_b valb = vala;\
-        memcpy(value_ptr, &valb, sizeof(type_b));}
-
-void type_cast(i32 type_a, i32 type_b, void* value) {
-    switch (type_a - type_b) {
-        case NodeTypeInt - NodeTypeFloat: TYPE_CONVERSION(int, float, value); break;
-        case NodeTypeFloat - NodeTypeInt: TYPE_CONVERSION(float, int, value); break;
-        default: break;
-    }
-}
-
-i32 test_check_error(char* text, lexer* lex) {
+vector(tree_node*) generate_instructions(char* text, lexer* lex) {
     i32 error = 0;
+
+    vector(tree_node*) result = make_vector();
     parser par;
     init_parser(&par);
+    char until_ch = '\n';
+    (void)until_ch;
+    int new_line_len = 0, semicolon_len = 0, start_increment = 0;
     for (i32 start = 0;;) {
-        vector(token) tokens = lexer_tokenize_until(lex, text + start, '\n');
+        char* ch = NULL;
+        ch = strchr(text + start, '\n');
+        if (ch) {
+            new_line_len = ch - text - start + 1;
+            start_increment = new_line_len;
+            until_ch = '\n';
+        }
+        ch = strchr(text + start, ';');
+        if (ch) {
+            semicolon_len = ch - text - start + 1;
+            if (semicolon_len < new_line_len) {
+                start_increment = semicolon_len;
+                until_ch = ';';
+            }
+        }
+
+        vector(token) tokens = lexer_tokenize_until(lex, text + start, until_ch);
+
         if (tokens[0].type == TokenEnd) {
             free_vector(&tokens);
             break;
@@ -76,7 +74,8 @@ i32 test_check_error(char* text, lexer* lex) {
             }
         }
 
-        start = strchr(text + start, '\n') - text + 1;
+        start += start_increment;
+        start_increment = 0;
 
         parser_set_tokens(&par, tokens);
         tree_node* node = parser_parse(&par);
@@ -86,51 +85,48 @@ i32 test_check_error(char* text, lexer* lex) {
             ++error;
             continue;
         }
-        dfs(node, free_node);
+        vector_push(result, node);
     }
     print_parser_error(&par);
     free_parser(&par);
-    return error;
+    return error == 0 ? result : NULL;
 }
 
 void interpret_variable_initialize(tree_node* node);
 void interpret_variable_assignment(tree_node* node);
 
 void interpret_variable_initialize(tree_node* node) {
+    i32 expr_type = -1;
+    evaluate_expression_type(&expr_type, node->nodes[0]->nodes[0]);
+    node->object_type = expr_type;
+
     object* obj_exist = get_object(node->name, node->name_len);
     if (obj_exist) {
-        object_variable* info = obj_exist->info;
-        if (info->type != node->object_type) {
+        data_chunk chunk = { .type = expr_type };
+        interpret_cal_data_chunk_expression(&chunk, node->nodes[0]->nodes[0]);
+
+        object_variable* var = obj_exist->info;
+        if (var->type != node->object_type) {
             free_object_variable(obj_exist->info);
             obj_exist->info = make_object_variable(node);
+            var = obj_exist->info;
         }
-        interpret_variable_assignment(node);
+        type_cast(&chunk, var->type);
+        assign_data_chunk(var->value, chunk);
+        print_variable(obj_exist);
         return;
     }
-    else {
-        vector_push(vector_back(env.scopes), make_object(&(object){
+
+    vector_push(vector_back(env.scopes), make_object(&(object){
                 .name = make_stringn(node->name, node->name_len),
                 .type = ObjectVariable,
                 .info = make_object_variable(node),
                 }));
 
-        object* obj = vector_back(vector_back(env.scopes));
-        hashmap_add(env.object_map, obj);
-    }
-
     object* obj = vector_back(vector_back(env.scopes));
-    i32 expr_type = -1;
     object_variable* info = obj->info;
-    if (info->type != NodeTypeChar) {
-        evaluate_expression_type(&expr_type, node->nodes[0]->nodes[0]);
-    }
-    else {
-        expr_type = info->type;
-    }
+    hashmap_add(env.object_map, obj);
     interpret_cal_expression(info->value, expr_type, node->nodes[0]->nodes[0]);
-
-    type_cast(expr_type, node->object_type, info->value);
-
     print_variable(obj);
 }
 
@@ -143,16 +139,8 @@ void interpret_variable_assignment(tree_node* node) {
         exit(1);
     }
 
-    i32 expr_type = -1;
     object_variable* info = obj->info;
-    if (info->type != NodeTypeChar) {
-        evaluate_expression_type(&expr_type, node->nodes[0]->nodes[0]);
-    }
-    else {
-        expr_type = info->type;
-    }
-    interpret_cal_expression(info->value, expr_type, node->nodes[0]->nodes[0]);
-    type_cast(expr_type, info->type, info->value);
+    interpret_assignment_operation(info, node->nodes[0]);
 
     print_variable(obj);
 }
@@ -181,7 +169,9 @@ void test() {
     LEXER_ADD_TOKEN(&lex, Separator, TokenSeparator);
     LEXER_ADD_TOKEN(&lex, Operator, TokenOperator);
 
-    if (test_check_error(source.buffer, &lex)) {
+    vector(tree_node*) instructions = generate_instructions(source.buffer, &lex);
+    if (!instructions) {
+        printf("failed to generate instructions\n");
         free_source(&source);
         CHECK_MEMORY_LEAK();
         exit(1);
@@ -189,45 +179,22 @@ void test() {
 
     parser par;
     init_parser(&par);
-    vector(tree_node*) instructions = make_vector();
 
     init_environment();
     vector_push(env.scopes, make_scope());
 
-    for (u64 start = 0, line = 1;; ++line) {
-        vector(token) tokens = lexer_tokenize_until(&lex, source.buffer + start, '\n');
-        if (tokens[0].type == TokenEnd) {
-            free_vector(&tokens);
-            break;
-        }
-        if (tokens[0].type == TokenNewLine) {
-            free_vector(&tokens);
-            start++;
-            continue;
-        }
-
-        printf("<line:%llu> ", line);
-        for_vector(tokens, j, 0) {
-            print_token_name(tokens + j);
-            putchar(' ');
-        }
-        putchar('\n');
-        start = strchr(source.buffer + start, '\n') - source.buffer + 1;
-
-        parser_set_tokens(&par, tokens);
-        tree_node* node = parser_parse(&par);
-        free_vector(&tokens);
-
-        vector_push(instructions, node);
-        test_interpret(node);
-
-        dfs(node, free_node);
+    for_vector(instructions, i, 0) {
+        test_interpret(instructions[i]);
     }
 
-    free_source(&source);
-    print_parser_error(&par);
-    free_parser(&par);
+    for_vector(instructions, i, 0) {
+        dfs(instructions[i], free_node);
+    }
+
     free_vector(&instructions);
+
+    free_source(&source);
+    free_parser(&par);
 
     delete_environment();
     CHECK_MEMORY_LEAK();

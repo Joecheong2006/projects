@@ -47,7 +47,6 @@ typedef enum {
     OperatorBitwiseOrEqual,
     OperatorBitwiseAndEqual,
     OperatorBitwiseXorEqual,
-    OperatorBitwiseNotEqual,
     OperatorLeftShiftEqual,
     OperatorRightShiftEqual,
     OperatorRoundEqual,

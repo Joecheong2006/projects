@@ -1,8 +1,6 @@
 #include "interpreter.h"
 #include "keys_define.h"
 #include "environment.h"
-#include "object.h"
-#include "parser.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -109,7 +107,7 @@ static INLINE float get_node_number_value_float(tree_node* node) {
     return atof(node->name);
 }
 
-static void interpret_cal_expression_int(int* out, tree_node* node) {
+void interpret_cal_expression_int(int* out, tree_node* node) {
     switch (node->type) {
     case NodeOperator: {
         int lhs = 0, rhs = 0;
@@ -140,7 +138,7 @@ static void interpret_cal_expression_int(int* out, tree_node* node) {
     }
 }
 
-static void interpret_cal_expression_float(float* out, tree_node* node) {
+void interpret_cal_expression_float(float* out, tree_node* node) {
     switch (node->type) {
     case NodeOperator: {
         float lhs = 0, rhs = 0;
@@ -162,8 +160,8 @@ static void interpret_cal_expression_float(float* out, tree_node* node) {
         object_variable* var = obj->info;
         switch (var->type) {
             case NodeTypeInt: TYPE_CONVERSION(int, float, var->value); break;
+            case NodeTypeChar: TYPE_CONVERSION(char, float, var->value); break;
             case NodeTypeFloat: *out = *(float*)var->value; break;
-            case NodeTypeChar: *out = *(char*)var->value; break;
             default: break;
         }
         break;
@@ -214,4 +212,63 @@ void interpret_cal_expression(void* out, NodeType data_type, tree_node* node) {
     default: break;
     }
 }
+
+void interpret_cal_data_chunk_expression(data_chunk* out, tree_node* node) {
+    switch (out->type) {
+    case NodeTypeChar: interpret_cal_expression_char(&out->val._char, node); break;
+    case NodeTypeInt: interpret_cal_expression_int(&out->val._int, node); break;
+    case NodeTypeFloat: interpret_cal_expression_float(&out->val._float, node); break;
+    default: break;
+    }
+}
+
+void evaluate_expression_type(i32* out, tree_node* expression) {
+    for_vector(expression->nodes, i, 0) {
+        evaluate_expression_type(out, expression->nodes[i]);
+    }
+    if (expression->type >= NodeTypeInt && expression->type <= NodeTypeChar && expression->object_type > *out) {
+        *out = expression->object_type;
+    }
+}
+
+void interpret_assignment_operation(object_variable* var, tree_node* assign_expr) {
+    i32 expr_type = -1;
+    evaluate_expression_type(&expr_type, assign_expr->nodes[0]);
+    data_chunk chunk = { .type = expr_type };
+    interpret_cal_data_chunk_expression(&chunk, assign_expr->nodes[0]);
+    type_cast(&chunk, var->type);
+
+    switch (assign_expr->object_type) {
+    case OperatorPlusEqual: plus_equal_data_chunk(var->value, chunk); break;
+    case OperatorMinusEqual: minus_equal_data_chunk(var->value, chunk); break;
+    case OperatorMultiplyEqual: multiply_equal_data_chunk(var->value, chunk); break;
+    case OperatorDivisionEqual: division_equal_data_chunk(var->value, chunk); break;
+    default: break;
+    }
+}
+
+void type_cast(data_chunk* chunk, i32 type) {
+    switch (type - chunk->type) {
+        case NodeTypeInt - NodeTypeFloat: chunk->val._int = (int)chunk->val._float; break;
+        case NodeTypeFloat - NodeTypeInt: chunk->val._float = (float)chunk->val._int; break;
+        default: break;
+    }
+    chunk->type = type;
+}
+
+#define IMPL_DATA_CHUNK_CONVERSION(conversion_name, operator)\
+    void conversion_name##_data_chunk(void* out, data_chunk chunk) {\
+        switch (chunk.type) {\
+        case NodeTypeChar: *(char*)out operator chunk.val._char; break;\
+        case NodeTypeInt: *(int*)out operator chunk.val._int; break;\
+        case NodeTypeFloat: *(float*)out operator chunk.val._float; break;\
+        default: break;\
+        }\
+    }
+
+IMPL_DATA_CHUNK_CONVERSION(assign, =)
+IMPL_DATA_CHUNK_CONVERSION(plus_equal, +=)
+IMPL_DATA_CHUNK_CONVERSION(minus_equal, -=)
+IMPL_DATA_CHUNK_CONVERSION(multiply_equal, *=)
+IMPL_DATA_CHUNK_CONVERSION(division_equal, /=)
 

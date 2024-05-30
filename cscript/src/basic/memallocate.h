@@ -3,7 +3,7 @@
 
 #include <stdlib.h>
 
-#if !defined(NDEBUG)
+#if defined(DEBUG)
 #define MALLOC(_Size) memallocate(_Size)
 #define CALLOC(_NumOfElements, _SizeOfElements) memallocate(_NumOfElements, _SizeOfElements)
 #define FREE(_Memory) freemem(_Memory)

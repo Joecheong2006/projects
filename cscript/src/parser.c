@@ -88,24 +88,6 @@ void dfs(tree_node* root, void(*act)(tree_node*)) {
     act(root);
 }
 
-static i32 cast_keyword_to_node_type(token* tok) {
-    switch (tok->type) {
-    case TokenDecLiteral: return NodeDecNumber; break;
-    case TokenHexLiteral: return NodeHexNumber; break;
-    case TokenOctLiteral: return NodeOctNumber; break;
-    case TokenBinLiteral: return NodeBinNumber; break;
-    default: break;
-    }
-    switch (tok->sub_type) {
-    case KeywordInt: return NodeTypeInt; break;
-    case KeywordFloat: return NodeTypeFloat; break;
-    case KeywordString: return NodeTypeString; break;
-    case KeywordChar: return NodeTypeChar; break;
-    default: break;
-    }
-    return -1;
-}
-
 INLINE static tree_node* parse_rvariable(parser* par) {
     token* tok = parser_peek(par, 0);
     return make_tree_node(NodeVariable, tok->sub_type, tok->name, tok->name_len);
@@ -311,32 +293,6 @@ static tree_node* try_parse_binary_expression(parser* par) {
     return operator;
 }
 
-static i32 is_vailed_data_type(token* tok) {
-    (void)tok;
-    return 1;
-}
-
-static i32 try_parse_data_type(parser* par) {
-    ++par->index;
-    token* tok = parser_peek(par, 0);
-    if (tok->type == TokenKeyword && is_vailed_data_type(tok)) {
-        return tok->sub_type;
-    }
-    set_parse_error(par, ParserErrorUndefineName);
-    --par->index;
-    return 0;
-}
-
-static i32 try_parse_type_dec(parser* par) {
-    ++par->index;
-    if (is_separator_type(parser_peek(par, 0), SeparatorColon)) {
-        i32 data_type = try_parse_data_type(par);
-        return data_type == 0 ? -1 : data_type;
-    }
-    --par->index;
-    return 0;
-}
-
 static tree_node* try_parse_assign_operator(parser* par) {
     ++par->index;
     token* tok = parser_peek(par, 0);
@@ -350,17 +306,14 @@ static tree_node* try_parse_identifier(parser* par) {
     token* tok = parser_peek(par, 0);
     tree_node* var = make_tree_node(NodeVariable, -1, tok->name, tok->name_len);
 
-    if ((var->object_type = try_parse_type_dec(par)) == 0) {
+    if (is_operator_type(parser_peek(par, 1), OperatorAssign)) {
+        var->type = NodeVariableInitialize;
+    }
+    else if (is_assigment_operator(parser_peek(par, 1))) {
         var->type = NodeVariableAssignment;
     }
-    else if (var->object_type != -1) {
-        var->type = NodeVariableInitialize;
-        var->object_type = cast_keyword_to_node_type(parser_peek(par, 0));
-        // if (var->object_type == -1) {
-        //     // TODO: check user type
-        // }
-    }
     else {
+        set_parse_error(par, ParserErrorMissingAssignOperator);
         return NULL;
     }
 
@@ -418,23 +371,27 @@ static tree_node* try_parse_keyword(parser* par) {
 }
 
 void print_parser_error(parser* par) {
+    ASSERT_MSG(par != NULL, "invalid parser");
     for_vector(par->error_messgaes, i, 0) {
         printf("%s\n", par->error_messgaes[i]);
     }
 }
 
 void init_parser(parser* par) {
+    ASSERT_MSG(par != NULL, "invalid parser");
     memset(par, 0, sizeof(parser));
     par->error_messgaes = make_vector();
 }
 
 void parser_set_tokens(parser* par, vector(token) tokens) {
+    ASSERT_MSG(par != NULL, "invalid parser");
     par->index = 0;
     par->tokens = tokens;
     par->tokens_len = vector_size(tokens);
 }
 
 tree_node* parser_parse(parser* par) {
+    ASSERT_MSG(par != NULL, "invalid parser");
     switch (par->tokens[0].type) {
     case TokenIdentifier: {
         return try_parse_identifier(par);
@@ -449,6 +406,7 @@ tree_node* parser_parse(parser* par) {
 }
 
 void free_parser(parser* par) {
+    ASSERT_MSG(par != NULL, "invalid parser");
     for_vector(par->error_messgaes, i, 0) {
         free_string(par->error_messgaes + i);
     }

@@ -20,4 +20,14 @@ typedef double f64;
 #define INLINE inline __attribute__((always_inline))
 #define PACKED __attribute__((packed))
 
+#if defined(DEBUG)
+#include <stdio.h>
+#define ASSERT_MSG(x, msg)\
+    if (!(x)) {\
+        printf("%s %s %s %d", msg, __FILE__, __func__, __LINE__);\
+        __debugbreak();}
+#else
+#define ASSERT_MSG(x, msg)
+#endif
+
 #endif

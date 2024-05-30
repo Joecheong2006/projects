@@ -40,7 +40,6 @@ const char* Operator[] = {
     [OperatorBitwiseOrEqual] = "|=",
     [OperatorBitwiseAndEqual] = "&=",
     [OperatorBitwiseXorEqual] = "^=",
-    [OperatorBitwiseNotEqual] = "~=",
     [OperatorLeftShift] = "<<",
     [OperatorRightShift] = ">>",
     [OperatorLeftShiftEqual] = "<<=",

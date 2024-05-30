@@ -5,12 +5,14 @@
 
 object* make_object(object* obj) {
     object* result = MALLOC(sizeof(object));
+    ASSERT_MSG(result != NULL, "malloc failed");
     memcpy(result, obj, sizeof(object));
     return result;
 }
 
 object_variable* make_object_variable(tree_node* node) {
     object_variable* result = MALLOC(sizeof(object_variable));
+    ASSERT_MSG(result != NULL, "malloc failed");
     result->type = node->object_type;
     switch (result->type) {
     case NodeTypeInt: result->value = MALLOC(sizeof(int)); break;

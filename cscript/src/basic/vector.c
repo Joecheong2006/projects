@@ -1,12 +1,12 @@
 #include "vector.h"
 #include "memallocate.h"
+
 #include <string.h>
-#include <assert.h>
 
 void* _make_vector(void)
 {
     char* val = (char*)MALLOC(sizeof(struct vector_data));
-    assert(val != NULL);
+    ASSERT_MSG(val != NULL, "malloc failed");
     val += (u64)sizeof(struct vector_data);
     vector_status(val) = (struct vector_data){ 0, 0 };
     return val;
@@ -15,7 +15,7 @@ void* _make_vector(void)
 void* _vector_reserve(void* vec, u64 size)
 {
     char* result = (char*)realloc(&vector_status(vec), size + sizeof(struct vector_data));
-    assert(result != NULL);
+    ASSERT_MSG(result != NULL, "realloc failed");
     result += sizeof(struct vector_data);
     vector_status(result).capacity = size;
     return result;
@@ -39,8 +39,8 @@ void _vector_new_value(void* vec, void* data, u64 size)
 
 void _free_vector(void** vec)
 {
-    assert(*vec != NULL);
+    ASSERT_MSG(*vec != NULL, "invalid vec");
     FREE(&vector_status(*vec));
-    // (*vec) = NULL;
+    (*vec) = NULL;
 }
 

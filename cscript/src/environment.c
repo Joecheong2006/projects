@@ -12,6 +12,7 @@ static u64 hash_object_len(const char* name, i32 len, u64 size) {
 }
 
 object* get_object(const char* name, u64 len) {
+    ASSERT_MSG(name != NULL, "invalid name");
     vector(object*) objs = (vector(object*))env.object_map.data[hash_object_len(name, len, env.object_map.size)];
     for (i64 i = vector_size(objs) - 1; i > -1; --i) {
         u64 obj_name = vector_size(objs[i]->name);
@@ -23,6 +24,7 @@ object* get_object(const char* name, u64 len) {
 }
 
 static u64 hash_object(void* data, u64 size) {
+    ASSERT_MSG(data != NULL, "hashing invalid data");
     size_t result = 5381;
     char* str = ((object*)data)->name;
     for (i32 i = 0; str[i] != 0; ++i) {
@@ -49,17 +51,21 @@ scope make_scope(void) {
 }
 
 void scope_push(scope* s, object* obj) {
+    ASSERT_MSG(s != NULL, "invalid scope");
+    ASSERT_MSG(obj != NULL, "scope pushing invalid obj");
     vector_pushe(*s, *obj);
     construct_object(obj);
 }
 
 void scope_pop(scope* s) {
+    ASSERT_MSG(s != NULL, "invalid scope");
     object* obj = vector_back(*s);
     vector_pop(*s);
     destruct_object(obj);
 }
 
 void free_scope(scope* s) {
+    ASSERT_MSG(s != NULL, "invalid scope");
     for_vector(*s, i, 0) {
         free_object((*s)[i]);
     }

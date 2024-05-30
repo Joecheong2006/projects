@@ -1,7 +1,6 @@
 #include "lexer.h"
 
 #include "keys_define.h"
-#include <assert.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -56,6 +55,7 @@ i32 is_real_number(token* tok) {
 static INLINE i32 is_string_literal_begin(char c) { return c == '\'' || c == '"'; }
 
 static i32 is_operator_begin(lexer* lexer, char c) {
+    ASSERT_MSG(lexer != NULL, "invalid lexer");
     for (i32 i = 0; i < lexer->token_sets[TokenOperator].set_size; ++i) {
         if (lexer->token_sets[TokenOperator].set_name[i][0] == c) {
             return 1;
@@ -65,6 +65,7 @@ static i32 is_operator_begin(lexer* lexer, char c) {
 }
 
 static i32 is_separator_begin(lexer* lexer, char c) {
+    ASSERT_MSG(lexer != NULL, "invalid lexer");
     for (i32 i = 0; i < lexer->token_sets[TokenSeparator].set_size; ++i) {
         if (lexer->token_sets[TokenSeparator].set_name[i][0] == c) {
             return 1;
@@ -74,8 +75,8 @@ static i32 is_separator_begin(lexer* lexer, char c) {
 }
 
 void lexer_add_token(lexer* lexer, token_set set, Token token) {
-    assert(lexer != NULL);
-    assert(token >= 0 && token < TokenCount);
+    ASSERT_MSG(lexer != NULL, "invalid lexer");
+    ASSERT_MSG(token >= 0 && token < TokenCount, "adding invalid token");
     lexer->token_sets[token] = set;
 }
 
@@ -206,6 +207,7 @@ static i32 get_string_literal_stride(const char* str) {
 }
 
 static i32 get_token_type_location(lexer* lexer, Token type, const char* str, u64 len) {
+    ASSERT_MSG(lexer != NULL, "invalid lexer");
     for (i32 i = 0; i < lexer->token_sets[type].set_size; ++i) {
         if (len != strlen(lexer->token_sets[type].set_name[i]))
             continue;
@@ -217,6 +219,7 @@ static i32 get_token_type_location(lexer* lexer, Token type, const char* str, u6
 }
 
 static token get_word_token(lexer* lexer, char* str) {
+    ASSERT_MSG(lexer != NULL, "invalid lexer");
     token result = { .name = str, .name_len = get_word_stride(str) - 1, .type = TokenKeyword, .sub_type = -1 };
     if (result.name_len > 0) {
         result.sub_type = get_token_type_location(lexer, TokenKeyword, str, result.name_len);
@@ -250,6 +253,7 @@ INLINE static token get_string_literal_token(char* str) {
 }
 
 static token get_operator_token(lexer* lexer, char* str) {
+    ASSERT_MSG(lexer != NULL, "invalid lexer");
     token tok = { .type = TokenOperator, .name = str, tok.sub_type = -1, .name_len = 0, };
     for (i32 i = 0; i < lexer->token_sets[TokenOperator].set_size; ++i) {
         i32 operator_len = strlen(lexer->token_sets[TokenOperator].set_name[i]);
@@ -263,6 +267,7 @@ static token get_operator_token(lexer* lexer, char* str) {
 }
 
 static token get_separator_token(lexer* lexer, char* str) {
+    ASSERT_MSG(lexer != NULL, "invalid lexer");
     token tok = { .type = TokenSeparator, .name = str, tok.sub_type = -1, .name_len = 0 };
     for (i32 i = 0; i < lexer->token_sets[TokenSeparator].set_size; ++i) {
         i32 operator_len = strlen(lexer->token_sets[TokenSeparator].set_name[i]);
@@ -276,6 +281,7 @@ static token get_separator_token(lexer* lexer, char* str) {
 }
 
 token get_token(lexer* lexer, char* str) {
+    ASSERT_MSG(lexer != NULL, "invalid lexer");
     if (str[0] == 0)
         return (token){ .type = TokenError };
     if (is_operator_begin(lexer, str[0])) {
@@ -285,7 +291,7 @@ token get_token(lexer* lexer, char* str) {
 }
 
 token lexer_tokenize_string(lexer* lexer, char* str) {
-    assert(lexer != NULL);
+    ASSERT_MSG(lexer != NULL, "invalid lexer");
 
     token tok = { .type = TokenError };
     if (is_separator_begin(lexer, str[0])) {
@@ -326,6 +332,7 @@ token lexer_tokenize_string(lexer* lexer, char* str) {
 }
 
 vector(token) lexer_tokenize_until(lexer* lexer, char* str, char terminal) {
+    ASSERT_MSG(lexer != NULL, "invalid lexer");
     vector(token) tokens = make_vector();
 
     if (str[0] == 0) {

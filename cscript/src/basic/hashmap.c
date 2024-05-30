@@ -1,5 +1,4 @@
 #include "hashmap.h"
-#include <assert.h>
 #include <stdlib.h>
 
 hashmap make_hashmap(size_t size, size_t (*hash_function)(void* data, size_t size)) {
@@ -15,7 +14,7 @@ hashmap make_hashmap(size_t size, size_t (*hash_function)(void* data, size_t siz
 
 void hashmap_add(hashmap map, void* data) {
     size_t key = map.hash(data, map.size);
-    assert(key < map.size);
+    ASSERT_MSG(key < map.size, "hash key out of range");
     vector_push(map.data[key], data);
 }
 
@@ -33,7 +32,7 @@ void hashmap_free_items(hashmap map, void(free_item)(void* data)) {
 }
 
 void free_hashmap(hashmap* map) {
-    assert(map != NULL);
+    ASSERT_MSG(map != NULL, "invalid map");
     for (size_t i = 0; i < map->size; ++i) {
         free_vector(&map->data[i]);
     }

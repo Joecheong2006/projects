@@ -6,17 +6,10 @@
 #define MAX_LINE_BUFFER_SIZE (1 << 10)
 #define MAX_WORD_BUFFER_SIZE (1 << 8)
 
-i32 is_space_strn(const char* str, u64 size) {
-    for (u64 i = 0; i < size; ++i) {
-        if (str[i] != ' ') {
-            return 0;
-        }
-    }
-    return 1;
-}
-
 i32 load_source(source_file* source, const char* path) {
+    ASSERT_MSG(source != NULL, "invalid source");
     FILE* file = fopen(path, "r");
+    ASSERT_MSG(file != NULL, "failed to open file");
     if (file == NULL) {
         printf("cannot fount %s\n", path);
         return 0;
@@ -49,6 +42,7 @@ i32 load_source(source_file* source, const char* path) {
 }
 
 void free_source(source_file* source) {
+    ASSERT_MSG(source != NULL, "invalid source");
     assert(source->buffer);
     FREE(source->buffer);
     memset(source, 0, sizeof(source_file));
