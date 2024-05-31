@@ -7,7 +7,6 @@
 #include "parser.h"
 #include "source_file.h"
 #include "string.h"
-#include "basic/hashmap.h"
 #include "basic/memallocate.h"
 #include "basic/string.h"
 #include "lexer.h"
@@ -19,25 +18,15 @@
                 .token = type\
             }, type);
 
-static void print_variable(object* obj) {
-    object_variable* info = obj->info;
-    switch (info->type) {
-        case NodeTypeInt: printf("%s = %d\n", obj->name, *(i32*)info->value); break;
-        case NodeTypeFloat: printf("%s = %g\n", obj->name, *(f32*)info->value); break;
-        case NodeTypeChar: printf("%s = %c\n", obj->name, *(char*)info->value); break;
-        default: break;
-    }
-}
-
 vector(tree_node*) generate_instructions(char* text, lexer* lex) {
     i32 error = 0;
 
-    vector(tree_node*) result = make_vector();
     parser par;
     init_parser(&par);
     char until_ch = '\n';
-    (void)until_ch;
     int new_line_len = 0, semicolon_len = 0, start_increment = 0;
+
+    vector(tree_node*) result = make_vector();
     for (i32 start = 0;;) {
         char* ch = NULL;
         ch = strchr(text + start, '\n');
@@ -92,67 +81,6 @@ vector(tree_node*) generate_instructions(char* text, lexer* lex) {
     return error == 0 ? result : NULL;
 }
 
-void interpret_variable_initialize(tree_node* node);
-void interpret_variable_assignment(tree_node* node);
-
-void interpret_variable_initialize(tree_node* node) {
-    i32 expr_type = -1;
-    evaluate_expression_type(&expr_type, node->nodes[0]->nodes[0]);
-    node->object_type = expr_type;
-
-    object* obj_exist = get_object(node->name, node->name_len);
-    if (obj_exist) {
-        data_chunk chunk = { .type = expr_type };
-        interpret_cal_data_chunk_expression(&chunk, node->nodes[0]->nodes[0]);
-
-        object_variable* var = obj_exist->info;
-        if (var->type != node->object_type) {
-            free_object_variable(obj_exist->info);
-            obj_exist->info = make_object_variable(node);
-            var = obj_exist->info;
-        }
-        type_cast(&chunk, var->type);
-        assign_data_chunk(var->value, chunk);
-        print_variable(obj_exist);
-        return;
-    }
-
-    vector_push(vector_back(env.scopes), make_object(&(object){
-                .name = make_stringn(node->name, node->name_len),
-                .type = ObjectVariable,
-                .info = make_object_variable(node),
-                }));
-
-    object* obj = vector_back(vector_back(env.scopes));
-    object_variable* info = obj->info;
-    hashmap_add(env.object_map, obj);
-    interpret_cal_expression(info->value, expr_type, node->nodes[0]->nodes[0]);
-    print_variable(obj);
-}
-
-void interpret_variable_assignment(tree_node* node) {
-    object* obj = get_object(node->name, node->name_len);
-    if (!obj) {
-        printf("not found object ");
-        print_token_name(&(token){ .name = node->name, .name_len = node->name_len });
-        putchar('\n');
-        exit(1);
-    }
-
-    object_variable* info = obj->info;
-    interpret_assignment_operation(info, node->nodes[0]);
-
-    print_variable(obj);
-}
-
-void test_interpret(tree_node* node) {
-    switch (node->type) {
-    case NodeVariableInitialize: interpret_variable_initialize(node); break;
-    case NodeVariableAssignment: interpret_variable_assignment(node); break;
-    default: printf("not implement node instruction %d yet\n", node->type);  break;
-    }
-}
-
 void test() {
     // char text[] = "val:float=-((1+2)*(4-1)+(4+2)*(4-1)-(1+2)*(4-1)-(4+2)*(4-1)-1-1-1)*1.5;";
 
@@ -184,7 +112,7 @@ void test() {
     vector_push(env.scopes, make_scope());
 
     for_vector(instructions, i, 0) {
-        test_interpret(instructions[i]);
+        interpret(instructions[i]);
     }
 
     for_vector(instructions, i, 0) {

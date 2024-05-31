@@ -10,8 +10,8 @@ object* make_object(object* obj) {
     return result;
 }
 
-object_variable* make_object_variable(tree_node* node) {
-    object_variable* result = MALLOC(sizeof(object_variable));
+variable_info* make_variable_info(tree_node* node) {
+    variable_info* result = MALLOC(sizeof(variable_info));
     ASSERT_MSG(result != NULL, "malloc failed");
     result->type = node->object_type;
     switch (result->type) {
@@ -23,7 +23,7 @@ object_variable* make_object_variable(tree_node* node) {
     return result;
 }
 
-void free_object_variable(object_variable* obj) {
+void free_object_variable(variable_info* obj) {
     FREE(obj->value);
     FREE(obj);
 }

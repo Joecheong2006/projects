@@ -11,7 +11,7 @@ typedef enum {
 typedef struct {
     void* value;
     i32 type; // Keyword TODO: change to NodeType
-} object_variable;
+} variable_info;
 
 typedef struct {
     void* info;
@@ -20,8 +20,8 @@ typedef struct {
 } object;
 
 object* make_object(object* obj);
-object_variable* make_object_variable(tree_node* node);
-void free_object_variable(object_variable* obj);
+variable_info* make_variable_info(tree_node* node);
+void free_object_variable(variable_info* obj);
 void free_object(void* data);
 
 #endif
