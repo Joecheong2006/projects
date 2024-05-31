@@ -10,15 +10,14 @@ typedef struct {
 typedef struct {
     i32 type;
     union {
-        char _char;
-        int _int;
-        float _float;
+        u8 _char;
+        char* _string;
+        i64 _int;
+        f64 _float;
     } val;
 } data_chunk;
 
 void type_cast(data_chunk* chunk, i32 type);
 void interpret(tree_node* ins);
-
-#define DEFINE_DATA_CHUNK_CONVERSION(conversion_name, operator) void conversion_name##_data_chunk(void* out, data_chunk chunk);
 
 #endif

@@ -5,7 +5,7 @@ DEBUGGER = gdb
 SRC = $(wildcard src/*.c src/**/*.c)
 OBJ = $(SRC:%.c=%.o)
 DEP = $(OBJ:%.o=%.d)
-OUT = cscript
+OUT = cscript.exe
 
 all: $(OBJ)
 	@$(CC) $(CFLAGS) $(OBJ) -o $(OUT)

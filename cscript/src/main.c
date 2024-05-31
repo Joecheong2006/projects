@@ -27,7 +27,8 @@ vector(tree_node*) generate_instructions(char* text, lexer* lex) {
     int new_line_len = 0, semicolon_len = 0, start_increment = 0;
 
     vector(tree_node*) result = make_vector();
-    for (i32 start = 0;;) {
+    i32 line = 1;
+    for (i32 start = 0;; ++line) {
         char* ch = NULL;
         ch = strchr(text + start, '\n');
         if (ch) {
@@ -58,6 +59,7 @@ vector(tree_node*) generate_instructions(char* text, lexer* lex) {
         }
 
         for_vector(tokens, j, 0) {
+            tokens[j].line = line;
             if (tokens[j].type == TokenError) {
                 ++error;
             }
@@ -82,8 +84,6 @@ vector(tree_node*) generate_instructions(char* text, lexer* lex) {
 }
 
 void test() {
-    // char text[] = "val:float=-((1+2)*(4-1)+(4+2)*(4-1)-(1+2)*(4-1)-(4+2)*(4-1)-1-1-1)*1.5;";
-
     source_file source;
     i32 success = load_source(&source, "test1.cscript");
 
@@ -156,7 +156,7 @@ i32 main(i32 argc, char** argv) {
         exit(1);
     }
 
-    printf("size = %llu, line count = %llu\n", source.buffer_size, source.line_count);
+    printf("size = %u, line count = %u\n", source.buffer_size, source.line_count);
     printf("----- source begin ------\n%s----- source end -----\n\n", source.buffer);
 
     u64 offset = 0;

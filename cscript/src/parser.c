@@ -36,7 +36,7 @@ INLINE token* parser_peekpre(parser* par, i32 location) {
     return par->tokens + par->tokens_len + location;
 }
 
-tree_node* make_tree_node(NodeType type, i32 object_type, char* name, i32 name_len) {
+tree_node* make_tree_node(NodeType type, i32 object_type, char* name, i32 name_len, token* tok) {
     tree_node* node = MALLOC(sizeof(tree_node));
     memcpy(node, &(tree_node) {
         .type = type,
@@ -45,6 +45,7 @@ tree_node* make_tree_node(NodeType type, i32 object_type, char* name, i32 name_l
         .name_len = name_len,
         .nodes = make_vector(),
     }, sizeof(tree_node));
+    memcpy(&node->val, &tok->val, sizeof(tok->val));
     return node;
 }
 
@@ -90,12 +91,17 @@ void dfs(tree_node* root, void(*act)(tree_node*)) {
 
 INLINE static tree_node* parse_rvariable(parser* par) {
     token* tok = parser_peek(par, 0);
-    return make_tree_node(NodeVariable, tok->sub_type, tok->name, tok->name_len);
+    return make_tree_node(NodeVariable, tok->sub_type, tok->name, tok->name_len, tok);
 }
 
 INLINE static tree_node* parse_char_literal(parser* par) {
     token* tok = parser_peek(par, 0);
-    return make_tree_node(NodeCharLiteral, NodeTypeChar, tok->name + 1, tok->name_len - 2);
+    return make_tree_node(NodeCharLiteral, NodeTypeChar, tok->name, tok->name_len - 2, tok);
+}
+
+INLINE static tree_node* parse_string_literal(parser* par) {
+    token* tok = parser_peek(par, 0);
+    return make_tree_node(NodeStringLiteral, NodeTypeString, tok->name, tok->name_len - 2, tok);
 }
 
 static tree_node* try_parse_number(parser* par) {
@@ -103,13 +109,13 @@ static tree_node* try_parse_number(parser* par) {
     switch (tok->type) {
     case TokenDecLiteral: {
         if (is_real_number(tok)) {
-            return make_tree_node(NodeDecNumber, NodeTypeFloat, tok->name, tok->name_len);
+            return make_tree_node(NodeDecNumber, NodeTypeFloat, tok->name, tok->name_len, tok);
         }
-        return make_tree_node(NodeDecNumber, NodeTypeInt, tok->name, tok->name_len);
+        return make_tree_node(NodeDecNumber, NodeTypeInt, tok->name, tok->name_len, tok);
     }
-    case TokenHexLiteral: return make_tree_node(NodeHexNumber, NodeTypeInt, tok->name, tok->name_len);
-    case TokenOctLiteral: return make_tree_node(NodeOctNumber, NodeTypeInt, tok->name, tok->name_len);
-    case TokenBinLiteral: return make_tree_node(NodeBinNumber, NodeTypeInt, tok->name, tok->name_len);
+    case TokenHexLiteral: return make_tree_node(NodeHexNumber, NodeTypeInt, tok->name, tok->name_len, tok);
+    case TokenOctLiteral: return make_tree_node(NodeOctNumber, NodeTypeInt, tok->name, tok->name_len, tok);
+    case TokenBinLiteral: return make_tree_node(NodeBinNumber, NodeTypeInt, tok->name, tok->name_len, tok);
     default: return NULL;
     }
 }
@@ -118,14 +124,14 @@ static tree_node* try_parse_operator(parser* par) {
     ++par->index;
     token* tok = parser_peek(par, 0);
     if (is_operator(parser_peek(par, 0))) {
-        return make_tree_node(NodeOperator, tok->sub_type, tok->name, tok->name_len);
+        return make_tree_node(NodeOperator, tok->sub_type, tok->name, tok->name_len, tok);
     }
     return NULL;
 }
 
 static tree_node* parse_negate_operator(parser* par) {
     token* tok = parser_peek(par, 0);
-    return make_tree_node(NodeNegateOperator, tok->sub_type, tok->name, tok->name_len);
+    return make_tree_node(NodeNegateOperator, tok->sub_type, tok->name, tok->name_len, tok);
 }
 
 static tree_node* try_parse_binary_expression_with_bracket(parser* par);
@@ -133,6 +139,9 @@ static tree_node* try_parse_binary_expression_lhs(parser* par) {
     ++par->index;
     if (is_identifier(parser_peek(par, 0))) {
         return parse_rvariable(par);
+    }
+    if (is_string_literal(parser_peek(par, 0))) {
+        return parse_string_literal(par);
     }
     if (is_char_literal(parser_peek(par, 0))) {
         return parse_char_literal(par);
@@ -297,14 +306,14 @@ static tree_node* try_parse_assign_operator(parser* par) {
     ++par->index;
     token* tok = parser_peek(par, 0);
     if (is_assigment_operator(tok)) {
-        return make_tree_node(NodeAssignmentOperator, tok->sub_type, tok->name, tok->name_len);
+        return make_tree_node(NodeAssignmentOperator, tok->sub_type, tok->name, tok->name_len, tok);
     }
     return NULL;
 }
 
 static tree_node* try_parse_identifier(parser* par) {
     token* tok = parser_peek(par, 0);
-    tree_node* var = make_tree_node(NodeVariable, -1, tok->name, tok->name_len);
+    tree_node* var = make_tree_node(NodeVariable, -1, tok->name, tok->name_len, tok);
 
     if (is_operator_type(parser_peek(par, 1), OperatorAssign)) {
         var->type = NodeVariableInitialize;
@@ -337,21 +346,23 @@ static tree_node* try_parse_identifier(parser* par) {
 }
 
 tree_node* try_parse_function_parameter(parser* par) {
-    if (parser_peek(par, 0)->type == TokenCloseRoundBracket)
-        return make_tree_node(NodeEmpty, -1, "", -1);
+    (void)par;
+    // if (parser_peek(par, 0)->type == TokenCloseRoundBracket)
+    //     return make_tree_node(NodeEmpty, -1, "", -1, NULL);
     tree_node* param = NULL;
     return param;
 }
 
 tree_node* try_parse_functin_return_type(parser* par) {
-    if (parser_peek(par, 0)->type == TokenNewLine)
-        return make_tree_node(NodeEmpty, -1, "", -1);
+    (void)par;
+    // if (parser_peek(par, 0)->type == TokenNewLine)
+    //     return make_tree_node(NodeEmpty, -1, "", -1, NULL);
     return NULL;
 }
 
 static tree_node* try_parse_function(parser* par) {
     token* tok = parser_peek(par, 0);
-    tree_node* node = make_tree_node(NodeVariable, tok->sub_type, tok->name, tok->name_len);
+    tree_node* node = make_tree_node(NodeVariable, tok->sub_type, tok->name, tok->name_len, NULL);
     ++par->index;
     if (parser_peek(par, 0)->type != TokenOpenRoundBracket)
         return NULL;

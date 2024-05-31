@@ -1,71 +1,36 @@
 #include "interpreter.h"
 #include "keys_define.h"
 #include "environment.h"
-#include "object.h"
+#include "basic/memallocate.h"
 
+#include <string.h>
 #include <stdlib.h>
-#include <math.h>
-
-static int base_n_to_dec(tree_node* node, int base_n, i32(*is_digit)(const char c)) {
-    int result = 0;
-    const char* str = node->name + 2;
-    int len = node->name_len - 2;
-    for (; str[0] == '0'; str++, len--) {}
-
-    for (i32 i = 0; i < len; ++i) {
-        result += powl(base_n, i) * is_digit(str[len - i - 1]);
-    }
-    return result;
-}
-
-static INLINE i32 hex_to_dec_ch(const char c) {
-    return c >= 'a' && c <= 'f' ? c - 'W' : c - '0';
-}
-
-static INLINE i32 hex_to_dec(tree_node* tok) {
-    return base_n_to_dec(tok, 16, hex_to_dec_ch);
-}
-
-static INLINE i32 bin_to_dec_ch(const char c) {
-    return c == '1';
-}
-
-static INLINE i32 bin_to_dec(tree_node* tok) {
-    return base_n_to_dec(tok, 2, bin_to_dec_ch);
-}
-
-static INLINE i32 oct_to_dec_ch(const char c) {
-    return c - '0';
-}
-
-static INLINE i32 oct_to_dec(tree_node* tok) {
-    return base_n_to_dec(tok, 8, oct_to_dec_ch);
-}
-
-static INLINE int get_node_number_value_int(tree_node* node) {
-    return atoi(node->name);
-}
-
-static INLINE float get_node_number_value_float(tree_node* node) {
-    return atof(node->name);
-}
 
 #define IMPL_DATA_CHUNK_CONVERSION(conversion_name, operator)\
     void conversion_name##_data_chunk(void* out, data_chunk chunk) {\
         switch (chunk.type) {\
-        case NodeTypeChar: *(char*)out operator chunk.val._char; break;\
-        case NodeTypeInt: *(int*)out operator chunk.val._int; break;\
-        case NodeTypeFloat: *(float*)out operator chunk.val._float; break;\
+        case NodeTypeChar: *(u8*)out operator chunk.val._char; break;\
+        case NodeTypeInt: *(i64*)out operator chunk.val._int; break;\
+        case NodeTypeFloat: *(f64*)out operator chunk.val._float; break;\
         default: break;\
         }\
     }
 
-IMPL_DATA_CHUNK_CONVERSION(assign, =)
-IMPL_DATA_CHUNK_CONVERSION(negate, = -)
-IMPL_DATA_CHUNK_CONVERSION(plus_equal, +=)
-IMPL_DATA_CHUNK_CONVERSION(minus_equal, -=)
-IMPL_DATA_CHUNK_CONVERSION(multiply_equal, *=)
-IMPL_DATA_CHUNK_CONVERSION(division_equal, /=)
+void assign_data_chunk(void* out, data_chunk chunk) {
+    switch (chunk.type) {
+    case NodeTypeChar: *(u8*)out = chunk.val._char; break;
+    case NodeTypeInt: *(i64*)out = chunk.val._int; break;
+    case NodeTypeFloat: *(f64*)out = chunk.val._float; break;
+    case NodeTypeString: *((char**)out) = chunk.val._string; break;
+    default: break;
+    }
+}
+
+static IMPL_DATA_CHUNK_CONVERSION(negate, = -)
+static IMPL_DATA_CHUNK_CONVERSION(plus_equal, +=)
+static IMPL_DATA_CHUNK_CONVERSION(minus_equal, -=)
+static IMPL_DATA_CHUNK_CONVERSION(multiply_equal, *=)
+static IMPL_DATA_CHUNK_CONVERSION(division_equal, /=)
 
 #define IMPL_DATA_CHUNK_ARITHMETIC(name, operation)\
     void name##_data_chunk(data_chunk* out, data_chunk* a, data_chunk* b) {\
@@ -80,10 +45,10 @@ IMPL_DATA_CHUNK_CONVERSION(division_equal, /=)
         }\
     }
 
-IMPL_DATA_CHUNK_ARITHMETIC(add, +)
-IMPL_DATA_CHUNK_ARITHMETIC(minus, -)
-IMPL_DATA_CHUNK_ARITHMETIC(multiply, *)
-IMPL_DATA_CHUNK_ARITHMETIC(division, /)
+static IMPL_DATA_CHUNK_ARITHMETIC(add, +)
+static IMPL_DATA_CHUNK_ARITHMETIC(minus, -)
+static IMPL_DATA_CHUNK_ARITHMETIC(multiply, *)
+static IMPL_DATA_CHUNK_ARITHMETIC(division, /)
 
 static void interpret_cal_expression(data_chunk* out, tree_node* node) {
     switch (node->type) {
@@ -106,26 +71,26 @@ static void interpret_cal_expression(data_chunk* out, tree_node* node) {
     case NodeDecNumber: {
         out->type = node->object_type;
         switch (node->object_type) {
-        case NodeTypeInt: out->val._int = get_node_number_value_int(node); break;
-        case NodeTypeFloat: out->val._float = get_node_number_value_float(node); break;
+        case NodeTypeInt: out->val._int = node->val._int; break;
+        case NodeTypeFloat: out->val._float = node->val._float; break;
         default: break;
         }
     } break;
-    case NodeHexNumber: {
-        out->type = node->object_type;
-        out->val._int = hex_to_dec(node);
-    } break;
-    case NodeOctNumber: {
-        out->type = node->object_type;
-        out->val._int = oct_to_dec(node);
-    } break;
+    case NodeHexNumber:
+    case NodeOctNumber:
     case NodeBinNumber: {
         out->type = node->object_type;
-        out->val._int = bin_to_dec(node);
+        out->val._int = node->val._int;
     } break;
     case NodeCharLiteral: {
         out->type = node->object_type;
         out->val._char = node->name[0];
+    } break;
+    case NodeStringLiteral: {
+        out->type = node->object_type;
+        out->val._string = MALLOC(node->name_len + 1);
+        memcpy(out->val._string, node->name, node->name_len);
+        out->val._string[node->name_len] = 0;
     } break;
     case NodeVariable: {
         object* obj = get_object(node->name, node->name_len);
@@ -135,9 +100,9 @@ static void interpret_cal_expression(data_chunk* out, tree_node* node) {
         variable_info* var = obj->info;
         out->type = var->type;
         switch (out->type) {
-            case NodeTypeInt: out->val._int = *(int*)var->value; break;
-            case NodeTypeChar: out->val._char = *(int*)var->value; break;
-            case NodeTypeFloat: out->val._float = *(int*)var->value; break;
+            case NodeTypeInt: out->val._int = *(i64*)var->value; break;
+            case NodeTypeChar: out->val._char = *(u8*)var->value; break;
+            case NodeTypeFloat: out->val._float = *(f64*)var->value; break;
             default: break;
         }
         break;
@@ -148,12 +113,12 @@ static void interpret_cal_expression(data_chunk* out, tree_node* node) {
 
 void type_cast(data_chunk* chunk, i32 type) {
     switch (type - chunk->type) {
-    case NodeTypeInt - NodeTypeFloat: chunk->val._int = (int)chunk->val._float; break;
-    case NodeTypeInt - NodeTypeChar: chunk->val._int = (int)chunk->val._char; break;
-    case NodeTypeChar - NodeTypeFloat: chunk->val._char = (char)chunk->val._float; break;
-    case NodeTypeChar - NodeTypeInt: chunk->val._char = (char)chunk->val._int; break;
-    case NodeTypeFloat - NodeTypeInt: chunk->val._float = (float)chunk->val._int; break;
-    case NodeTypeFloat - NodeTypeChar: chunk->val._float = (float)chunk->val._char; break;
+    case NodeTypeInt - NodeTypeFloat: chunk->val._int = chunk->val._float; break;
+    case NodeTypeInt - NodeTypeChar: chunk->val._int = chunk->val._char; break;
+    case NodeTypeChar - NodeTypeFloat: chunk->val._char = chunk->val._float; break;
+    case NodeTypeChar - NodeTypeInt: chunk->val._char = chunk->val._int; break;
+    case NodeTypeFloat - NodeTypeInt: chunk->val._float = chunk->val._int; break;
+    case NodeTypeFloat - NodeTypeChar: chunk->val._float = chunk->val._char; break;
     default: break;
     }
     chunk->type = type;
@@ -162,14 +127,16 @@ void type_cast(data_chunk* chunk, i32 type) {
 static void print_variable(object* obj) {
     variable_info* info = obj->info;
     switch (info->type) {
-        case NodeTypeInt: printf("%s = %d\n", obj->name, *(i32*)info->value); break;
-        case NodeTypeFloat: printf("%s = %g\n", obj->name, *(f32*)info->value); break;
-        case NodeTypeChar: printf("%s = %c\n", obj->name, *(char*)info->value); break;
+        case NodeTypeInt: printf("%s = %lld\n", obj->name, *(i64*)info->value); break;
+        case NodeTypeFloat: printf("%s = %g\n", obj->name, *(f64*)info->value); break;
+        case NodeTypeChar: printf("%s = %c\n", obj->name, *(u8*)info->value); break;
+        case NodeTypeString: printf("%s = %s\n", obj->name, *(char**)info->value); break;
         default: break;
     }
 }
 
 // TEST: temp func
+// TODO: place this somewhere else
 void register_object(object* obj) {
     vector_push(vector_back(env.scopes), obj);
     hashmap_add(env.object_map, obj);

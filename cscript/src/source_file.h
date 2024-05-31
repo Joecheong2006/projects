@@ -4,7 +4,7 @@
 
 typedef struct {
     char* buffer;
-    u64 buffer_size, line_count;
+    u32 buffer_size, line_count;
 } source_file;
 
 i32 load_source(source_file* source, const char* path);

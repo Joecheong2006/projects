@@ -2,7 +2,7 @@ CC = g++
 CFLAGS := -std=c++17 -Wall -Wextra -Wpedantic -Wstrict-aliasing -g -O2
 SOURCE = src src/**
 INCLUDE = -I../lib -I../include
-LIB = bin/mfw.dll
+LIB = bin/mfw.dll  -static-libgcc -static-libstdc++ -Wl,-Bstatic -lstdc++ -lpthread -Wl,-Bdynamic
 
 SRC = $(wildcard $(patsubst %, %/*.cpp, $(SOURCE)))
 OBJ = $(SRC:%.cpp=%.o)
@@ -29,7 +29,7 @@ clean:
 	@echo Cleaned
 
 build: bin
-	@cd ../ && make win_debug -s -j
+	@cd ../ && make win_debug -j
 	@cp ../mfw.dll bin/mfw.dll
 
 bin:

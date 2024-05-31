@@ -2,7 +2,46 @@
 
 #include "keys_define.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <math.h>
+
+static i64 base_n_to_dec(token* node, int base_n, i64(*is_digit)(const char c)) {
+    int result = 0;
+    const char* str = node->name + 2;
+    int len = node->name_len - 2;
+    for (; str[0] == '0'; str++, len--) {}
+
+    for (i32 i = 0; i < len; ++i) {
+        result += powl(base_n, i) * is_digit(str[len - i - 1]);
+    }
+    return result;
+}
+
+static INLINE i64 hex_to_dec_ch(const char c) {
+    return c >= 'a' && c <= 'f' ? c - 'W' : c - '0';
+}
+
+static INLINE i64 hex_to_dec(token* tok) {
+    return base_n_to_dec(tok, 16, hex_to_dec_ch);
+}
+
+static INLINE i64 bin_to_dec_ch(const char c) {
+    return c == '1';
+}
+
+static INLINE i64 bin_to_dec(token* tok) {
+    return base_n_to_dec(tok, 2, bin_to_dec_ch);
+}
+
+static INLINE i64 oct_to_dec_ch(const char c) {
+    return c - '0';
+}
+
+static INLINE i64 oct_to_dec(token* tok) {
+    return base_n_to_dec(tok, 8, oct_to_dec_ch);
+}
+
 
 INLINE i32 is_alphabet(char c) {
     switch (c) {
@@ -42,9 +81,9 @@ INLINE i32 is_separator_type(token* tok, i32 type) { return tok->type == TokenSe
 INLINE i32 is_string_literal(token* tok) { return tok->type == TokenStringLiteral; }
 INLINE i32 is_char_literal(token* tok) { return tok->type == TokenCharLiteral; }
 i32 is_real_number(token* tok) { 
-    if (is_number(tok->name[0] || (tok->name[0] == '.' && is_number(tok->name[1])))) {
-        return 1;
-    }
+    // if (is_number(tok->name[0] || (tok->name[0] == '.' && is_number(tok->name[1])))) {
+    //     return 1;
+    // }
 
     for (i32 i = 0; i < tok->name_len; ++i)
         if (tok->name[i] == '.')
@@ -53,16 +92,6 @@ i32 is_real_number(token* tok) {
 }
 
 static INLINE i32 is_string_literal_begin(char c) { return c == '\'' || c == '"'; }
-
-static i32 is_operator_begin(lexer* lexer, char c) {
-    ASSERT_MSG(lexer != NULL, "invalid lexer");
-    for (i32 i = 0; i < lexer->token_sets[TokenOperator].set_size; ++i) {
-        if (lexer->token_sets[TokenOperator].set_name[i][0] == c) {
-            return 1;
-        }
-    }
-    return 0;
-}
 
 static i32 is_separator_begin(lexer* lexer, char c) {
     ASSERT_MSG(lexer != NULL, "invalid lexer");
@@ -78,19 +107,6 @@ void lexer_add_token(lexer* lexer, token_set set, Token token) {
     ASSERT_MSG(lexer != NULL, "invalid lexer");
     ASSERT_MSG(token >= 0 && token < TokenCount, "adding invalid token");
     lexer->token_sets[token] = set;
-}
-
-i32 compare_strings(const char** strings, u64 strings_len, const char* str) {
-    for (u64 i = 0; i < strings_len; ++i) {
-        if (strncmp(str, strings[i], strlen(strings[i])) == 0) {
-            return 1;
-        }
-    }
-    return 0;
-}
-
-INLINE i32 compare_token_set(token_set* token_set, const char* str) {
-    return compare_strings(token_set->set_name, token_set->set_size, str);
 }
 
 static i32 get_word_stride(const char* str) {
@@ -136,49 +152,65 @@ INLINE static i32 is_bin(char c) {
     }
 }
 
-static i32 get_bin_literal_stride(const char* str) {
+static token get_bin_literal_stride(char* str) {
+    token result = { .name = str, .type = TokenError, .sub_type = -1, .name_len = -1 };
     i32 i = 2;
     if (!is_bin(str[i])) {
-        return -1;
+        return result;
     }
     while (1) {
         if (!is_bin(str[i])) {
-            return i + 1;
+            break;
         }
         ++i;
     }
+    result.type = TokenBinLiteral;
+    result.name_len = i;
+    result.val._int = bin_to_dec(&result);
+    return result;
 }
 
-static i32 get_oct_literal_stride(const char* str) {
+static token get_oct_literal_stride(char* str) {
+    token result = { .name = str, .type = TokenError, .sub_type = -1, .name_len = -1 };
     i32 i = 2;
     if (!is_oct(str[i])) {
-        return -1;
+        return result;
     }
     while (1) {
         if (!is_oct(str[i])) {
-            return i + 1;
+            break;
         }
         ++i;
     }
+    result.type = TokenOctLiteral;
+    result.name_len = i;
+    result.val._int = oct_to_dec(&result);
+    return result;
 }
 
-static i32 get_hex_literal_stride(const char* str) {
+static token get_hex_literal_stride(char* str) {
+    token result = { .name = str, .type = TokenError, .sub_type = -1, .name_len = -1 };
     i32 i = 2;
     if (!(is_number(str[i]) || is_hex(str[i]))) {
-        return -1;
+        return result;
     }
     while (1) {
         if (!(is_number(str[i]) || is_hex(str[i]))) {
-            return i + 1;
+            break;
         }
         ++i;
     }
+    result.type = TokenHexLiteral;
+    result.name_len = i;
+    result.val._int = hex_to_dec(&result);
+    return result;
 }
 
-static i32 get_dec_literal_stride(const char* str) {
+static token get_dec_literal_token(char* str) {
+    token result = { .name = str, .type = TokenError, .sub_type = -1, .name_len = -1 };
     i32 i = 0;
     if (!(is_number(str[i]))) {
-        return -2;
+        return result;
     }
     i32 comma_count = 0;
     while (1) {
@@ -187,23 +219,67 @@ static i32 get_dec_literal_stride(const char* str) {
                 i++;
                 continue;
             }
-            return i + 1;
+            return result;
         }
         if (!(is_number(str[i]))) {
-            return i + 1;
+            break;
         }
         ++i;
     }
+
+    result.type = TokenDecLiteral;
+    result.name_len = i;
+
+    if (comma_count > 0) {
+        result.val._float = atof(str);
+    }
+    else {
+        result.val._int = atoi(str);
+    }
+
+    return result;
 }
 
-static i32 get_string_literal_stride(const char* str) {
+static i32 get_string_literal_stride(char* str) {
     i32 i = 0;
+    i32 len = 0;
     while (!is_string_literal_begin(str[++i])) {
+        ++len;
+        if (str[i] == '\\') {
+            ++i;
+            switch (str[i]) {
+            case 'a': str[i] = '\a'; break;
+            case 'b': str[i] = '\b'; break;
+            case 'f': str[i] = '\f'; break;
+            case 'n': str[i] = '\n'; break;
+            case 'r': str[i] = '\r'; break;
+            case 't': str[i] = '\t'; break;
+            case 'v': str[i] = '\v'; break;
+            case '\\': str[i] = '\\'; break;
+            case '\'': str[i] = '\''; break;
+            case '\"': str[i] = '\"'; break;
+            case '\?': str[i] = '\?'; break;
+            default: return -1;
+            }
+            continue;
+        }
         if (str[i] == 0) {
             return -1;
         }
     }
-    return i + 2;
+    return len + 3;
+}
+
+INLINE static token get_string_literal_token(char* str) {
+    token result = { .name = str + 1, .name_len = get_string_literal_stride(str) - 1, .type = TokenStringLiteral, .sub_type = -1 };
+    if (result.name_len < 0) {
+        result.type = TokenError;
+        return result;
+    }
+    if (result.name_len == 3) {
+        result.type = TokenCharLiteral;
+    }
+    return result;
 }
 
 static i32 get_token_type_location(lexer* lexer, Token type, const char* str, u64 len) {
@@ -234,27 +310,19 @@ INLINE static token get_literal_token(char* str) {
     switch (str[0]) {
     case '0': {
         switch (str[1]) {
-        case 'b': return (token){ .name = str, .name_len = get_bin_literal_stride(str) - 1, .type = TokenBinLiteral, .sub_type = -1 };
-        case 'o': return (token){ .name = str, .name_len = get_oct_literal_stride(str) - 1, .type = TokenOctLiteral, .sub_type = -1 };
-        case 'x': return (token){ .name = str, .name_len = get_hex_literal_stride(str) - 1, .type = TokenHexLiteral, .sub_type = -1 };
-        default: return (token){ .name = str, .name_len = get_dec_literal_stride(str) - 1, .type = TokenDecLiteral, .sub_type = -1 };
+        case 'b': return get_bin_literal_stride(str);
+        case 'o': return get_oct_literal_stride(str);
+        case 'x': return get_hex_literal_stride(str);
+        default: return get_dec_literal_token(str);
         }
     }
-    default: return (token){ .name = str, .name_len = get_dec_literal_stride(str) - 1, .type = TokenDecLiteral, .sub_type = -1 };
+    default: return get_dec_literal_token(str);
     }
-}
-
-INLINE static token get_string_literal_token(char* str) {
-    token result = { .name = str, .name_len = get_string_literal_stride(str) - 1, .type = TokenStringLiteral, .sub_type = -1 };
-    if (result.name_len == 3) {
-        result.type = TokenCharLiteral;
-    }
-    return result;
 }
 
 static token get_operator_token(lexer* lexer, char* str) {
     ASSERT_MSG(lexer != NULL, "invalid lexer");
-    token tok = { .type = TokenOperator, .name = str, tok.sub_type = -1, .name_len = 0, };
+    token tok = { tok.sub_type = -1, .name_len = 0, .type = TokenOperator, .name = str };
     for (i32 i = 0; i < lexer->token_sets[TokenOperator].set_size; ++i) {
         i32 operator_len = strlen(lexer->token_sets[TokenOperator].set_name[i]);
         if (tok.name_len < operator_len &&
@@ -268,7 +336,7 @@ static token get_operator_token(lexer* lexer, char* str) {
 
 static token get_separator_token(lexer* lexer, char* str) {
     ASSERT_MSG(lexer != NULL, "invalid lexer");
-    token tok = { .type = TokenSeparator, .name = str, tok.sub_type = -1, .name_len = 0 };
+    token tok = { tok.sub_type = -1, .name_len = 0, .type = TokenSeparator, .name = str };
     for (i32 i = 0; i < lexer->token_sets[TokenSeparator].set_size; ++i) {
         i32 operator_len = strlen(lexer->token_sets[TokenSeparator].set_name[i]);
         if (tok.name_len < operator_len && 
@@ -278,16 +346,6 @@ static token get_separator_token(lexer* lexer, char* str) {
         }
     }
     return tok.sub_type > -1 ? tok : (token){ .type = TokenError };
-}
-
-token get_token(lexer* lexer, char* str) {
-    ASSERT_MSG(lexer != NULL, "invalid lexer");
-    if (str[0] == 0)
-        return (token){ .type = TokenError };
-    if (is_operator_begin(lexer, str[0])) {
-        return get_operator_token(lexer, str);
-    }
-    return (token){ .type = TokenError };
 }
 
 token lexer_tokenize_string(lexer* lexer, char* str) {
@@ -327,7 +385,7 @@ token lexer_tokenize_string(lexer* lexer, char* str) {
         case '3': case '4': case '5':
         case '6': case '7': case '8':
         case '9': return get_literal_token(str);
-        default: return get_token(lexer, str);
+        default: return get_operator_token(lexer, str);
     }
 }
 
@@ -344,6 +402,7 @@ vector(token) lexer_tokenize_until(lexer* lexer, char* str, char terminal) {
 
     char* begin = str;
     token tok = { .name = "" };
+
     while (tok.name[0] != terminal) {
         if (begin[0] == 0) {
             vector_pushe(tokens, (token){ .type = TokenEnd, .name_len = -1 });
@@ -354,9 +413,6 @@ vector(token) lexer_tokenize_until(lexer* lexer, char* str, char terminal) {
             continue;
         }
         tok = lexer_tokenize_string(lexer, begin);
-        if (tok.name_len < 1) {
-            tok.type = TokenError;
-        }
         vector_pushe(tokens, tok);
         if (tok.type == TokenError) {
             return tokens;
@@ -370,8 +426,7 @@ vector(token) lexer_tokenize_until(lexer* lexer, char* str, char terminal) {
 void print_token_name(token* tok) {
     i32 n = 0, len = tok->name_len;
     if (is_string_literal(tok)) {
-        n = 1;
-        len -= 1;
+        len -= 2;
     }
 
     for (; n < len; ++n) {

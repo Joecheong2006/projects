@@ -51,13 +51,18 @@ typedef enum {
 
 typedef struct tree_node tree_node;
 struct tree_node {
+    i16 object_type, name_len;
+    NodeType type;
     char* name;
     vector(tree_node*) nodes;
-    NodeType type;
-    i16 object_type, name_len;
+    union {
+        u8 _char;
+        i64 _int;
+        f64 _float;
+    } val;
 };
 
-tree_node* make_tree_node(NodeType type, i32 object_type, char* name, i32 name_len);
+tree_node* make_tree_node(NodeType type, i32 object_type, char* name, i32 name_len, token* tok);
 void free_node(tree_node* node);
 void print_node(tree_node* node);
 

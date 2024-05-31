@@ -1,6 +1,7 @@
 #include "object.h"
 
 #include "basic/memallocate.h"
+#include "parser.h"
 #include <string.h>
 
 object* make_object(object* obj) {
@@ -15,15 +16,19 @@ variable_info* make_variable_info(tree_node* node) {
     ASSERT_MSG(result != NULL, "malloc failed");
     result->type = node->object_type;
     switch (result->type) {
-    case NodeTypeInt: result->value = MALLOC(sizeof(int)); break;
-    case NodeTypeFloat: result->value = MALLOC(sizeof(float)); break;
-    case NodeTypeChar: result->value = MALLOC(sizeof(char)); break;
+    case NodeTypeInt: result->value = MALLOC(sizeof(i64)); break;
+    case NodeTypeFloat: result->value = MALLOC(sizeof(f64)); break;
+    case NodeTypeChar: result->value = MALLOC(sizeof(u8));  break;
+    case NodeTypeString: result->value = MALLOC(sizeof(char*));  break;
     default: break;
     }
     return result;
 }
 
 void free_object_variable(variable_info* obj) {
+    if (obj->type == NodeTypeString) {
+        FREE(*((char**)obj->value));
+    }
     FREE(obj->value);
     FREE(obj);
 }

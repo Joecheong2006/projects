@@ -34,15 +34,20 @@ typedef enum {
 } Token;
 
 typedef struct {
+    i16 sub_type, name_len, line;
     Token type;
     char* name;
-    i16 sub_type, name_len;
+    union {
+        u8 _char;
+        i64 _int;
+        f64 _float;
+    } val;
 } token;
 
 typedef struct {
-    const char** set_name;
-    i32 set_size;
+    i16 set_size;
     Token token;
+    const char** set_name;
 } token_set;
 
 typedef struct {
@@ -63,9 +68,6 @@ i32 is_char_literal(token* tok);
 i32 is_real_number(token* tok);
 
 void lexer_add_token(lexer* lexer, token_set set, Token token);
-i32 compare_strings(const char** strings, u64 strings_len, const char* str);
-i32 compare_token_set(token_set* token_set, const char* str);
-
 token lexer_tokenize_string(lexer* lexer, char* str);
 vector(token) lexer_tokenize_until(lexer* lexer, char* str, char terminal);
 
