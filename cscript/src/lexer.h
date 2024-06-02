@@ -33,15 +33,18 @@ typedef enum {
     TokenUnkown
 } Token;
 
+typedef union {
+    u8 _char;
+    char* _string;
+    i64 _int;
+    f64 _float;
+} temp_data;
+
 typedef struct {
     i16 sub_type, name_len, line;
     Token type;
     char* name;
-    union {
-        u8 _char;
-        i64 _int;
-        f64 _float;
-    } val;
+    temp_data val;
 } token;
 
 typedef struct {

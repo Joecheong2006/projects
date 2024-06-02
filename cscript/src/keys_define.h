@@ -15,6 +15,7 @@ typedef enum {
     KeywordFlase,
     KeywordNone,
     KeywordFunction,
+    KeywordEnd,
     KeywordTokenCount
 } KeywordType;
 

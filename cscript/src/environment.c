@@ -3,6 +3,10 @@
 
 struct _environment env;
 
+void add_error_message(error_message message) {
+    vector_pushe(env.error_messages, message);
+}
+
 static u64 hash_object_len(const char* name, i32 len, u64 size) {
     size_t result = 5381;
     for (i32 i = 0; i < len; ++i) {
@@ -36,6 +40,11 @@ static u64 hash_object(void* data, u64 size) {
 void init_environment(void) {
     env.scopes = make_vector();
     env.object_map = make_hashmap(1 << 10, hash_object);
+    env.error_messages = make_vector();
+    env.inter = (interpreter){
+        .index = 0,
+        .instructions = make_vector()
+    };
 }
 
 void delete_environment(void) {
@@ -44,6 +53,11 @@ void delete_environment(void) {
     }
     free_vector(&env.scopes);
     free_hashmap(&env.object_map);
+    free_vector(&env.error_messages);
+    for_vector(env.inter.instructions, i, 0) {
+        dfs(env.inter.instructions[i], free_node);
+    }
+    free_vector(&env.inter.instructions);
 }
 
 scope make_scope(void) {

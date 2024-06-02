@@ -14,6 +14,7 @@ const char* Keyword[] = {
     [KeywordFlase] = "true", 
     [KeywordNone] = "false",
     [KeywordFunction] = "fn", 
+    [KeywordEnd] = "end", 
 };
 
 const char* Separator[] = {

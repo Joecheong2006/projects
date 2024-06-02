@@ -2,6 +2,7 @@
 #include "keys_define.h"
 #include "environment.h"
 #include "basic/memallocate.h"
+#include "object.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -96,6 +97,7 @@ static void interpret_cal_expression(data_chunk* out, tree_node* node) {
         object* obj = get_object(node->name, node->name_len);
         if (!obj) {
             // NOTE: report run time error
+            break;
         }
         variable_info* var = obj->info;
         out->type = var->type;
@@ -103,6 +105,11 @@ static void interpret_cal_expression(data_chunk* out, tree_node* node) {
             case NodeTypeInt: out->val._int = *(i64*)var->value; break;
             case NodeTypeChar: out->val._char = *(u8*)var->value; break;
             case NodeTypeFloat: out->val._float = *(f64*)var->value; break;
+            case NodeTypeString: { 
+                out->val._string = *((char**)var->value); 
+                FREE(var->value);
+                var->value = NULL;
+            } break;
             default: break;
         }
         break;
@@ -196,10 +203,92 @@ static void interpret_variable_assignment(tree_node* node) {
     print_variable(obj);
 }
 
+static void interpret_function_decl(tree_node* node) {
+    object* obj = get_object(node->name, node->name_len);
+    if (obj) {
+        // NOTE(error): function already declared
+        exit(1);
+    }
+    obj = make_object(&(object){
+            .name = make_stringn(node->name, node->name_len),
+            .type = ObjectFunction,
+            .info = make_function_info(node),
+            });
+
+    register_object(obj);
+}
+
+static void interpret_function_call(tree_node* node) {
+    object* obj = get_object(node->name, node->name_len);
+    if (!obj || obj->type != ObjectFunction) {
+        // NOTE(error): not found function
+        exit(1);
+    }
+    function_info* info = obj->info;
+    tree_node* params = node->nodes[0];
+    if (vector_size(params->nodes) != vector_size(info->params)) {
+        printf("doesn't match %s's parameters\n", obj->name);
+        exit(1);
+    }
+
+    vector_push(env.scopes, make_scope());
+
+    for_vector(info->params, i, 0) {
+        // tree_node* assign = make_tree_node(NodeOperator, OperatorAssign, "", -1, NULL);
+        // vector_push(assign->nodes, params->nodes[i]);
+        // interpret(&(tree_node){
+        //         .nodes = assign->nodes,
+        //         .type = params->nodes[i]->type,
+        //         .name = info->params[i],
+        //         .name_len = vector_size(info->params[i]),
+        //         .object_type = -1,
+        //         .val = NULL,
+        //         });
+
+        if (params->nodes[i]->type == NodeVariable) {
+            object* obj = get_object(params->nodes[i]->name, params->nodes[i]->name_len);
+            if (!obj) {
+                printf("not fount variable name\n");
+                exit(1);
+            }
+            variable_info* var = obj->info;
+            object* param = make_object(&(object){
+                    .name = make_string(info->params[i]),
+                    .type = ObjectVariable,
+                    .info = make_variable_info(&(tree_node){ .object_type = var->type }),
+                    });
+            variable_info* param_var = param->info;
+            memcpy(param_var->value, var->value, var->size);
+            register_object(param);
+            continue;
+        }
+
+        data_chunk chunk = { .type = -1 };
+        interpret_cal_expression(&chunk, params->nodes[i]);
+        object* param = make_object(&(object){
+                .name = make_string(info->params[i]),
+                .type = ObjectVariable,
+                .info = make_variable_info(&(tree_node){ .object_type = chunk.type }),
+                });
+        register_object(param);
+        variable_info* info = param->info;
+        assign_data_chunk(info->value, chunk);
+    }
+
+    for_vector(info->body, i, 0) {
+        interpret(info->body[i]);
+    }
+
+    free_scope(&vector_back(env.scopes));
+    vector_pop(env.scopes);
+}
+
 void interpret(tree_node* ins) {
     switch (ins->type) {
     case NodeVariableInitialize: interpret_variable_initialize(ins); break;
     case NodeVariableAssignment: interpret_variable_assignment(ins); break;
+    case NodeFunctionDecl: interpret_function_decl(ins); break;
+    case NodeFunctionCall: interpret_function_call(ins); break;
     default: printf("not implement node instruction %d yet\n", ins->type);  break;
     }
 }

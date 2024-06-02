@@ -18,7 +18,7 @@
                 .token = type\
             }, type);
 
-vector(tree_node*) generate_instructions(char* text, lexer* lex) {
+i32 generate_instructions(char* text, lexer* lex) {
     i32 error = 0;
 
     parser par;
@@ -26,7 +26,6 @@ vector(tree_node*) generate_instructions(char* text, lexer* lex) {
     char until_ch = '\n';
     int new_line_len = 0, semicolon_len = 0, start_increment = 0;
 
-    vector(tree_node*) result = make_vector();
     i32 line = 1;
     for (i32 start = 0;; ++line) {
         char* ch = NULL;
@@ -65,6 +64,12 @@ vector(tree_node*) generate_instructions(char* text, lexer* lex) {
             }
         }
 
+        // for_vector(tokens, j, 0) {
+        //     print_token_name(tokens + j);
+        //     putchar(' ');
+        // }
+        // putchar('\n');
+
         start += start_increment;
         start_increment = 0;
 
@@ -76,14 +81,21 @@ vector(tree_node*) generate_instructions(char* text, lexer* lex) {
             ++error;
             continue;
         }
-        vector_push(result, node);
+
+        if (node->type == NodeFunctionCall) {
+            bfs(node, print_node);
+        }
+        vector_push(env.inter.instructions, node);
     }
-    print_parser_error(&par);
-    free_parser(&par);
-    return error == 0 ? result : NULL;
+
+    for_vector(env.error_messages, i, 0) {
+        printf("error: %d\n", env.error_messages[i].type);
+    }
+    return error;
 }
 
 void test() {
+    init_environment();
     source_file source;
     i32 success = load_source(&source, "test1.cscript");
 
@@ -97,10 +109,10 @@ void test() {
     LEXER_ADD_TOKEN(&lex, Separator, TokenSeparator);
     LEXER_ADD_TOKEN(&lex, Operator, TokenOperator);
 
-    vector(tree_node*) instructions = generate_instructions(source.buffer, &lex);
-    if (!instructions) {
+    if (generate_instructions(source.buffer, &lex) > 0) {
         printf("failed to generate instructions\n");
         free_source(&source);
+        delete_environment();
         CHECK_MEMORY_LEAK();
         exit(1);
     }
@@ -108,25 +120,20 @@ void test() {
     parser par;
     init_parser(&par);
 
-    init_environment();
     vector_push(env.scopes, make_scope());
 
-    for_vector(instructions, i, 0) {
-        interpret(instructions[i]);
+    for (; env.inter.index < vector_size(env.inter.instructions); ++env.inter.index) {
+        interpret(env.inter.instructions[env.inter.index]);
     }
-
-    for_vector(instructions, i, 0) {
-        dfs(instructions[i], free_node);
-    }
-
-    free_vector(&instructions);
 
     free_source(&source);
-    free_parser(&par);
-
     delete_environment();
     CHECK_MEMORY_LEAK();
 }
+
+// 1st June
+// TODO: implement basic string special char
+// TODO: implement function
 
 void command_line_mode(lexer* lexer);
 i32 main(i32 argc, char** argv) {

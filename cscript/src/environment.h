@@ -1,13 +1,39 @@
 #ifndef ENVIRONMENT_H
 #define ENVIRONMENT_H
 #include "basic/hashmap.h"
+#include "interpreter.h"
 #include "object.h"
 
+typedef enum {
+    ParserErrorNoError,
+    ParserErrorMissingToken,
+    ParserErrorMissingLhs,
+    ParserErrorMissingRhs,
+    ParserErrorMissingOpenBracket,
+    ParserErrorMissingCloseBracket,
+    ParserErrorMissingOperator,
+    ParserErrorMissingAssignOperator,
+    ParserErrorMissingSeparator,
+    ParserErrorExpectedExpression,
+    ParserErrorInvalidOperandsType,
+    ParserErrorUndefineName,
+    RuntimeErrorUnkownName,
+} ErrorType;
+
+typedef struct {
+    ErrorType type;
+    i32 line, pos;
+} error_message;
+
 typedef vector(object*) scope;
+
+void add_error_message(error_message message);
 
 struct _environment {
     hashmap object_map;
     vector(scope) scopes;
+    vector(error_message) error_messages;
+    interpreter inter;
 };
 
 extern struct _environment env;
