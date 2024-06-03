@@ -38,6 +38,8 @@ struct _environment {
 
 extern struct _environment env;
 
+u64 hash_object_len(const char* name, i32 len, u64 size);
+u64 hash_object(void* data, u64 size);
 object* get_object(const char* name, u64 len);
 
 void init_environment(void);

@@ -15,8 +15,8 @@ c=c+1
 
 fn pow(base, ex)
     base *= ex
+    return base
 end
 
 a = 3
-pow(a, 6-1-1)
-a = a
+a = pow(a, 6) - pow(a, 2)

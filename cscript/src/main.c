@@ -82,9 +82,9 @@ i32 generate_instructions(char* text, lexer* lex) {
             continue;
         }
 
-        if (node->type == NodeFunctionCall) {
-            bfs(node, print_node);
-        }
+        // if (node->type == NodeVariableInitialize) {
+        //     bfs(node, print_node);
+        // }
         vector_push(env.inter.instructions, node);
     }
 
@@ -97,7 +97,7 @@ i32 generate_instructions(char* text, lexer* lex) {
 void test() {
     init_environment();
     source_file source;
-    i32 success = load_source(&source, "test1.cscript");
+    i32 success = load_source(&source, "test.cscript");
 
     if (!success) {
         printf("failed load source\n");

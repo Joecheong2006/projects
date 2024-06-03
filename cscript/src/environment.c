@@ -7,7 +7,7 @@ void add_error_message(error_message message) {
     vector_pushe(env.error_messages, message);
 }
 
-static u64 hash_object_len(const char* name, i32 len, u64 size) {
+u64 hash_object_len(const char* name, i32 len, u64 size) {
     size_t result = 5381;
     for (i32 i = 0; i < len; ++i) {
         result = ((result << 5) + result) + name[i];
@@ -27,7 +27,7 @@ object* get_object(const char* name, u64 len) {
     return NULL;
 }
 
-static u64 hash_object(void* data, u64 size) {
+u64 hash_object(void* data, u64 size) {
     ASSERT_MSG(data != NULL, "hashing invalid data");
     size_t result = 5381;
     char* str = ((object*)data)->name;

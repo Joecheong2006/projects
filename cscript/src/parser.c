@@ -31,6 +31,7 @@ static tree_node* try_parse_function_name(parser* par);
 static tree_node* try_parse_function_decl(parser* par);
 static tree_node* try_parse_end(parser* par);
 static tree_node* try_parse_keyword(parser* par);
+static tree_node* try_parse_return(parser* par);
 
 static INLINE i32 is_assigment_operator(token* tok) { return is_operator(tok) && (tok->sub_type >= OperatorAssignementBegin && tok->sub_type <= OperatorAssignmentEnd); }
 static INLINE i32 is_arithmetic_operator(OperatorType type) { return type >= OperatorMinus && type <= OperatorDivision; }
@@ -155,8 +156,19 @@ static i32 bracket_error_terminal(token* tok) { return tok->type == TokenNewLine
 static tree_node* try_parse_binary_expression_lhs(parser* par) {
     ++par->index;
     if (is_identifier(parser_peek(par, 0))) {
+        if (parser_peek(par, 1)->type == TokenOpenRoundBracket) {
+            tree_node* node = try_parse_function_call(par);
+            if (node) {
+                return node;
+            }
+            add_error_message((error_message){
+                .type = ParserErrorUndefineName
+            });
+            return NULL;
+        }
         return parse_rvariable(par);
     }
+
     if (is_string_literal(parser_peek(par, 0))) {
         return parse_string_literal(par);
     }
@@ -235,7 +247,7 @@ static tree_node* try_parse_binary_expression(parser* par, i32(*is_terminal)(tok
         return NULL;
     }
 
-    if (rhs->type != NodeNegateOperator && vector_size(rhs->nodes) > 0 && is_arithmetic_operator(operator->object_type) && operator->object_type > rhs->object_type) {
+    if (rhs->type != NodeNegateOperator && rhs->type != NodeFunctionCall && vector_size(rhs->nodes) > 0 && is_arithmetic_operator(operator->object_type) && operator->object_type > rhs->object_type) {
         if (has_bracket && vector_size(rhs->nodes[0]->nodes) == 0) {
             vector_pushe(operator->nodes, rhs);
             return operator;
@@ -246,8 +258,8 @@ static tree_node* try_parse_binary_expression(parser* par, i32(*is_terminal)(tok
     }
 
     if (has_negate_operator) {
-        if ((has_bracket && vector_size(rhs->nodes[0]->nodes) > 0) ||
-            (vector_size(rhs->nodes) != 0 && !has_bracket)) {
+        if (rhs->type != NodeFunctionCall && ((has_bracket && vector_size(rhs->nodes[0]->nodes) > 0) ||
+                (vector_size(rhs->nodes) != 0 && !has_bracket))) {
             tree_node* negate = parse_negate_operator(par);
             vector_pushe(negate->nodes, rhs->nodes[0]);
             rhs->nodes[0] = negate;
@@ -299,8 +311,6 @@ static tree_node* try_parse_function_call_parameters(parser* par) {
                 }
             }
             else {
-                // tree_node* ins = make_tree_node(NodeVariableInitialize, -1, "", -1, NULL);
-                // vector_push(ins->nodes, parse_rvariable(par));
                 vector_push(params->nodes, parse_rvariable(par));
             }
         }
@@ -444,6 +454,16 @@ static tree_node* try_parse_end(parser* par) {
     return make_tree_node(NodeEnd, tok->sub_type, tok->name, tok->name_len, NULL);
 }
 
+static tree_node* try_parse_return(parser* par) {
+    tree_node* ret_node = make_tree_node(NodeReturn, -1, "", -1, NULL);
+    tree_node* expr = try_parse_binary_expression(par, &default_terminal, &default_error_terminal);
+    if (!expr) {
+        return NULL;
+    }
+    vector_push(ret_node->nodes, expr);
+    return ret_node;
+}
+
 static tree_node* try_parse_keyword(parser* par) {
     static i32 in_function = 0;
     token* tok = parser_peek(par, 0);
@@ -451,6 +471,7 @@ static tree_node* try_parse_keyword(parser* par) {
     case KeywordFunction: {
         if (in_function) {
             // NOTE: already in function
+            return NULL;
         }
         in_function = 1;
         return try_parse_function_decl(par);
@@ -458,12 +479,16 @@ static tree_node* try_parse_keyword(parser* par) {
     case KeywordEnd: {
         if (!in_function) {
             // NOTE: already outside function
+            return NULL;
         }
         in_function = 0;
         return try_parse_end(par);
     } break;
     case KeywordReturn: {
-        return make_tree_node(NodeReturn, -1, "", -1, NULL);
+        if (!in_function) {
+            return NULL;
+        }
+        return try_parse_return(par);
     } break;
     default: return NULL;
     }

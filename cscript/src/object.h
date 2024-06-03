@@ -13,6 +13,8 @@ struct object {
     void* info;
     string name;
     ObjectType type;
+    i32 ref_count;
+    object* ref_object;
 };
 
 typedef struct {
@@ -32,6 +34,10 @@ typedef struct {
 function_info* make_function_info(tree_node* node);
 void free_object_function(function_info* obj);
 
+object* make_ref_object(object* obj, char* name, i32 name_len);
+object* copy_object(object* obj, char* name, i32 name_len);
+
+void register_object(object* obj);
 object* make_object(object* obj);
 void free_object(void* data);
 
