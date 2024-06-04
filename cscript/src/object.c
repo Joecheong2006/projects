@@ -64,7 +64,7 @@ object* make_ref_object(object* obj) {
 }
 
 static variable_info* copy_variable_info(variable_info* info) {
-    variable_info * result = make_variable_info(&info->type);
+    variable_info* result = make_variable_info(&info->type);
     memcpy(&result->val, &info->val, sizeof(temp_data));
     return result;
 }

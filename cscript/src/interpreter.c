@@ -413,6 +413,10 @@ static void interpret_end() {
 }
 
 static void interpret_function_return(tree_node* ins) {
+    if (vector_size(ins->nodes) == 0) {
+        interpret_end();
+        return;
+    }
     data_chunk chunk = { .type = -1 };
     interpret_cal_expression(&chunk, ins->nodes[0]);
     object* ret_obj = make_object(&(object){

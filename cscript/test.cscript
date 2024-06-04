@@ -28,9 +28,19 @@ fn _caller(func)
     func(3, 2)
 end
 
+fn test(a)
+    a = 10
+    return
+    a = 9
+end
+
 a = 3
 a = pow(pow(pow(2, 2), pow(1, 2)), pow(pow(3, 1), a))
 
 caller = _caller
 caller(pow)
+
+a = a
+test(a)
+a = a
 

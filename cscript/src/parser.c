@@ -452,6 +452,9 @@ static tree_node* try_parse_end(parser* par) {
 
 static tree_node* try_parse_return(parser* par) {
     tree_node* ret_node = make_tree_node(NodeReturn, -1, "", -1, NULL);
+    if (parser_peek(par, 1)->type == TokenNewLine) {
+        return ret_node;
+    }
     tree_node* expr = try_parse_binary_expression(par, &default_terminal, &default_error_terminal);
     if (!expr) {
         return NULL;
