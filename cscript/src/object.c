@@ -33,10 +33,6 @@ function_info* make_function_info(tree_node* node) {
         vector_push(result->body, env.inter.instructions[env.inter.index++]);
     } while (env.inter.instructions[env.inter.index]->type != NodeEnd);
 
-    // for_vector(result->body, i, 0) {
-    //     print_node(result->body[i]);
-    // }
-
     return result;
 }
 
@@ -61,16 +57,14 @@ void free_object_function(function_info* obj) {
     FREE(obj);
 }
 
-object* make_ref_object(object* obj, char* name, i32 name_len) {
-    if (!obj) {
-        return NULL;
-    }
+object* make_ref_object(object* obj) {
+    ASSERT_MSG(obj != NULL, "invalid object");
     object* result = make_object(&(object){
-            .name = make_stringn(name, name_len),
+            .name = NULL,
             .type = obj->type,
             .info = obj->info,
             });
-    result->ref_object = obj;
+   result->ref_object = obj;
     ++result->ref_object->ref_count;
     return result;
 }
@@ -81,15 +75,9 @@ static variable_info* copy_variable_info(variable_info* info) {
     return result;
 }
 
-object* copy_object(object* obj, char* name, i32 name_len) {
-    if (!obj) {
-        return NULL;
-    }
-    object* result = make_object(&(object){
-            .name = make_stringn(name, name_len),
-            .type = obj->type,
-            .info = NULL,
-            });
+object* copy_object(object* obj) {
+    ASSERT_MSG(obj != NULL, "invalid object");
+    object* result = make_object(&(object){ .name = NULL, .type = obj->type, .info = NULL, });
     switch (obj->type) {
     case ObjectVariable: result->info = copy_variable_info(obj->info); break;
     default: {

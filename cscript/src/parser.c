@@ -9,8 +9,8 @@
 static INLINE i32 is_assigment_operator(token* tok);
 static INLINE i32 is_arithmetic_operator(OperatorType type);
 static tree_node* parse_rvariable(parser* par);
-INLINE static tree_node* parse_char_literal(parser* par);
-INLINE static tree_node* parse_string_literal(parser* par);
+static INLINE tree_node* parse_char_literal(parser* par);
+static INLINE tree_node* parse_string_literal(parser* par);
 static tree_node* try_parse_number(parser* par);
 static tree_node* try_parse_operator(parser* par);
 static tree_node* parse_negate_operator(parser* par);
@@ -148,10 +148,10 @@ static tree_node* parse_negate_operator(parser* par) {
     return make_tree_node(NodeNegateOperator, tok->sub_type, tok->name, tok->name_len, tok);
 }
 
-static i32 default_terminal(token* tok) { return tok->type == TokenNewLine || tok->type == TokenSemicolon; }
-static i32 default_error_terminal(token* tok) { return tok->type == TokenCloseRoundBracket; }
-static i32 bracket_terminal(token* tok) { return tok->type == TokenCloseRoundBracket; }
-static i32 bracket_error_terminal(token* tok) { return tok->type == TokenNewLine || tok->type == TokenSemicolon; }
+static INLINE i32 default_terminal(token* tok) { return tok->type == TokenNewLine || tok->type == TokenSemicolon; }
+static INLINE i32 default_error_terminal(token* tok) { return tok->type == TokenCloseRoundBracket; }
+static INLINE i32 bracket_terminal(token* tok) { return tok->type == TokenCloseRoundBracket; }
+static INLINE i32 bracket_error_terminal(token* tok) { return tok->type == TokenNewLine || tok->type == TokenSemicolon; }
 
 static tree_node* try_parse_binary_expression_lhs(parser* par) {
     ++par->index;
@@ -297,30 +297,22 @@ static i32 parameter_error_terminal(token* tok) {
 static tree_node* try_parse_function_call_parameters(parser* par) {
     tree_node* params = make_tree_node(NodeFunctionParameters, -1, NULL, -1, NULL);
 
+    ++par->index;
     while (1) {
+        tree_node* param = try_parse_binary_expression(par, &parameter_terminal, &parameter_error_terminal);
+        if (param) {
+            vector_push(params->nodes, param);
+        }
+        else {
+            return NULL;
+        }
+
         ++par->index;
         token* tok = parser_peek(par, 0);
         if (tok->type == TokenCloseRoundBracket) {
             break;
         }
-        if (is_identifier(tok)) {
-            if (parser_peek(par, 1)->type == TokenOpenRoundBracket) {
-                tree_node* node = try_parse_function_call(par);
-                if (node) {
-                    vector_push(params->nodes, node);
-                }
-            }
-            else {
-                vector_push(params->nodes, parse_rvariable(par));
-            }
-        }
-
-        tree_node* param = try_parse_binary_expression(par, &parameter_terminal, &parameter_error_terminal);
-        if (param) {
-            vector_push(params->nodes, param);
-        }
         else if (tok->type == TokenComma) {
-            ++par->index;
             continue;
         }
         else {

@@ -245,18 +245,29 @@ static void interpret_function_call(tree_node* node) {
     vector_push(env.scopes, make_scope());
 
     for_vector(fn_info->params, i, 0) {
-        if (params->type == NodeVariable) {
-            object* obj = get_object(params->nodes[i]->name, params->nodes[i]->name_len);
-            if (!obj) {
-                printf("not fount variable name\n");
-                exit(1);
-            }
-            object* param = copy_object(obj, fn_info->params[i], vector_size(fn_info->params[i]));
-            // object* param = make_ref_object(obj, fn_info->params[i], vector_size(fn_info->params[i]));
-            register_object(param);
-            continue;
-
-        }
+        // if (params->type == NodeVariable) {
+        //     object* obj = get_object(params->nodes[i]->name, params->nodes[i]->name_len);
+        //     if (!obj) {
+        //         printf("not fount variable name\n");
+        //         exit(1);
+        //     }
+        //     // object* param = make_ref_object(obj);
+        //     object* param = copy_object(obj);
+        //     param->name = make_string(fn_info->params[i]);
+        //     register_object(param);
+        //     continue;
+        //
+        // }
+        // else if (params->type == NodeFunctionCall) {
+        //     object* obj = get_object(params->nodes[i]->name, params->nodes[i]->name_len);
+        //     if (!obj) {
+        //         printf("not fount variable name\n");
+        //         exit(1);
+        //     }
+        //     param->name = make_string(fn_info->params[i]);
+        //     register_object(param);
+        //     continue;
+        // }
 
         data_chunk chunk = { .type = -1 };
         interpret_cal_expression(&chunk, params->nodes[i]);

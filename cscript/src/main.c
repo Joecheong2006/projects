@@ -19,8 +19,6 @@
             }, type);
 
 i32 generate_instructions(char* text, lexer* lex) {
-    i32 error = 0;
-
     parser par;
     init_parser(&par);
     char until_ch = '\n';
@@ -59,16 +57,7 @@ i32 generate_instructions(char* text, lexer* lex) {
 
         for_vector(tokens, j, 0) {
             tokens[j].line = line;
-            if (tokens[j].type == TokenError) {
-                ++error;
-            }
         }
-
-        // for_vector(tokens, j, 0) {
-        //     print_token_name(tokens + j);
-        //     putchar(' ');
-        // }
-        // putchar('\n');
 
         start += start_increment;
         start_increment = 0;
@@ -78,7 +67,6 @@ i32 generate_instructions(char* text, lexer* lex) {
         free_vector(&tokens);
 
         if (!node) {
-            ++error;
             continue;
         }
 
@@ -91,7 +79,7 @@ i32 generate_instructions(char* text, lexer* lex) {
     for_vector(env.error_messages, i, 0) {
         printf("error: %d\n", env.error_messages[i].type);
     }
-    return error;
+    return vector_size(env.error_messages);
 }
 
 void test() {

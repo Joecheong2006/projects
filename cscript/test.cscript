@@ -19,4 +19,4 @@ fn pow(base, ex)
 end
 
 a = 3
-a = pow(a, 6) - pow(a, 2)
+a = pow(pow(pow(2, 2), pow(1, 2)), pow(pow(3, 1), a))
