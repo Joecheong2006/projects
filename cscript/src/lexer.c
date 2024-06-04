@@ -485,3 +485,13 @@ void print_token(token* tok) {
     }
 }
 
+void print_name(char* str, i32 str_len) {
+    for (i32 n = 0; n < str_len; ++n) {
+        if (str[n] == '\n') {
+            printf("\\n");
+            break;
+        }
+        putchar(str[n]);
+    }
+}
+

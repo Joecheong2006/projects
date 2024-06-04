@@ -159,7 +159,13 @@ static void interpret_cal_expression(data_chunk* out, tree_node* node) {
         object* obj = get_object(node->name, node->name_len);
         if (!obj) {
             // NOTE: report run time error
-            printf("not found name\n");
+            printf("not found name ");
+            print_name(node->name, node->name_len);
+            putchar('\n');
+            exit(1);
+        }
+        if (obj->type != ObjectVariable) {
+            printf("non variable object cannot be a part of expression\n");
             exit(1);
         }
         node_variable_impl(out, obj);
@@ -220,11 +226,41 @@ static void print_variable(object* obj) {
     }
 }
 
+void interpret_initialize_rvalue_function(object* obj, tree_node* node) {
+    tree_node* rvalue = node->nodes[0]->nodes[0];
+    object* rvalue_obj= get_object(rvalue->name, rvalue->name_len);
+    if (obj) {
+        free_object(obj);
+        obj = make_ref_object(rvalue_obj);
+        obj->name = make_stringn(node->name, node->name_len);
+        return;
+    }
+    obj = make_ref_object(rvalue_obj);
+    obj->name = make_stringn(node->name, node->name_len);
+    register_object(obj);
+    return;
+}
+
 static void interpret_variable_initialize(tree_node* node) {
-    data_chunk rhs;
-    interpret_cal_expression(&rhs, node->nodes[0]->nodes[0]);
     object* obj = get_object(node->name, node->name_len);
 
+    tree_node* rvalue = node->nodes[0]->nodes[0];
+    if (rvalue->type == NodeVariable) {
+        object* rvalue_obj= get_object(rvalue->name, rvalue->name_len);
+        if (!rvalue_obj) {
+            printf("not found name ");
+            print_name(rvalue->name, rvalue->name_len);
+            putchar('\n');
+            exit(1);
+        }
+        if (rvalue_obj->type == ObjectFunction) {
+            interpret_initialize_rvalue_function(obj, node);
+            return;
+        }
+    }
+
+    data_chunk rhs;
+    interpret_cal_expression(&rhs, node->nodes[0]->nodes[0]);
     if (obj) {
         variable_info* var = obj->info;
         if (var->type != rhs.type) {
@@ -258,7 +294,7 @@ static void interpret_variable_assignment(tree_node* node) {
     object* obj = get_object(node->name, node->name_len);
     if (!obj) {
         printf("not found object ");
-        print_token_name(&(token){ .name = node->name, .name_len = node->name_len });
+        print_name(node->name, node->name_len);
         putchar('\n');
         exit(1);
     }
@@ -296,8 +332,15 @@ static void interpret_function_decl(tree_node* node) {
 
 static void interpret_function_call(tree_node* node) {
     object* fn_obj = get_object(node->name, node->name_len);
-    if (!fn_obj || fn_obj->type != ObjectFunction) {
-        printf("function already exist\n");
+    if (!fn_obj) {
+        printf("not found function ");
+        print_name(node->name, node->name_len);
+        putchar('\n');
+        exit(1);
+    }
+    if (fn_obj->type != ObjectFunction) {
+        print_name(node->name, node->name_len);
+        printf(" is not function\n");
         exit(1);
     }
     function_info* fn_info = fn_obj->info;

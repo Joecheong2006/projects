@@ -76,5 +76,6 @@ vector(token) lexer_tokenize_until(lexer* lexer, char* str, char terminal);
 
 void print_token_name(token* tok);
 void print_token(token* tok);
+void print_name(char* str, i32 str_len);
 
 #endif

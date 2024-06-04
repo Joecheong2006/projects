@@ -24,10 +24,13 @@ fn pow(base, ex)
     return _pow(base, ex)
 end
 
-fn caller(func)
+fn _caller(func)
     func(3, 2)
 end
 
 a = 3
 a = pow(pow(pow(2, 2), pow(1, 2)), pow(pow(3, 1), a))
-a = caller(pow)
+
+caller = _caller
+caller(pow)
+
