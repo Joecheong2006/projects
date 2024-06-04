@@ -24,7 +24,7 @@ typedef double f64;
 #include <stdio.h>
 #define ASSERT_MSG(x, msg)\
     if (!(x)) {\
-        printf("%s %s %s %d", msg, __FILE__, __func__, __LINE__);\
+        printf("%s in %s from %s at %d\n", msg, __FILE__, __func__, __LINE__);\
         __debugbreak();}
 #else
 #define ASSERT_MSG(x, msg)

@@ -11,21 +11,24 @@
 
 #define IMPL_DATA_CHUNK_CONVERSION(conversion_name, operator)\
     void conversion_name##_data_chunk(void* out, data_chunk chunk) {\
+        ASSERT_MSG(out != NULL, "invalid out");\
         switch (chunk.type) {\
         case NodeTypeChar: *(u8*)out operator chunk.val._char; break;\
         case NodeTypeInt: *(i64*)out operator chunk.val._int; break;\
         case NodeTypeFloat: *(f64*)out operator chunk.val._float; break;\
-        default: break;\
+        default: ASSERT_MSG(false, "invalid conversion"); break;\
         }\
     }
 
 void assign_data_chunk(void* out, data_chunk chunk) {
+    ASSERT_MSG(out != NULL, "invalid out");
     switch (chunk.type) {
     case NodeTypeChar: *(u8*)out = chunk.val._char; break;
     case NodeTypeInt: *(i64*)out = chunk.val._int; break;
     case NodeTypeFloat: *(f64*)out = chunk.val._float; break;
     case NodeTypeString: *((char**)out) = chunk.val._string; break;
-    default: break;
+    case NodeTypeNull: break;
+    default: ASSERT_MSG(false, "invalid conversion"); break;
     }
 }
 
@@ -37,35 +40,76 @@ static IMPL_DATA_CHUNK_CONVERSION(division_equal, /=)
 
 #define IMPL_DATA_CHUNK_ARITHMETIC(name, operation)\
     void name##_data_chunk(data_chunk* out, data_chunk* a, data_chunk* b) {\
+        ASSERT_MSG(out != NULL, "invalid out");\
+        ASSERT_MSG(a != NULL, "invalid a");\
+        ASSERT_MSG(b != NULL, "invalid b");\
         out->type = a->type > b->type ? a->type : b->type;\
+        if (out->type == NodeTypeNull) {\
+            ASSERT_MSG(false, "invalid arithmetic to null");\
+            exit(1);\
+        }\
         type_cast(a, out->type);\
         type_cast(b, out->type);\
         switch (out->type) {\
             case NodeTypeInt: out->val._int = a->val._int operation b->val._int; break;\
             case NodeTypeChar: out->val._char = a->val._char operation b->val._char; break;\
             case NodeTypeFloat:out->val._float = a->val._float operation b->val._float; break;\
-            default: break;\
+            default: ASSERT_MSG(false, "invalid arithmetic"); break;\
         }\
     }
 
-static IMPL_DATA_CHUNK_ARITHMETIC(add, +)
+void add_data_chunk(data_chunk* out, data_chunk* a, data_chunk* b) {
+    ASSERT_MSG(out != NULL, "invalid out");
+    ASSERT_MSG(a != NULL, "invalid a");
+    ASSERT_MSG(b != NULL, "invalid b");
+    out->type = a->type > b->type ? a->type : b->type;
+    if (out->type == NodeTypeNull) {
+        ASSERT_MSG(false, "invalid arithmetic to null");
+        exit(1);
+    }
+    type_cast(a, out->type);
+    type_cast(b, out->type);
+    switch (out->type) {
+        case NodeTypeInt: out->val._int = a->val._int + b->val._int; break;
+        case NodeTypeChar: out->val._char = a->val._char + b->val._char; break;
+        case NodeTypeFloat:out->val._float = a->val._float + b->val._float; break;
+        case NodeTypeString: {
+            out->val._string = MALLOC(strlen(a->val._string) + strlen(b->val._string) + 1);
+            i32 i;
+            for (i = 0; a->val._string[i] != 0; i++) {
+                out->val._string[i] = a->val._string[i];
+            }
+            for (i32 j = i; b->val._string[i - j] != 0; i++) {
+                out->val._string[i] = b->val._string[i - j];
+            }
+            out->val._string[i] = 0;
+            FREE(a->val._string);
+            FREE(b->val._string);
+        } break;
+        default: ASSERT_MSG(false, "invalid arithmetic"); break;
+    }
+}
+
 static IMPL_DATA_CHUNK_ARITHMETIC(minus, -)
 static IMPL_DATA_CHUNK_ARITHMETIC(multiply, *)
 static IMPL_DATA_CHUNK_ARITHMETIC(division, /)
 
 static void node_variable_impl(data_chunk* out, object* obj) {
-    variable_info* var = obj->info;
-    out->type = var->type;
+    ASSERT_MSG(out != NULL, "invalid out");
+    ASSERT_MSG(obj != NULL, "invalid obj");
+    variable_info* info = obj->info;
+    out->type = info->type;
     switch (out->type) {
-        case NodeTypeInt: out->val._int = *(i64*)var->value; break;
-        case NodeTypeChar: out->val._char = *(u8*)var->value; break;
-        case NodeTypeFloat: out->val._float = *(f64*)var->value; break;
+        case NodeTypeInt: out->val._int = info->val._int; break;
+        case NodeTypeChar: out->val._char = info->val._char; break;
+        case NodeTypeFloat: out->val._float = info->val._float; break;
         case NodeTypeString: { 
-            out->val._string = *((char**)var->value); 
-            FREE(var->value);
-            var->value = NULL;
+            out->val._string = info->val._string; 
+            info->val._string = NULL;
+            info->type = NodeTypeNull;
         } break;
-        default: break;
+        case NodeTypeNull: break;
+        default: ASSERT_MSG(false, "invalid out->type"); break;
     }
 }
 
@@ -124,6 +168,10 @@ static void interpret_cal_expression(data_chunk* out, tree_node* node) {
     case NodeFunctionCall: {
         interpret(node);
         object* ret = vector_back(vector_back(env.scopes));
+        if (ret->name[0] != '.') {
+            out->type = NodeTypeNull;
+            break;
+        }
         if (ret->type != ObjectVariable) {
             printf("not implement expression type %d yet\n", ret->type);
             exit(1);
@@ -132,7 +180,7 @@ static void interpret_cal_expression(data_chunk* out, tree_node* node) {
         free_object(ret);
         scope_pop(&vector_back(env.scopes));
     } break;
-    default: break;
+    default: ASSERT_MSG(false, "invalid out->type"); break;
     }
 }
 
@@ -144,48 +192,65 @@ void type_cast(data_chunk* chunk, i32 type) {
     case NodeTypeChar - NodeTypeInt: chunk->val._char = chunk->val._int; break;
     case NodeTypeFloat - NodeTypeInt: chunk->val._float = chunk->val._int; break;
     case NodeTypeFloat - NodeTypeChar: chunk->val._float = chunk->val._char; break;
+    case NodeTypeString - NodeTypeChar: {
+        char ch = chunk->val._char;
+        chunk->val._string = MALLOC(sizeof(char) + 1);
+        chunk->val._string[0] = ch;
+        chunk->val._string[1] = 0;
+    } break;
     default: break;
     }
+
+    if (type == NodeTypeNull) {
+        ASSERT_MSG(false, "invalid type cast null");
+        exit(1);
+    }
+
     chunk->type = type;
 }
 
 static void print_variable(object* obj) {
     variable_info* info = obj->info;
     switch (info->type) {
-        case NodeTypeInt: printf("%s = %lld\n", obj->name, *(i64*)info->value); break;
-        case NodeTypeFloat: printf("%s = %g\n", obj->name, *(f64*)info->value); break;
-        case NodeTypeChar: printf("%s = %c\n", obj->name, *(u8*)info->value); break;
-        case NodeTypeString: printf("%s = %s\n", obj->name, *(char**)info->value); break;
+        case NodeTypeInt: printf("%s = %lld\n", obj->name, info->val._int); break;
+        case NodeTypeFloat: printf("%s = %g\n", obj->name, info->val._float); break;
+        case NodeTypeChar: printf("%s = %c\n", obj->name, info->val._char); break;
+        case NodeTypeString: printf("%s = %s\n", obj->name, info->val._string); break;
         default: break;
     }
 }
 
 static void interpret_variable_initialize(tree_node* node) {
-    data_chunk rhs = { .type = -1 };
+    data_chunk rhs;
     interpret_cal_expression(&rhs, node->nodes[0]->nodes[0]);
-
-    node->object_type = rhs.type;
     object* obj = get_object(node->name, node->name_len);
 
     if (obj) {
         variable_info* var = obj->info;
-        if (var->type != node->object_type) {
+        if (var->type != rhs.type) {
             free_object_variable(obj->info);
-            obj->info = make_variable_info(node);
+            obj->info = make_variable_info(&rhs.type);
+        }
+        else if (var->type == NodeTypeString && var->val._string != NULL) {
+            FREE(var->val._string);
         }
     }
     else {
         obj = make_object(&(object){
                 .name = make_stringn(node->name, node->name_len),
                 .type = ObjectVariable,
-                .info = make_variable_info(node),
+                .info = make_variable_info(&rhs.type),
                 });
 
         register_object(obj);
     }
 
+    if (rhs.type == NodeTypeNull) {
+        printf("%s = null\n", obj->name);
+        return;
+    }
     variable_info* var = obj->info;
-    assign_data_chunk(var->value, rhs);
+    assign_data_chunk(&var->val, rhs);
     print_variable(obj);
 }
 
@@ -199,15 +264,15 @@ static void interpret_variable_assignment(tree_node* node) {
     }
 
     variable_info* info = obj->info;
-    data_chunk chunk = { .type = -1 };
+    data_chunk chunk;
     interpret_cal_expression(&chunk, node->nodes[0]->nodes[0]);
     type_cast(&chunk, info->type);
 
     switch (node->nodes[0]->object_type) {
-    case OperatorPlusEqual: plus_equal_data_chunk(info->value, chunk); break;
-    case OperatorMinusEqual: minus_equal_data_chunk(info->value, chunk); break;
-    case OperatorMultiplyEqual: multiply_equal_data_chunk(info->value, chunk); break;
-    case OperatorDivisionEqual: division_equal_data_chunk(info->value, chunk); break;
+    case OperatorPlusEqual: plus_equal_data_chunk(&info->val, chunk); break;
+    case OperatorMinusEqual: minus_equal_data_chunk(&info->val, chunk); break;
+    case OperatorMultiplyEqual: multiply_equal_data_chunk(&info->val, chunk); break;
+    case OperatorDivisionEqual: division_equal_data_chunk(&info->val, chunk); break;
     default: break;
     }
 
@@ -245,19 +310,25 @@ static void interpret_function_call(tree_node* node) {
     vector_push(env.scopes, make_scope());
 
     for_vector(fn_info->params, i, 0) {
-        // if (params->type == NodeVariable) {
-        //     object* obj = get_object(params->nodes[i]->name, params->nodes[i]->name_len);
-        //     if (!obj) {
-        //         printf("not fount variable name\n");
-        //         exit(1);
-        //     }
-        //     // object* param = make_ref_object(obj);
-        //     object* param = copy_object(obj);
-        //     param->name = make_string(fn_info->params[i]);
-        //     register_object(param);
-        //     continue;
-        //
-        // }
+        if (params->nodes[i]->type == NodeVariable) {
+            object* obj = get_object(params->nodes[i]->name, params->nodes[i]->name_len);
+            if (!obj) {
+                printf("not fount variable name\n");
+                exit(1);
+            }
+            if (obj->type == ObjectFunction) {
+                object* param = make_ref_object(obj);
+                param->name = make_string(fn_info->params[i]);
+                register_object(param);
+                continue;
+            }
+            // object* param = make_ref_object(obj);
+            object* param = copy_object(obj);
+            param->name = make_string(fn_info->params[i]);
+            register_object(param);
+            continue;
+
+        }
         // else if (params->type == NodeFunctionCall) {
         //     object* obj = get_object(params->nodes[i]->name, params->nodes[i]->name_len);
         //     if (!obj) {
@@ -274,11 +345,11 @@ static void interpret_function_call(tree_node* node) {
         object* param = make_object(&(object){
                 .name = make_string(fn_info->params[i]),
                 .type = ObjectVariable,
-                .info = make_variable_info(&(tree_node){ .object_type = chunk.type }),
+                .info = make_variable_info(&chunk.type),
                 });
         register_object(param);
         variable_info* info = param->info;
-        assign_data_chunk(info->value, chunk);
+        assign_data_chunk(&info->val, chunk);
     }
 
     for_vector(fn_info->body, i, 0) {
@@ -301,15 +372,15 @@ static void interpret_end() {
 static void interpret_function_return(tree_node* ins) {
     data_chunk chunk = { .type = -1 };
     interpret_cal_expression(&chunk, ins->nodes[0]);
-    object* obj = make_object(&(object){
+    object* ret_obj = make_object(&(object){
             .name = make_string(".ret"),
             .type = ObjectVariable,
-            .info = make_variable_info(&(tree_node){ .object_type = chunk.type }),
+            .info = make_variable_info(&chunk.type),
             });
     interpret_end();
-    vector_push(vector_back(env.scopes), obj);
-    variable_info* info = obj->info;
-    assign_data_chunk(info->value, chunk);
+    vector_push(vector_back(env.scopes), ret_obj);
+    variable_info* info = ret_obj->info;
+    assign_data_chunk(&info->val, chunk);
 }
 
 void interpret(tree_node* ins) {
@@ -320,7 +391,7 @@ void interpret(tree_node* ins) {
     case NodeFunctionCall: interpret_function_call(ins); break;
     case NodeReturn: interpret_function_return(ins); break;
     case NodeEnd: interpret_end(); break;
-    default: printf("not implement node instruction %d yet\n", ins->type);  break;
+    default: printf("not implement node instruction %d yet\n", ins->type); break;
     }
 }
 

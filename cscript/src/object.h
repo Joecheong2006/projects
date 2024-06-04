@@ -18,12 +18,12 @@ struct object {
 };
 
 typedef struct {
-    void* value;
+    temp_data val;
     i32 size;
     i32 type; // Keyword TODO: change to NodeType
 } variable_info;
 
-variable_info* make_variable_info(tree_node* node);
+variable_info* make_variable_info(void* data);
 void free_object_variable(variable_info* obj);
 
 typedef struct {

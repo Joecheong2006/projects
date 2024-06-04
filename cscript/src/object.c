@@ -5,15 +5,15 @@
 #include "parser.h"
 #include <string.h>
 
-variable_info* make_variable_info(tree_node* node) {
+variable_info* make_variable_info(void* data) {
     variable_info* result = MALLOC(sizeof(variable_info));
     ASSERT_MSG(result != NULL, "malloc failed");
-    result->type = node->object_type;
+    result->type = *(i32*)data;
     switch (result->type) {
-    case NodeTypeInt: { result->value = MALLOC(sizeof(i64)); result->size = sizeof(i64); } break;
-    case NodeTypeFloat: { result->value = MALLOC(sizeof(f64)); result->size = sizeof(f64); } break;
-    case NodeTypeChar: { result->value = MALLOC(sizeof(u8)); result->size = sizeof(u8); }  break;
-    case NodeTypeString: { result->value = MALLOC(sizeof(char*)); result->size = sizeof(char*); }  break;
+    case NodeTypeInt: { result->size = sizeof(i64); } break;
+    case NodeTypeFloat: { result->size = sizeof(f64); } break;
+    case NodeTypeChar: { result->size = sizeof(u8); }  break;
+    case NodeTypeString: { result->val._string = NULL, result->size = sizeof(char*); }  break;
     default: break;
     }
     return result;
@@ -28,23 +28,17 @@ function_info* make_function_info(tree_node* node) {
         vector_push(result->params, make_stringn(param->name, param->name_len));
     }
     result->body = make_vector();
-    ++env.inter.index;
     do {
-        vector_push(result->body, env.inter.instructions[env.inter.index++]);
+        vector_push(result->body, env.inter.instructions[++env.inter.index]);
     } while (env.inter.instructions[env.inter.index]->type != NodeEnd);
 
     return result;
 }
 
 void free_object_variable(variable_info* obj) {
-    if (obj->value == NULL) {
-        FREE(obj);
-        return;
+    if (obj->type == NodeTypeString && obj->val._string != NULL) {
+        FREE(obj->val._string);
     }
-    if (obj->type == NodeTypeString) {
-        FREE(*((char**)obj->value));
-    }
-    FREE(obj->value);
     FREE(obj);
 }
 
@@ -64,14 +58,14 @@ object* make_ref_object(object* obj) {
             .type = obj->type,
             .info = obj->info,
             });
-   result->ref_object = obj;
+    result->ref_object = obj;
     ++result->ref_object->ref_count;
     return result;
 }
 
 static variable_info* copy_variable_info(variable_info* info) {
-    variable_info * result = make_variable_info(&(tree_node){ .object_type = info->type });
-    memcpy(result->value, info->value, info->size);
+    variable_info * result = make_variable_info(&info->type);
+    memcpy(&result->val, &info->val, sizeof(temp_data));
     return result;
 }
 

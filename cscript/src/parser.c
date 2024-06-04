@@ -298,6 +298,10 @@ static tree_node* try_parse_function_call_parameters(parser* par) {
     tree_node* params = make_tree_node(NodeFunctionParameters, -1, NULL, -1, NULL);
 
     ++par->index;
+    if (parser_peek(par, 1)->type == TokenCloseRoundBracket) {
+        ++par->index;
+        return params;
+    }
     while (1) {
         tree_node* param = try_parse_binary_expression(par, &parameter_terminal, &parameter_error_terminal);
         if (param) {

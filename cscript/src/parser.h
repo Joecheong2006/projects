@@ -33,6 +33,7 @@ typedef enum {
     NodeBinNumber,
     NodeTypeString,
     NodeUserType,
+    NodeTypeNull,
     NodeNegateOperator,
     NodeEmpty,
 } NodeType;

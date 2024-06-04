@@ -20,7 +20,7 @@ void freemem(void *_Memory);
 int check_memory_leak(void);
 #define CHECK_MEMORY_LEAK()\
     int leak_count = check_memory_leak();\
-    if (leak_count) {\
+    if (leak_count > 0) {\
         printf("memory leak! count: %d\n", leak_count);\
     }
 
