@@ -16,6 +16,7 @@ typedef enum {
     ParserErrorMissingSeparator,
     ParserErrorExpectedExpression,
     ParserErrorInvalidOperandsType,
+    ParserErrorInvalidName,
     ParserErrorUndefineName,
     RuntimeErrorUnkownName,
 } ErrorType;

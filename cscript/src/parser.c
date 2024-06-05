@@ -394,18 +394,31 @@ static tree_node* try_parse_identifier(parser* par) {
 
 static tree_node* try_parse_function_parameters(parser* par) {
     tree_node* params = make_tree_node(NodeFunctionParameters, -1, NULL, -1, NULL);
-
+    if (parser_peek(par, 1)->type == TokenCloseRoundBracket) {
+        ++par->index;
+        return params;
+    }
     while (1) {
         ++par->index;
         token* tok = parser_peek(par, 0);
         if (is_identifier(tok)) {
             vector_push(params->nodes, make_tree_node(NodeFunctionParameter, tok->sub_type, tok->name, tok->name_len, NULL));
         }
+        else {
+            add_error_message((error_message){
+                .type = ParserErrorUndefineName
+            });
+            dfs(params, free_node);
+            return NULL;
+        }
+
+        ++par->index;
+        tok = parser_peek(par, 0);
+        if (tok->type == TokenCloseRoundBracket) {
+            break;
+        }
         else if (tok->type == TokenComma) {
             continue;
-        }
-        else if (tok->type == TokenCloseRoundBracket) {
-            break;
         }
         else {
             // NOTE: missing close backet
@@ -422,19 +435,28 @@ static tree_node* try_parse_function_name(parser* par) {
         return make_tree_node(NodeFunctionDecl, tok->sub_type, tok->name, tok->name_len, NULL);
     }
     --par->index;
-    // NOTE: error not found function name 
+    add_error_message((error_message){
+        .type = ParserErrorUndefineName
+    });
     return NULL;
 }
 
 static tree_node* try_parse_function_decl(parser* par) {
     tree_node* node = try_parse_function_name(par);
     ++par->index;
+    if (!node) {
+        return NULL;
+    }
     if (parser_peek(par, 0)->type != TokenOpenRoundBracket) {
-        // NOTE: error not found open round bracket
+        add_error_message((error_message){
+            .type = ParserErrorMissingOpenBracket
+        });
+        free_node(node);
         return NULL;
     }
     tree_node* params = try_parse_function_parameters(par);
     if (!params) {
+        dfs(node, free_node);
         return NULL;
     }
     vector_push(node->nodes, params);

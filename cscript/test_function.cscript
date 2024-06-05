@@ -1,0 +1,27 @@
+fn _pow(base, ex)
+    return base * ex
+end
+
+fn pow(base, ex)
+    return _pow(base, ex)
+end
+
+fn test(a)
+    a = 10
+    return
+    a = 9
+end
+
+a = 3
+a = pow(pow(pow(2, 2), pow(1, 2)), pow(pow(3, 1), a)) + pow(a, a)
+
+
+fn _caller(a)
+    test(a)
+    a = a
+end
+
+caller = _caller
+caller(1)
+a = a
+

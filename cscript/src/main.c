@@ -82,10 +82,10 @@ i32 generate_instructions(char* text, lexer* lex) {
     return vector_size(env.error_messages);
 }
 
-void test() {
+void test(char* test_file) {
     init_environment();
     source_file source;
-    i32 success = load_source(&source, "test.cscript");
+    i32 success = load_source(&source, test_file);
 
     if (!success) {
         printf("failed load source\n");
@@ -125,7 +125,9 @@ void test() {
 
 void command_line_mode(lexer* lexer);
 i32 main(i32 argc, char** argv) {
-    test();
+    if (argc > 1) {
+        test(argv[1]);
+    }
     return 0;
 
     init_environment();
