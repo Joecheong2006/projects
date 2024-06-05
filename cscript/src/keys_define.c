@@ -7,18 +7,17 @@ const char* Keyword[] = {
     [KeywordConst] = "const",
     [KeywordInt] = "int", 
     [KeywordFloat] = "float", 
-    [KeywordBool] = "bool",
     [KeywordChar] = "char",
     [KeywordString] = "string",
-    [KeywordTrue] = "null", 
-    [KeywordFlase] = "true", 
-    [KeywordNone] = "false",
+    [KeywordBool] = "bool",
+    [KeywordTrue] = "true", 
+    [KeywordFlase] = "false", 
+    [KeywordNull] = "null",
     [KeywordFunction] = "fn", 
     [KeywordEnd] = "end", 
 };
 
 const char* Separator[] = {
-    [SeparatorColon] = ":",
     [SeparatorColonColon] = "::",
     [SeparatorExtend] = "->",
     [SeparatorDDD] = "...",

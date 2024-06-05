@@ -204,6 +204,11 @@ void type_cast(data_chunk* chunk, i32 type) {
         chunk->val._string[0] = ch;
         chunk->val._string[1] = 0;
     } break;
+    case NodeTypeString - NodeTypeFloat:
+    case NodeTypeString - NodeTypeInt: {
+        printf("cannot cast type %d to type string", type);
+        exit(1);
+    } break;
     default: break;
     }
 
@@ -241,12 +246,32 @@ void interpret_initialize_rvalue_function(object* obj, tree_node* node) {
     return;
 }
 
+static NodeType map_keyword_to_node_data_type(i32 keyword) {
+    switch (keyword) {
+    case KeywordInt: return NodeTypeInt;
+    case KeywordFloat: return NodeTypeFloat;
+    case KeywordBool: return NodeTypeBool;
+    case KeywordChar: return NodeTypeChar;
+    case KeywordString: return NodeTypeString;
+    default: return -1;
+    }
+}
+
 static void interpret_variable_initialize(tree_node* node) {
     object* obj = get_object(node->name, node->name_len);
 
-    tree_node* rvalue = node->nodes[0]->nodes[0];
+    tree_node* rvalue = NULL;
+    i32 type_decl = -1;
+    if (node->nodes[0]->type == NodeTypeDecl) {
+        rvalue = node->nodes[1]->nodes[0];
+        type_decl = node->nodes[0]->object_type;
+    }
+    else {
+        rvalue = node->nodes[0]->nodes[0];
+    }
+
     if (rvalue->type == NodeVariable) {
-        object* rvalue_obj= get_object(rvalue->name, rvalue->name_len);
+        object* rvalue_obj = get_object(rvalue->name, rvalue->name_len);
         if (!rvalue_obj) {
             printf("not found name ");
             print_name(rvalue->name, rvalue->name_len);
@@ -260,7 +285,10 @@ static void interpret_variable_initialize(tree_node* node) {
     }
 
     data_chunk rhs;
-    interpret_cal_expression(&rhs, node->nodes[0]->nodes[0]);
+    interpret_cal_expression(&rhs, rvalue);
+    if (type_decl > 0) {
+        type_cast(&rhs, map_keyword_to_node_data_type(type_decl));
+    }
     if (obj) {
         variable_info* var = obj->info;
         if (var->type != rhs.type) {

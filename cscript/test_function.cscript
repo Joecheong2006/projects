@@ -1,9 +1,9 @@
-fn _pow(base, ex)
+fn _multiply(base, ex)
     return base * ex
 end
 
-fn pow(base, ex)
-    return _pow(base, ex)
+fn multiply(base, ex)
+    return _multiply(base, ex)
 end
 
 fn test(a)
@@ -13,7 +13,7 @@ fn test(a)
 end
 
 a = 3
-a = pow(pow(pow(2, 2), pow(1, 2)), pow(pow(3, 1), a)) + pow(a, a)
+a = multiply(multiply(multiply(2, 2), multiply(1, 2)), multiply(multiply(3, 1), a)) - multiply(a, a)
 
 
 fn _caller(a)

@@ -80,6 +80,7 @@ INLINE i32 is_operator_type(token* tok, i32 type) { return tok->type == TokenOpe
 INLINE i32 is_separator_type(token* tok, i32 type) { return tok->type == TokenSeparator && tok->sub_type == type; }
 INLINE i32 is_string_literal(token* tok) { return tok->type == TokenStringLiteral; }
 INLINE i32 is_char_literal(token* tok) { return tok->type == TokenCharLiteral; }
+INLINE i32 is_data_type(token* tok) { return tok->sub_type >= KeywordInt && tok->sub_type <= KeywordString; }
 i32 is_real_number(token* tok) { 
     // if (is_number(tok->name[0] || (tok->name[0] == '.' && is_number(tok->name[1])))) {
     //     return 1;
@@ -366,6 +367,7 @@ token lexer_tokenize_string(lexer* lexer, char* str) {
         case '[': return (token){ .type = TokenOpenSquareBracket, .name_len = 1, .name = "[" };
         case ']': return (token){ .type = TokenCloseSquareBracket, .name_len = 1, .name = "]" };
         case ';': return (token){ .type = TokenSemicolon, .name_len = 1, .name = ";" };
+        case ':': return (token){ .type = TokenColon, .name_len = 1, .name = ":" };
         case ',': return (token){ .type = TokenComma, .name_len = 1, .name = "," };
         case '.': return (token){ .type = TokenFullStop, .name_len = 1, .name = "." };
         case '\n': return (token){ .type = TokenNewLine, .name_len = 1, .name = "\n" };
@@ -460,6 +462,7 @@ void print_token(token* tok) {
     case TokenOpenRoundBracket:
     case TokenCloseRoundBracket:
     case TokenSemicolon:
+    case TokenColon:
     case TokenComma:
     case TokenFullStop:
     case TokenNewLine:

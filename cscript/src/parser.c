@@ -24,14 +24,16 @@ static tree_node* try_parse_binary_expression(parser* par, i32(*is_terminal)(tok
 static tree_node* try_parse_binary_expression_lhs(parser* par);
 static tree_node* try_parse_assign_operator(parser* par);
 static tree_node* try_parse_function_call_parameters(parser* par);
+static tree_node* try_parse_function_call_name(parser* par);
 static tree_node* try_parse_function_call(parser* par);
-static tree_node* try_parse_identifier(parser* par);
 static tree_node* try_parse_function_parameters(parser* par);
 static tree_node* try_parse_function_name(parser* par);
 static tree_node* try_parse_function_decl(parser* par);
+static tree_node* try_parse_identifier(parser* par);
 static tree_node* try_parse_end(parser* par);
 static tree_node* try_parse_keyword(parser* par);
 static tree_node* try_parse_return(parser* par);
+static tree_node* try_parse_type_decl(parser* par);
 
 static INLINE i32 is_assigment_operator(token* tok) { return is_operator(tok) && (tok->sub_type >= OperatorAssignementBegin && tok->sub_type <= OperatorAssignmentEnd); }
 static INLINE i32 is_arithmetic_operator(OperatorType type) { return type >= OperatorMinus && type <= OperatorDivision; }
@@ -329,7 +331,14 @@ static tree_node* try_parse_function_call_parameters(parser* par) {
 
 static tree_node* try_parse_function_call_name(parser* par) {
     token* tok = parser_peek(par, 0);
-    return make_tree_node(NodeFunctionCall, tok->sub_type, tok->name, tok->name_len, NULL);
+    if (is_identifier(tok)) {
+        return make_tree_node(NodeFunctionCall, tok->sub_type, tok->name, tok->name_len, NULL);
+    }
+    --par->index;
+    add_error_message((error_message){
+        .type = ParserErrorInvalidName,
+    });
+    return NULL;
 }
 
 static tree_node* try_parse_function_call(parser* par) {
@@ -343,6 +352,24 @@ static tree_node* try_parse_function_call(parser* par) {
     return node;
 }
 
+static tree_node* try_parse_type_decl(parser* par) {
+    ++par->index;
+    if (parser_peek(par, 0)->type != TokenColon) {
+        --par->index;
+        return NULL;
+    }
+    ++par->index;
+    token* tok = parser_peek(par, 0);
+    if (is_data_type(tok)) {
+        return make_tree_node(NodeTypeDecl, tok->sub_type, "", -1, NULL);
+    }
+    --par->index;
+    add_error_message((error_message){
+        .type = ParserErrorInvalidName
+    });
+    return NULL;
+}
+
 static tree_node* try_parse_identifier(parser* par) {
     if (parser_peek(par, 1)->type == TokenOpenRoundBracket) {
         tree_node* node = try_parse_function_call(par);
@@ -350,13 +377,18 @@ static tree_node* try_parse_identifier(parser* par) {
             return node;
         }
         add_error_message((error_message){
-            .type = ParserErrorUndefineName
+            .type = ParserErrorInvalidName
         });
         return NULL;
     }
 
     token* tok = parser_peek(par, 0);
     tree_node* var = make_tree_node(NodeVariable, -1, tok->name, tok->name_len, tok);
+
+    tree_node* type_decl = try_parse_type_decl(par);
+    if (type_decl) {
+        vector_pushe(var->nodes, type_decl);
+    }
 
     if (is_operator_type(parser_peek(par, 1), OperatorAssign)) {
         var->type = NodeVariableInitialize;
@@ -373,7 +405,7 @@ static tree_node* try_parse_identifier(parser* par) {
 
     tree_node* assign_operator = try_parse_assign_operator(par);
     if (!assign_operator) {
-        free_node(var);
+        dfs(var, free_node);
         add_error_message((error_message){
             .type = ParserErrorMissingAssignOperator
         });
@@ -382,13 +414,12 @@ static tree_node* try_parse_identifier(parser* par) {
 
     tree_node* expression = try_parse_binary_expression(par, &default_terminal, &default_error_terminal);
     if (!expression) {
-        free_node(var);
-        free_node(assign_operator);
+        dfs(var, free_node);
         return NULL;
     }
-    vector_pushe(var->nodes, assign_operator);
-    vector_pushe(var->nodes[0]->nodes, expression);
 
+    vector_pushe(assign_operator->nodes, expression);
+    vector_pushe(var->nodes, assign_operator);
     return var;
 }
 
@@ -429,7 +460,6 @@ static tree_node* try_parse_function_parameters(parser* par) {
 }
 
 static tree_node* try_parse_function_name(parser* par) {
-    ++par->index;
     token* tok = parser_peek(par, 0);
     if (is_identifier(tok)) {
         return make_tree_node(NodeFunctionDecl, tok->sub_type, tok->name, tok->name_len, NULL);
@@ -442,11 +472,12 @@ static tree_node* try_parse_function_name(parser* par) {
 }
 
 static tree_node* try_parse_function_decl(parser* par) {
-    tree_node* node = try_parse_function_name(par);
     ++par->index;
+    tree_node* node = try_parse_function_name(par);
     if (!node) {
         return NULL;
     }
+    ++par->index;
     if (parser_peek(par, 0)->type != TokenOpenRoundBracket) {
         add_error_message((error_message){
             .type = ParserErrorMissingOpenBracket

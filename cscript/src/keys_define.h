@@ -13,14 +13,13 @@ typedef enum {
     KeywordString,
     KeywordTrue,
     KeywordFlase,
-    KeywordNone,
+    KeywordNull,
     KeywordFunction,
     KeywordEnd,
     KeywordTokenCount
 } KeywordType;
 
 enum {
-    SeparatorColon,
     SeparatorColonColon,
     SeparatorExtend,
     SeparatorDDD,

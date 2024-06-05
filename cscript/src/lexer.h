@@ -24,6 +24,7 @@ typedef enum {
     TokenOpenRoundBracket,
     TokenCloseRoundBracket,
     TokenSemicolon,
+    TokenColon,
     TokenComma,
     TokenFullStop,
     TokenNewLine,
@@ -68,6 +69,7 @@ i32 is_operator_type(token* tok, i32 type);
 i32 is_separator_type(token* tok, i32 type);
 i32 is_string_literal(token* tok);
 i32 is_char_literal(token* tok);
+i32 is_data_type(token* tok);
 i32 is_real_number(token* tok);
 
 void lexer_add_token(lexer* lexer, token_set set, Token token);
