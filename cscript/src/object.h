@@ -24,6 +24,7 @@ typedef struct {
 } variable_info;
 
 variable_info* make_variable_info(void* data);
+void free_object_info(object* obj);
 void free_object_variable(variable_info* obj);
 
 typedef struct {

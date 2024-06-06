@@ -97,6 +97,9 @@ static IMPL_DATA_CHUNK_ARITHMETIC(division, /)
 static void node_variable_impl(data_chunk* out, object* obj) {
     ASSERT_MSG(out != NULL, "invalid out");
     ASSERT_MSG(obj != NULL, "invalid obj");
+    if (!obj->info) {
+        return;
+    }
     variable_info* info = obj->info;
     out->type = info->type;
     switch (out->type) {
@@ -113,12 +116,12 @@ static void node_variable_impl(data_chunk* out, object* obj) {
     }
 }
 
-static void interpret_cal_expression(data_chunk* out, tree_node* node) {
+static void interpret_cal_expression(object* in, data_chunk* out, tree_node* node) {
     switch (node->type) {
     case NodeOperator: {
         data_chunk lhs, rhs;
-        interpret_cal_expression(&lhs, node->nodes[0]);
-        interpret_cal_expression(&rhs, node->nodes[1]);
+        interpret_cal_expression(in, &lhs, node->nodes[0]);
+        interpret_cal_expression(in, &rhs, node->nodes[1]);
         switch (node->object_type) {
         case OperatorPlus: add_data_chunk(out, &lhs, &rhs); break;
         case OperatorMinus: minus_data_chunk(out, &lhs, &rhs); break;
@@ -128,7 +131,7 @@ static void interpret_cal_expression(data_chunk* out, tree_node* node) {
         }
         } break;
     case NodeNegateOperator: {
-        interpret_cal_expression(out, node->nodes[0]);
+        interpret_cal_expression(in, out, node->nodes[0]);
         negate_data_chunk(&out->val, *out);
     } break;
     case NodeDecNumber: {
@@ -164,6 +167,10 @@ static void interpret_cal_expression(data_chunk* out, tree_node* node) {
             putchar('\n');
             exit(1);
         }
+        if (!obj->info) {
+            out->type = NodeTypeNull;
+            break;
+        }
         if (obj->type != ObjectVariable) {
             printf("non variable object cannot be a part of expression\n");
             exit(1);
@@ -178,11 +185,15 @@ static void interpret_cal_expression(data_chunk* out, tree_node* node) {
             out->type = NodeTypeNull;
             break;
         }
-        if (ret->type != ObjectVariable) {
+        if (ret->type == ObjectVariable) {
+            node_variable_impl(out, ret);
+        }
+        else if (ret->type == ObjectFunction) {
+        }
+        else {
             printf("not implement expression type %d yet\n", ret->type);
             exit(1);
         }
-        node_variable_impl(out, ret);
         free_object(ret);
         scope_pop(&vector_back(env.scopes));
     } break;
@@ -236,9 +247,6 @@ void interpret_initialize_rvalue_function(object* obj, tree_node* node) {
     object* rvalue_obj= get_object(rvalue->name, rvalue->name_len);
     if (obj) {
         free_object(obj);
-        obj = make_ref_object(rvalue_obj);
-        obj->name = make_stringn(node->name, node->name_len);
-        return;
     }
     obj = make_ref_object(rvalue_obj);
     obj->name = make_stringn(node->name, node->name_len);
@@ -255,6 +263,66 @@ static NodeType map_keyword_to_node_data_type(i32 keyword) {
     case KeywordString: return NodeTypeString;
     default: return -1;
     }
+}
+
+static void initialize_exist_object(object* obj, tree_node* expr, i32 type_decl) {
+    data_chunk rhs;
+    interpret_cal_expression(obj, &rhs, expr);
+    if (type_decl > 0) {
+        type_cast(&rhs, map_keyword_to_node_data_type(type_decl));
+    }
+    if (rhs.type == NodeTypeNull) {
+        printf("%s = null\n", obj->name);
+        free_object_info(obj);
+        obj->info = NULL;
+        return;
+    }
+    variable_info* var = obj->info;
+    if (var->type != rhs.type) {
+        free_object_variable(obj->info);
+        obj->info = make_variable_info(&rhs.type);
+    }
+    else if (var->type == NodeTypeString && var->val._string != NULL) {
+        FREE(var->val._string);
+    }
+    if (obj->type == ObjectFunction) {
+        // printf("%s = %s", obj->name);
+        return;
+    }
+    assign_data_chunk(&var->val, rhs);
+    print_variable(obj);
+}
+
+static void initialize_new_object(tree_node* node, tree_node* expr, i32 type_decl) {
+    data_chunk rhs;
+
+    object* obj = make_object(&(object){
+            .name = make_stringn(node->name, node->name_len),
+            .type = ObjectVariable,
+            });
+
+    interpret_cal_expression(obj, &rhs, expr);
+    if (type_decl > 0) {
+        type_cast(&rhs, map_keyword_to_node_data_type(type_decl));
+    }
+    if (obj->type == ObjectVariable) {
+        obj->info = make_variable_info(&rhs.type);
+    }
+    register_object(obj);
+
+    if (rhs.type == NodeTypeNull) {
+        printf("%s = null\n", obj->name);
+        free_object_info(obj);
+        obj->info = NULL;
+        return;
+    }
+    if (obj->type == ObjectFunction) {
+        // printf("%s = %s", obj->name);
+        return;
+    }
+    variable_info* var = obj->info;
+    assign_data_chunk(&var->val, rhs);
+    print_variable(obj);
 }
 
 static void interpret_variable_initialize(tree_node* node) {
@@ -284,38 +352,11 @@ static void interpret_variable_initialize(tree_node* node) {
         }
     }
 
-    data_chunk rhs;
-    interpret_cal_expression(&rhs, rvalue);
-    if (type_decl > 0) {
-        type_cast(&rhs, map_keyword_to_node_data_type(type_decl));
-    }
     if (obj) {
-        variable_info* var = obj->info;
-        if (var->type != rhs.type) {
-            free_object_variable(obj->info);
-            obj->info = make_variable_info(&rhs.type);
-        }
-        else if (var->type == NodeTypeString && var->val._string != NULL) {
-            FREE(var->val._string);
-        }
-    }
-    else {
-        obj = make_object(&(object){
-                .name = make_stringn(node->name, node->name_len),
-                .type = ObjectVariable,
-                .info = make_variable_info(&rhs.type),
-                });
-
-        register_object(obj);
-    }
-
-    if (rhs.type == NodeTypeNull) {
-        printf("%s = null\n", obj->name);
+        initialize_exist_object(obj, rvalue, type_decl);
         return;
     }
-    variable_info* var = obj->info;
-    assign_data_chunk(&var->val, rhs);
-    print_variable(obj);
+    initialize_new_object(node, rvalue, type_decl);
 }
 
 static void interpret_variable_assignment(tree_node* node) {
@@ -329,7 +370,7 @@ static void interpret_variable_assignment(tree_node* node) {
 
     variable_info* info = obj->info;
     data_chunk chunk;
-    interpret_cal_expression(&chunk, node->nodes[0]->nodes[0]);
+    interpret_cal_expression(obj, &chunk, node->nodes[0]->nodes[0]);
     type_cast(&chunk, info->type);
 
     switch (node->nodes[0]->object_type) {
@@ -411,13 +452,14 @@ static void interpret_function_call(tree_node* node) {
         //     continue;
         // }
 
-        data_chunk chunk = { .type = -1 };
-        interpret_cal_expression(&chunk, params->nodes[i]);
         object* param = make_object(&(object){
                 .name = make_string(fn_info->params[i]),
                 .type = ObjectVariable,
-                .info = make_variable_info(&chunk.type),
+                // .info = make_variable_info(&chunk.type),
                 });
+        data_chunk chunk = { .type = -1 };
+        interpret_cal_expression(param, &chunk, params->nodes[i]);
+        param->info = make_variable_info(&chunk.type);
         register_object(param);
         variable_info* info = param->info;
         assign_data_chunk(&info->val, chunk);
@@ -445,13 +487,15 @@ static void interpret_function_return(tree_node* ins) {
         interpret_end();
         return;
     }
-    data_chunk chunk = { .type = -1 };
-    interpret_cal_expression(&chunk, ins->nodes[0]);
     object* ret_obj = make_object(&(object){
             .name = make_string(".ret"),
             .type = ObjectVariable,
-            .info = make_variable_info(&chunk.type),
+            // .info = make_variable_info(&chunk.type),
             });
+    data_chunk chunk = { .type = -1 };
+    interpret_cal_expression(ret_obj, &chunk, ins->nodes[0]);
+    ret_obj->info = make_variable_info(&chunk.type);
+
     interpret_end();
     vector_push(vector_back(env.scopes), ret_obj);
     variable_info* info = ret_obj->info;

@@ -25,3 +25,5 @@ caller = _caller
 caller(1)
 a = a
 
+t = test(1)
+t = t

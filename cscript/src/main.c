@@ -83,6 +83,7 @@ i32 generate_instructions(char* text, lexer* lex) {
 }
 
 void test(char* test_file) {
+    (void)test_file;
     init_environment();
     source_file source;
     i32 success = load_source(&source, test_file);
@@ -125,9 +126,9 @@ void test(char* test_file) {
 
 void command_line_mode(lexer* lexer);
 i32 main(i32 argc, char** argv) {
-    if (argc > 1) {
-        test(argv[1]);
-    }
+    // test(argv[1]);
+    // test("test_expression.cscript");
+    test("test_function.cscript");
     return 0;
 
     init_environment();

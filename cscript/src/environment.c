@@ -80,7 +80,7 @@ void scope_pop(scope* s) {
 
 void free_scope(scope* s) {
     ASSERT_MSG(s != NULL, "invalid scope");
-    for_vector(*s, i, 0) {
+    for (i32 i = (i32)vector_size(*s) - 1; i > -1; --i) {
         free_object((*s)[i]);
     }
     free_vector(s);

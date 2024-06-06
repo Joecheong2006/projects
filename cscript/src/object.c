@@ -35,6 +35,17 @@ function_info* make_function_info(tree_node* node) {
     return result;
 }
 
+void free_object_info(object* obj) {
+    if (!obj->info) {
+        return;
+    }
+    switch (obj->type) {
+        case ObjectVariable: free_object_variable(obj->info); break;
+        case ObjectFunction: free_object_function(obj->info); break;
+        default: break;
+    }
+}
+
 void free_object_variable(variable_info* obj) {
     if (obj->type == NodeTypeString && obj->val._string != NULL) {
         FREE(obj->val._string);
@@ -91,7 +102,7 @@ object* make_object(object* obj) {
     object* result = MALLOC(sizeof(object));
     ASSERT_MSG(result != NULL, "malloc failed");
     memcpy(result, obj, sizeof(object));
-    result->ref_count = 0;
+    result->ref_count = 1;
     result->ref_object = NULL;
     return result;
 }
@@ -99,11 +110,17 @@ object* make_object(object* obj) {
 void free_object(void* data) {
     object* obj = data;
     if (!obj->ref_object) {
-        switch (obj->type) {
-            case ObjectVariable: free_object_variable(obj->info); break;
-            case ObjectFunction: free_object_function(obj->info); break;
-            default: break;
+        if (obj->info) {
+            free_object_info(obj);
         }
+    }
+    else {
+        --obj->ref_object->ref_count;
+    }
+    if (obj->ref_count != 1) {
+        printf("%s %d\n", obj->name, obj->ref_count);
+        free_string(&obj->name);
+        return;
     }
     free_string(&obj->name);
     FREE(obj);
