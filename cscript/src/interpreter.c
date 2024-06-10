@@ -69,6 +69,9 @@ void add_data_chunk(data_chunk* out, data_chunk* a, data_chunk* b) {
     }
     type_cast(a, out->type);
     type_cast(b, out->type);
+    // if (out->type == NodeTypeChar) {
+    //     printf("%d = %d + %d\n", a->val._char + b->val._char, (i32)a->val._char, (i32)b->val._char);
+    // }
     switch (out->type) {
         case NodeTypeInt: out->val._int = a->val._int + b->val._int; break;
         case NodeTypeChar: out->val._char = a->val._char + b->val._char; break;
@@ -281,6 +284,7 @@ static void initialize_exist_object(object* obj, tree_node* expr, i32 type_decl)
     if (var->type != rhs.type) {
         free_object_variable(obj->info);
         obj->info = make_variable_info(&rhs.type);
+        var = obj->info;
     }
     else if (var->type == NodeTypeString && var->val._string != NULL) {
         FREE(var->val._string);

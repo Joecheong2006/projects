@@ -121,13 +121,12 @@ void test(char* test_file) {
 }
 
 // 1st June
-// TODO: implement basic string special char
-// TODO: implement function
+// TODO: implement basic string special char e.g. \n \t
 
 void command_line_mode(lexer* lexer);
 i32 main(i32 argc, char** argv) {
     // test(argv[1]);
-    // test("test_expression.cscript");
+    test("test_expression.cscript");
     test("test_function.cscript");
     return 0;
 
