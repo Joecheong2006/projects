@@ -5,12 +5,9 @@
       "-std=c99",
       "-Wall",
       "-Wextra",
-      "-Wstrict-aliasing",
-      "-Werror",
-      "-g3",
-      "-DDEBUG"
+      "-lm"
     ],
-    "directory": "/hom/joe/project/cscript",
+    "directory": "/home/joe/project/schedule",
     "file": "src/main.c"
   }
 ]

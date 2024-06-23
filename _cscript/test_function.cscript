@@ -1,0 +1,29 @@
+fn _multiply(base, ex)
+    return base * ex
+end
+
+fn multiply(base, ex)
+    return _multiply(base, ex)
+end
+
+fn test(a)
+    a = 10
+    return
+    a = 9
+end
+
+a = 3
+a = multiply(multiply(multiply(2, 2), multiply(1, 2)), multiply(multiply(3, 1), a)) - multiply(a, a)
+
+
+fn _caller(a)
+    test(a)
+    a = a
+end
+
+caller = _caller
+caller(1)
+a = a
+
+t = test(1)
+t = t
