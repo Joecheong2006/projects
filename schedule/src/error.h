@@ -4,7 +4,7 @@
 typedef enum {
 	ErrorNone,
 	ErrorInvalidStringSize,
-	ErrorInvaildParam,
+	ErrorInvalidParam,
 	ErrorMallocFaild,
 	ErrorOpenFile,
 } error_type;

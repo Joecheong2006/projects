@@ -35,6 +35,14 @@ struct vector_data
         _vector_new_value(vec, &(__VA_ARGS__), sizeof(__typeof__(*(vec))));\
     }
 
+#define vector_reserve(vec, reserve_size)\
+    vec = _vector_reserve(vec, reserve_size * sizeof(__typeof(*(vec))))
+
+#define vector_resize(vec, new_size) {\
+        vector_reserve(vec, new_size);\
+        vector_size(vec) = new_size;\
+    }
+
 #define vector_copy(dest, src) {\
         u64 src_len = vector_size(src);\
         for (u64 i = 0; i < src_len; i++) {\

@@ -5,7 +5,10 @@
 #include <string.h>
 #include <unistd.h>
 
-static void int_to_str(int i, char* str) {
+static error_type int_to_str(u8 i, char* str) {
+	if (str == NULL) {
+		return ErrorInvalidParam;
+	}
 	int c = 0;
 	do {
 		int round = i % 10;
@@ -20,6 +23,74 @@ static void int_to_str(int i, char* str) {
 		str[i] = str[c - i - 1];
 		str[c - i - 1] = temp;
 	}
+	return ErrorNone;
+}
+
+static error_type sort_todo_list(todo_list* tl) {
+	if (tl == NULL) {
+		return ErrorInvalidParam;
+	}
+	for (int i = 0; i < tl->tasks_total; ++i) {
+		for (int j = i + 1; j < tl->tasks_total; ++j) {
+			if (i == tl->tasks[j].order) {
+				task temp = tl->tasks[i];
+				tl->tasks[i] = tl->tasks[j];
+				tl->tasks[j] = temp;
+			}
+		}
+	}
+	return ErrorNone;
+}
+
+static error_type remove_task(task* t) {
+	if (t == NULL) {
+		return ErrorInvalidParam;
+	}
+	char number[3];
+	char cmd[TASK_NAME_MAX_LEN + 7];
+	strcpy(cmd, "rm ");
+	strcat(cmd, t->name);
+	strcat(cmd, "-");
+	int_to_str(t->order, number);
+	strcat(cmd, number);
+	system(cmd);
+	return ErrorNone;
+}
+
+static error_type load_task(task* t, char* file_name) {
+	if (file_name == NULL) {
+		return ErrorInvalidParam;
+	}
+	int len = strchr(file_name, '\n') - file_name;
+	while (file_name[--len - 1] != '-');
+	task result;
+	result.order = atoi(file_name + len),
+	strncpy(result.name, file_name, len - 1);
+	result.name[len - 1] = 0;
+	result.finished = 0;
+	*t = result;
+	return ErrorNone;
+}
+
+static error_type update_task_order(task* t, u8 new_order) {
+	if (t == NULL) {
+		return ErrorInvalidParam;
+	}
+	char number[3];
+
+	char cmd[TASK_NAME_MAX_LEN * 2 + 14];
+	strcpy(cmd, "mv ");
+	strcat(cmd, t->name);
+	strcat(cmd, "-");
+	int_to_str(t->order, number);
+	strcat(cmd, number);
+	strcat(cmd, " ");
+	strcat(cmd, t->name);
+	strcat(cmd, "-");
+	int_to_str(new_order, number);
+	strcat(cmd, number);
+	system(cmd);
+	return ErrorNone;
 }
 
 error_type make_todo_list(todo_list** result, char* name) {
@@ -38,26 +109,16 @@ error_type make_todo_list(todo_list** result, char* name) {
 
 error_type free_todo_list(todo_list* sc) {
 	if (sc == NULL) {
-		return ErrorInvaildParam;
+		return ErrorInvalidParam;
 	}
 	free_vector(&sc->tasks);
 	FREE(sc);
 	return ErrorNone;
 }
 
-static task load_task(char* name) {
-	int len = strchr(name, '\n') - name;
-	while (name[--len - 1] != '-');
-	task result;
-	result.order = atoi(name + len),
-	strncpy(result.name, name, len - 1);
-	result.name[len - 1] = 0;
-	return result;
-}
-
 error_type todo_list_init_task(todo_list* sc) {
 	if (sc == NULL) {
-		return ErrorInvaildParam;
+		return ErrorInvalidParam;
 	}
 	{
 		char cmd[9 + TODO_LIST_NAME_MAX_LEN];
@@ -77,11 +138,14 @@ error_type todo_list_init_task(todo_list* sc) {
 			return ErrorOpenFile;
 		}
 		while(fgets(buf, sizeof(buf), file)) {
-			task t = load_task(buf);
-			printf("%s %d\n", t.name, t.order);
+			task t;
+			load_task(&t, buf);
 			vector_pushe(sc->tasks, t);
 		}
 		fclose(file);
+
+		sc->tasks_total = vector_size(sc->tasks);
+		sort_todo_list(sc);
 
 		chdir("..");
 	}
@@ -90,7 +154,7 @@ error_type todo_list_init_task(todo_list* sc) {
 
 error_type todo_list_add_task(todo_list* tl, task* t) {
 	if (tl == NULL || t == NULL) {
-		return ErrorInvaildParam;
+		return ErrorInvalidParam;
 	}
 
 	t->order = vector_size(tl->tasks);
@@ -112,16 +176,75 @@ error_type todo_list_add_task(todo_list* tl, task* t) {
 	return ErrorNone;
 }
 
-error_type todo_list_get_task(todo_list* tl, task** result, char* name) {
-	if (tl == NULL || name == NULL || result == NULL) {
-		return ErrorInvaildParam;
+error_type todo_list_remove_task(todo_list* tl, u8 order) {
+	if (tl == NULL || order >= tl->tasks_total) {
+		return ErrorInvalidParam;
 	}
-	for_vector(tl->tasks, i, 0) {
-		if (strcmp(name, tl->tasks[i].name) == 0) {
-			*result = &tl->tasks[i];
-			return ErrorNone;
-		}
+
+	chdir(tl->name);
+	remove_task(&tl->tasks[order]);
+	for_vector(tl->tasks, i, order + 1) {
+		update_task_order(&tl->tasks[i], tl->tasks[i].order - 1);
 	}
-	*result = NULL;
+	chdir("..");
+	vector_pop(tl->tasks);
+	--tl->tasks_total;
 	return ErrorNone;
+}
+
+error_type todo_list_swap_task(todo_list* tl, u8 from_order, u8 to_order) {
+	if (tl == NULL || from_order >= tl->tasks_total || to_order >= tl->tasks_total) {
+		return ErrorInvalidParam;
+	}
+
+	char number[3];
+	char to_name[TASK_NAME_MAX_LEN + 3];
+	char from_name[TASK_NAME_MAX_LEN + 3];
+	char cmd[(TASK_NAME_MAX_LEN + 3) * 2];
+
+	strcpy(to_name, tl->tasks[to_order].name);
+	int_to_str(tl->tasks[to_order].order, number);
+	strcat(to_name, "-");
+	strcat(to_name, number);
+
+	chdir(tl->name);
+	strcpy(cmd, "mv ");
+	strcat(cmd, to_name);
+	strcat(cmd, " ");
+	strcat(cmd, ".temp_task");
+	// printf("%s\n", cmd);
+	system(cmd);
+
+	strcpy(from_name, tl->tasks[from_order].name);
+	int_to_str(tl->tasks[from_order].order, number);
+	strcat(from_name, "-");
+	strcat(from_name, number);
+
+	strcpy(cmd, "mv ");
+	strcat(cmd, from_name);
+	strcat(cmd, " ");
+	strcat(cmd, to_name);
+	system(cmd);
+	// printf("%s\n", cmd);
+
+	strcpy(cmd, "mv ");
+	strcat(cmd, ".temp_task");
+	strcat(cmd, " ");
+	strcat(cmd, from_name);
+	system(cmd);
+	// printf("%s\n", cmd);
+	chdir("..");
+
+	int temp_order = tl->tasks[to_order].order;
+	tl->tasks[to_order].order = tl->tasks[from_order].order;
+	tl->tasks[from_order].order = temp_order;
+
+	return ErrorNone;
+}
+
+void log_todo_list(todo_list* tl) {
+	printf("[[%s, %d, %d]]\n", tl->name, tl->tasks_finished, tl->tasks_total);
+	for (int order = 0; order < tl->tasks_total; ++order) {
+		log_task(&tl->tasks[order]);
+	}
 }

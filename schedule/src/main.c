@@ -11,7 +11,6 @@
 		requirement -> strings
 */
 
-
 void print_menu(void) {}
 
 int main(int argc, char** argv) {
@@ -27,21 +26,16 @@ int main(int argc, char** argv) {
 	printf("name: '%s'\n", sc->name);
 
 	et = todo_list_init_task(sc);
-	log_error(et, "schedule init task");
+	log_error(et, "init task");
+	log_todo_list(sc);
+	todo_list_swap_task(sc, 1, 3);
 	
 	// task t = { .name = "task1", };
 	// et = todo_list_add_task(sc, &t);
 	// log_error(et, "todo list add task");
 
-	task* ret;
-	et = todo_list_get_task(sc, &ret, "task1");
-	log_error(et, "schedule found task");
-	if (ret) {
-		printf("found %s in order %d\n", ret->name, ret->order);
-	}
-
 	et = free_todo_list(sc);
-	log_error(et, "free schedule");
+	log_error(et, "free todo_list");
 
 	CHECK_MEMORY_LEAK();
 }

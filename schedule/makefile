@@ -5,7 +5,7 @@ LIB = -lm
 SRC = $(wildcard src/*.c)
 OBJ = $(SRC:%.c=%.o)
 DEP = $(OBJ:%.o=%.d)
-OUT = todo
+OUT = schedule
 
 PROCESS_INDEX = -1
 TOTAL_FILES = $(words $(SRC))
