@@ -1,11 +1,11 @@
 #include "todo_list.h"
-#include "memallocate.h"
-#include "vector.h"
+#include <stdio.h>
+#include <stdlib.h>
 #include <assert.h>
 #include <string.h>
 #include <unistd.h>
 
-static error_type int_to_str(u8 i, char* str) {
+error_type int_to_str(i8 i, char* str) {
 	if (str == NULL) {
 		return ErrorInvalidParam;
 	}
@@ -26,20 +26,14 @@ static error_type int_to_str(u8 i, char* str) {
 	return ErrorNone;
 }
 
-static error_type sort_todo_list(todo_list* tl) {
-	if (tl == NULL) {
-		return ErrorInvalidParam;
-	}
-	for (int i = 0; i < tl->tasks_total; ++i) {
-		for (int j = i + 1; j < tl->tasks_total; ++j) {
-			if (i == tl->tasks[j].order) {
-				task temp = tl->tasks[i];
-				tl->tasks[i] = tl->tasks[j];
-				tl->tasks[j] = temp;
-			}
-		}
-	}
-	return ErrorNone;
+static void cd_todo_list(todo_list* tl) {
+	char number[3];
+	int_to_str(tl->order, number);
+	char name[3 + TODO_LIST_NAME_MAX_LEN];
+	strcpy(name, tl->name);
+	strcat(name, "-");
+	strcat(name, number);
+	chdir(name);
 }
 
 static error_type remove_task(task* t) {
@@ -67,12 +61,20 @@ static error_type load_task(task* t, char* file_name) {
 	result.order = atoi(file_name + len),
 	strncpy(result.name, file_name, len - 1);
 	result.name[len - 1] = 0;
+
+	// FILE* file = fopen(file_name, "r");
+	// if (!file) {
+		// return ErrorOpenFile;
+	// }
+	// char buf[3];
+	// fgets(buf, sizeof(buf), file);
 	result.finished = 0;
+
 	*t = result;
 	return ErrorNone;
 }
 
-static error_type update_task_order(task* t, u8 new_order) {
+static error_type update_task_order(task* t, i8 new_order) {
 	if (t == NULL) {
 		return ErrorInvalidParam;
 	}
@@ -93,43 +95,45 @@ static error_type update_task_order(task* t, u8 new_order) {
 	return ErrorNone;
 }
 
-error_type make_todo_list(todo_list** result, char* name) {
-	todo_list* out = MALLOC(sizeof(todo_list));
-	if (!out) {
-		return ErrorMallocFaild;
+error_type init_todo_list(todo_list* result, char* name) {
+	if (result == NULL || name == NULL) {
+		return ErrorInvalidParam;
 	}
 	if (strlen(name) > TODO_LIST_NAME_MAX_LEN) {
 		return ErrorInvalidStringSize;
 	}
-	strcpy(out->name, name);
-	out->tasks = make_vector();
-	*result = out;
+	strcpy(result->name, name);
+	result->tasks = make_vector();
+	result->tasks_finished = -1;
+	result->tasks_total = -1;
 	return ErrorNone;
 }
 
-error_type free_todo_list(todo_list* sc) {
-	if (sc == NULL) {
+error_type free_todo_list(todo_list* tl) {
+	if (tl == NULL) {
 		return ErrorInvalidParam;
 	}
-	free_vector(&sc->tasks);
-	FREE(sc);
+	free_vector(&tl->tasks);
 	return ErrorNone;
 }
 
-error_type todo_list_init_task(todo_list* sc) {
-	if (sc == NULL) {
+error_type todo_list_init_task(todo_list* tl) {
+	if (tl == NULL) {
 		return ErrorInvalidParam;
 	}
 	{
+		char number[3];
+		int_to_str(tl->order, number);
 		char cmd[9 + TODO_LIST_NAME_MAX_LEN];
 		strcpy(cmd, "mkdir -p ");
-		strcat(cmd, sc->name);
+		strcat(cmd, tl->name);
+		strcat(cmd, "-");
+		strcat(cmd, number);
 		system(cmd);
 	}
 	{
 		char buf[256];
-		chdir(sc->name);
-		// strcpy(buf, "rg --files --null | xargs -0 dirname | sort -u | grep '[^.]' > .status");
+		cd_todo_list(tl);
 		strcpy(buf, "rg --files > .status");
 		system(buf);
 		
@@ -137,15 +141,22 @@ error_type todo_list_init_task(todo_list* sc) {
 		if (!file) {
 			return ErrorOpenFile;
 		}
-		while(fgets(buf, sizeof(buf), file)) {
+
+		int lines = 0;
+		while (fgets(buf, sizeof(buf), file)) {
+			++lines;
+		}
+		fseek(file, 0, SEEK_SET);
+		vector_resize(tl->tasks, lines);
+
+		while (fgets(buf, sizeof(buf), file)) {
 			task t;
 			load_task(&t, buf);
-			vector_pushe(sc->tasks, t);
+			tl->tasks[t.order] = t;
 		}
 		fclose(file);
 
-		sc->tasks_total = vector_size(sc->tasks);
-		sort_todo_list(sc);
+		tl->tasks_total = vector_size(tl->tasks);
 
 		chdir("..");
 	}
@@ -160,13 +171,13 @@ error_type todo_list_add_task(todo_list* tl, task* t) {
 	t->order = vector_size(tl->tasks);
 
 	char number[3];
-	int_to_str(t->order, number);
 
 	char cmd[15 + TODO_LIST_NAME_MAX_LEN + TASK_NAME_MAX_LEN];
-	chdir(tl->name);
-	strcpy(cmd, "touch ");
+	cd_todo_list(tl);
+	strcpy(cmd, "echo 0 > ");
 	strcat(cmd, t->name);
 	strcat(cmd, "-");
+	int_to_str(t->order, number);
 	strcat(cmd, number);
 	system(cmd);
 	chdir("..");
@@ -176,12 +187,12 @@ error_type todo_list_add_task(todo_list* tl, task* t) {
 	return ErrorNone;
 }
 
-error_type todo_list_remove_task(todo_list* tl, u8 order) {
+error_type todo_list_remove_task(todo_list* tl, i8 order) {
 	if (tl == NULL || order >= tl->tasks_total) {
 		return ErrorInvalidParam;
 	}
 
-	chdir(tl->name);
+	cd_todo_list(tl);
 	remove_task(&tl->tasks[order]);
 	for_vector(tl->tasks, i, order + 1) {
 		update_task_order(&tl->tasks[i], tl->tasks[i].order - 1);
@@ -192,9 +203,13 @@ error_type todo_list_remove_task(todo_list* tl, u8 order) {
 	return ErrorNone;
 }
 
-error_type todo_list_swap_task(todo_list* tl, u8 from_order, u8 to_order) {
+error_type todo_list_swap_task(todo_list* tl, i8 from_order, i8 to_order) {
 	if (tl == NULL || from_order >= tl->tasks_total || to_order >= tl->tasks_total) {
 		return ErrorInvalidParam;
+	}
+
+	if (from_order == to_order) {
+		return ErrorNone;
 	}
 
 	char number[3];
@@ -207,12 +222,11 @@ error_type todo_list_swap_task(todo_list* tl, u8 from_order, u8 to_order) {
 	strcat(to_name, "-");
 	strcat(to_name, number);
 
-	chdir(tl->name);
+	cd_todo_list(tl);
 	strcpy(cmd, "mv ");
 	strcat(cmd, to_name);
 	strcat(cmd, " ");
 	strcat(cmd, ".temp_task");
-	// printf("%s\n", cmd);
 	system(cmd);
 
 	strcpy(from_name, tl->tasks[from_order].name);
@@ -225,14 +239,12 @@ error_type todo_list_swap_task(todo_list* tl, u8 from_order, u8 to_order) {
 	strcat(cmd, " ");
 	strcat(cmd, to_name);
 	system(cmd);
-	// printf("%s\n", cmd);
 
 	strcpy(cmd, "mv ");
 	strcat(cmd, ".temp_task");
 	strcat(cmd, " ");
 	strcat(cmd, from_name);
 	system(cmd);
-	// printf("%s\n", cmd);
 	chdir("..");
 
 	int temp_order = tl->tasks[to_order].order;
@@ -243,7 +255,7 @@ error_type todo_list_swap_task(todo_list* tl, u8 from_order, u8 to_order) {
 }
 
 void log_todo_list(todo_list* tl) {
-	printf("[[%s, %d, %d]]\n", tl->name, tl->tasks_finished, tl->tasks_total);
+	printf("[[%s:%d, %d, %d]]\n", tl->name, tl->order, tl->tasks_finished, tl->tasks_total);
 	for (int order = 0; order < tl->tasks_total; ++order) {
 		log_task(&tl->tasks[order]);
 	}

@@ -1,7 +1,8 @@
 #include "memallocate.h"
-#include "todo_list.h"
+#include "workspace.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h> // chdir
 
 /*
 	schedule manager: add remove change -> schedule
@@ -20,22 +21,33 @@ int main(int argc, char** argv) {
 	}
 
 	error_type et = ErrorNone;
-	todo_list* sc;
-	et = make_todo_list(&sc, "learning");
-	log_error(et, "make schedule");
-	printf("name: '%s'\n", sc->name);
 
-	et = todo_list_init_task(sc);
-	log_error(et, "init task");
-	log_todo_list(sc);
-	todo_list_swap_task(sc, 1, 3);
-	
-	// task t = { .name = "task1", };
-	// et = todo_list_add_task(sc, &t);
+	workspace ws;
+	et = init_workspace(&ws, "daily");
+	log_error(et, "make workspace");
+
+	et = workspace_init_list(&ws);
+	log_error(et, "workspace list");
+	log_workspace(&ws);
+
+	// todo_list sc;
+	// et = init_todo_list(&sc, "learning");
+	// log_error(et, "make todo");
+	// et = workspace_add_list(&ws, &sc);
+	// log_error(et, "add list");
+
+	// printf("name: '%s'\n", &ws.lists[0]);
+
+	// chdir(ws.name);
+	// task t = { .name = "task2", };
+	// workspace_add_task(&ws, 1, &t);
+	// et = todo_list_add_task(&ws.lists[0], &t);
 	// log_error(et, "todo list add task");
+	// chdir("..");
 
-	et = free_todo_list(sc);
-	log_error(et, "free todo_list");
+	todo_list_swap_task(&ws.lists[0], 1, 3);
+
+	free_workspace(&ws);
 
 	CHECK_MEMORY_LEAK();
 }
