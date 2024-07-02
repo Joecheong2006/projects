@@ -78,6 +78,12 @@ void test() {
 }
 
 void main() {
+    {
+        float b_0_1 = (sin(time) + 1) * 0.5 + 0.02;
+        vec3 color = vec3(1 - smoothstep(0.05, 0.1, abs(uv.x * uv.x * uv.y * uv.y + uv.y * uv.y * uv.x *uv.x - 1 * b_0_1)));
+        frag_color = vec4(color, 1);
+    }
+    return;
     //test();
     float width = 0.02;
     float smoothness = 1 / resolution.x;

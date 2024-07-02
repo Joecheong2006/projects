@@ -1,14 +1,13 @@
-#ifndef ERROR_H
-#define ERROR_H
+#ifndef _ERROR_H
+#define _ERROR_H
 
 typedef enum {
 	ErrorNone,
 	ErrorInvalidStringSize,
 	ErrorInvalidParam,
+	ErrorMissingParam,
 	ErrorMallocFaild,
 	ErrorOpenFile,
 } error_type;
-
-void log_error(error_type et, char* msg);
 
 #endif

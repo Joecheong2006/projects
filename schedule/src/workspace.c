@@ -87,7 +87,6 @@ error_type workspace_init_list(workspace* ws) {
 	if (ws == NULL) {
 		return ErrorInvalidParam;
 	}
-	return ErrorNone;
 	{
 		char cmd[9 + TODO_LIST_NAME_MAX_LEN];
 		strcpy(cmd, "mkdir -p ");
@@ -105,18 +104,18 @@ error_type workspace_init_list(workspace* ws) {
 			return ErrorOpenFile;
 		}
 
-		// int lines = 0;
-		// while (fgets(buf, sizeof(buf), file)) {
-		// 	++lines;
-		// }
-		// fseek(file, 0, SEEK_SET);
-		// vector_resize(ws->lists, lines);
+		int lines = 0;
+		while (fgets(buf, sizeof(buf), file)) {
+			++lines;
+		}
+		fseek(file, 0, SEEK_SET);
+		vector_resize(ws->lists, lines);
 
-		// while (fgets(buf, sizeof(buf), file)) {
-		// 	todo_list sc;
-		// 	load_list(&sc, buf + 2);
-		// 	ws->lists[sc.order] = sc;
-		// }
+		while (fgets(buf, sizeof(buf), file)) {
+			todo_list sc;
+			load_list(&sc, buf + 2);
+			ws->lists[sc.order] = sc;
+		}
 		fclose(file);
 
 		chdir("..");
@@ -134,13 +133,8 @@ error_type workspace_add_list(workspace* ws, todo_list* tl) {
 	char number[3];
 	int_to_str(tl->order, number);
 
-	char cmd[15 + TODO_LIST_NAME_MAX_LEN + TASK_NAME_MAX_LEN];
 	chdir(ws->name);
-	strcpy(cmd, "mkdir -p ");
-	strcat(cmd, tl->name);
-	strcat(cmd, "-");
-	strcat(cmd, number);
-	system(cmd);
+	todo_list_init_task(tl);
 	chdir("..");
 
 	vector_pushe(ws->lists, *tl);

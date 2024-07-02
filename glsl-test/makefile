@@ -10,8 +10,9 @@ SRC = $(wildcard $(patsubst %, %/*.cpp, $(SOURCE)))
 OBJ = $(SRC:%.cpp=%.o)
 DEP = $(OBJ:%.o=%.d)
 
-DLL = lib/glfw/glfw3.dll 
-LIB = $(LIBOBJ) $(DLL) lib/glfw/libglfw3dll.a -lopengl32
+# DLL = lib/glfw/glfw3.dll 
+# LIB = $(LIBOBJ) $(DLL) lib/glfw/libglfw3dll.a -lopengl32
+LIB = $(LIBOBJ) -lglfw -lOpenGL
 
 BIN = bin
 OUT = $(BIN)/glsl_test.exe

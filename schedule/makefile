@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -std=c99 -Wall -Wextra -g3
+CFLAGS = -std=c11 -Wall -Wextra -g3
 LIB = 
 
 SRC = $(wildcard src/*.c)
