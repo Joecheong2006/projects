@@ -117,6 +117,7 @@ error_type workspace_init_list(workspace* ws) {
 			ws->lists[sc.order] = sc;
 		}
 		fclose(file);
+		ws->lists_total = lines;
 
 		chdir("..");
 	}

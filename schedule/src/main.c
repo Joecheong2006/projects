@@ -1,72 +1,11 @@
 #include "memallocate.h"
-#include "workspace.h"
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h> // chdir
-
-#define ARG_NODE_MAX_LEN 4
-
-typedef enum { ArgInputText, ArgInputNumber } arg_input_type;
-typedef enum { ArgTypeLabel, ArgTypeInput, ArgTypeCommand } arg_type;
-typedef error_type(*arg_callback)(int, char**, workspace*);
-typedef struct arg_node arg_node;
-
-struct arg_node {
-	arg_type type;
-	union {
-		struct {
-			arg_input_type type;
-			union { char* text; int index; };
-		} input;
-		struct {
-			char* name;
-		} label;
-		struct {
-			arg_callback callback;
-		} command;
-	};
-	arg_node* nodes[ARG_NODE_MAX_LEN];
-};
-
-arg_node init_arg_label_node(char* name) {
-	arg_node result = (arg_node) {
-		.type = ArgTypeLabel,
-		.label.name = name
-	};
-	memset(&result.nodes, 0, sizeof(result.nodes));
-	return result;
-}
-
-arg_node init_arg_input_node() {
-	arg_node result = (arg_node) {
-		.type = ArgTypeInput,
-	};
-	memset(&result.nodes, 0, sizeof(result.nodes));
-	return result;
-}
-
-arg_node init_arg_command_node(arg_callback callback) {
-	arg_node result = (arg_node) {
-		.type = ArgTypeCommand,
-		.command.callback = callback
-	};
-	memset(&result.nodes, 0, sizeof(result.nodes));
-	return result;
-}
-
-void arg_node_add_node(arg_node* node, arg_node* new_node) {
-	for (int i = 0; i < ARG_NODE_MAX_LEN; ++i) {
-		if (node->nodes[i] == NULL) {
-			node->nodes[i] = new_node;
-			break;
-		}
-	}
-}
+#include "command.h"
 
 void print_menu(void) {}
-i32 is_number(char* str) {
-	return str[0] >= '0' && str[0] <= '9';
-}
+
 error_type add_list(workspace* ws, char** argv) {
 	error_type et;
 	todo_list sc;
@@ -100,6 +39,22 @@ void log_arg(arg_node* node) {
 	}
 }
 
+error_type show_command_callback(int arg_index, char** argv, workspace* ws) {
+	char* input = argv[arg_index - 1];
+	char* end;
+	i8 index = strtol(input, &end, 10);
+	if (end == input) {
+		printf("order must be a number\n");
+		return ErrorInvalidParam;
+	}
+	if (index >= ws->lists_total) {
+		printf("invalid order\n");
+		return ErrorInvalidParam;
+	}
+	log_todo_list(&ws->lists[index]);
+	return ErrorNone;
+}
+
 int main(int argc, char** argv) {
 	if (argc == 1) {
 		print_menu();
@@ -125,100 +80,45 @@ int main(int argc, char** argv) {
 	arg_node_add_node(&node_start, &node_switch);
 	arg_node_add_node(&node_start, &node_add);
 
+	arg_node show_command = init_arg_command_node(show_command_callback);
+
 	arg_node input_node1 = init_arg_input_node();
 	arg_node_add_node(&node_show, &input_node1);
+	arg_node_add_node(&input_node1, &show_command);
 
 	arg_node** cur = node_start.nodes;
 
 	for (int i = 0, arg_index = 1; i < ARG_NODE_MAX_LEN;) {
-		// if (arg_index >= argc) {
-		// 	printf("end\n");
-		// 	break;
-		// }
+		if (cur[i]->nodes[0] == NULL && arg_index < argc) {
+			printf("invalid command\n");
+			exit(0);
+		}
+		if (cur[i] == NULL || arg_index > argc) {
+			printf("invalid command\n");
+			break;
+		}
 		if (cur[i]->type == ArgTypeLabel) {
 			if (strcmp(cur[i]->label.name, argv[arg_index]) == 0) {
-				printf("%s ", cur[i]->label.name);
 				cur = cur[i]->nodes;
 				i = 0;
 				arg_index++;
-				if (arg_index >= argc) {
-					printf("end\n");
-					break;
-				}
 				continue;
 			}
 			i++;
 			continue;
 		}
 		else if (cur[i]->type == ArgTypeCommand) {
-			cur[i]->command.callback(argc, argv, &ws);
-			cur = cur[i]->nodes;
-			printf("command");
-			arg_index++;
-			if (arg_index >= argc) {
-				printf("end\n");
-			}
+			cur[i]->command.callback(arg_index, argv, &ws);
 			break;
 		}
-		if (cur[i]->input.type == ArgInputText) {
-			cur[i]->input.text = argv[arg_index];
-			printf("text %s ", cur[i]->input.text);
-			arg_index++;
-			if (arg_index >= argc) {
-				printf("end\n");
-				break;
-			}
-			cur = cur[i]->nodes;
-			i = 0;
-			break;
-		}
-		else {
-			char* end;
-			i8 index = strtol(argv[arg_index], &end, 10);
-			if (end != argv[arg_index]) {
-				cur[i]->input.index = index;
-				cur = cur[i]->nodes;
-				i = 0;
-				printf("number %d ", cur[i]->input.index);
-				arg_index++;
-				if (arg_index >= argc) {
-					printf("end\n");
-					break;
-				}
-			}
-			else {
-				printf("invlid number");
-				exit(ErrorInvalidParam);
-			}
-		}
+		arg_index++;
+		cur = cur[i]->nodes;
+		i = 0;
 	}
 
+	free_workspace(&ws);
+	CHECK_MEMORY_LEAK();
 	return 0;
-	if (strcmp(argv[1], "show") == 0) {
-		log_workspace(&ws);
-	}
-	if (strcmp(argv[1], "switch") == 0) {
-		log_workspace(&ws);
-	}
-	else if (strcmp(argv[1], "add ")) {
-		if (argc >= 3) {
-			et = add_list(&ws, argv);
-		}
-		else {
-		}
-	}
-	else if (is_number(argv[1])) {
-		et = add_task(&ws, argv);
-		if (strcmp(argv[2], "add") == 0) {
-		}
-		else if (strcmp(argv[2], "remove") == 0) {
-		}
-		else if (strcmp(argv[2], "rename") == 0) {
-		}
-		else if (strcmp(argv[2], "swap") == 0) {
-		}
-	}
-
 	// printf("name: '%s'\n", &ws.lists[0]);
 
 	// chdir(ws.name);
@@ -230,7 +130,4 @@ int main(int argc, char** argv) {
 
 	todo_list_swap_task(&ws.lists[0], 1, 3);
 
-	free_workspace(&ws);
-
-	CHECK_MEMORY_LEAK();
 }
