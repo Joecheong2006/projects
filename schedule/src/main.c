@@ -88,6 +88,18 @@ error_type add_task(workspace* ws, char** argv) {
 	return ErrorNone;
 }
 
+void log_arg(arg_node* node) {
+	static int s = 0;
+	s++;
+	for (int i = 0; i < ARG_NODE_MAX_LEN; ++i) {
+		if (node->nodes[i] != NULL) {
+			printf("%d %d %d\n", s, i, node->nodes[i]->type);
+			log_arg(node->nodes[i]);
+			s--;
+		}
+	}
+}
+
 int main(int argc, char** argv) {
 	if (argc == 1) {
 		print_menu();
@@ -118,7 +130,7 @@ int main(int argc, char** argv) {
 
 	arg_node** cur = node_start.nodes;
 
-	for (int i = 0, arg_index = 1; i < ARG_NODE_MAX_LEN; ++i) {
+	for (int i = 0, arg_index = 1; i < ARG_NODE_MAX_LEN;) {
 		// if (arg_index >= argc) {
 		// 	printf("end\n");
 		// 	break;
@@ -126,44 +138,58 @@ int main(int argc, char** argv) {
 		if (cur[i]->type == ArgTypeLabel) {
 			if (strcmp(cur[i]->label.name, argv[arg_index]) == 0) {
 				printf("%s ", cur[i]->label.name);
+				cur = cur[i]->nodes;
+				i = 0;
 				arg_index++;
 				if (arg_index >= argc) {
 					printf("end\n");
 					break;
 				}
-				cur = cur[i]->nodes;
-				i = 0;
+				continue;
 			}
+			i++;
 			continue;
 		}
 		else if (cur[i]->type == ArgTypeCommand) {
 			cur[i]->command.callback(argc, argv, &ws);
 			cur = cur[i]->nodes;
 			printf("command");
-			i = 0;
+			arg_index++;
+			if (arg_index >= argc) {
+				printf("end\n");
+			}
+			break;
+		}
+		if (cur[i]->input.type == ArgInputText) {
+			cur[i]->input.text = argv[arg_index];
+			printf("text %s ", cur[i]->input.text);
 			arg_index++;
 			if (arg_index >= argc) {
 				printf("end\n");
 				break;
 			}
-			break;
-		}
-		char* end;
-		i8 index = strtol(argv[arg_index], &end, 10);
-		if (end != argv[arg_index]) {
-			// load input
 			cur = cur[i]->nodes;
 			i = 0;
-			printf("input ");
-			arg_index++;
-			if (arg_index >= argc) {
-				printf("end\n");
-				break;
-			}
+			break;
 		}
 		else {
-			exit(ErrorInvalidParam);
-			break;
+			char* end;
+			i8 index = strtol(argv[arg_index], &end, 10);
+			if (end != argv[arg_index]) {
+				cur[i]->input.index = index;
+				cur = cur[i]->nodes;
+				i = 0;
+				printf("number %d ", cur[i]->input.index);
+				arg_index++;
+				if (arg_index >= argc) {
+					printf("end\n");
+					break;
+				}
+			}
+			else {
+				printf("invlid number");
+				exit(ErrorInvalidParam);
+			}
 		}
 	}
 
