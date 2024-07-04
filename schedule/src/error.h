@@ -8,6 +8,7 @@ typedef enum {
 	ErrorMissingParam,
 	ErrorMallocFaild,
 	ErrorOpenFile,
+	ErrorInvalidType,
 } error_type;
 
 #endif

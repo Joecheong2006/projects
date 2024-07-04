@@ -51,8 +51,29 @@ error_type show_command_callback(int arg_index, char** argv, workspace* ws) {
 		printf("invalid order\n");
 		return ErrorInvalidParam;
 	}
-	log_todo_list(&ws->lists[index]);
+	log_todo_list(ws->lists + index);
 	return ErrorNone;
+}
+
+error_type show_nonarg_command_callback(int arg_index, char** argv, workspace* ws) {
+	(void)arg_index, (void)argv;
+	for_vector(ws->lists, i, 0) {
+		log_todo_list(ws->lists + i);
+	}
+	return ErrorNone;
+}
+
+error_type add_command_callback(int arg_index, char** argv, workspace* ws) {
+	char* input = argv[arg_index - 1];
+	chdir(ws->name);
+	todo_list tl;
+	error_type et = init_todo_list(&tl, input);
+	if (et != ErrorNone) {
+		return et;
+	}
+	et = workspace_add_list(ws, &tl);
+	chdir("..");
+	return et;
 }
 
 int main(int argc, char** argv) {
@@ -71,53 +92,56 @@ int main(int argc, char** argv) {
 	et = init_workspace(&ws, cw);
 	et = workspace_init_list(&ws);
 
-	arg_node node_show = init_arg_label_node("show");
-	arg_node node_switch = init_arg_label_node("switch");
-	arg_node node_add = init_arg_label_node("add");
+	arg_node node_show = init_arg_node(ArgTypeCommand, "show", show_nonarg_command_callback);
+	arg_node node_switch = init_arg_node(ArgTypeCommand, "switch", NULL);
+	arg_node node_add = init_arg_node(ArgTypeCommand, "add", NULL);
 
-	arg_node node_start = init_arg_label_node("w");
+	arg_node node_start = init_arg_node(ArgTypeCommand, "", NULL);
 	arg_node_add_node(&node_start, &node_show);
 	arg_node_add_node(&node_start, &node_switch);
 	arg_node_add_node(&node_start, &node_add);
 
-	arg_node show_command = init_arg_command_node(show_command_callback);
-
-	arg_node input_node1 = init_arg_input_node();
-	arg_node_add_node(&node_show, &input_node1);
-	arg_node_add_node(&input_node1, &show_command);
+	arg_node show_input_node = init_arg_node(ArgTypeInput, NULL, show_command_callback);
+	arg_node_add_node(&node_show, &show_input_node);
+	arg_node add_input_node = init_arg_node(ArgTypeInput, NULL, add_command_callback);
+	arg_node_add_node(&node_add, &add_input_node);
 
 	arg_node** cur = node_start.nodes;
-
 	for (int i = 0, arg_index = 1; i < ARG_NODE_MAX_LEN;) {
-		if (cur[i]->nodes[0] == NULL && arg_index < argc) {
-			printf("invalid command\n");
-			exit(0);
-		}
 		if (cur[i] == NULL || arg_index > argc) {
 			printf("invalid command\n");
 			break;
 		}
-		if (cur[i]->type == ArgTypeLabel) {
-			if (strcmp(cur[i]->label.name, argv[arg_index]) == 0) {
+		if (cur[i]->type == ArgTypeCommand) {
+			if (strcmp(cur[i]->name, argv[arg_index]) == 0) {
+				if (++arg_index >= argc) {
+					et = arg_node_call(cur[i], arg_index, argv, &ws);
+					break;
+				}
 				cur = cur[i]->nodes;
 				i = 0;
-				arg_index++;
 				continue;
 			}
 			i++;
 			continue;
 		}
-		else if (cur[i]->type == ArgTypeCommand) {
-			cur[i]->command.callback(arg_index, argv, &ws);
-			break;
+		if (cur[i]->type == ArgTypeInput) {
+			if (++arg_index >= argc) {
+				et = arg_node_call(cur[i], arg_index, argv, &ws);
+				break;
+			}
+			cur = cur[i]->nodes;
+			i = 0;
+			continue;
 		}
-		arg_index++;
-		cur = cur[i]->nodes;
-		i = 0;
+		et = ErrorInvalidType;
+		break;
 	}
+	printf("error = %d\n", et);
 
 	free_workspace(&ws);
 	CHECK_MEMORY_LEAK();
+
 	return 0;
 	// printf("name: '%s'\n", &ws.lists[0]);
 
