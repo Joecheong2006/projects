@@ -17,6 +17,7 @@ error_type workspace_init_list(workspace* ws);
 error_type workspace_add_list(workspace* ws, todo_list* tl);
 error_type workspace_add_task(workspace* ws, i8 list_order, task* t);
 error_type workspace_remove_list(workspace* ws, i8 order);
+error_type workspace_remove_task(workspace* ws, i8 list_order, i8 task_order);
 error_type workspace_swap_list(workspace* ws, i8 from_order, i8 to_order);
 void log_workspace(workspace* ws);
 

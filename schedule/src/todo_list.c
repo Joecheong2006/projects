@@ -56,19 +56,23 @@ static error_type load_task(task* t, char* file_name) {
 		return ErrorInvalidParam;
 	}
 	int len = strchr(file_name, '\n') - file_name;
+	file_name[len] = 0;
 	while (file_name[--len - 1] != '-');
 	task result;
 	result.order = atoi(file_name + len),
 	strncpy(result.name, file_name, len - 1);
 	result.name[len - 1] = 0;
 
-	// FILE* file = fopen(file_name, "r");
-	// if (!file) {
-		// return ErrorOpenFile;
-	// }
-	// char buf[3];
-	// fgets(buf, sizeof(buf), file);
-	result.finished = 0;
+	FILE* file = fopen(file_name, "r");
+	if (!file) {
+	  	return ErrorOpenFile;
+	}
+	char buf[2];
+	fgets(buf, sizeof(buf), file);
+	buf[1] = 0;
+	fclose(file);
+
+	result.finished = buf[0] - '0';
 
 	*t = result;
 	return ErrorNone;
@@ -104,7 +108,7 @@ error_type init_todo_list(todo_list* result, char* name) {
 	}
 	strcpy(result->name, name);
 	result->tasks = make_vector();
-	result->tasks_finished = -1;
+	result->tasks_finished = 0;
 	result->tasks_total = -1;
 	return ErrorNone;
 }
@@ -188,7 +192,7 @@ error_type todo_list_add_task(todo_list* tl, task* t) {
 }
 
 error_type todo_list_remove_task(todo_list* tl, i8 order) {
-	if (tl == NULL || order >= tl->tasks_total) {
+	if (tl == NULL || order >= tl->tasks_total || order < 0) {
 		return ErrorInvalidParam;
 	}
 
@@ -255,7 +259,7 @@ error_type todo_list_swap_task(todo_list* tl, i8 from_order, i8 to_order) {
 }
 
 void log_todo_list(todo_list* tl) {
-	printf("[[%s:%d, %d, %d]]\n", tl->name, tl->order, tl->tasks_finished, tl->tasks_total);
+	printf("[[%s:%d, %d, %d]]\n", tl->name, tl->order, tl->tasks_total, tl->tasks_finished);
 	for (int order = 0; order < tl->tasks_total; ++order) {
 		log_task(&tl->tasks[order]);
 	}

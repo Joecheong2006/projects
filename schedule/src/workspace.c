@@ -49,7 +49,7 @@ static error_type update_list_order(todo_list* tl, i8 new_order) {
 	char number[3];
 
 	char cmd[TASK_NAME_MAX_LEN * 2 + 14];
-	strcpy(cmd, "mv -r ");
+	strcpy(cmd, "mv ");
 	strcat(cmd, tl->name);
 	strcat(cmd, "-");
 	int_to_str(tl->order, number);
@@ -144,6 +144,9 @@ error_type workspace_add_list(workspace* ws, todo_list* tl) {
 }
 
 error_type workspace_add_task(workspace* ws, i8 list_order, task* t) {
+	if (list_order >= ws->lists_total || list_order < 0) {
+		return ErrorInvalidParam;
+	}
 	chdir(ws->name);
 	error_type et = todo_list_add_task(&ws->lists[list_order], t);
 	if (et != ErrorNone) {
@@ -154,7 +157,7 @@ error_type workspace_add_task(workspace* ws, i8 list_order, task* t) {
 }
 
 error_type workspace_remove_list(workspace* ws, i8 order) {
-	if (ws == NULL || order >= ws->lists_total) {
+	if (ws == NULL || order >= ws->lists_total || order < 0) {
 		return ErrorInvalidParam;
 	}
 
@@ -167,6 +170,16 @@ error_type workspace_remove_list(workspace* ws, i8 order) {
 	vector_pop(ws->lists);
 	--ws->lists_total;
 	return ErrorNone;
+}
+
+error_type workspace_remove_task(workspace* ws, i8 list_order, i8 task_order) {
+	if (ws == NULL || list_order >= ws->lists_total || list_order < 0) {
+		return ErrorInvalidParam;
+	}
+	chdir(ws->name);
+	error_type et = todo_list_remove_task(&ws->lists[list_order], task_order);
+	chdir("..");
+	return et;
 }
 
 void log_workspace(workspace* ws) {

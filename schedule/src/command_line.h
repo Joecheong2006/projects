@@ -18,6 +18,6 @@ struct arg_node {
 arg_node init_arg_node(arg_type type, char* name, arg_callback callback);
 void arg_node_add_node(arg_node* node, arg_node* new_node);
 error_type arg_node_call(arg_node* node, int arg_index, char** argv, workspace* ws);
-
+error_type execute_command_line(arg_node** node, int argc, char** argv, void* in);
 
 #endif
