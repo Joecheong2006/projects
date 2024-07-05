@@ -76,6 +76,37 @@ error_type add_command_callback(int arg_index, char** argv, workspace* ws) {
 	return et;
 }
 
+error_type add_task_command_callback(int arg_index, char** argv, workspace* ws) {
+	char* input_list_order = argv[arg_index - 2];
+	char* end;
+	i8 list_order = strtol(input_list_order, &end, 10);
+	if (end == input_list_order) {
+		printf("order must be a number\n");
+		return ErrorInvalidParam;
+	}
+
+	if (list_order >= ws->lists_total || list_order < 0) {
+		printf("invalid order\n");
+		return ErrorInvalidParam;
+	}
+
+	char* input_text = argv[arg_index - 1];
+	if (strlen(input_text) > TASK_NAME_MAX_LEN) {
+		printf("invalid name size");
+		return ErrorInvalidStringSize;
+	}
+
+	chdir(ws->name);
+	task t;
+	strcpy(t.name, input_text);
+	error_type et = workspace_add_task(ws, list_order, &t);
+	if (et != ErrorNone) {
+		return et;
+	}
+	chdir("..");
+	return ErrorNone;
+}
+
 int main(int argc, char** argv) {
 	if (argc == 1) {
 		print_menu();
@@ -105,6 +136,8 @@ int main(int argc, char** argv) {
 	arg_node_add_node(&node_show, &show_input_node);
 	arg_node add_input_node = init_arg_node(ArgTypeInput, NULL, add_command_callback);
 	arg_node_add_node(&node_add, &add_input_node);
+	arg_node add_second_input_node = init_arg_node(ArgTypeInput, NULL, add_task_command_callback);
+	arg_node_add_node(&add_input_node, &add_second_input_node);
 
 	arg_node** cur = node_start.nodes;
 	for (int i = 0, arg_index = 1; i < ARG_NODE_MAX_LEN;) {
