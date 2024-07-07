@@ -215,45 +215,29 @@ error_type todo_list_swap_task(todo_list* tl, i8 from_order, i8 to_order) {
 	if (from_order == to_order) {
 		return ErrorNone;
 	}
-
-	char number[3];
-	char to_name[TASK_NAME_MAX_LEN + 3];
-	char from_name[TASK_NAME_MAX_LEN + 3];
-	char cmd[(TASK_NAME_MAX_LEN + 3) * 2];
-
-	strcpy(to_name, tl->tasks[to_order].name);
-	int_to_str(tl->tasks[to_order].order, number);
-	strcat(to_name, "-");
-	strcat(to_name, number);
-
 	cd_todo_list(tl);
-	strcpy(cmd, "mv ");
-	strcat(cmd, to_name);
-	strcat(cmd, " ");
-	strcat(cmd, ".temp_task");
-	system(cmd);
-
-	strcpy(from_name, tl->tasks[from_order].name);
-	int_to_str(tl->tasks[from_order].order, number);
-	strcat(from_name, "-");
-	strcat(from_name, number);
-
-	strcpy(cmd, "mv ");
-	strcat(cmd, from_name);
-	strcat(cmd, " ");
-	strcat(cmd, to_name);
-	system(cmd);
-
-	strcpy(cmd, "mv ");
-	strcat(cmd, ".temp_task");
-	strcat(cmd, " ");
-	strcat(cmd, from_name);
-	system(cmd);
+	error_type et = update_task_order(&tl->tasks[from_order], tl->tasks_total);
+	if (et != ErrorNone) {
+		chdir("..");
+		return et;
+	}
+	et = update_task_order(&tl->tasks[to_order], from_order);
+	if (et != ErrorNone) {
+		chdir("..");
+		return et;
+	}
+	int temp_order = tl->tasks[from_order].order;
+	tl->tasks[from_order].order = tl->tasks_total;
+	et = update_task_order(&tl->tasks[from_order], to_order);
+	if (et != ErrorNone) {
+		tl->tasks[from_order].order = temp_order;
+		chdir("..");
+		return et;
+	}
 	chdir("..");
 
-	int temp_order = tl->tasks[to_order].order;
-	tl->tasks[to_order].order = tl->tasks[from_order].order;
-	tl->tasks[from_order].order = temp_order;
+	tl->tasks[from_order].order = tl->tasks[from_order].order;
+	tl->tasks[to_order].order = temp_order;
 
 	return ErrorNone;
 }

@@ -2,7 +2,7 @@
 #define ARG_H
 #include "workspace.h"
 #include "error.h"
-#define ARG_NODE_MAX_LEN 4
+#define ARG_NODE_MAX_LEN 5
 
 typedef enum { ArgTypeInput, ArgTypeCommand } arg_type;
 typedef error_type(*arg_callback)(int, char**, workspace*);

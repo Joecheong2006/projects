@@ -4,6 +4,27 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+static error_type update_todo_list_order(todo_list* tl, i32 new_order) {
+	if (tl == NULL) {
+		return ErrorInvalidParam;
+	}
+	char number[3];
+
+	char cmd[TODO_LIST_NAME_MAX_LEN * 2 + 14];
+	strcpy(cmd, "mv ");
+	strcat(cmd, tl->name);
+	strcat(cmd, "-");
+	int_to_str(tl->order, number);
+	strcat(cmd, number);
+	strcat(cmd, " ");
+	strcat(cmd, tl->name);
+	strcat(cmd, "-");
+	int_to_str(new_order, number);
+	strcat(cmd, number);
+	system(cmd);
+	return ErrorNone;
+}
+
 static i32 have_duplicate_name(workspace* ws, char* name) {
 	for_vector(ws->lists, i, 0) {
 		if (strcmp(ws->lists[i].name, name) == 0) {
@@ -178,6 +199,35 @@ error_type workspace_remove_task(workspace* ws, i8 list_order, i8 task_order) {
 	}
 	chdir(ws->name);
 	error_type et = todo_list_remove_task(&ws->lists[list_order], task_order);
+	chdir("..");
+	return et;
+}
+
+error_type workspace_swap_list(workspace* ws, i8 from_order, i8 to_order) {
+	if (ws == NULL || from_order >= ws->lists_total || from_order < 0 || to_order >= ws->lists_total || to_order < 0) {
+		return ErrorInvalidParam;
+	}
+	chdir(ws->name);
+	error_type et = update_todo_list_order(&ws->lists[to_order], from_order);
+	if (et != ErrorNone) {
+		chdir("..");
+		return et;
+	}
+	et = update_todo_list_order(&ws->lists[from_order], to_order);
+	if (et != ErrorNone) {
+		chdir("..");
+		return et;
+	}
+	chdir("..");
+	return ErrorNone;
+}
+
+error_type workspace_swap_task(workspace* ws, i8 list_order, i8 from_order, i8 to_order) {
+	if (ws == NULL || list_order >= ws->lists_total || list_order < 0 || from_order >= ws->lists[list_order].tasks_total || from_order < 0 || to_order >= ws->lists[list_order].tasks_total || to_order < 0) {
+		return ErrorInvalidParam;
+	}
+	chdir(ws->name);
+	error_type et = todo_list_swap_task(&ws->lists[list_order], from_order, to_order);
 	chdir("..");
 	return et;
 }
