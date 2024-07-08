@@ -157,6 +157,7 @@ error_type todo_list_init_task(todo_list* tl) {
 			task t;
 			load_task(&t, buf);
 			tl->tasks[t.order] = t;
+			tl->tasks_finished += t.finished;
 		}
 		fclose(file);
 
@@ -208,7 +209,7 @@ error_type todo_list_remove_task(todo_list* tl, i8 order) {
 }
 
 error_type todo_list_swap_task(todo_list* tl, i8 from_order, i8 to_order) {
-	if (tl == NULL || from_order >= tl->tasks_total || to_order >= tl->tasks_total) {
+	if (tl == NULL || from_order >= tl->tasks_total || to_order >= tl->tasks_total || from_order < 0 || to_order < 0) {
 		return ErrorInvalidParam;
 	}
 
@@ -239,6 +240,27 @@ error_type todo_list_swap_task(todo_list* tl, i8 from_order, i8 to_order) {
 	tl->tasks[from_order].order = tl->tasks[from_order].order;
 	tl->tasks[to_order].order = temp_order;
 
+	return ErrorNone;
+}
+
+error_type todo_list_check_task(todo_list* tl, i8 order) {
+	if (tl == NULL || order >= tl->tasks_total || order < 0) {
+		return ErrorInvalidParam;
+	}
+
+	char number[3];
+	char cmd[8 + TASK_NAME_MAX_LEN * 2];
+	cd_todo_list(tl);
+	strcpy(cmd, "echo ");
+	int_to_str(!tl->tasks[order].finished, number);
+	strcat(cmd, number);
+	strcat(cmd, " > ");
+	strcat(cmd, tl->tasks[order].name);
+	strcat(cmd, "-");
+	int_to_str(order, number);
+	strcat(cmd, number);
+	system(cmd);
+	chdir("..");
 	return ErrorNone;
 }
 

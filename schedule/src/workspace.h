@@ -20,6 +20,7 @@ error_type workspace_remove_list(workspace* ws, i8 order);
 error_type workspace_remove_task(workspace* ws, i8 list_order, i8 task_order);
 error_type workspace_swap_list(workspace* ws, i8 from_order, i8 to_order);
 error_type workspace_swap_task(workspace* ws, i8 list_order, i8 from_order, i8 to_order);
+error_type workspace_check_task(workspace* ws, i8 list_order, i8 task_order);
 void log_workspace(workspace* ws);
 
 #endif

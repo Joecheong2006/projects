@@ -232,6 +232,16 @@ error_type workspace_swap_task(workspace* ws, i8 list_order, i8 from_order, i8 t
 	return et;
 }
 
+error_type workspace_check_task(workspace* ws, i8 list_order, i8 task_order) {
+	if (ws == NULL || list_order >= ws->lists_total || list_order < 0 || task_order >= ws->lists[list_order].tasks_total || task_order < 0) {
+		return ErrorInvalidParam;
+	}
+	chdir(ws->name);
+	error_type et = todo_list_check_task(&ws->lists[list_order], task_order);
+	chdir("..");
+	return et;
+}
+
 void log_workspace(workspace* ws) {
 	for_vector(ws->lists, i, 0) {
 		log_todo_list(&ws->lists[i]);

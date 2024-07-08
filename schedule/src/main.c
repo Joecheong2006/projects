@@ -172,6 +172,28 @@ error_type swap_task_callback(int arg_index, char** argv, workspace* ws) {
 	return workspace_swap_task(ws, list_order, task_order_first, task_order_second);
 }
 
+error_type check_menu_callback(int arg_index, char** argv, workspace* ws) {
+	printf("swap menu has not implemented yet\n");
+	return ErrorNone;
+}
+
+error_type check_task_callback(int arg_index, char** argv, workspace* ws) {
+	char* input_task_order = argv[arg_index - 1];
+	char* end;
+	i8 task_order = strtol(input_task_order, &end, 10);
+	if (end == input_task_order) {
+		printf("list order must be a number\n");
+		return ErrorInvalidParam;
+	}
+	char* input_list_order = argv[arg_index - 2];
+	i8 list_order = strtol(input_list_order, &end, 10);
+	if (end == input_list_order) {
+		printf("list order must be a number\n");
+		return ErrorInvalidParam;
+	}
+	return workspace_check_task(ws, list_order, task_order);
+}
+
 int main(int argc, char** argv) {
 	if (argc == 1) {
 		print_menu();
@@ -193,6 +215,7 @@ int main(int argc, char** argv) {
 	arg_node node_add = init_arg_node(ArgTypeCommand, "add", add_menu_callback);
 	arg_node node_remove = init_arg_node(ArgTypeCommand, "remove", remove_menu_callback);
 	arg_node node_swap = init_arg_node(ArgTypeCommand, "swap", swap_menu_callback);
+	arg_node node_check = init_arg_node(ArgTypeCommand, "check", check_menu_callback);
 
 	arg_node show_input_node = init_arg_node(ArgTypeInput, NULL, list_list_command_callback);
 	arg_node_add_node(&node_show, &show_input_node);
@@ -214,12 +237,18 @@ int main(int argc, char** argv) {
 	arg_node swap_third_input_node = init_arg_node(ArgTypeInput, NULL, swap_task_callback);
 	arg_node_add_node(&swap_second_input_node, &swap_third_input_node);
 
+	arg_node check_input_node = init_arg_node(ArgTypeInput, NULL, NULL);
+	arg_node_add_node(&node_check, &check_input_node);
+	arg_node check_second_input_node = init_arg_node(ArgTypeInput, NULL, check_task_callback);
+	arg_node_add_node(&check_input_node, &check_second_input_node);
+
 	arg_node node_start = init_arg_node(ArgTypeCommand, "", NULL);
 	arg_node_add_node(&node_start, &node_show);
 	arg_node_add_node(&node_start, &node_switch);
 	arg_node_add_node(&node_start, &node_add);
 	arg_node_add_node(&node_start, &node_remove);
 	arg_node_add_node(&node_start, &node_swap);
+	arg_node_add_node(&node_start, &node_check);
 
 	arg_node** cur = node_start.nodes;
 	et = execute_command_line(cur, argc, argv, &ws);
