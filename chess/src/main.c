@@ -8,7 +8,6 @@
 #include "opengl_object.h"
 #include "sprite.h"
 #include "stb_image.h"
-#include "cglm/cglm.h"
 
 #include "memallocate.h"
 

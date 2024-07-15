@@ -15,13 +15,13 @@ LIBOBJ = $(wildcard $(patsubst %, %/*.o, $(LIBRARY)))
 # LIB = $(LIBOBJ) $(DLL) lib/glfw/libglfw3dll.a -lGL 
 LIB = -lglfw -lGL -lOpenGL -lm
 BIN = bin
-EXE = $(BIN)/main
+OUT = $(BIN)/main
 
 
 all: bin app
 
 run:
-	@./$(EXE)
+	@./$(OUT)
 
 clean:
 	@rm -rf $(OBJ) $(BIN)
@@ -34,10 +34,13 @@ bin:
 	mkdir -p $(BIN)
 
 app: $(OBJ)
-	$(CC) -o $(EXE) $(OBJ) $(LIBOBJ) $(LIB)
+	$(CC) -o $(OUT) $(OBJ) $(LIBOBJ) $(LIB)
 
 release: bin $(OBJ)
-	$(CC) -o $(EXE) $(OBJ) $(LIB) -mwindows
+	$(CC) -o $(OUT) $(OBJ) $(LIB) -mwindows
+
+debug:
+	@gdb -q $(OUT) --eval-command=run --eval-command=exit
 	
 %.o: %.c
 	$(CC) $(CFLAGS) $(INCLUDE) -o $@ -c $<

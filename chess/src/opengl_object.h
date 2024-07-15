@@ -3,10 +3,14 @@
 #include "error_type.h"
 #include "util.h"
 
+#if defined(DEBUG)
 #define GLC(statement)\
     gl_clear_error();\
     statement;\
     gl_check_error(__FILE__, __LINE__);
+#else
+#define GLC(statement) statement
+#endif
 
 void gl_clear_error();
 void gl_check_error(char*file, int line);
