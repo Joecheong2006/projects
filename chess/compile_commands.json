@@ -1,0 +1,15 @@
+[
+  { 
+    "arguments": [
+      "gcc",
+      "-std=c11",
+      "-Wall",
+      "-Wextra",
+      "-Ilib/glad/include",
+      "-Ilib/stb_image",
+      "-Ilib"
+    ],
+    "directory": "/home/joe/program/c/gldemo",
+    "file": "src/main.c"
+  }
+]
