@@ -86,7 +86,7 @@ i32 main(void)
     srand(time(0));
 
     f32 rate = 1e-2;
-    u32 train_count = 10 * 1000;
+    u32 train_count = 100 * 100;
 
     struct matrix* input = matrix_create(INPUT_COUNT, ROW);
     struct matrix* output = matrix_create(OUTPUT_COUNT, ROW);

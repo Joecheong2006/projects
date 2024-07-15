@@ -27,7 +27,7 @@ static f32 vertex[] = {
     -1, -1,
 };
 
-static u32 index[] = {
+static u32 index_[] = {
     1, 0, 2,
     1, 3, 2,
 };
@@ -174,7 +174,7 @@ int main()
 
     {
         VertexArray vao;
-        IndexBuffer ibo(index, sizeof(index));
+        IndexBuffer ibo(index_, sizeof(index_));
         VertexBuffer vbo(vertex, sizeof(vertex));
         VertexBufferLayout layout;
         layout.add<f32>(2);

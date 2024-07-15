@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -std=c11 -Wall -Wextra -lm
+CFLAGS = -std=c11 -Wall -Wextra
 
 SRC = $(wildcard src/*.c)
 OBJ = $(SRC:%.c=%.o)
@@ -11,7 +11,7 @@ TOTAL_FILES = $(words $(SRC))
 PROCESS_PERCENTAGE = 0
 
 all: $(OBJ)
-	@$(CC) $(CFLAGS) $(OBJ) -o $(OUT)
+	@$(CC) $(CFLAGS) $(OBJ) -o $(OUT) -lm
 	@echo "Compilation completed"
 
 run:
