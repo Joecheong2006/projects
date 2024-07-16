@@ -68,7 +68,6 @@ error_type vertex_array_add_attribute(vertex_array* vao, vertex_buffer* vbo, i32
 }
 
 error_type init_texture(texture* tex, char* texture_path) {
-    static int current_slot = 0;
     glGenTextures(1, &tex->id);
     glBindTexture(GL_TEXTURE_2D, tex->id);
 
@@ -91,8 +90,6 @@ error_type init_texture(texture* tex, char* texture_path) {
     stbi_image_free(data);
 
     tex->tex_path = texture_path;
-    tex->slot = current_slot;
-    current_slot++;
 
     return ErrorNone;
 }

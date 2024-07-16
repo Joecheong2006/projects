@@ -1,13 +1,16 @@
 #ifndef _SPRITE_
 #define _SPRITE_
 #include "opengl_object.h"
-#include "camera2d.h"
-#include <cglm/cglm.h>
+#include "camera.h"
 
-typedef struct {
-    vec2 position;
-    vec2 scale;
-} transform2d;
+typedef struct transform transform;
+struct transform {
+    transform* parent;
+    vec3 position, local_position;
+    vec3 scale;
+};
+
+void init_transform(transform* tran);
 
 typedef struct {
     vec2 per_sprite;
@@ -15,7 +18,6 @@ typedef struct {
 } sprite_texture;
 
 typedef struct {
-    transform2d tran;
     vec2 sprite_index;
 } sprite;
 
@@ -27,6 +29,6 @@ extern struct sprite_instance {
 } sprite_instance;
 
 void init_sprite_instance();
-void render_sprite(camera2d* cam, sprite_texture* sprite_tex, sprite* sp);
+void render_sprite(camera* cam, transform* tran, sprite_texture* sprite_tex, sprite* sp);
 
 #endif

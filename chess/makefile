@@ -24,8 +24,7 @@ run:
 	@./$(OUT)
 
 clean:
-	@rm -rf $(OBJ) $(BIN)
-
+	@rm -rf $(OBJ) $(DEP) $(BIN)
 build:
 	cd lib/glad && $(CC) -Iinclude -o src/glad.o -c src/glad.c
 	cd lib/stb_image && $(CC) -c stb_image.c
@@ -43,4 +42,6 @@ debug:
 	@gdb -q $(OUT) --eval-command=run --eval-command=exit
 	
 %.o: %.c
-	$(CC) $(CFLAGS) $(INCLUDE) -o $@ -c $<
+	$(CC) $(CFLAGS) $(INCLUDE) -o $@ -c $< -MMD
+
+-include $(DEP)

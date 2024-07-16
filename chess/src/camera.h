@@ -6,10 +6,10 @@ typedef struct {
     mat4 ortho;
     mat4 view;
     vec2 canvas;
-} camera2d;
+} camera;
 
-void init_camera2d(camera2d* cam, vec2 canvas);
+void init_camera(camera* cam, vec2 canvas);
 void set_camera_ortho_mat4(mat4 ortho, vec2 canvas);
-void translate_camera2d(camera2d* cam, vec2 translation);
+void translate_camera(camera* cam, vec3 translation);
 
 #endif

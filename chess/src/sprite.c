@@ -1,6 +1,12 @@
 #include "sprite.h"
 #include "shader_program.h"
 #include <glad/glad.h>
+#include <string.h>
+
+void init_transform(transform* tran) {
+    memset(tran, 0, sizeof(transform));
+    glm_vec3_copy((vec3){1, 1, 1}, tran->scale);
+}
 
 struct sprite_instance sprite_instance;
 
@@ -33,15 +39,15 @@ void init_sprite_instance() {
     glBindVertexArray(0);
 }
 
-void render_sprite(camera2d* cam, sprite_texture* sprite_tex, sprite* sp) {
+void render_sprite(camera* cam,  transform* tran, sprite_texture* sprite_tex, sprite* sp) {
 	GLC(glUseProgram(sprite_instance.shader));
 
-	glActiveTexture(GL_TEXTURE0 + sprite_tex->tex.slot);
+	glActiveTexture(GL_TEXTURE0);
 	GLC(glBindTexture(GL_TEXTURE_2D, sprite_tex->tex.id));
 
     int location;
-    GLC(location = glGetUniformLocation(sprite_instance.shader, "tex"));
-    GLC(glUniform1i(location, sprite_tex->tex.slot));
+    // GLC(location = glGetUniformLocation(sprite_instance.shader, "tex"));
+    // GLC(glUniform1i(location, 0));
     GLC(location = glGetUniformLocation(sprite_instance.shader, "per_sprite"));
     GLC(glUniform2f(location, sprite_tex->per_sprite[0], sprite_tex->per_sprite[1]));
     GLC(location = glGetUniformLocation(sprite_instance.shader, "sprite_index"));
@@ -49,10 +55,10 @@ void render_sprite(camera2d* cam, sprite_texture* sprite_tex, sprite* sp) {
 
     mat4 m, trans, scale;
     glm_mat4_identity(trans);
-    glm_translate(trans, (vec3){sp->tran.position[0], sp->tran.position[1], 0});
+    glm_translate(trans, tran->position);
 
     glm_mat4_identity(scale);
-    glm_scale(scale, (vec3){sp->tran.scale[0], sp->tran.scale[1], 0});
+    glm_scale(scale, tran->scale);
 
     glm_mat4_identity(m);
     glm_mat4_mul(cam->ortho, cam->view, m);
