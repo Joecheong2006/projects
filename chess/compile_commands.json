@@ -9,7 +9,7 @@
       "-Ilib/stb_image",
       "-Ilib"
     ],
-    "directory": "/home/joe/program/c/gldemo",
+    "directory": "D:/projects/chess",
     "file": "src/main.c"
   }
 ]
