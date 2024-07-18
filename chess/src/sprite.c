@@ -1,12 +1,6 @@
 #include "sprite.h"
 #include "shader_program.h"
 #include <glad/glad.h>
-#include <string.h>
-
-void init_transform(transform* tran) {
-    memset(tran, 0, sizeof(transform));
-    glm_vec3_copy((vec3){1, 1, 1}, tran->scale);
-}
 
 struct sprite_instance sprite_instance;
 
@@ -55,6 +49,12 @@ void render_sprite(camera* cam,  transform* tran, sprite_texture* sprite_tex, sp
 
     mat4 m, trans, scale;
     glm_mat4_identity(trans);
+    if (tran->parent) {
+        // glm_translate(trans, tran->parent->position);
+        // glm_translate(trans, tran->local_position);
+        glm_vec3_copy(tran->local_position, tran->position);
+        glm_vec3_add(tran->position, tran->parent->position, tran->position);
+    }
     glm_translate(trans, tran->position);
 
     glm_mat4_identity(scale);

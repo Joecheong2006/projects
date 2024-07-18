@@ -50,6 +50,8 @@ struct vector_data
         }\
     }
 
+#define vector_back(vec) vec[vector_size(vec) - 1]
+
 #define for_vector(vec, i, start_index) for (u64 i = start_index; i < vector_size(vec); ++i)
 
 #define vector_pop(vec)\

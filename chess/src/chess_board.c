@@ -11,7 +11,8 @@ static vec2 chess_pieces_sprite_indecs[] = {
 
 void init_chess(chess_board* board, chess* che, ChessType type, i32 is_white, vec2 position) {
     init_transform(&che->tran);
-	glm_vec3_copy((vec3){position[0] - 3.5, position[1] - 3.5, 1}, che->tran.position);
+	// glm_vec3_copy((vec3){position[0] - 3.5, position[1] - 3.5, 1}, che->tran.position);
+	glm_vec3_copy((vec3){position[0] - 3.5, position[1] - 3.5, 1}, che->tran.local_position);
     che->tran.parent = &board->tran;
 
     che->en_passant = 0;
@@ -64,9 +65,7 @@ void render_chess_board(camera* cam, chess_board* board, sprite_texture* board_t
 	render_sprite(cam, &board->tran, board_tex, &board->sp);
 	for (i32 i = 0; i < 64; i++) {
 	    if (board->grid[i].type != ChessTypeDead) {
-	    	glm_vec3_add(board->grid[i].tran.position, board->tran.position, board->grid[i].tran.position);
     	    render_sprite(cam, &board->grid[i].tran, chess_tex, &board->grid[i].sp);
-	    	glm_vec3_sub(board->grid[i].tran.position, board->tran.position, board->grid[i].tran.position);
 	    }
 	}
 }

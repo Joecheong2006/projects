@@ -2,15 +2,7 @@
 #define _SPRITE_
 #include "opengl_object.h"
 #include "camera.h"
-
-typedef struct transform transform;
-struct transform {
-    transform* parent;
-    vec3 position, local_position;
-    vec3 scale;
-};
-
-void init_transform(transform* tran);
+#include "transform.h"
 
 typedef struct {
     vec2 per_sprite;
