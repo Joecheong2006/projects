@@ -45,7 +45,9 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
         glPolygonMode(GL_FRONT_AND_BACK, (line_mode = !line_mode) ? GL_LINE : GL_FILL);
     }
     Game* game = glfwGetWindowUserPointer(window);
-    float step = 1.0 / 144 * 5;
+    float step = 1.0 / 144 * 10;
+    vec3 direction;
+    direction[2] = 0;
     if (key == GLFW_KEY_UP) {
         translate_camera(&game->cam, (vec3){0, step, 0});
     }
@@ -145,6 +147,7 @@ void create_animation_duration(animation_duration* duration) {
     vector_pushe(animation_duration_system.durations, *duration);
 }
 
+void delete_animation_duration(animation_duration* duration);
 void update_animation_system() {
     for_vector(animation_duration_system.durations, i, 0) {
         animation_duration_start(animation_duration_system.durations + i);
@@ -184,9 +187,9 @@ int main(void)
 {
     stbi_set_flip_vertically_on_load(1);
     glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    // glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    // glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    // glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "test", NULL, NULL);
 
@@ -200,11 +203,13 @@ int main(void)
     gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
     printf("Opengl Version %s\n", glGetString(GL_VERSION));
 
+    GLC(glEnable(GL_DEPTH_TEST));
     GLC(glEnable(GL_BLEND));
     GLC(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
-
-    GLC(glEnable(GL_DEPTH_TEST));
     glDepthFunc(GL_LESS);
+    // GLC(glAlphaFunc(GL_GREATER, 0.1));
+    // GLC(glEnable(GL_ALPHA_TEST));
+    // glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
 
     // setting up
     setup_animation_system();
@@ -226,27 +231,34 @@ int main(void)
     game.board.tran.position[0] = 0;
     game.board.tran.position[1] = 0;
 
-    glClearColor(0.1, 0.1, 0.1, 0);
+    glClearColor(0.0, 0.1, 0.1, 0);
     glfwSwapInterval(1);
 
-	chess* che = &game.board.grid[8];
-
-    animation_duration anim;
-    init_animation_duration(&anim, &che->tran, 0.5, test_animation_duration);
-    create_animation_duration(&anim);
+	// chess* che = &game.board.grid[8];
+    // animation_duration anim;
+    // init_animation_duration(&anim, &che->tran, 0.5, test_animation_duration);
+    // create_animation_duration(&anim);
 
     while(!glfwWindowShouldClose(window))
     {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		static int i = 1, count = 0;
+		static int i = 0, count = 0, p = 0;
 		count++;
+
+		if (p == 0 && glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS) {
+		    i = 0;
+		}
 		if (count % 20 == 0 && i < 8) {
+		    p = 1;
             animation_duration anim;
             init_animation_duration(&anim, &game.board.grid[8 + i].tran, 0.5, test_animation_duration);
             create_animation_duration(&anim);
             count = 0;
             i++;
+		}
+		if (i == 8) {
+		    p = 0;
 		}
 
 		update_animation_system();

@@ -11,8 +11,7 @@ static vec2 chess_pieces_sprite_indecs[] = {
 
 void init_chess(chess_board* board, chess* che, ChessType type, i32 is_white, vec2 position) {
     init_transform(&che->tran);
-	// glm_vec3_copy((vec3){position[0] - 3.5, position[1] - 3.5, 1}, che->tran.position);
-	glm_vec3_copy((vec3){position[0] - 3.5, position[1] - 3.5, 1}, che->tran.local_position);
+	glm_vec3_copy((vec3){position[0] - 3.5, position[1] - 3.5, 0.2}, che->tran.local_position);
     che->tran.parent = &board->tran;
 
     che->en_passant = 0;
@@ -20,6 +19,7 @@ void init_chess(chess_board* board, chess* che, ChessType type, i32 is_white, ve
     glm_vec2_copy(chess_pieces_sprite_indecs[(int)type], che->sp.sprite_index);
     if (is_white) {
         che->sp.sprite_index[0] += 6;
+        che->tran.local_position[2] = 0.3;
     }
 }
 

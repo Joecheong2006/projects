@@ -8,7 +8,7 @@ void init_camera(camera* cam, vec2 canvas) {
 }
 
 void set_camera_ortho_mat4(mat4 ortho, vec2 canvas) {
-    glm_ortho(-canvas[0], canvas[0], -canvas[1], canvas[1], -1, 1, ortho);
+    glm_ortho(-canvas[0], canvas[0], -canvas[1], canvas[1], -1, 2, ortho);
 }
 
 void translate_camera(camera* cam, vec3 translation) {
