@@ -6,6 +6,7 @@
 #include "camera.h"
 #include "cglm/mat4.h"
 #include "cglm/vec2.h"
+#include "cglm/vec3.h"
 #include "string.h"
 #include "opengl_object.h"
 #include "sprite.h"
@@ -17,6 +18,8 @@
 
 #define WIDTH 640
 #define HEIGHT 640
+
+#define PI 3.14159265359
 
 typedef struct {
     camera cam;
@@ -96,37 +99,36 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
 }
 
-typedef void(*animation_duration_callback)(void*, float);
-typedef struct {
-    animation_duration_callback callback[2];
-    transform start_tran;
-    transform* tran;
+typedef struct anim_duration anim_duration;
+typedef void(*anim_duration_callback)(anim_duration*, float);
+struct anim_duration {
+    anim_duration_callback callback[2];
+    void* in;
     f32 time_start, time_duration;
     i32 ended;
-} animation_duration;
+};
 
-void animation_duration_end_callback(void* in, float) {
-    animation_duration* anim = in;
+void anim_duration_end_callback(anim_duration* in, float) {
+    anim_duration* anim = in;
     anim->ended = 1;
     printf("animation duration end\n");
     // delete_animation_duration(anim);
 }
 
-void init_animation_duration(animation_duration* anim, transform* tran, float time_duration, animation_duration_callback callback) {
+void init_anim_duration(anim_duration* anim, void* in, float time_duration, anim_duration_callback callback) {
     anim->callback[0] = callback;
-    anim->callback[1] = animation_duration_end_callback;
-    anim->tran = tran;
+    anim->callback[1] = anim_duration_end_callback;
+    anim->in = in;
     anim->time_start = -1;
     anim->time_duration = time_duration;
     anim->ended = 0;
 }
 
-void activate_animation_duration(animation_duration* anim) {
+void activate_anim_duration(anim_duration* anim) {
     anim->time_start = glfwGetTime();
-    tran_copy(anim->tran, &anim->start_tran);
 }
 
-void animation_duration_start(animation_duration* anim) {
+void anim_duration_start(anim_duration* anim) {
 	if (anim->ended) {
 	    return;
 	}
@@ -134,64 +136,98 @@ void animation_duration_start(animation_duration* anim) {
     anim->callback[(int)(dur / anim->time_duration)](anim, dur);
 }
 
-struct {
-    vector(animation_duration) durations;
-} animation_duration_system;
+typedef struct anim_position_slide anim_position_slide;
+typedef void(*anim_position_slide_callback)(anim_position_slide*, float);
+struct anim_position_slide {
+    vec3 translation, start, end;
+    vec3* target;
+    anim_position_slide_callback callback;
+};
 
-void setup_animation_system() {
-    animation_duration_system.durations = make_vector();
+void anim_position_duration_callback(anim_duration* anim, float dur) {
+    anim_position_slide* slide = anim->in;
+    slide->callback(slide, dur / anim->time_duration);
 }
 
-void create_animation_duration(animation_duration* duration) {
-    activate_animation_duration(duration);
-    vector_pushe(animation_duration_system.durations, *duration);
+void init_anim_position_slide(anim_position_slide* slide, vec3* target_position, vec3 translation, anim_position_slide_callback callback) {
+    slide->callback = callback;
+    slide->target = target_position;
+    glm_vec3_copy(*slide->target, slide->start);
+    glm_vec3_copy(translation, slide->translation);
+    slide->end[0] = slide->start[0] + slide->translation[0];
+    slide->end[1] = slide->start[1] + slide->translation[1];
+    slide->end[2] = slide->start[2] + slide->translation[2];
 }
 
-void delete_animation_duration(animation_duration* duration);
-void update_animation_system() {
-    for_vector(animation_duration_system.durations, i, 0) {
-        animation_duration_start(animation_duration_system.durations + i);
+void init_anim_position_slide_duration(anim_duration* anim, anim_position_slide* slide, float time_duration) {
+    init_anim_duration(anim, slide, time_duration, anim_position_duration_callback);
+}
+
+typedef struct {
+    vector(anim_duration) durations;
+} anim_duration_system;
+
+anim_duration_system* get_anim_duration_system() {
+    static anim_duration_system instance;
+    return &instance;
+}
+
+void setup_anim_system() {
+    get_anim_duration_system()->durations = make_vector();
+}
+
+void create_anim_duration(anim_duration* duration) {
+    activate_anim_duration(duration);
+    vector_pushe(get_anim_duration_system()->durations, *duration);
+}
+
+void delete_anim_duration(anim_duration* duration);
+void update_anim_system() {
+    anim_duration_system* system = get_anim_duration_system();
+    for_vector(system->durations, i, 0) {
+        anim_duration_start(system->durations + i);
     }
-    for_vector(animation_duration_system.durations, i, 0) {
-        if (animation_duration_system.durations[i].ended) {
-            delete_animation_duration(animation_duration_system.durations + i);
+    for_vector(system->durations, i, 0) {
+        if (system->durations[i].ended) {
+            delete_anim_duration(system->durations + i);
         }
     }
 }
 
-void delete_animation_duration(animation_duration* duration) {
-    for_vector(animation_duration_system.durations, i, 0) {
-        if (animation_duration_system.durations == duration) {
-            animation_duration temp = animation_duration_system.durations[i];
-            memcpy(animation_duration_system.durations + i, &vector_back(animation_duration_system.durations), sizeof(animation_duration));
-            memcpy(&vector_back(animation_duration_system.durations), &temp, sizeof(animation_duration));
-            vector_pop(animation_duration_system.durations);
-            printf("found duration\n");
+void delete_anim_duration(anim_duration* duration) {
+    anim_duration_system* system = get_anim_duration_system();
+    for_vector(system->durations, i, 0) {
+        if (system->durations == duration) {
+            anim_duration temp = system->durations[i];
+            memcpy(system->durations + i, &vector_back(system->durations), sizeof(anim_duration));
+            memcpy(&vector_back(system->durations), &temp, sizeof(anim_duration));
+            vector_pop(system->durations);
             break;
         }
     }
 }
 
-void shutdown_animation_system() {
-    printf("%ld\n", vector_size(animation_duration_system.durations));
-    free_vector(animation_duration_system.durations);
+void shutdown_anim_system() {
+    anim_duration_system* system = get_anim_duration_system();
+    printf("%ld\n", vector_size(system->durations));
+    free_vector(system->durations);
 }
 
-void test_animation_duration(void* in, float dur) {
-    animation_duration* anim = in;
-    float t = sinf(glm_clamp(dur * 5, 0, 1) * 3.14 * 0.5);
-    anim->tran->local_position[1] = anim->start_tran.local_position[1] + t;
+void test_anim_duration(anim_position_slide* slide, float dur) {
+    const float t = sinf(dur * PI * 0.5);
+    (*slide->target)[1] = glm_lerp(slide->start[1], slide->end[1], t);
 }
 
 int main(void)
 {
-    stbi_set_flip_vertically_on_load(1);
     glfwInit();
-    // glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    // glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    // glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "test", NULL, NULL);
+
+    stbi_set_flip_vertically_on_load(1);
 
     glfwSetKeyCallback(window, key_callback);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
@@ -212,7 +248,7 @@ int main(void)
     // glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
 
     // setting up
-    setup_animation_system();
+    setup_anim_system();
     init_sprite_instance();
 
     sprite_texture chess_pieces_texture = { .per_sprite = {1.0 / 12, 1} };
@@ -235,9 +271,14 @@ int main(void)
     glfwSwapInterval(1);
 
 	// chess* che = &game.board.grid[8];
-    // animation_duration anim;
-    // init_animation_duration(&anim, &che->tran, 0.5, test_animation_duration);
-    // create_animation_duration(&anim);
+    // anim_duration anim;
+    // anim_position_slide slide;
+    // init_anim_position_slide(&slide, &che->tran.local_position, (vec3){0, 1, 0}, test_anim_duration);
+    // init_anim_position_slide_duration(&anim, &slide, 0.25);
+    // init_anim_duration(&anim, &che->tran, 0.25, test_anim_duration);
+    // create_anim_duration(&anim);
+
+    anim_position_slide slides[8];
 
     while(!glfwWindowShouldClose(window))
     {
@@ -251,9 +292,10 @@ int main(void)
 		}
 		if (count % 20 == 0 && i < 8) {
 		    p = 1;
-            animation_duration anim;
-            init_animation_duration(&anim, &game.board.grid[8 + i].tran, 0.5, test_animation_duration);
-            create_animation_duration(&anim);
+            anim_duration anim;
+            init_anim_position_slide(&slides[i], &game.board.grid[8 + i].tran.local_position, (vec3){0, 1, 0}, test_anim_duration);
+            init_anim_position_slide_duration(&anim, &slides[i], 0.25);
+            create_anim_duration(&anim);
             count = 0;
             i++;
 		}
@@ -261,7 +303,7 @@ int main(void)
 		    p = 0;
 		}
 
-		update_animation_system();
+		update_anim_system();
 
 		render_chess_board(&game.cam, &game.board, &chess_board_texture, &chess_pieces_texture);
 
@@ -270,7 +312,7 @@ int main(void)
     }
 
     glDeleteProgram(sprite_instance.shader);
-    shutdown_animation_system();
+    shutdown_anim_system();
 
     glfwDestroyWindow(window);
     glfwTerminate();

@@ -19,7 +19,6 @@ void init_chess(chess_board* board, chess* che, ChessType type, i32 is_white, ve
     glm_vec2_copy(chess_pieces_sprite_indecs[(int)type], che->sp.sprite_index);
     if (is_white) {
         che->sp.sprite_index[0] += 6;
-        che->tran.local_position[2] = 0.3;
     }
 }
 
