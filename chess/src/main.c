@@ -3,16 +3,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <cglm/cglm.h>
 #include "camera.h"
-#include "cglm/mat4.h"
-#include "cglm/vec2.h"
-#include "cglm/vec3.h"
 #include "string.h"
 #include "opengl_object.h"
 #include "sprite.h"
 #include "stb_image.h"
 #include <string.h>
 #include "chess_board.h"
+#include "anim_duration.h"
+#include "anim_position_slide.h"
+#include "anim_duration_system.h"
 
 #include "memallocate.h"
 
@@ -25,14 +26,22 @@ typedef struct {
     camera cam;
     chess_board board;
     chess* hold;
+    vec2 cursor_index;
+    int around;
 } Game;
 
-vec2 window_size;
+void chess_move_anim_callback(anim_position_slide* slide, float dur) {
+    const float t = sinf(dur * PI * 0.5);
+    float* local_position = (*slide->target);
+    glm_vec2_lerp(slide->start, slide->end, t, local_position);
+}
+
+static vec2 window_size;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     Game* game = glfwGetWindowUserPointer(window);
     glViewport(0, 0, width, height);
-    set_camera_ortho_mat4(game->cam.ortho, (vec2){game->cam.canvas[0] * (float)width / height, game->cam.canvas[1]});
+    set_camera_ortho_mat4(game->cam.ortho, (vec2){width, height});
 
     window_size[0] = width;
     window_size[1] = height;
@@ -86,136 +95,65 @@ void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos) {
     glm_mat4_inv(m, m);
     glm_mat4_mulv(m, uv, uv);
 
-    vec2 index;
-    memcpy(index, game->board.tran.position, 2 * sizeof(float));
-    index[0] = uv[0] - index[0] + 4;
-    index[1] = uv[1] - index[1] + 4;
-    glm_vec2_clamp(index, 0, 7);
+    glm_vec2_copy(game->board.tran.position, game->cursor_index);
+    game->cursor_index[0] = (int)(uv[0] - game->cursor_index[0] + 4);
+    game->cursor_index[1] = (int)(uv[1] - game->cursor_index[1] + 4);
+    glm_vec2_clamp(game->cursor_index, 0, 7);
 }
 
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
+    Game* game = glfwGetWindowUserPointer(window);
+
+    static vec2 pre_index;
+    if (button == GLFW_MOUSE_BUTTON_1 && action == GLFW_PRESS) {
+        if (game->hold) {
+            int end_index = game->cursor_index[1] * 8 + game->cursor_index[0];
+            chess* target = &game->board.grid[end_index];
+            if (target == game->hold) {
+                return;
+            }
+
+            if ((game->around % 2 == 0 && game->hold->is_white) || (game->around % 2 && !game->hold->is_white)) {
+                game->hold = NULL;
+                return;
+            }
+
+            int legal = game->hold->is_legal_move(&game->board, pre_index, game->cursor_index);
+            if (!legal) {
+                game->hold = NULL;
+                return;
+            }
+            game->around++;
+
+            game->hold->first_move = 0;
+            chess_copy(game->hold, target);
+            game->hold->type = ChessTypeDead;
+
+            vec3 offset = {0, 0, 0};
+            glm_vec2_sub(game->cursor_index, pre_index, offset);
+            init_anim_position_slide(&target->anim, offset, chess_move_anim_callback);
+            anim_duration anim;
+            set_anim_position_slide(&target->anim, &target->anim, &target->tran.local_position);
+            init_anim_position_slide_duration(&anim, &target->anim, 0.15);
+            create_anim_duration(&anim);
+            game->hold = NULL;
+            printf("start %g %g\n", game->cursor_index[0], game->cursor_index[1]);
+        }
+        else {
+            game->hold = &game->board.grid[(int)game->cursor_index[1] * 8 + (int)game->cursor_index[0]];
+            if (game->hold->type == ChessTypeDead) {
+                game->hold = NULL;
+            }
+            glm_vec2_copy(game->cursor_index, pre_index);
+            printf("end %g %g\n", game->cursor_index[0], game->cursor_index[1]);
+        }
+    }
+    if (button == GLFW_MOUSE_BUTTON_2) {
+        game->hold = NULL;
+    }
 }
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
-}
-
-typedef struct anim_duration anim_duration;
-typedef void(*anim_duration_callback)(anim_duration*, float);
-struct anim_duration {
-    anim_duration_callback callback[2];
-    void* in;
-    f32 time_start, time_duration;
-    i32 ended;
-};
-
-void anim_duration_end_callback(anim_duration* in, float) {
-    anim_duration* anim = in;
-    anim->ended = 1;
-    printf("animation duration end\n");
-    // delete_animation_duration(anim);
-}
-
-void init_anim_duration(anim_duration* anim, void* in, float time_duration, anim_duration_callback callback) {
-    anim->callback[0] = callback;
-    anim->callback[1] = anim_duration_end_callback;
-    anim->in = in;
-    anim->time_start = -1;
-    anim->time_duration = time_duration;
-    anim->ended = 0;
-}
-
-void activate_anim_duration(anim_duration* anim) {
-    anim->time_start = glfwGetTime();
-}
-
-void anim_duration_start(anim_duration* anim) {
-	if (anim->ended) {
-	    return;
-	}
-	float dur = glfwGetTime() - anim->time_start;
-    anim->callback[(int)(dur / anim->time_duration)](anim, dur);
-}
-
-typedef struct anim_position_slide anim_position_slide;
-typedef void(*anim_position_slide_callback)(anim_position_slide*, float);
-struct anim_position_slide {
-    vec3 translation, start, end;
-    vec3* target;
-    anim_position_slide_callback callback;
-};
-
-void anim_position_duration_callback(anim_duration* anim, float dur) {
-    anim_position_slide* slide = anim->in;
-    slide->callback(slide, dur / anim->time_duration);
-}
-
-void init_anim_position_slide(anim_position_slide* slide, vec3* target_position, vec3 translation, anim_position_slide_callback callback) {
-    slide->callback = callback;
-    slide->target = target_position;
-    glm_vec3_copy(*slide->target, slide->start);
-    glm_vec3_copy(translation, slide->translation);
-    slide->end[0] = slide->start[0] + slide->translation[0];
-    slide->end[1] = slide->start[1] + slide->translation[1];
-    slide->end[2] = slide->start[2] + slide->translation[2];
-}
-
-void init_anim_position_slide_duration(anim_duration* anim, anim_position_slide* slide, float time_duration) {
-    init_anim_duration(anim, slide, time_duration, anim_position_duration_callback);
-}
-
-typedef struct {
-    vector(anim_duration) durations;
-} anim_duration_system;
-
-anim_duration_system* get_anim_duration_system() {
-    static anim_duration_system instance;
-    return &instance;
-}
-
-void setup_anim_system() {
-    get_anim_duration_system()->durations = make_vector();
-}
-
-void create_anim_duration(anim_duration* duration) {
-    activate_anim_duration(duration);
-    vector_pushe(get_anim_duration_system()->durations, *duration);
-}
-
-void delete_anim_duration(anim_duration* duration);
-void update_anim_system() {
-    anim_duration_system* system = get_anim_duration_system();
-    for_vector(system->durations, i, 0) {
-        anim_duration_start(system->durations + i);
-    }
-    for_vector(system->durations, i, 0) {
-        if (system->durations[i].ended) {
-            delete_anim_duration(system->durations + i);
-        }
-    }
-}
-
-void delete_anim_duration(anim_duration* duration) {
-    anim_duration_system* system = get_anim_duration_system();
-    for_vector(system->durations, i, 0) {
-        if (system->durations == duration) {
-            anim_duration temp = system->durations[i];
-            memcpy(system->durations + i, &vector_back(system->durations), sizeof(anim_duration));
-            memcpy(&vector_back(system->durations), &temp, sizeof(anim_duration));
-            vector_pop(system->durations);
-            break;
-        }
-    }
-}
-
-void shutdown_anim_system() {
-    anim_duration_system* system = get_anim_duration_system();
-    printf("%ld\n", vector_size(system->durations));
-    free_vector(system->durations);
-}
-
-void test_anim_duration(anim_position_slide* slide, float dur) {
-    const float t = sinf(dur * PI * 0.5);
-    (*slide->target)[1] = glm_lerp(slide->start[1], slide->end[1], t);
 }
 
 int main(void)
@@ -226,6 +164,7 @@ int main(void)
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "test", NULL, NULL);
+    glfwSwapInterval(1);
 
     stbi_set_flip_vertically_on_load(1);
 
@@ -242,7 +181,7 @@ int main(void)
     GLC(glEnable(GL_DEPTH_TEST));
     GLC(glEnable(GL_BLEND));
     GLC(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
-    glDepthFunc(GL_LESS);
+    GLC(glDepthFunc(GL_LESS));
     // GLC(glAlphaFunc(GL_GREATER, 0.1));
     // GLC(glEnable(GL_ALPHA_TEST));
     // glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
@@ -260,48 +199,51 @@ int main(void)
     Game game;
     glfwSetWindowUserPointer(window, &game);
 
-    init_camera(&game.cam, (vec2){5, 5});
+    init_camera(&game.cam, (vec2){WIDTH, HEIGHT});
     init_chess_board(&game.board);
     game.hold = NULL;
+    game.around = 1;
     
     game.board.tran.position[0] = 0;
     game.board.tran.position[1] = 0;
 
     glClearColor(0.0, 0.1, 0.1, 0);
-    glfwSwapInterval(1);
 
-	// chess* che = &game.board.grid[8];
+    anim_position_slide chess_move_anim;
+    init_anim_position_slide(&chess_move_anim, (vec3){0, 1, 0}, chess_move_anim_callback);
+
+    anim_position_slide anim_slots[8];
     // anim_duration anim;
-    // anim_position_slide slide;
-    // init_anim_position_slide(&slide, &che->tran.local_position, (vec3){0, 1, 0}, test_anim_duration);
-    // init_anim_position_slide_duration(&anim, &slide, 0.25);
-    // init_anim_duration(&anim, &che->tran, 0.25, test_anim_duration);
+    // set_anim_position_slide(&chess_move_anim, &anim_slots[0], &game.board.grid[8 + 0].tran.local_position);
+    // init_anim_position_slide_duration(&anim, &anim_slots[0], 0.2);
     // create_anim_duration(&anim);
 
-    anim_position_slide slides[8];
+    // set_anim_position_slide(&chess_move_anim, &anim_slots[1], &game.board.grid[8 + 1].tran.local_position);
+    // init_anim_position_slide_duration(&anim, &anim_slots[1], 0.3);
+    // create_anim_duration(&anim);
 
     while(!glfwWindowShouldClose(window))
     {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		static int i = 0, count = 0, p = 0;
-		count++;
+		// static int i = 0, count = 0, p = 0;
+		// count++;
 
-		if (p == 0 && glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS) {
-		    i = 0;
-		}
-		if (count % 20 == 0 && i < 8) {
-		    p = 1;
-            anim_duration anim;
-            init_anim_position_slide(&slides[i], &game.board.grid[8 + i].tran.local_position, (vec3){0, 1, 0}, test_anim_duration);
-            init_anim_position_slide_duration(&anim, &slides[i], 0.25);
-            create_anim_duration(&anim);
-            count = 0;
-            i++;
-		}
-		if (i == 8) {
-		    p = 0;
-		}
+		// if (p == 0 && glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS) {
+		//     i = 0;
+		// }
+		// if (count % 20 == 0 && i < 8) {
+		//     p = 1;
+  //           anim_duration anim;
+  //           set_anim_position_slide(&chess_move_anim, &anim_slots[i], &game.board.grid[8 + i].tran.local_position);
+  //           init_anim_position_slide_duration(&anim, &anim_slots[i], 0.18);
+  //           create_anim_duration(&anim);
+  //           count = 0;
+  //           i++;
+		// }
+		// if (i == 8) {
+		//     p = 0;
+		// }
 
 		update_anim_system();
 

@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -std=c11 -Wall -Wextra -g
+CFLAGS = -std=c11 -Wall -Wextra -g3
 
 DLL = lib/glfw/glfw3.dll 
 LIB_WIN = $(DLL) lib/glfw/libglfw3dll.a -lopengl32
