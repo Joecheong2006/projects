@@ -34,9 +34,12 @@ struct chess_board {
     chess grid[64];
     transform tran;
     sprite sp;
+    int around;
 };
 
 void init_chess_board(chess_board* board);
+chess* get_chess_from_board(chess_board* board, int x, int y);
 void render_chess_board(camera* cam, chess_board* board, sprite_texture* board_tex, sprite_texture* chess_tex);
+int king_is_checked(chess_board* board);
 
 #endif
