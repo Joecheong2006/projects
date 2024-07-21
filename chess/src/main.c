@@ -17,10 +17,10 @@
 
 #include "memallocate.h"
 
+#define PI 3.14159265359
+
 #define WIDTH 640
 #define HEIGHT 640
-
-#define PI 3.14159265359
 
 typedef struct {
     camera cam;
@@ -31,7 +31,7 @@ typedef struct {
 
 void chess_move_anim_callback(anim_position_slide* slide, float dur) {
     const float t = sinf(dur * PI * 0.5);
-    float* local_position = (*slide->target);
+    float* local_position = *slide->target;
     glm_vec2_lerp(slide->start, slide->end, t, local_position);
 }
 
@@ -55,35 +55,6 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
         static int line_mode = 0;
         glPolygonMode(GL_FRONT_AND_BACK, (line_mode = !line_mode) ? GL_LINE : GL_FILL);
     }
-    Game* game = glfwGetWindowUserPointer(window);
-    float step = 1.0 / 144 * 10;
-    vec3 direction;
-    direction[2] = 0;
-    if (key == GLFW_KEY_UP) {
-        translate_camera(&game->cam, (vec3){0, step, 0});
-    }
-    else if (key == GLFW_KEY_DOWN) {
-        translate_camera(&game->cam, (vec3){0, -step, 0});
-    }
-    if (key == GLFW_KEY_LEFT) {
-        translate_camera(&game->cam, (vec3){-step, 0, 0});
-    }
-    else if (key == GLFW_KEY_RIGHT) {
-        translate_camera(&game->cam, (vec3){step, 0, 0});
-    }
-
-    if (key == GLFW_KEY_W) {
-        game->board.tran.position[1] += step;
-    }
-    else if (key == GLFW_KEY_S) {
-        game->board.tran.position[1] -= step;
-    }
-    if (key == GLFW_KEY_A) {
-        game->board.tran.position[0] -= step;
-    }
-    else if (key == GLFW_KEY_D) {
-        game->board.tran.position[0] += step;
-    }
 }
 
 void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos) {
@@ -94,9 +65,8 @@ void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos) {
     glm_mat4_inv(m, m);
     glm_mat4_mulv(m, uv, uv);
 
-    glm_vec2_copy(game->board.tran.position, game->cursor_index);
-    game->cursor_index[0] = (int)(uv[0] - game->cursor_index[0] + 4);
-    game->cursor_index[1] = (int)(uv[1] - game->cursor_index[1] + 4);
+    game->cursor_index[0] = (int)(uv[0] - game->board.tran.position[0] + 4);
+    game->cursor_index[1] = (int)(uv[1] - game->board.tran.position[1] + 4);
     glm_vec2_clamp(game->cursor_index, 0, 7);
 }
 
@@ -111,7 +81,7 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
                 return;
             }
 
-            if ((game->board.around % 2 == 0 && game->hold->is_white) || (game->board.around % 2 && !game->hold->is_white)) {
+            if ((game->board.round % 2 == 0 && game->hold->is_white) || (game->board.round % 2 && !game->hold->is_white)) {
                 game->hold = NULL;
                 return;
             }
@@ -122,23 +92,33 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
                 return;
             }
 
-            printf("%s\n", game->board.around % 2 == 0 ? "white" : "black");
+            printf("%s\n", game->board.round % 2 == 0 ? "white" : "black");
 
-            game->board.around++;
-            chess target_copy, hold_copy;
-            chess_copy(target, &target_copy);
-            chess_copy(game->hold, &hold_copy);
+            {
+                game->board.round++;
+                board_reset_en_passant(&game->board);
+                illegal_move_recovery_callback move_recovery = game->hold->recover_illegal_move;
+                legal_move_callback legal_move = game->hold->move;
+                chess target_copy = *target, hold_copy = *game->hold;
 
-            game->hold->first_move = 0;
-            chess_copy(game->hold, target);
-            game->hold->type = ChessTypeDead;
+                legal_move(&game->board, pre_index, game->cursor_index);
 
-            if (king_is_checked(&game->board)) {
-                chess_copy(&target_copy, target);
-                chess_copy(&hold_copy, game->hold);
-                game->hold = NULL;
-                game->board.around--;
-                return;
+                game->hold->first_move--;
+                *target = *game->hold;
+                game->hold->type = ChessTypeDead;
+
+                // game->hold->move(&game->board, pre_index, game->cursor_index);
+
+
+                if (king_is_checked(&game->board)) {
+                    *target = target_copy;
+                    *game->hold = hold_copy;
+                    move_recovery(&game->board, pre_index);
+                    // game->hold->recover_illegal_move(&game->board, pre_index);
+                    game->hold = NULL;
+                    game->board.round--;
+                    return;
+                }
             }
 
             vec3 offset = {0, 0, 0};
@@ -227,6 +207,35 @@ int main(void)
     while(!glfwWindowShouldClose(window))
     {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        float step = 1.0 / 144 * 4;
+        vec3 direction;
+        direction[2] = 0;
+        if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
+            translate_camera(&game.cam, (vec3){0, step, 0});
+        }
+        else if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+            translate_camera(&game.cam, (vec3){0, -step, 0});
+        }
+        if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
+            translate_camera(&game.cam, (vec3){-step, 0, 0});
+        }
+        else if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
+            translate_camera(&game.cam, (vec3){step, 0, 0});
+        }
+
+        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+            game.board.tran.position[1] += step;
+        }
+        else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+            game.board.tran.position[1] -= step;
+        }
+        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+            game.board.tran.position[0] -= step;
+        }
+        else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+            game.board.tran.position[0] += step;
+        }
 
 		update_anim_system();
 

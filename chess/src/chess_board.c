@@ -1,212 +1,15 @@
 #include "chess_board.h"
 
-static vec2 chess_pieces_sprite_indecs[] = {
-    [ChessTypeKing] = {1, 0},
-    [ChessTypePawn] = {3, 0},
-    [ChessTypeQueen] = {4, 0},
-    [ChessTypeKnight] = {2, 0},
-    [ChessTypeBishop] = {0, 0},
-    [ChessTypeRook] = {5, 0},
-};
-
-static int default_move_callback(chess_board* board, vec2 start, vec2 end) {
-	return 1;
-}
-
 chess* get_chess_from_board(chess_board* board, int x, int y) {
 	int index = y * 8 + x;
 	return &board->grid[index];
-}
-
-static i32 chess_exist(chess_board* board, int x, int y) {
-	chess* result = get_chess_from_board(board, x, y);
-	return result && result->type != ChessTypeDead;
-}
-
-static int pawn_move_callback(chess_board* board, vec2 start, vec2 end) {
-	vec2 offset;
-	glm_vec2_sub(end, start, offset);
-
-	chess* current = get_chess_from_board(board, start[0], start[1]);
-	int first_move = current->first_move;
-	int direction = current->is_white ? 1 : -1;
-
-	if (offset[0] == 0 && offset[1] == direction) {
-		return !chess_exist(board, start[0], start[1] + direction);
-	}
-
-	if (offset[0] == 0 && first_move && offset[1] == 2 * direction) {
-		chess* left = get_chess_from_board(board, start[0] - 1, start[1] + 2 * direction);
-		chess* right = get_chess_from_board(board, start[0] + 1, start[1] + 2 * direction);
-		if (left->type == ChessTypePawn && left->is_white != current->is_white) {
-			current->en_passant = 1;
-		}
-		if (right->type == ChessTypePawn && right->is_white != current->is_white) {
-			current->en_passant = 1;
-		}
-		return !chess_exist(board, start[0], start[1] + direction) && !chess_exist(board, start[0], start[1] + 2 * direction);
-	}
-
-	if (offset[0] == -1 && offset[1] == direction) {
-		chess* top_left = get_chess_from_board(board, start[0] - 1, start[1] + direction);
-		if (current->is_white != top_left->is_white && top_left->type != ChessTypeDead) {
-			return 1;
-		}
-		chess* left = get_chess_from_board(board, start[0] - 1, start[1]);
-		if (current->is_white != left->is_white && left->en_passant && left->type != ChessTypeDead) {
-			left->type = ChessTypeDead;
-			return 1;
-		}
-	}
-
-	if (offset[0] == 1 && offset[1] == direction) {
-		chess* top_right = get_chess_from_board(board, start[0] + 1, start[1] + direction);
-		if (current->is_white != top_right->is_white && top_right->type != ChessTypeDead) {
-			return 1;
-		}
-		chess* right = get_chess_from_board(board, start[0] + 1, start[1]);
-		if (current->is_white != right->is_white && right->en_passant && right->type != ChessTypeDead) {
-			right->type = ChessTypeDead;
-			return 1;
-		}
-	}
-
-	return 0;
-}
-
-static int king_move_callback(chess_board* board, vec2 start, vec2 end) {
-	vec2 offset;
-	glm_vec2_sub(end, start, offset);
-	if (offset[0] * offset[0] > 1 || offset[1] * offset[1] > 1) {
-		return 0;
-	}
-
-	chess* che = get_chess_from_board(board, end[0], end[1]);
-	chess* current = get_chess_from_board(board, start[0], start[1]);
-	if (che->type != ChessTypeDead && che->is_white == current->is_white) {
-		return 0;
-	}
-	return 1;
-}
-
-static int knight_move_callback(chess_board* board, vec2 start, vec2 end) {
-	vec2 offset;
-	glm_vec2_sub(end, start, offset);
-	int xx = offset[0] * offset[0];
-	int yy = offset[1] * offset[1];
-	if ((yy != 4 || xx != 1) && (yy != 1 || xx != 4)) {
-		return 0;
-	}
-	chess* che = get_chess_from_board(board, end[0], end[1]);
-	chess* current = get_chess_from_board(board, start[0], start[1]);
-	if (che->type != ChessTypeDead && che->is_white == current->is_white) {
-		return 0;
-	}
-	return 1;
-}
-
-static int bishop_move_callback(chess_board* board, vec2 start, vec2 end) {
-	vec2 offset;
-	glm_vec2_sub(end, start, offset);
-
-	if (offset[0] == 0 || offset[1] == 0) {
-		return 0;
-	}
-
-	vec2 quadrant;
-	glm_vec2_copy(offset, quadrant);
-	glm_vec2_clamp(quadrant, -1, 1);
-
-	if (offset[0] * offset[0] != offset[1] * offset[1]) {
-		return 0;
-	}
-
-	int len = offset[0];
-	len *= len < 0 ? -1 : 1;
-
-	for (int i = 1; i < len; ++i) {
-		if (chess_exist(board, start[0] + i * quadrant[0], start[1] + i * quadrant[1])) {
-			return 0;
-		}
-	}
-
-	chess* current = get_chess_from_board(board, start[0], start[1]);
-	chess* che = get_chess_from_board(board, end[0], end[1]);
-	if (che->type != ChessTypeDead && che->is_white == current->is_white) {
-		return 0;
-	}
-	return 1;
-}
-
-static int rook_move_callback(chess_board* board, vec2 start, vec2 end) {
-	vec2 offset;
-	glm_vec2_sub(end, start, offset);
-
-	if ((offset[0] == 0 && offset[1] == 0) || (offset[0] != 0 && offset[1] != 0)) {
-		return 0;
-	}
-	vec2 direction;
-	glm_vec2_copy(offset, direction);
-	glm_vec2_clamp(direction, -1, 1);
-
-	int len = direction[0] != 0 ? offset[0] : offset[1];
-	len *= len < 0 ? -1 : 1;
-
-	for (int i = 1; i < len; ++i) {
-		if (chess_exist(board, start[0] + i * direction[0], start[1] + i * direction[1])) {
-			return 0;
-		}
-	}
-
-	chess* current = get_chess_from_board(board, start[0], start[1]);
-	chess* che = get_chess_from_board(board, end[0], end[1]);
-	if (che->type != ChessTypeDead && che->is_white == current->is_white) {
-		return 0;
-	}
-	return 1;
-}
-
-static int queen_move_callback(chess_board* board, vec2 start, vec2 end) {
-	return rook_move_callback(board, start, end) || bishop_move_callback(board, start, end);
-}
-
-static check_legal_move_callback map_legal_move_callback[] = {
-    [ChessTypeKing] = king_move_callback,
-    [ChessTypePawn] = pawn_move_callback,
-    [ChessTypeQueen] = queen_move_callback,
-    [ChessTypeKnight] = knight_move_callback,
-    [ChessTypeBishop] = bishop_move_callback,
-    [ChessTypeRook] = rook_move_callback,
-    [ChessTypeDead] = default_move_callback,
-};
-
-void init_chess(chess_board* board, chess* che, ChessType type, i32 is_white, vec2 position) {
-    init_transform(&che->tran);
-	glm_vec3_copy((vec3){position[0] - 3.5, position[1] - 3.5, 0.2}, che->tran.local_position);
-    che->tran.parent = &board->tran;
-
-    che->en_passant = 0;
-    che->type = type;
-    che->is_legal_move = map_legal_move_callback[che->type];
-    che->first_move = 1;
-    che->is_white = is_white;
-    glm_vec2_copy(chess_pieces_sprite_indecs[(int)type], che->sp.sprite_index);
-    if (is_white) {
-        che->sp.sprite_index[0] += 6;
-    }
-}
-
-void chess_copy(chess* src, chess* dest) {
-    *dest = *src;
-    glm_vec2_copy(src->sp.sprite_index, dest->sp.sprite_index);
-    tran_copy(&src->tran, &dest->tran);
 }
 
 void init_chess_board(chess_board* board) {
 	init_transform(&board->tran);
 	glm_vec3_copy((vec3){8, 8, 8}, board->tran.scale);
 
-	board->around = 1;
+	board->round = 1;
 
 	board->sp = (sprite){
 	    .sprite_index = {0, 0}
@@ -265,7 +68,7 @@ static int pawn_check_callback(chess_board* board, vec2 cur) {
 	chess* current = get_chess_from_board(board, cur[0], cur[1]);
 	int direction = current->is_white ? 1 : -1;
 	return is_king_checked(board, current->is_white, cur[0] - 1, cur[1] + direction) ||
-		   is_king_checked(board, current->is_white, cur[0] - 1, cur[1] + direction);
+		   is_king_checked(board, current->is_white, cur[0] + 1, cur[1] + direction);
 }
 
 static int knight_check_callback(chess_board* board, vec2 cur) {
@@ -331,7 +134,7 @@ static check_king_callback map_king_check_callback[] = {
 };
 
 int king_is_checked(chess_board* board) {
-	int is_white = board->around % 2;
+	int is_white = board->round % 2;
 	for (i32 i = 0; i < 64; i++) {
 	    if (board->grid[i].type != ChessTypeDead && board->grid[i].is_white == is_white) {
 	    	if (map_king_check_callback[board->grid[i].type](board, (vec2){i % 8, (int)(i / 8)})) {
@@ -341,4 +144,12 @@ int king_is_checked(chess_board* board) {
 	    }
 	}
 	return 0;
+}
+
+void board_reset_en_passant(chess_board* board) {
+	for (i32 i = 0; i < 64; i++) {
+	    if (board->grid[i].type == ChessTypePawn && board->grid[i].is_white == board->round % 2) {
+	        board->grid[i].en_passant = 0;
+	    }
+	}
 }
