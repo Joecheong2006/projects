@@ -16,6 +16,7 @@
 #include "anim_duration_system.h"
 
 #include <AL/al.h>
+#include <AL/alc.h>
 #include <AL/alext.h>
 #include <sndfile.h>
 
@@ -396,14 +397,10 @@ void bonk() {
     alcDestroyContext(context);
     alcCloseDevice(device);
 }
+
 int main(void)
 {
     bonk();
-
-    // wav_header wh;
-    // read_wav_info("assets/audio/bonk.wav", &wh);
-    // printf("%d %d %d\n", to_al_format(wh.num_channels, wh.bits_per_sample), wh.data_size, wh.sample_rate);
-    // free(wh.data);
 
     return 0;
     glfwInit();
@@ -466,6 +463,10 @@ int main(void)
     
     game.board.tran.position[0] = 0;
     game.board.tran.position[1] = 0;
+
+    game.win_state.width = WIDTH;
+    game.win_state.height = HEIGHT;
+    
     printf("white\n");
 
     anim_position_slide chess_move_anim;

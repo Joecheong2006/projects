@@ -1,12 +1,12 @@
 CC = gcc
 CFLAGS = -std=c11 -Wall -Wextra -g3
 
-DLL = lib/glfw/glfw3.dll 
-LIB_WIN = $(DLL) lib/glfw/libglfw3dll.a -lopengl32
+DLL = lib/glfw/glfw3.dll lib/openal/router/WIN64/OpenAL32.dll lib/sndfile/sndfile.dll
+LIB_WIN = -Llib/openal/router/WIN64 -Llib/sndfile -Llib/glfw lib/glfw/libglfw3dll.a -lopengl32 -lOpenAL32 -lsndfile
 LIB_LIN = -lglfw -lGL -lOpenGL -lopenal -lsndfile -lm
 
 SOURCE = src src/**
-INCLUDE = -Ilib -Ilib/glad/include -Ilib/stb_image -Ilib/glfw
+INCLUDE = -Ilib -Ilib/glad/include -Ilib/stb_image -Ilib/glfw -Ilib/sndfile/include -Ilib/openal
 LIBRARY = lib/glad/src lib/stb_image
 
 SRC = $(wildcard $(patsubst %, %/*.c, $(SOURCE)))
@@ -18,8 +18,8 @@ BIN = bin
 OUT = $(BIN)/main.exe
 
 LIB := 
-ifeq ($(OS),Window_NT)
-	DLLFILES += lib/glfw/glfw3.dll 
+ifeq ($(OS),Windows_NT)
+	DLLFILES += lib/glfw/glfw3.dll
 	LIB += $(LIB_WIN)
 else
 	LIB += $(LIB_LIN)
