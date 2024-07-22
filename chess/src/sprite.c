@@ -26,7 +26,7 @@ void init_sprite_instance() {
     };
     GLC(init_index_buffer(&sprite_instance.ibo, 6, GL_STATIC_DRAW));
 
-    shader_program shader = parse_shader("res/shaders/Basic.shader");
+    shader_program shader = parse_shader("res/shaders/sprite.shader");
     GLC(sprite_instance.shader = create_shader(shader.vertex, shader.fragment));
     shader_program_free(&shader);
 
@@ -47,6 +47,8 @@ void render_sprite(camera* cam,  transform* tran, sprite_texture* sprite_tex, sp
     GLC(glUniform2f(location, sprite_tex->per_sprite[0], sprite_tex->per_sprite[1]));
     GLC(location = glGetUniformLocation(sprite_instance.shader, "sprite_index"));
     GLC(glUniform2f(location, sp->sprite_index[0], sp->sprite_index[1]));
+    GLC(location = glGetUniformLocation(sprite_instance.shader, "color"));
+    GLC(glUniform4fv(location, 1, sp->color));
 
     mat4 m, trans, scale;
     glm_mat4_identity(trans);
@@ -62,7 +64,7 @@ void render_sprite(camera* cam,  transform* tran, sprite_texture* sprite_tex, sp
     glm_scale(scale, tran->scale);
 
     glm_mat4_identity(m);
-    glm_mat4_mul(cam->ortho, cam->view, m);
+    glm_mat4_mul(cam->projection, cam->view, m);
     glm_mat4_mul(m, trans, m);
     glm_mat4_mul(m, scale, m);
 

@@ -12,7 +12,8 @@ void init_chess_board(chess_board* board) {
 	board->round = 1;
 
 	board->sp = (sprite){
-	    .sprite_index = {0, 0}
+	    .sprite_index = {0, 0},
+	    .color = {1, 1, 1, 1}
 	};
 
     for (int i = 0; i < 64; i++) {
@@ -120,6 +121,7 @@ static int queen_check_callback(chess_board* board, vec2 cur) {
 }
 
 static int king_check_callback(chess_board* board, vec2 cur) {
+	(void)board, (void)cur;
 	return 0;
 }
 

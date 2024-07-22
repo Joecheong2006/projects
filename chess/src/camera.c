@@ -1,10 +1,10 @@
 #include "camera.h"
 
 void init_camera(camera* cam, vec2 canvas) {
-    glm_mat4_identity(cam->ortho);
+    glm_mat4_identity(cam->projection);
     glm_mat4_identity(cam->view);
     glm_vec2_copy(canvas, cam->canvas);
-    set_camera_ortho_mat4(cam->ortho, canvas);
+    set_camera_ortho_mat4(cam->projection, canvas);
 }
 
 void set_camera_ortho_mat4(mat4 ortho, vec2 canvas) {

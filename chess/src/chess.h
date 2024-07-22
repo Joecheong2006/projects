@@ -33,5 +33,7 @@ struct chess {
 
 void init_chess(chess_board* board, chess* che, ChessType type, i32 is_white, vec2 position);
 
+void chess_move_anim_callback(anim_position_slide* slide, float dur);
+
 
 #endif

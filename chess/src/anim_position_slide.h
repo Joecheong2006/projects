@@ -13,7 +13,7 @@ struct anim_position_slide {
 
 void anim_position_duration_callback(anim_duration* anim, float dur);
 void init_anim_position_slide(anim_position_slide* slide, vec3 translation, anim_position_slide_callback callback);
-void set_anim_position_slide(anim_position_slide* src, anim_position_slide* dest, vec3* target_position);
+void set_anim_position_slide(anim_position_slide* slide, vec3* target_position);
 void init_anim_position_slide_duration(anim_duration* anim, anim_position_slide* slide, float time_duration);
 
 #endif

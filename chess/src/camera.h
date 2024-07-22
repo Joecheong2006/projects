@@ -3,7 +3,7 @@
 #include <cglm/cglm.h>
 
 typedef struct {
-    mat4 ortho;
+    mat4 projection;
     mat4 view;
     vec2 canvas;
 } camera;

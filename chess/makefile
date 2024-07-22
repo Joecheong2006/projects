@@ -3,10 +3,10 @@ CFLAGS = -std=c11 -Wall -Wextra -g3
 
 DLL = lib/glfw/glfw3.dll 
 LIB_WIN = $(DLL) lib/glfw/libglfw3dll.a -lopengl32
-LIB_LIN = -lglfw -lGL -lOpenGL -lm
+LIB_LIN = -lglfw -lGL -lOpenGL -lopenal -lsndfile -lm
 
 SOURCE = src src/**
-INCLUDE = -Ilib -Ilib/glad/include -Ilib/stb_image -Ilib/glfw/
+INCLUDE = -Ilib -Ilib/glad/include -Ilib/stb_image -Ilib/glfw
 LIBRARY = lib/glad/src lib/stb_image
 
 SRC = $(wildcard $(patsubst %, %/*.c, $(SOURCE)))
@@ -20,9 +20,9 @@ OUT = $(BIN)/main.exe
 LIB := 
 ifeq ($(OS),Window_NT)
 	DLLFILES += lib/glfw/glfw3.dll 
-	LIB += $(DLL) lib/glfw/libglfw3dll.a -lopengl32
+	LIB += $(LIB_WIN)
 else
-	LIB += -lglfw -lGL -lOpenGL -lm
+	LIB += $(LIB_LIN)
 endif
 
 

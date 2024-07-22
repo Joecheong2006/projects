@@ -11,6 +11,7 @@ typedef struct {
 
 typedef struct {
     vec2 sprite_index;
+    vec4 color;
 } sprite;
 
 extern struct sprite_instance {

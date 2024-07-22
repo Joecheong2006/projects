@@ -10,14 +10,12 @@ void init_anim_position_slide(anim_position_slide* slide, vec3 translation, anim
     glm_vec3_copy(translation, slide->translation);
 }
 
-void set_anim_position_slide(anim_position_slide* src, anim_position_slide* dest, vec3* target_position) {
-    dest->callback = src->callback;
-    dest->target = target_position;
-    glm_vec3_copy(*dest->target, dest->start);
-    glm_vec3_copy(src->translation, dest->translation);
-    dest->end[0] = dest->start[0] + dest->translation[0];
-    dest->end[1] = dest->start[1] + dest->translation[1];
-    dest->end[2] = dest->start[2] + dest->translation[2];
+void set_anim_position_slide(anim_position_slide* slide, vec3* target_position) {
+    slide->target = target_position;
+    glm_vec3_copy(*slide->target, slide->start);
+    slide->end[0] = slide->start[0] + slide->translation[0];
+    slide->end[1] = slide->start[1] + slide->translation[1];
+    slide->end[2] = slide->start[2] + slide->translation[2];
 }
 
 void init_anim_position_slide_duration(anim_duration* anim, anim_position_slide* slide, float time_duration) {
