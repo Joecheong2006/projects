@@ -61,7 +61,6 @@ void render_sprite(camera* cam,  transform* tran, sprite_texture* sprite_tex, sp
     glm_mat4_identity(scale);
     glm_scale(scale, tran->scale);
 
-    glm_mat4_identity(m);
     glm_mat4_mul(cam->projection, cam->view, m);
     glm_mat4_mul(m, trans, m);
     glm_mat4_mul(m, scale, m);

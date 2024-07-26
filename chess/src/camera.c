@@ -9,9 +9,17 @@ void init_camera(camera* cam, vec2 canvas) {
 
 void set_camera_ortho_mat4(mat4 ortho, vec2 canvas) {
     float y = canvas[1] / 5;
-    glm_ortho(-canvas[0] / y, canvas[0] / y, -canvas[1] / y, canvas[1] / y, -1, 1, ortho);
+    glm_ortho(-canvas[0] / y, canvas[0] / y, -canvas[1] / y, canvas[1] / y, -10, 10, ortho);
 }
 
 void translate_camera(camera* cam, vec3 translation) {
     glm_translate(cam->view, (vec3){-translation[0], -translation[1], -translation[2]});
+    glm_vec3_add(cam->position, translation, cam->position);
+}
+
+void set_camera_position(camera* cam, vec3 position) {
+    vec3 offset;
+    glm_vec3_sub(position, cam->position, offset);
+    glm_translate(cam->view, offset);
+    glm_vec3_copy(position, cam->position);
 }

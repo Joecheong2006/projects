@@ -12,6 +12,8 @@
 #include <string.h>
 #include "chess_board.h"
 
+#include "camera_shake.h"
+
 #include "anim_duration.h"
 #include "anim_position_slide.h"
 #include "anim_duration_system.h"
@@ -21,6 +23,8 @@
 #include "memallocate.h"
 
 #include "sound.h"
+
+#include "debug/line_renderer.h"
 
 #define PI 3.14159265359
 
@@ -60,7 +64,6 @@ void close_application(window_state* window) {
 }
 
 typedef struct {
-    // camera cam;
     chess_board board;
     chess* hold;
     vec2 cursor_index;
@@ -164,6 +167,9 @@ void game_mouse_button_callback(void* owner, int button, int action, int mods) {
                     return;
                 }
             }
+    
+            static camera_shake_object obj = { .duration = 0.2, .strength = 0.04 };
+            create_camera_shake(&obj);
 
             vec3 offset = {0, 0, 0};
             glm_vec2_sub(game->cursor_index, pre_index, offset);
@@ -240,7 +246,11 @@ static void list_audio_devices(const ALCchar *devices)
         fprintf(stdout, "----------\n");
 }
 
-void sound_test(const char* path, float pitch, float gain) {
+typedef struct {
+    ALCcontext* context;
+} audio_context;
+
+void init_audio(audio_context* audio) {
     ALCdevice* device;
     device = alcOpenDevice(NULL);
     if (!device) {
@@ -257,22 +267,21 @@ void sound_test(const char* path, float pitch, float gain) {
 
     list_audio_devices(alcGetString(NULL, ALC_DEVICE_SPECIFIER));
 
-    ALCcontext* context;
-    context = alcCreateContext(device, NULL);
-    if (!alcMakeContextCurrent(context)) {
+    audio->context = alcCreateContext(device, NULL);
+    if (!alcMakeContextCurrent(audio->context)) {
         printf("failed to make context current\n");
     }
     al_check_error();
+}
 
-    ALfloat listenerOri[] = { 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f };
-    
-    alListener3f(AL_POSITION, 0, 0, 0.0f);
-    al_check_error();
-    alListener3f(AL_VELOCITY, 0, 0, 0);
-    al_check_error();
-    alListenerfv(AL_ORIENTATION, listenerOri);
-    al_check_error();
+void shutdown_audio(audio_context* audio) {
+    ALCdevice* device = alcGetContextsDevice(audio->context);
+    alcMakeContextCurrent(NULL);
+    alcDestroyContext(audio->context);
+    alcCloseDevice(device);
+}
 
+ALuint create_audio_source(float pitch, float gain, vec3 position, vec3 velocity, int loop) {
     ALuint source;
     alGenSources(1, &source);
 
@@ -280,22 +289,38 @@ void sound_test(const char* path, float pitch, float gain) {
     al_check_error();
     alSourcef(source, AL_GAIN, gain);
     al_check_error();
-    alSource3f(source, AL_POSITION, 0, 0, 0);
+    alSourcefv(source, AL_POSITION, position);
     al_check_error();
-    alSource3f(source, AL_VELOCITY, 0, 0, 0);
+    alSourcefv(source, AL_VELOCITY, velocity);
     al_check_error();
-    alSourcei(source, AL_LOOPING, AL_FALSE);
+    alSourcei(source, AL_LOOPING, loop ? AL_TRUE : AL_FALSE);
     al_check_error();
+    return source;
+}
 
+void set_audio_listener_properties(vec3 position, vec3 velocity, ALfloat orientation[6]) {
+    alListenerfv(AL_POSITION, position);
+    al_check_error();
+    alListenerfv(AL_VELOCITY, velocity);
+    al_check_error();
+    alListenerfv(AL_ORIENTATION, orientation);
+    al_check_error();
+}
+
+void sound_test(const char* path, float pitch, float gain) {
+    audio_context audio;
+    init_audio(&audio);
+
+    ALfloat listenerOri[] = { 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f };
+    set_audio_listener_properties((vec3){0, 0, 0}, (vec3){0, 0, 0}, listenerOri);
+
+    ALuint source = create_audio_source(pitch, gain, (vec3){0, 0, 0}, (vec3){0, 0, 0}, 0);
 
     ALuint buffer = gen_sound_buffer(path);
     if (!buffer) {
         printf("load %s failed\n", path);
         alDeleteSources(1, &source);
-        device = alcGetContextsDevice(context);
-        alcMakeContextCurrent(NULL);
-        alcDestroyContext(context);
-        alcCloseDevice(device);
+        shutdown_audio(&audio);
         return;
     }
 
@@ -315,57 +340,11 @@ void sound_test(const char* path, float pitch, float gain) {
 
     alDeleteSources(1, &source);
     alDeleteBuffers(1, &buffer);
-    device = alcGetContextsDevice(context);
-    alcMakeContextCurrent(NULL);
-    alcDestroyContext(context);
-    alcCloseDevice(device);
-}
-
-typedef struct {
-    char* name;
-    sprite sp;
-    sprite_texture st;
-} test_game_object;
-
-void test_game_object_on_start(game_object* obj) {
-    test_game_object* self = obj->self;
-    printf("%s on start\n", self->name);
-}
-
-void test_game_object_on_activate(game_object* obj) {
-    test_game_object* self = obj->self;
-    printf("%s on activate\n", self->name);
-}
-
-void test_game_object_on_update(game_object* obj) {
-    if (glfwGetTime() > 3) {
-        destory_game_object(obj);
-    }
-}
-
-void test_game_object_on_render(game_object* obj) {
-    test_game_object* self = obj->self;
-    transform tran = {
-        .position = {sin(glfwGetTime()), 0, 0.1},
-        .parent = NULL,
-        .scale = {1, 1, 1}
-    };
-    game_object* cam_obj = find_game_object_by_index(0);
-    render_sprite(cam_obj->self, &tran, &self->st, &self->sp);
-}
-
-void test_game_object_on_destory(game_object* obj) {
-    test_game_object* self = obj->self;
-    printf("%s on destory\n", self->name);
+    shutdown_audio(&audio);
 }
 
 int main(void)
 {
-    // sound_test("assets/audio/default/move-self.mp3", 1.0, 1);
-    // sound_test("assets/audio/default/move-self.mp3", 1, 0.9);
-    // sound_test("assets/audio/default/move-self.mp3", 0.9, 1);
-    // sound_test("assets/audio/default/move-self.mp3", 1.9, 0.9);
-    // return 0;
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -402,9 +381,16 @@ int main(void)
     // glHint(GL_POLYGON_SMOOTH_HINT, GL_DONT_CARE);
     // glDisable(0x809D);
 
+    audio_context audio;
+    init_audio(&audio);
+
+    ALfloat listenerOri[] = { 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f };
+    set_audio_listener_properties((vec3){0, 0, 0}, (vec3){0, 0, 0}, listenerOri);
+
     // setting up
     setup_anim_system();
     init_sprite_instance();
+    init_debug_line_renderer_instance();
 
     Game game;
     game.win_state.window = app_window;
@@ -446,23 +432,6 @@ int main(void)
 
     glClearColor(0.0, 0.1, 0.1, 0);
 
-    test_game_object test = {
-        .name = "test game object",
-        .sp = { {1, 0}, {1, 1, 1, 1}},
-    };
-
-    test.st = (sprite_texture){ .per_sprite = {1.0 / 13, 1} };
-    init_texture(&test.st.tex, "assets/chess/icy_sea/spritesheet.png", TextureFilterLinear);
-
-    game_object obj = {
-        .self = &test,
-        .on_start = test_game_object_on_start,
-        .on_activate = test_game_object_on_activate,
-        .on_update = test_game_object_on_update,
-        .on_render = test_game_object_on_render,
-        .on_destory = test_game_object_on_destory,
-    };
-
     init_game_object_system();
     create_game_object(&(game_object){
         .self = &cam,
@@ -472,7 +441,39 @@ int main(void)
         .on_render = NULL,
         .on_destory = NULL,
     });
-    create_game_object(&obj);
+
+    float pitch = 1, gain = 1;
+    ALuint buffers[2];
+    ALuint sources[2];
+
+    {
+        sources[0] = create_audio_source(pitch, gain, (vec3){0, 0, 0}, (vec3){0, 0, 0}, 0);
+        char* audio_file_path = "assets/audio/minecraft1.mp3";
+        buffers[0] = gen_sound_buffer(audio_file_path);
+        if (!buffers[0]) {
+            printf("load %s failed\n", audio_file_path);
+            alDeleteSources(1, &sources[0]);
+            shutdown_audio(&audio);
+            exit(1);
+        }
+
+        alSourcei(sources[0], AL_BUFFER, buffers[0]);
+        // alSourcePlay(sources[0]);
+    }
+    {
+        sources[1] = create_audio_source(pitch, gain, (vec3){0, 0, 0}, (vec3){0, 0, 0}, 0);
+        char* audio_file_path = "assets/audio/killshot-speedup.mp3";
+        buffers[1] = gen_sound_buffer(audio_file_path);
+        if (!buffers[1]) {
+            printf("load %s failed\n", audio_file_path);
+            alDeleteSources(1, &sources[1]);
+            shutdown_audio(&audio);
+            exit(1);
+        }
+
+        alSourcei(sources[1], AL_BUFFER, buffers[1]);
+        alSourcePlay(sources[1]);
+    }
 
     while(!glfwWindowShouldClose(app_window))
     {
@@ -509,6 +510,12 @@ int main(void)
 		con.window.render_callback(con.owner);
         update_game_object_system();
 
+        vec3 points[2] = {
+            {0, 0, 1},
+            {1, 1, 1},
+        };
+        render_debug_line(points);
+
         glfwSwapBuffers(app_window);
         glfwPollEvents();
     }
@@ -516,6 +523,12 @@ int main(void)
     glDeleteProgram(sprite_instance.shader);
     shutdown_game_object_system();
     shutdown_anim_system();
+
+    alDeleteBuffers(1, &sources[0]);
+    alDeleteBuffers(1, &sources[1]);
+    alDeleteBuffers(1, &buffers[0]);
+    alDeleteBuffers(1, &buffers[1]);
+    shutdown_audio(&audio);
 
     glfwDestroyWindow(app_window);
     glfwTerminate();

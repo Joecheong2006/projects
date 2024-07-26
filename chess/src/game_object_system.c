@@ -47,7 +47,9 @@ void destory_game_object(game_object* obj) {
     game_object_system* system = get_game_object_system();
     for_vector(system->objects, i, 0) {
         if (&system->objects[i] == obj) {
-            obj->on_destory(obj);
+        	if (obj->on_destory) {
+	            obj->on_destory(obj);
+        	}
             system->objects[i] = vector_back(system->objects);
             vector_pop(system->objects);
             break;
@@ -57,5 +59,10 @@ void destory_game_object(game_object* obj) {
 
 void shutdown_game_object_system() {
     game_object_system* system = get_game_object_system();
+    for_vector(system->objects, i, 0) {
+    	if (system->objects[i].on_destory) {
+			system->objects[i].on_destory(system->objects + i);
+    	}
+    }
     free_vector(system->objects);
 }
