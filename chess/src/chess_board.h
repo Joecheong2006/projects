@@ -14,8 +14,9 @@ struct chess_board {
 
 void init_chess_board(chess_board* board);
 chess* get_chess_from_board(chess_board* board, int x, int y);
-void render_chess_board(camera* cam, chess_board* board, sprite_texture* board_tex, sprite_texture* chess_tex);
 int king_is_checked(chess_board* board);
 void board_reset_en_passant(chess_board* board);
+
+void render_chess_board(camera* cam, chess_board* board, sprite_texture* board_tex, sprite_texture* chess_tex);
 
 #endif

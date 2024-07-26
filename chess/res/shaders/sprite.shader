@@ -30,7 +30,7 @@ in vec2 tex_coord;
 void main()
 {
     vec4 tex_color = texture(tex, (tex_coord + sprite_index) * per_sprite);
-    if (tex_color.a < 0.1f) {
+    if (tex_color.a == 0 || color.a == 0) {
         discard;
     }
     frag_color = tex_color * color;

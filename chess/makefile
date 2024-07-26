@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -std=c11 -Wall -Wextra -g3
 
-DLL = lib/glfw/glfw3.dll lib/openal/router/WIN64/OpenAL32.dll lib/sndfile/sndfile.dll
+DLL = lib/glfw/glfw3.dll lib/openal/router/Win64/OpenAL32.dll lib/sndfile/sndfile.dll
 LIB_WIN = -Llib/openal/router/WIN64 -Llib/sndfile -Llib/glfw lib/glfw/libglfw3dll.a -lopengl32 -lOpenAL32 -lsndfile
 LIB_LIN = -lglfw -lGL -lOpenGL -lopenal -lsndfile -lm
 
@@ -15,12 +15,13 @@ DEP = $(OBJ:%.o=%.d)
 
 LIBOBJ = $(wildcard $(patsubst %, %/*.o, $(LIBRARY))) 
 BIN = bin
-OUT = $(BIN)/main.exe
+OUT = $(BIN)/chess
 
 LIB := 
 ifeq ($(OS),Windows_NT)
 	DLLFILES += lib/glfw/glfw3.dll
 	LIB += $(LIB_WIN)
+	OUT += .exe
 else
 	LIB += $(LIB_LIN)
 endif

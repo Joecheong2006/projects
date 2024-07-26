@@ -39,10 +39,17 @@ typedef struct {
 error_type init_vertex_array(vertex_array* vao);
 error_type vertex_array_add_attribute(vertex_array* vao, vertex_buffer* vbo, i32 size, u32 data_type);
 
+typedef enum {
+    TextureFilterUnkown,
+    TextureFilterLinear,
+    TextureFilterNearest,
+} TextureFilter;
+
 typedef struct {
-    u32 id, slot;
+    u32 id;
+    TextureFilter filter;
     char* tex_path;
 } texture;
-error_type init_texture(texture* tex, char* texture_path);
+error_type init_texture(texture* tex, char* texture_path, TextureFilter filter);
 
 #endif

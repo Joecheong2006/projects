@@ -15,6 +15,7 @@ void gl_check_error(char*file, int line)
         printf("error[%s:%d:%d]\n", file, line, error);
     }
 }
+
 // #define GL_BYTE 0x1400
 // #define GL_UNSIGNED_BYTE 0x1401
 // #define GL_SHORT 0x1402
@@ -61,20 +62,33 @@ error_type init_vertex_array(vertex_array* vao) {
 
 error_type vertex_array_add_attribute(vertex_array* vao, vertex_buffer* vbo, i32 size, u32 data_type) {
     glVertexAttribPointer(vao->attribute_count, size, data_type, GL_FALSE, sizeof(f32) * vbo->row, (void*)vao->offset_count);
-    glEnableVertexAttribArray(vao->attribute_count);
-    vao->attribute_count++;
+    glEnableVertexAttribArray(vao->attribute_count++);
     vao->offset_count += primitive_type_size[data_type - GL_FIRST_TYPE] * size;
     return ErrorNone;
 }
 
-error_type init_texture(texture* tex, char* texture_path) {
+error_type init_texture(texture* tex, char* texture_path, TextureFilter filter) {
     glGenTextures(1, &tex->id);
     glBindTexture(GL_TEXTURE_2D, tex->id);
 
-    GLC(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT));
-    GLC(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT));
-    GLC(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR));
-    GLC(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+    // GLC(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT));
+    // GLC(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT));
+    GLC(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
+    GLC(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
+
+    tex->filter = filter;
+    if (filter == TextureFilterLinear) {
+        GLC(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR));
+        GLC(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+    }
+    else if (filter == TextureFilterNearest) {
+        GLC(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST));
+        GLC(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
+    }
+    else {
+        printf("unkwon texture filter %d\n", filter);
+        tex->filter = TextureFilterUnkown;
+    }
 
     int width, height, bpp;
     u8* data = stbi_load(texture_path, &width, &height, &bpp, 0);

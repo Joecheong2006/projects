@@ -49,9 +49,7 @@ void init_chess_board(chess_board* board) {
 void render_chess_board(camera* cam, chess_board* board, sprite_texture* board_tex, sprite_texture* chess_tex) {
 	render_sprite(cam, &board->tran, board_tex, &board->sp);
 	for (i32 i = 0; i < 64; i++) {
-	    if (board->grid[i].type != ChessTypeDead) {
-    	    render_sprite(cam, &board->grid[i].tran, chess_tex, &board->grid[i].sp);
-	    }
+		render_chess_piece(cam, &board->grid[i], chess_tex);
 	}
 }
 

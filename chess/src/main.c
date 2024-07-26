@@ -11,16 +11,16 @@
 #include "stb_image.h"
 #include <string.h>
 #include "chess_board.h"
+
 #include "anim_duration.h"
 #include "anim_position_slide.h"
 #include "anim_duration_system.h"
 
-#include <AL/al.h>
-#include <AL/alc.h>
-#include <AL/alext.h>
-#include <sndfile.h>
+#include "game_object_system.h"
 
 #include "memallocate.h"
+
+#include "sound.h"
 
 #define PI 3.14159265359
 
@@ -47,8 +47,8 @@ typedef struct {
 typedef struct {
     void* owner;
     input_control input;
-    window_control render;
-} controller;
+    window_control window;
+} callback_controller;
 
 typedef struct {
     GLFWwindow* window;
@@ -60,20 +60,29 @@ void close_application(window_state* window) {
 }
 
 typedef struct {
-    camera cam;
+    // camera cam;
     chess_board board;
     chess* hold;
     vec2 cursor_index;
     struct {
-        sprite_texture chess_board_tex, chess_pieces_tex;
+        sprite_texture board_tex, pieces_tex;
     } chess_theme;
     window_state win_state;
 } Game;
 
+void drop_holding_piece(Game* game) {
+    if (game->hold) {
+        game->hold->background.color[3] = 0;
+    }
+    game->hold = NULL;
+}
+
 void game_window_resize_callback(void* owner, int width, int height) {
     Game* game = owner;
     glViewport(0, 0, width, height);
-    set_camera_ortho_mat4(game->cam.projection, (vec2){width, height});
+
+    camera* cam = find_game_object_by_index(0)->self;
+    set_camera_ortho_mat4(cam->projection, (vec2){width, height});
 
     game->win_state.width = width;
     game->win_state.height = height;
@@ -96,7 +105,9 @@ void game_cursor_pos_callback(void* owner, double xpos, double ypos) {
     Game* game = owner;
     vec4 uv = { xpos / game->win_state.width * 2 - 1, (1 - ypos / game->win_state.height) * 2 - 1, 0, 1};
     mat4 m;
-    glm_mat4_mul(game->cam.projection, game->cam.view, m);
+
+    camera* cam = find_game_object_by_index(0)->self;
+    glm_mat4_mul(cam->projection, cam->view, m);
     glm_mat4_inv(m, m);
     glm_mat4_mulv(m, uv, uv);
 
@@ -112,20 +123,21 @@ void game_mouse_button_callback(void* owner, int button, int action, int mods) {
     static vec2 pre_index;
     if (button == GLFW_MOUSE_BUTTON_1 && action == GLFW_PRESS) {
         if (game->hold) {
+            game->hold->background.color[3] = 0;
             chess* target = get_chess_from_board(&game->board, game->cursor_index[0], game->cursor_index[1]);
             if (target == game->hold) {
-                game->hold = NULL;
+                drop_holding_piece(game);
                 return;
             }
 
             if ((game->board.round % 2 == 0 && game->hold->is_white) || (game->board.round % 2 && !game->hold->is_white)) {
-                game->hold = NULL;
+                drop_holding_piece(game);
                 return;
             }
 
             int legal = game->hold->is_legal_move(&game->board, pre_index, game->cursor_index);
             if (!legal) {
-                game->hold = NULL;
+                drop_holding_piece(game);
                 return;
             }
 
@@ -147,7 +159,7 @@ void game_mouse_button_callback(void* owner, int button, int action, int mods) {
                     *target = target_copy;
                     *game->hold = hold_copy;
                     game->hold->recover_illegal_move(&game->board, pre_index);
-                    game->hold = NULL;
+                    drop_holding_piece(game);
                     game->board.round--;
                     return;
                 }
@@ -160,72 +172,55 @@ void game_mouse_button_callback(void* owner, int button, int action, int mods) {
             set_anim_position_slide(&target->anim, &target->tran.local_position);
             init_anim_position_slide_duration(&anim, &target->anim, 0.12);
             create_anim_duration(&anim);
-            game->hold = NULL;
+            drop_holding_piece(game);
         }
         else {
             game->hold = get_chess_from_board(&game->board, game->cursor_index[0], game->cursor_index[1]);
             if (game->hold->type == ChessTypeDead) {
-                game->hold = NULL;
+                drop_holding_piece(game);
+            }
+            else {
+                game->hold->background.color[3] = 0.6;
             }
             glm_vec2_copy(game->cursor_index, pre_index);
         }
     }
     if (button == GLFW_MOUSE_BUTTON_2) {
-        game->hold = NULL;
+        drop_holding_piece(game);
     }
 }
 
 void game_render_callback(void* owner) {
     Game* game = owner;
-	render_chess_board(&game->cam, &game->board, &game->chess_theme.chess_board_tex, &game->chess_theme.chess_pieces_tex);
+    camera* cam = find_game_object_by_index(0)->self;
+	render_chess_board(cam, &game->board, &game->chess_theme.board_tex, &game->chess_theme.pieces_tex);
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
-    controller* c = glfwGetWindowUserPointer(window);
-    if (c->render.resize_callback) {
-        c->render.resize_callback(c->owner, width, height);
+    callback_controller* c = glfwGetWindowUserPointer(window);
+    if (c->window.resize_callback) {
+        c->window.resize_callback(c->owner, width, height);
     }
 }
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-    controller* c = glfwGetWindowUserPointer(window);
+    callback_controller* c = glfwGetWindowUserPointer(window);
     if (c->input.key_callback) {
         c->input.key_callback(c->owner, key, scancode, action, mods);
     }
 }
 
 void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos) {
-    controller* c = glfwGetWindowUserPointer(window);
+    callback_controller* c = glfwGetWindowUserPointer(window);
     if (c->input.cursor_pos_callback) {
         c->input.cursor_pos_callback(c->owner, xpos, ypos);
     }
 }
 
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
-    controller* c = glfwGetWindowUserPointer(window);
+    callback_controller* c = glfwGetWindowUserPointer(window);
     if (c->input.mouse_button_callback) {
         c->input.mouse_button_callback(c->owner, button, action, mods);
-    }
-}
-
-char* get_al_error(ALCenum err) {
-    switch (err) {
-      case AL_NO_ERROR: return "AL_NO_ERROR";
-      case AL_INVALID_ENUM: return "AL_INVALID_ENUM";
-      case AL_INVALID_VALUE: return "AL_INVALID_VALUE";
-      case AL_OUT_OF_MEMORY: return "AL_OUT_OF_MEMORY";
-      /* ... */
-      default:
-        return "Unknown error code";
-    }
-}
-
-void al_check_error() {
-    ALCenum error;
-
-    error = alGetError();
-    if (error != AL_NO_ERROR) {
-        printf("al error %d %s\n", error, get_al_error(error));
     }
 }
 
@@ -245,86 +240,7 @@ static void list_audio_devices(const ALCchar *devices)
         fprintf(stdout, "----------\n");
 }
 
-static inline ALenum to_al_format(short channels, short samples)
-{
-        bool stereo = (channels > 1);
-
-        switch (samples) {
-        case 16:
-                if (stereo)
-                        return AL_FORMAT_STEREO16;
-                else
-                        return AL_FORMAT_MONO16;
-        case 8:
-                if (stereo)
-                        return AL_FORMAT_STEREO8;
-                else
-                        return AL_FORMAT_MONO8;
-        default:
-                return -1;
-        }
-}
-
-#include <limits.h>
-
-ALuint gen_sound_buffer(const char* file_name) {
-    SF_INFO sf_info;
-    SNDFILE* sndfile = sf_open(file_name, SFM_READ, &sf_info);
-    if (!sndfile) {
-        return 0;
-    }
-    if (sf_info.frames < 1 || sf_info.frames > (sf_count_t)(INT_MAX / sizeof(short)) / sf_info.channels) {
-        sf_close(sndfile);
-        return 0;
-    }
-
-    ALenum format = AL_NONE;
-    if (sf_info.channels == 1) {
-        format = AL_FORMAT_MONO16;
-    }
-    else if (sf_info.channels == 2) {
-        format = AL_FORMAT_STEREO16;
-    }
-    else if (sf_command(sndfile, SFC_WAVEX_GET_AMBISONIC, NULL, 0) == SF_AMBISONIC_B_FORMAT) {
-        if (sf_info.channels == 3) {
-            format = AL_FORMAT_BFORMAT2D_16;
-        }
-        else if (sf_info.channels == 4) {
-            format = AL_FORMAT_BFORMAT3D_16;
-        }
-    }
-
-    if (!format) {
-        return 0;
-    }
-
-    short* buf = malloc(sf_info.frames * sf_info.channels * sizeof(short));
-    if (!buf) {
-        return 0;
-    }
-
-    sf_count_t frames_count = sf_readf_short(sndfile, buf, sf_info.frames);
-    if (frames_count < 1) {
-        free(buf);
-        return 0;
-    }
-    u64 size = frames_count * sf_info.channels * sizeof(short);
-    ALuint buffer;
-    alGenBuffers(1, &buffer);
-    alBufferData(buffer, format, buf, size, sf_info.samplerate);
-    free(buf);
-    sf_close(sndfile);
-
-    ALenum err = alGetError();
-    if (err != AL_NO_ERROR) {
-        alDeleteBuffers(1, &buffer);
-        return 0;
-    }
-
-    return buffer;
-}
-
-void bonk() {
+void sound_test(const char* path, float pitch, float gain) {
     ALCdevice* device;
     device = alcOpenDevice(NULL);
     if (!device) {
@@ -348,8 +264,8 @@ void bonk() {
     }
     al_check_error();
 
-    ALfloat listenerOri[] = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
-
+    ALfloat listenerOri[] = { 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f };
+    
     alListener3f(AL_POSITION, 0, 0, 0.0f);
     al_check_error();
     alListener3f(AL_VELOCITY, 0, 0, 0);
@@ -359,10 +275,10 @@ void bonk() {
 
     ALuint source;
     alGenSources(1, &source);
-    
-    alSourcef(source, AL_PITCH, 1);
+
+    alSourcef(source, AL_PITCH, pitch);
     al_check_error();
-    alSourcef(source, AL_GAIN, 1);
+    alSourcef(source, AL_GAIN, gain);
     al_check_error();
     alSource3f(source, AL_POSITION, 0, 0, 0);
     al_check_error();
@@ -372,9 +288,16 @@ void bonk() {
     al_check_error();
 
 
-    // ALuint buffer = gen_sound_buffer("assets/audio/bonk.wav");
-    ALuint buffer = gen_sound_buffer("assets/audio/bonk.mp3");
-    // ALuint buffer = gen_sound_buffer("assets/audio/test.wav");
+    ALuint buffer = gen_sound_buffer(path);
+    if (!buffer) {
+        printf("load %s failed\n", path);
+        alDeleteSources(1, &source);
+        device = alcGetContextsDevice(context);
+        alcMakeContextCurrent(NULL);
+        alcDestroyContext(context);
+        alcCloseDevice(device);
+        return;
+    }
 
     alSourcei(source, AL_BUFFER, buffer);
     al_check_error();
@@ -398,11 +321,51 @@ void bonk() {
     alcCloseDevice(device);
 }
 
+typedef struct {
+    char* name;
+    sprite sp;
+    sprite_texture st;
+} test_game_object;
+
+void test_game_object_on_start(game_object* obj) {
+    test_game_object* self = obj->self;
+    printf("%s on start\n", self->name);
+}
+
+void test_game_object_on_activate(game_object* obj) {
+    test_game_object* self = obj->self;
+    printf("%s on activate\n", self->name);
+}
+
+void test_game_object_on_update(game_object* obj) {
+    if (glfwGetTime() > 3) {
+        destory_game_object(obj);
+    }
+}
+
+void test_game_object_on_render(game_object* obj) {
+    test_game_object* self = obj->self;
+    transform tran = {
+        .position = {sin(glfwGetTime()), 0, 0.1},
+        .parent = NULL,
+        .scale = {1, 1, 1}
+    };
+    game_object* cam_obj = find_game_object_by_index(0);
+    render_sprite(cam_obj->self, &tran, &self->st, &self->sp);
+}
+
+void test_game_object_on_destory(game_object* obj) {
+    test_game_object* self = obj->self;
+    printf("%s on destory\n", self->name);
+}
+
 int main(void)
 {
-    bonk();
-
-    return 0;
+    // sound_test("assets/audio/default/move-self.mp3", 1.0, 1);
+    // sound_test("assets/audio/default/move-self.mp3", 1, 0.9);
+    // sound_test("assets/audio/default/move-self.mp3", 0.9, 1);
+    // sound_test("assets/audio/default/move-self.mp3", 1.9, 0.9);
+    // return 0;
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -426,9 +389,18 @@ int main(void)
     GLC(glEnable(GL_BLEND));
     GLC(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
     GLC(glDepthFunc(GL_LESS));
-    // GLC(glAlphaFunc(GL_GREATER, 0.1));
-    // GLC(glEnable(GL_ALPHA_TEST));
-    // glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
+    GLC(glAlphaFunc(GL_GREATER, 0.1));
+    GLC(glEnable(GL_ALPHA_TEST));
+    glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
+
+    // glDisable(GL_DITHER);
+    // glDisable(GL_POINT_SMOOTH);
+    // glDisable(GL_LINE_SMOOTH);
+    // glDisable(GL_POLYGON_SMOOTH);
+    // glHint(GL_POINT_SMOOTH, GL_DONT_CARE);
+    // glHint(GL_LINE_SMOOTH, GL_DONT_CARE);
+    // glHint(GL_POLYGON_SMOOTH_HINT, GL_DONT_CARE);
+    // glDisable(0x809D);
 
     // setting up
     setup_anim_system();
@@ -436,28 +408,28 @@ int main(void)
 
     Game game;
     game.win_state.window = app_window;
+    char* chess_spritesheet = "assets/chess/icy_sea/spritesheet.png";
+    char* chess_board = "assets/chess/icy_sea/board.png";
 
-    game.chess_theme.chess_pieces_tex = (sprite_texture){ .per_sprite = {1.0 / 12, 1} };
-    // init_texture(&game.chess_theme.chess_pieces_tex.tex, "chess/classic/spritesheet.png");
-    init_texture(&game.chess_theme.chess_pieces_tex.tex, "assets/chess/icy_sea/spritesheet.png");
+    game.chess_theme.pieces_tex = (sprite_texture){ .per_sprite = {1.0 / 13, 1} };
+    init_texture(&game.chess_theme.pieces_tex.tex, chess_spritesheet, TextureFilterLinear);
 
-    game.chess_theme.chess_board_tex = (sprite_texture){ .per_sprite = {1, 1} };
-    // init_texture(&game.chess_theme.chess_board_tex.tex, "chess/classic/board.png");
-    init_texture(&game.chess_theme.chess_board_tex.tex, "assets/chess/icy_sea/board.png");
+    game.chess_theme.board_tex = (sprite_texture){ .per_sprite = {1, 1} };
+    init_texture(&game.chess_theme.board_tex.tex, chess_board, TextureFilterLinear);
 
-
-    controller con = (controller){
+    callback_controller con = (callback_controller){
         .owner = &game,
         .input.cursor_pos_callback = game_cursor_pos_callback,
         .input.key_callback = game_key_callback,
         .input.mouse_button_callback = game_mouse_button_callback,
-        .render.resize_callback = game_window_resize_callback,
-        .render.render_callback = game_render_callback,
+        .window.resize_callback = game_window_resize_callback,
+        .window.render_callback = game_render_callback,
     };
 
     glfwSetWindowUserPointer(app_window, &con);
 
-    init_camera(&game.cam, (vec2){WIDTH, HEIGHT});
+    camera cam;
+    init_camera(&cam, (vec2){WIDTH, HEIGHT});
     init_chess_board(&game.board);
     game.hold = NULL;
     
@@ -474,22 +446,50 @@ int main(void)
 
     glClearColor(0.0, 0.1, 0.1, 0);
 
+    test_game_object test = {
+        .name = "test game object",
+        .sp = { {1, 0}, {1, 1, 1, 1}},
+    };
+
+    test.st = (sprite_texture){ .per_sprite = {1.0 / 13, 1} };
+    init_texture(&test.st.tex, "assets/chess/icy_sea/spritesheet.png", TextureFilterLinear);
+
+    game_object obj = {
+        .self = &test,
+        .on_start = test_game_object_on_start,
+        .on_activate = test_game_object_on_activate,
+        .on_update = test_game_object_on_update,
+        .on_render = test_game_object_on_render,
+        .on_destory = test_game_object_on_destory,
+    };
+
+    init_game_object_system();
+    create_game_object(&(game_object){
+        .self = &cam,
+        .on_start = NULL,
+        .on_activate = NULL,
+        .on_update = NULL,
+        .on_render = NULL,
+        .on_destory = NULL,
+    });
+    create_game_object(&obj);
+
     while(!glfwWindowShouldClose(app_window))
     {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         float step = 1.0 / 144 * 4;
         if (glfwGetKey(app_window, GLFW_KEY_UP) == GLFW_PRESS) {
-            translate_camera(&game.cam, (vec3){0, step, 0});
+            translate_camera(&cam, (vec3){0, step, 0});
         }
         else if (glfwGetKey(app_window, GLFW_KEY_DOWN) == GLFW_PRESS) {
-            translate_camera(&game.cam, (vec3){0, -step, 0});
+            translate_camera(&cam, (vec3){0, -step, 0});
         }
         if (glfwGetKey(app_window, GLFW_KEY_LEFT) == GLFW_PRESS) {
-            translate_camera(&game.cam, (vec3){-step, 0, 0});
+            translate_camera(&cam, (vec3){-step, 0, 0});
         }
         else if (glfwGetKey(app_window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
-            translate_camera(&game.cam, (vec3){step, 0, 0});
+            translate_camera(&cam, (vec3){step, 0, 0});
         }
 
         if (glfwGetKey(app_window, GLFW_KEY_W) == GLFW_PRESS) {
@@ -506,13 +506,15 @@ int main(void)
         }
 
 		update_anim_system();
-		con.render.render_callback(con.owner);
+		con.window.render_callback(con.owner);
+        update_game_object_system();
 
         glfwSwapBuffers(app_window);
         glfwPollEvents();
     }
 
     glDeleteProgram(sprite_instance.shader);
+    shutdown_game_object_system();
     shutdown_anim_system();
 
     glfwDestroyWindow(app_window);

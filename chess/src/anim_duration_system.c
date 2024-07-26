@@ -29,7 +29,7 @@ static int get_last_empty_slot_index() {
             return last_empty_index;
         }
     }
-    return last_empty_index;
+    return -1;
 }
 
 static void clean_anim_duration() {
@@ -37,7 +37,14 @@ static void clean_anim_duration() {
 
     int last_empty_index = get_last_empty_slot_index();
 
-    for (i64 i = 0; i <= last_empty_index; ++i) {
+    int len = get_anim_duration_num();
+    for (int i = 0; i < len; ++i) {
+        if (system->durations[i].ended) {
+            delete_anim_duration(&system->durations[i]);
+        }
+    }
+
+    for (int i = 0; i < last_empty_index; ++i) {
         if (system->durations[i].ended) {
             int index = system->durations[i].index;
             system->durations[i] = system->durations[last_empty_index--];
@@ -50,6 +57,7 @@ static void clean_anim_duration() {
 void update_anim_system() {
     anim_duration_system* system = get_anim_duration_system();
     float time = glfwGetTime();
+
     for_vector(system->durations, i, 0) {
         anim_duration_start(time, system->durations + i);
     }
@@ -63,7 +71,7 @@ void delete_anim_duration(anim_duration* duration) {
     system->durations[duration->index] = vector_back(system->durations);
     system->durations[duration->index].index = temp.index;
     vector_pop(system->durations);
-    printf("delete %d:%d\n", duration->index, system->durations[duration->index].index);
+    // printf("delete %d:%d\n", duration->index, system->durations[duration->index].index);
 }
 
 void shutdown_anim_system() {

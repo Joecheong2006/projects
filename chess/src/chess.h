@@ -22,6 +22,7 @@ typedef void(*legal_move_callback)(chess_board* board, vec2 start, vec2 end);
 
 struct chess {
     sprite sp;
+    sprite background;
     transform tran;
     ChessType type;
     anim_position_slide anim;
@@ -32,8 +33,8 @@ struct chess {
 };
 
 void init_chess(chess_board* board, chess* che, ChessType type, i32 is_white, vec2 position);
-
 void chess_move_anim_callback(anim_position_slide* slide, float dur);
 
+void render_chess_piece(camera* cam, chess* che, sprite_texture* chess_tex);
 
 #endif

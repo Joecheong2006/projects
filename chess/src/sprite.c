@@ -53,8 +53,6 @@ void render_sprite(camera* cam,  transform* tran, sprite_texture* sprite_tex, sp
     mat4 m, trans, scale;
     glm_mat4_identity(trans);
     if (tran->parent) {
-        // glm_translate(trans, tran->parent->position);
-        // glm_translate(trans, tran->local_position);
         glm_vec3_copy(tran->local_position, tran->position);
         glm_vec3_add(tran->position, tran->parent->position, tran->position);
     }
@@ -72,6 +70,7 @@ void render_sprite(camera* cam,  transform* tran, sprite_texture* sprite_tex, sp
     GLC(glUniformMatrix4fv(location, 1, GL_FALSE, &m[0][0]));
     
     GLC(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
+	glBindTexture(GL_TEXTURE_2D, 0);
 	glBindVertexArray(0);
 	glUseProgram(0);
 }

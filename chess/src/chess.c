@@ -278,7 +278,7 @@ static check_legal_move_callback map_legal_move_callback[] = {
 
 void init_chess(chess_board* board, chess* che, ChessType type, i32 is_white, vec2 position) {
     init_transform(&che->tran);
-	glm_vec3_copy((vec3){position[0] - 3.5, position[1] - 3.5, 0.2}, che->tran.local_position);
+	glm_vec3_copy((vec3){position[0] - 3.5, position[1] - 3.5, 0.4}, che->tran.local_position);
     che->tran.parent = &board->tran;
 
     che->en_passant = 0;
@@ -289,9 +289,28 @@ void init_chess(chess_board* board, chess* che, ChessType type, i32 is_white, ve
     che->recover_illegal_move = default_recovery_callback;
     che->move = default_move_callback;
     glm_vec2_copy(chess_pieces_sprite_indecs[(int)type], che->sp.sprite_index);
+    che->background = (sprite) {
+    	.sprite_index = {12, 0},
+    	.color = {94.0 / 255, 215.0 / 255, 241.0 / 255, 0.0}
+    };
     if (is_white) {
         che->sp.sprite_index[0] += 6;
     }
     glm_vec4_copy((vec4){1, 1, 1, 1}, che->sp.color);
+}
+
+sprite_texture background_tex;
+
+void render_chess_piece(camera* cam, chess* che, sprite_texture* chess_tex) {
+	if (background_tex.per_sprite[0] == 0) {
+	    background_tex = (sprite_texture){ .per_sprite = {1, 1} };
+	    init_texture(&background_tex.tex, "assets/chess/white_block.png", TextureFilterNearest);
+	}
+	if (che->type != ChessTypeDead) {
+		che->tran.local_position[2] -= 0.2;
+		render_sprite(cam, &che->tran, &background_tex, &che->background);
+		che->tran.local_position[2] += 0.2;
+	    render_sprite(cam, &che->tran, chess_tex, &che->sp);
+	}
 }
 
