@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -std=c11 -Wall -Wextra -g3
+CFLAGS = -std=c11 -Wall -Wextra -g3 -DDEBUG
 
 DLL = lib/glfw/glfw3.dll lib/openal/router/Win64/OpenAL32.dll lib/sndfile/sndfile.dll
 LIB_WIN = -Llib/openal/router/WIN64 -Llib/sndfile -Llib/glfw lib/glfw/libglfw3dll.a -lopengl32 -lOpenAL32 -lsndfile

@@ -15,6 +15,7 @@ void init_game_object_system() {
 }
 
 void create_game_object(game_object* obj) {
+    ASSERT(obj != NULL);
     game_object_system* system = get_game_object_system();
     vector_pushe(system->objects, *obj);
     if (obj->on_start) {
@@ -36,6 +37,7 @@ void update_game_object_system() {
 }
 
 game_object* find_game_object_by_index(int index) {
+    ASSERT(index >= 0);
     game_object_system* system = get_game_object_system();
     if (index < (int)vector_size(system->objects)) {
         return &system->objects[index];
@@ -44,6 +46,7 @@ game_object* find_game_object_by_index(int index) {
 }
 
 void destory_game_object(game_object* obj) {
+    ASSERT(obj != NULL);
     game_object_system* system = get_game_object_system();
     for_vector(system->objects, i, 0) {
         if (&system->objects[i] == obj) {

@@ -1,6 +1,7 @@
 #include "opengl_object.h"
 #include <glad/glad.h>
 #include "stb_image.h"
+#include "util.h"
 #include <stdio.h>
 
 void gl_clear_error()
@@ -43,16 +44,19 @@ static error_type init_buffer_object(u32* id, void* data, u32 type, int size, u3
 }
 
 error_type init_vertex_buffer(vertex_buffer* vbo, i32 row, i32 col, u32 usage) {
+    ASSERT(vbo != NULL && vbo->vertices != NULL);
     vbo->row = row;
     vbo->col = col;
     return init_buffer_object(&vbo->id, vbo->vertices, GL_ARRAY_BUFFER, sizeof(f32) * row * col, usage);
 }
 
 error_type init_index_buffer(index_buffer* ibo, int count, u32 usage) {
+    ASSERT(ibo != NULL && ibo->index != NULL);
     return init_buffer_object(&ibo->id, ibo->index, GL_ELEMENT_ARRAY_BUFFER, sizeof(u32) * count, usage);
 }
 
 error_type init_vertex_array(vertex_array* vao) {
+    ASSERT(vao != NULL);
     glGenVertexArrays(1, &vao->id);
     glBindVertexArray(vao->id);
     vao->attribute_count = 0;
@@ -61,6 +65,7 @@ error_type init_vertex_array(vertex_array* vao) {
 }
 
 error_type vertex_array_add_attribute(vertex_array* vao, vertex_buffer* vbo, i32 size, u32 data_type) {
+    ASSERT(vao != NULL && vbo != NULL);
     glVertexAttribPointer(vao->attribute_count, size, data_type, GL_FALSE, sizeof(f32) * vbo->row, (void*)vao->offset_count);
     glEnableVertexAttribArray(vao->attribute_count++);
     vao->offset_count += primitive_type_size[data_type - GL_FIRST_TYPE] * size;
@@ -68,6 +73,7 @@ error_type vertex_array_add_attribute(vertex_array* vao, vertex_buffer* vbo, i32
 }
 
 error_type init_texture(texture* tex, char* texture_path, TextureFilter filter) {
+    ASSERT(tex != NULL && texture_path != NULL);
     glGenTextures(1, &tex->id);
     glBindTexture(GL_TEXTURE_2D, tex->id);
 

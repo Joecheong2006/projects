@@ -458,7 +458,7 @@ int main(void)
         }
 
         alSourcei(sources[0], AL_BUFFER, buffers[0]);
-        // alSourcePlay(sources[0]);
+        alSourcePlay(sources[0]);
     }
     {
         sources[1] = create_audio_source(pitch, gain, (vec3){0, 0, 0}, (vec3){0, 0, 0}, 0);
@@ -466,7 +466,7 @@ int main(void)
         buffers[1] = gen_sound_buffer(audio_file_path);
         if (!buffers[1]) {
             printf("load %s failed\n", audio_file_path);
-            alDeleteSources(1, &sources[1]);
+            // alDeleteSources(1, &sources[1]);
             shutdown_audio(&audio);
             exit(1);
         }
@@ -514,7 +514,7 @@ int main(void)
             {0, 0, 1},
             {1, 1, 1},
         };
-        render_debug_line(points);
+        render_debug_line(points, (vec3){0, 0, 1});
 
         glfwSwapBuffers(app_window);
         glfwPollEvents();

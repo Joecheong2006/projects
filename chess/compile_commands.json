@@ -7,7 +7,8 @@
       "-Wextra",
       "-Ilib/glad/include",
       "-Ilib/stb_image",
-      "-Ilib"
+      "-Ilib",
+      "-DDEBUG"
     ],
     "directory": "/home/joe/project/chess",
     "file": "src/main.c"

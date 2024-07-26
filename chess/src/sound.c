@@ -1,6 +1,5 @@
 #include "sound.h"
 #include "util.h"
-// #include <stdlib.h>
 #include "memallocate.h"
 #include <limits.h>
 
@@ -25,6 +24,7 @@ void al_check_error() {
 }
 
 ALuint gen_sound_buffer(const char* file_name) {
+    ASSERT(file_name != NULL);
     SF_INFO sf_info;
     SNDFILE* sndfile = sf_open(file_name, SFM_READ, &sf_info);
     if (!sndfile) {

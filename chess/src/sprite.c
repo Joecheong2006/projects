@@ -34,6 +34,7 @@ void init_sprite_instance() {
 }
 
 void render_sprite(camera* cam,  transform* tran, sprite_texture* sprite_tex, sprite* sp) {
+    ASSERT(cam != NULL && tran != NULL && sprite_tex != NULL);
 	GLC(glUseProgram(sprite_instance.shader));
 	GLC(glBindVertexArray(sprite_instance.vao.id));
 
@@ -69,7 +70,7 @@ void render_sprite(camera* cam,  transform* tran, sprite_texture* sprite_tex, sp
     GLC(glUniformMatrix4fv(location, 1, GL_FALSE, &m[0][0]));
     
     GLC(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
-	glBindTexture(GL_TEXTURE_2D, 0);
-	glBindVertexArray(0);
-	glUseProgram(0);
+	// glBindTexture(GL_TEXTURE_2D, 0);
+	// glBindVertexArray(0);
+	// glUseProgram(0);
 }

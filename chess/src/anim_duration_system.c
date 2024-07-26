@@ -2,6 +2,7 @@
 #include <GLFW/glfw3.h>
 #include <stdio.h>
 #include "vector.h"
+#include "util.h"
 
 struct anim_duration_system {
     vector(anim_duration) durations;
@@ -17,6 +18,7 @@ void setup_anim_system() {
 }
 
 void create_anim_duration(anim_duration* duration) {
+    ASSERT(duration != NULL);
     activate_anim_duration(duration);
     vector_pushe(get_anim_duration_system()->durations, *duration);
 }
@@ -66,6 +68,7 @@ void update_anim_system() {
 }
 
 void delete_anim_duration(anim_duration* duration) {
+    ASSERT(duration != NULL);
     anim_duration_system* system = get_anim_duration_system();
     anim_duration temp = system->durations[duration->index];
     system->durations[duration->index] = vector_back(system->durations);

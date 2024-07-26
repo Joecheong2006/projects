@@ -18,4 +18,15 @@ typedef int64_t i64;
 typedef float f32;
 typedef double f64;
 
+#if defined(DEBUG)
+	#if defined(WIN32)
+		#define ASSERT(x) if (!(x)) __debugbreak()
+	#else
+		#include <assert.h>
+		#define ASSERT(x) assert(x);
+	#endif
+#else
+	#define ASSERT(x)
+#endif
+
 #endif

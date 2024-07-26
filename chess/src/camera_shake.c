@@ -1,12 +1,13 @@
 #include "camera_shake.h"
 #include "camera.h"
 #include "game_object_system.h"
+#include "util.h"
 #include <GLFW/glfw3.h>
 #include <string.h>
 
 static inline float randf(float start, float end, float dr) {
     float range = end - start;
-    return rand() % (int)(range / dr) * dr - range * 0.5;
+    return rand() % (int)(range / dr) * dr - range * 0.5f;
 }
 
 void camera_shake_object_on_start(game_object* obj) {
@@ -17,8 +18,9 @@ void camera_shake_object_on_start(game_object* obj) {
 }
 
 void camera_shake_object_on_update(game_object* obj) {
-    const float ds = 0.001;
+    static const float ds = 0.0001;
     camera_shake_object* self = obj->self;
+
     camera* cam = find_game_object_by_index(0)->self;
 
     vec3 t = {randf(-self->strength, self->strength, ds), randf(-self->strength, self->strength, ds), 0};

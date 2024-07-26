@@ -5,22 +5,24 @@
 #include "../game_object_system.h"
 #include <glad/glad.h>
 
-vertex_array vao;
-u32 shader;
+static vertex_array vao;
+static u32 shader;
 
 void init_debug_line_renderer_instance() {
+    glLineWidth(2);
     GLC(init_vertex_array(&vao));
     shader_program program = parse_shader("res/shaders/line.shader");
     GLC(shader = create_shader(program.vertex, program.fragment));
     shader_program_free(&program);
 }
 
-void render_debug_line(vec3 points[2]) {
-    glUseProgram(shader);
-    glBindVertexArray(vao.id);
+void render_debug_line(vec3 points[2], vec3 color) {
+    ASSERT(points != NULL && color != NULL);
+    GLC(glUseProgram(shader));
+    GLC(glBindVertexArray(vao.id));
 
     GLC(int location = glGetUniformLocation(shader, "color"));
-    GLC(glUniform3f(location, 1, 0, 0));
+    GLC(glUniform3fv(location, 1, color));
 
     GLC(location = glGetUniformLocation(shader, "points"));
     GLC(glUniform3fv(location, 2, &points[0][0]));
