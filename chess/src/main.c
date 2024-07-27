@@ -185,7 +185,7 @@ void game_mouse_button_callback(void* owner, int button, int action, int mods) {
                 }
             }
 
-            static camera_shake_object obj = { .duration = 0.2, .strength = 0.04 };
+            static camera_shake_object obj = { .duration = 0.1, .strength = 0.03 };
             create_camera_shake(&obj);
 
             vec3 offset = {0, 0, 0};
@@ -456,8 +456,15 @@ int main(void)
 		con.window.render_callback(con.owner);
         update_game_object_system();
 
-        float points[] = { 0, 0, 1, 1, 1, 1, };
-        render_debug_line(points, (vec3){0, 0, 1});
+        vec2 offset = { game.board.tran.scale[0] * 0.5,  game.board.tran.scale[1] * 0.5 };
+        {
+            float points[] = { 0, 0, 1, 0, 0, 1, };
+            points[0] = game.board.tran.position[0] + game.board.tran.scale[0] - offset[0];
+            points[1] = game.board.tran.position[1] - offset[1];
+            points[3] = game.board.tran.position[0] - offset[0];
+            points[4] = game.board.tran.position[1] - offset[1];
+            render_debug_line(points, (vec3){0, 0, 1});
+        }
 
         glfwSwapBuffers(app_window);
         glfwPollEvents();
