@@ -116,7 +116,6 @@ static int pawn_move_callback(chess_board* board, vec2 start, vec2 end) {
 			return 1;
 		}
 		chess* right = get_chess_from_board(board, start[0] + 1, start[1]);
-		printf("right %d\n", right->first_move);
 		if (current->is_white != right->is_white && right->en_passant && right->first_move == 1 && right->type != ChessTypeDead) {
 			right->type = ChessTypeDead;
 			current->recover_illegal_move = right_en_passant_recovery_callback;

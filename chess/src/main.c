@@ -173,7 +173,6 @@ void game_mouse_button_callback(void* owner, int button, int action, int mods) {
         	game->hold->selected = 1;
             game->hold->background.color[3] = 0.6;
 
-            // printf("%d\n", any_possible_move(&game->board));
             if (any_possible_move(&game->board) == 0) {
                 game->board.round++;
                 int checked = king_is_checked(&game->board);

@@ -190,8 +190,15 @@ static int queen_check_callback(check_condition_callback condition, chess_board*
 }
 
 static int king_check_callback(check_condition_callback condition, chess_board* board, vec2 cur) {
-	(void)board, (void)cur, (void)condition;
-	return 0;
+	chess* current = get_chess_from_board(board, cur[0], cur[1]);
+	return is_king_checked(condition, board, current, cur[0] + 1, cur[1] + 1, 1) ||
+		   is_king_checked(condition, board, current, cur[0] - 1, cur[1] - 1, 1) ||
+		   is_king_checked(condition, board, current, cur[0] + 1, cur[1] - 1, 1) ||
+		   is_king_checked(condition, board, current, cur[0] - 1, cur[1] + 1, 1) ||
+		   is_king_checked(condition, board, current, cur[0] + 1, cur[1], 1) ||
+		   is_king_checked(condition, board, current, cur[0], cur[1] + 1, 1) ||
+		   is_king_checked(condition, board, current, cur[0] - 1, cur[1], 1) ||
+		   is_king_checked(condition, board, current, cur[0], cur[1] - 1, 1);
 }
 
 static check_king_callback map_king_check_callback[] = {
