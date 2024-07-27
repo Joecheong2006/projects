@@ -278,6 +278,16 @@ int main(void)
         // alSourcePlay(sources[1]);
     }
 
+    sprite_texture sp_tex = {
+        .per_sprite = {48.0 / 192, 48.0 / 192},
+    };
+    init_texture(&sp_tex.tex, "assets/Sprout-Lands/Characters/Basic-Charakter.png", TextureFilterNearest);
+
+    sprite sp = {
+        .sprite_index = {0, 0},
+        .color = {1, 1, 1, 1}
+    };
+
     while(!glfwWindowShouldClose(app_window))
     {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -300,8 +310,20 @@ int main(void)
 		con.window.render_callback(con.owner);
         update_game_object_system();
 
-        float points[] = { 0, 0, 1, 2, 2, 1, };
+        float points[] = { 0, 0, 0, 2, 2, 0, };
         render_debug_line(points, (vec3){0, 0, 1});
+
+        transform tran = {
+            .position = {0, 0, 1},
+            .scale = {4, 4, 1},
+            .parent = NULL,
+        };
+        static int index = 0;
+        index = (int)(glfwGetTime() * 7) % 16;
+        sp.sprite_index[0] = index % 4;
+        sp.sprite_index[1] = (int)(index / 4);
+
+        render_sprite(&cam, &tran, &sp_tex, &sp);
 
         glfwSwapBuffers(app_window);
         glfwPollEvents();

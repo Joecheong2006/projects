@@ -21,7 +21,6 @@ LIB :=
 ifeq ($(OS),Windows_NT)
 	DLLFILES += lib/glfw/glfw3.dll
 	LIB += $(LIB_WIN)
-	OUT += .exe
 else
 	LIB += $(LIB_LIN)
 endif
