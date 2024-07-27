@@ -18,6 +18,11 @@ void init_chess_board(chess_board* board) {
 
     for (int i = 0; i < 64; i++) {
         board->grid[i].type = ChessTypeDead;
+        board->grid[i].selected = 0;
+	    board->grid[i].background = (sprite) {
+	    	.sprite_index = {12, 0},
+	    	.color = {94.0 / 255, 215.0 / 255, 241.0 / 255, 0.0}
+	    };
     }
 	for (int i = 0; i < 8; i++) {
 		init_chess(board, &board->grid[1 * 8 + i], ChessTypePawn, 1, (vec2){i, 1});
@@ -46,51 +51,117 @@ void init_chess_board(chess_board* board) {
 	init_chess(board, &board->grid[0 * 8 + 4], ChessTypeKing, 1, (vec2){4, 0});
 }
 
+sprite_texture background_tex;
+
 void render_chess_board(camera* cam, chess_board* board, sprite_texture* board_tex, sprite_texture* chess_tex) {
+	if (background_tex.per_sprite[0] == 0) {
+	    background_tex = (sprite_texture){ .per_sprite = {1, 1} };
+	    init_texture(&background_tex.tex, "assets/chess/white_block.png", TextureFilterNearest);
+	}
 	render_sprite(cam, &board->tran, board_tex, &board->sp);
 	for (i32 i = 0; i < 64; i++) {
-		render_chess_piece(cam, &board->grid[i], chess_tex);
+		transform tran;
+		init_transform(&tran);
+		tran.parent = &board->tran;
+		glm_vec3_copy((vec3){i % 8 - 3.5, i / 8 - 3.5, 0.1}, tran.local_position);
+		chess* che = &board->grid[i];
+		render_sprite(cam, &tran, &background_tex, &che->background);
+		if (board->grid[i].type != ChessTypeDead) {
+		    render_sprite(cam, &che->tran, chess_tex, &che->sp);
+		}
 	}
 }
 
-typedef int(*check_king_callback)(chess_board* board, vec2 cur);
+static void find_location(vec2* out, chess_board* board, chess* che) {
+	for (int i = 0; i < 64; i++) {
+		if (&board->grid[i] == che) {
+			glm_vec2_copy((vec2){i % 8, (int)(i / 8)}, *out);
+		}
+	}
+}
 
-static int is_king_checked(chess_board* board, int is_white, int x, int y) {
+typedef int(*check_condition_callback)(chess_board* board, int x, int y, chess* current, int for_check);
+
+int is_legal(chess_board* board, int x, int y, chess* current, int for_check) {
+	(void)for_check;
 	chess* che = get_chess_from_board(board, x, y);
+	{
+		vec2 start;
+		find_location(&start, board, current);
+		if (!current->is_legal_move(board, start, (vec2){x, y})) {
+			return 0;
+		}
+	}
+	if (che->type != ChessTypeDead && che->is_white == current->is_white) {
+		return 0;
+	}
+	chess che_copy = *che;
+	chess cur_copy = *current;
+
+	*current = che_copy;
+	*che = cur_copy;
+	current->type = ChessTypeDead;
+
+	board->round++;
+	int checked = king_is_checked(board);
+	board->round--;
+
+	*current = cur_copy;
+	*che = che_copy;
+	return !checked;
+}
+
+int is_king(chess_board* board, int x, int y, chess* current, int for_check) {
+	(void)current;
+	if (!for_check) {
+		return 0;
+	}
+	chess* che = get_chess_from_board(board, x, y);
+	return che->type == ChessTypeKing && current->is_white != che->is_white;
+}
+
+typedef int(*check_king_callback)(check_condition_callback condition, chess_board* board, vec2 cur);
+
+static int is_king_checked(check_condition_callback condition, chess_board* board, chess* current, int x, int y, int for_check) {
 	if (x > 7 || x < 0 || y > 7 || y < 0) {
 		return 0;
 	}
-	return che->type == ChessTypeKing && is_white != che->is_white;
+	return condition(board, x, y, current, for_check);
 }
 
-static int pawn_check_callback(chess_board* board, vec2 cur) {
+static int pawn_check_callback(check_condition_callback condition, chess_board* board, vec2 cur) {
 	chess* current = get_chess_from_board(board, cur[0], cur[1]);
 	int direction = current->is_white ? 1 : -1;
-	return is_king_checked(board, current->is_white, cur[0] - 1, cur[1] + direction) ||
-		   is_king_checked(board, current->is_white, cur[0] + 1, cur[1] + direction);
+	if (current->first_move == 2 && is_king_checked(condition, board, current, cur[0], cur[1] + direction * 2, 0)) {
+		return 1;
+	}
+	return is_king_checked(condition, board, current, cur[0] - 1, cur[1] + direction, 1) ||
+		   is_king_checked(condition, board, current, cur[0] + 1, cur[1] + direction, 1) ||
+		   is_king_checked(condition, board, current, cur[0], cur[1] + direction, 0);
 }
 
-static int knight_check_callback(chess_board* board, vec2 cur) {
+static int knight_check_callback(check_condition_callback condition, chess_board* board, vec2 cur) {
 	chess* current = get_chess_from_board(board, cur[0], cur[1]);
-	return is_king_checked(board, current->is_white, cur[0] + 1, cur[1] + 2) ||
-		   is_king_checked(board, current->is_white, cur[0] - 1, cur[1] + 2) ||
-		   is_king_checked(board, current->is_white, cur[0] - 1, cur[1] - 2) ||
-		   is_king_checked(board, current->is_white, cur[0] + 1, cur[1] - 2) ||
-		   is_king_checked(board, current->is_white, cur[0] + 2, cur[1] + 1) ||
-		   is_king_checked(board, current->is_white, cur[0] - 2, cur[1] + 1) ||
-		   is_king_checked(board, current->is_white, cur[0] - 2, cur[1] - 1) ||
-		   is_king_checked(board, current->is_white, cur[0] + 2, cur[1] - 1);
+	return is_king_checked(condition, board, current, cur[0] + 1, cur[1] + 2, 1) ||
+		   is_king_checked(condition, board, current, cur[0] - 1, cur[1] + 2, 1) ||
+		   is_king_checked(condition, board, current, cur[0] - 1, cur[1] - 2, 1) ||
+		   is_king_checked(condition, board, current, cur[0] + 1, cur[1] - 2, 1) ||
+		   is_king_checked(condition, board, current, cur[0] + 2, cur[1] + 1, 1) ||
+		   is_king_checked(condition, board, current, cur[0] - 2, cur[1] + 1, 1) ||
+		   is_king_checked(condition, board, current, cur[0] - 2, cur[1] - 1, 1) ||
+		   is_king_checked(condition, board, current, cur[0] + 2, cur[1] - 1, 1);
 }
 
-static int check_kind_with_direction(chess_board* board, vec2 diagonal, vec2 cur) {
+static int check_king_with_direction(check_condition_callback condition, chess_board* board, vec2 diagonal, vec2 cur) {
 	chess* current = get_chess_from_board(board, cur[0], cur[1]);
 	for (int i = 1; i < 8; ++i) {
 		int x = cur[0] + i * diagonal[0], y = cur[1] + i * diagonal[1];
 		if (x == 8 || x == -1 || y == 8 || y == -1) {
 			break;
 		}
+
 		chess* che = get_chess_from_board(board, x, y);
-		if (che->type == ChessTypeKing && current->is_white != che->is_white) {
+		if (condition(board, x, y, current, 1)) {
 			return 1;
 		}
 		if (che->type != ChessTypeDead) {
@@ -100,26 +171,26 @@ static int check_kind_with_direction(chess_board* board, vec2 diagonal, vec2 cur
 	return 0;
 }
 
-static int bishop_check_callback(chess_board* board, vec2 cur) {
-	return check_kind_with_direction(board, (vec2){1, 1}, cur) ||
-		   check_kind_with_direction(board, (vec2){-1, 1}, cur) ||
-		   check_kind_with_direction(board, (vec2){1, -1}, cur) ||
-		   check_kind_with_direction(board, (vec2){-1, -1}, cur);
+static int bishop_check_callback(check_condition_callback condition, chess_board* board, vec2 cur) {
+	return check_king_with_direction(condition, board, (vec2){1, 1}, cur) ||
+		   check_king_with_direction(condition, board, (vec2){-1, 1}, cur) ||
+		   check_king_with_direction(condition, board, (vec2){1, -1}, cur) ||
+		   check_king_with_direction(condition, board, (vec2){-1, -1}, cur);
 }
 
-static int rook_check_callback(chess_board* board, vec2 cur) {
-	return check_kind_with_direction(board, (vec2){1, 0}, cur) ||
-		   check_kind_with_direction(board, (vec2){0, 1}, cur) ||
-		   check_kind_with_direction(board, (vec2){-1, 0}, cur) ||
-		   check_kind_with_direction(board, (vec2){0, -1}, cur);
+static int rook_check_callback(check_condition_callback condition, chess_board* board, vec2 cur) {
+	return check_king_with_direction(condition, board, (vec2){1, 0}, cur) ||
+		   check_king_with_direction(condition, board, (vec2){0, 1}, cur) ||
+		   check_king_with_direction(condition, board, (vec2){-1, 0}, cur) ||
+		   check_king_with_direction(condition, board, (vec2){0, -1}, cur);
 }
 
-static int queen_check_callback(chess_board* board, vec2 cur) {
-	return rook_check_callback(board, cur) || bishop_check_callback(board, cur);
+static int queen_check_callback(check_condition_callback condition, chess_board* board, vec2 cur) {
+	return rook_check_callback(condition, board, cur) || bishop_check_callback(condition, board, cur);
 }
 
-static int king_check_callback(chess_board* board, vec2 cur) {
-	(void)board, (void)cur;
+static int king_check_callback(check_condition_callback condition, chess_board* board, vec2 cur) {
+	(void)board, (void)cur, (void)condition;
 	return 0;
 }
 
@@ -137,8 +208,19 @@ int king_is_checked(chess_board* board) {
 	int is_white = board->round % 2;
 	for (i32 i = 0; i < 64; i++) {
 	    if (board->grid[i].type != ChessTypeDead && board->grid[i].is_white == is_white) {
-	    	if (map_king_check_callback[board->grid[i].type](board, (vec2){i % 8, (int)(i / 8)})) {
-	    		printf("%d checked %s king\n", board->grid[i].type, is_white ? "white" : "black");
+	    	if (map_king_check_callback[board->grid[i].type](is_king, board, (vec2){i % 8, (int)(i / 8)})) {
+	    		return 1;
+	    	}
+	    }
+	}
+	return 0;
+}
+
+int any_possible_move(chess_board* board) {
+	int is_white = board->round % 2;
+	for (i32 i = 0; i < 64; i++) {
+	    if (board->grid[i].type != ChessTypeDead && board->grid[i].is_white == is_white) {
+	    	if (map_king_check_callback[board->grid[i].type](is_legal, board, (vec2){i % 8, (int)(i / 8)})) {
 	    		return 1;
 	    	}
 	    }

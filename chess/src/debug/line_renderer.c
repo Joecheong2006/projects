@@ -16,7 +16,7 @@ void init_debug_line_renderer_instance() {
     shader_program_free(&program);
 }
 
-void render_debug_line(vec3 points[2], vec3 color) {
+void render_debug_line(float points[6], vec3 color) {
     ASSERT(points != NULL && color != NULL);
     GLC(glUseProgram(shader));
     GLC(glBindVertexArray(vao.id));
@@ -25,7 +25,7 @@ void render_debug_line(vec3 points[2], vec3 color) {
     GLC(glUniform3fv(location, 1, color));
 
     GLC(location = glGetUniformLocation(shader, "points"));
-    GLC(glUniform3fv(location, 2, &points[0][0]));
+    GLC(glUniform3fv(location, 2, points));
 
     camera* cam = find_game_object_by_index(0)->self;
     mat4 m;

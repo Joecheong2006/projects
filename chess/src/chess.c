@@ -299,17 +299,8 @@ void init_chess(chess_board* board, chess* che, ChessType type, i32 is_white, ve
     glm_vec4_copy((vec4){1, 1, 1, 1}, che->sp.color);
 }
 
-sprite_texture background_tex;
-
 void render_chess_piece(camera* cam, chess* che, sprite_texture* chess_tex) {
-	if (background_tex.per_sprite[0] == 0) {
-	    background_tex = (sprite_texture){ .per_sprite = {1, 1} };
-	    init_texture(&background_tex.tex, "assets/chess/white_block.png", TextureFilterNearest);
-	}
 	if (che->type != ChessTypeDead) {
-		che->tran.local_position[2] -= 0.2;
-		render_sprite(cam, &che->tran, &background_tex, &che->background);
-		che->tran.local_position[2] += 0.2;
 	    render_sprite(cam, &che->tran, chess_tex, &che->sp);
 	}
 }

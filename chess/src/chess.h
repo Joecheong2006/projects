@@ -29,12 +29,10 @@ struct chess {
     check_legal_move_callback is_legal_move;
     illegal_move_recovery_callback recover_illegal_move;
     legal_move_callback move;
-    i32 en_passant, first_move, is_white;
+    i8 en_passant, first_move, is_white, selected;
 };
 
 void init_chess(chess_board* board, chess* che, ChessType type, i32 is_white, vec2 position);
 void chess_move_anim_callback(anim_position_slide* slide, float dur);
-
-void render_chess_piece(camera* cam, chess* che, sprite_texture* chess_tex);
 
 #endif

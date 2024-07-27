@@ -22,7 +22,7 @@
 
 #include "memallocate.h"
 
-#include "sound.h"
+#include "audio.h"
 
 #include "debug/line_renderer.h"
 
@@ -73,13 +73,6 @@ typedef struct {
     window_state win_state;
 } Game;
 
-void drop_holding_piece(Game* game) {
-    if (game->hold) {
-        game->hold->background.color[3] = 0;
-    }
-    game->hold = NULL;
-}
-
 void game_window_resize_callback(void* owner, int width, int height) {
     Game* game = owner;
     glViewport(0, 0, width, height);
@@ -126,21 +119,23 @@ void game_mouse_button_callback(void* owner, int button, int action, int mods) {
     static vec2 pre_index;
     if (button == GLFW_MOUSE_BUTTON_1 && action == GLFW_PRESS) {
         if (game->hold) {
-            game->hold->background.color[3] = 0;
             chess* target = get_chess_from_board(&game->board, game->cursor_index[0], game->cursor_index[1]);
             if (target == game->hold) {
-                drop_holding_piece(game);
+                game->hold->background.color[3] = 0;
+                game->hold = NULL;
                 return;
             }
 
             if ((game->board.round % 2 == 0 && game->hold->is_white) || (game->board.round % 2 && !game->hold->is_white)) {
-                drop_holding_piece(game);
+                game->hold->background.color[3] = 0;
+                game->hold = NULL;
                 return;
             }
 
             int legal = game->hold->is_legal_move(&game->board, pre_index, game->cursor_index);
             if (!legal) {
-                drop_holding_piece(game);
+                game->hold->background.color[3] = 0;
+                game->hold = NULL;
                 return;
             }
 
@@ -157,17 +152,40 @@ void game_mouse_button_callback(void* owner, int button, int action, int mods) {
 
                 game->hold->move(&game->board, pre_index, game->cursor_index);
 
-
                 if (king_is_checked(&game->board)) {
                     *target = target_copy;
                     *game->hold = hold_copy;
                     game->hold->recover_illegal_move(&game->board, pre_index);
-                    drop_holding_piece(game);
+                    game->hold->background.color[3] = 0;
+                    game->hold = NULL;
                     game->board.round--;
                     return;
                 }
             }
-    
+
+        	for (i32 i = 0; i < 64; i++) {
+        	    game->board.grid[i].background.color[3] = 0;
+        	    game->board.grid[i].selected = 0;
+        	}
+
+        	target->selected = 1;
+            target->background.color[3] = 0.6;
+        	game->hold->selected = 1;
+            game->hold->background.color[3] = 0.6;
+
+            // printf("%d\n", any_possible_move(&game->board));
+            if (any_possible_move(&game->board) == 0) {
+                game->board.round++;
+                int checked = king_is_checked(&game->board);
+                game->board.round--;
+                if (checked) {
+                    printf("mate\n");
+                }
+                else {
+                    printf("sill mate\n");
+                }
+            }
+
             static camera_shake_object obj = { .duration = 0.2, .strength = 0.04 };
             create_camera_shake(&obj);
 
@@ -178,12 +196,16 @@ void game_mouse_button_callback(void* owner, int button, int action, int mods) {
             set_anim_position_slide(&target->anim, &target->tran.local_position);
             init_anim_position_slide_duration(&anim, &target->anim, 0.12);
             create_anim_duration(&anim);
-            drop_holding_piece(game);
+            game->hold = NULL;
         }
         else {
             game->hold = get_chess_from_board(&game->board, game->cursor_index[0], game->cursor_index[1]);
+            if (game->hold->selected) {
+                game->hold = NULL;
+                return;
+            }
             if (game->hold->type == ChessTypeDead) {
-                drop_holding_piece(game);
+                game->hold = NULL;
             }
             else {
                 game->hold->background.color[3] = 0.6;
@@ -192,7 +214,10 @@ void game_mouse_button_callback(void* owner, int button, int action, int mods) {
         }
     }
     if (button == GLFW_MOUSE_BUTTON_2) {
-        drop_holding_piece(game);
+        if (game->hold) {
+            game->hold->background.color[3] = 0;
+        }
+        game->hold = NULL;
     }
 }
 
@@ -230,93 +255,16 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
     }
 }
 
-static void list_audio_devices(const ALCchar *devices)
-{
-        const ALCchar *device = devices, *next = devices + 1;
-        size_t len = 0;
-
-        fprintf(stdout, "Devices list:\n");
-        fprintf(stdout, "----------\n");
-        while (device && *device != '\0' && next && *next != '\0') {
-                fprintf(stdout, "%s\n", device);
-                len = strlen(device);
-                device += (len + 1);
-                next += (len + 2);
-        }
-        fprintf(stdout, "----------\n");
-}
-
-typedef struct {
-    ALCcontext* context;
-} audio_context;
-
-void init_audio(audio_context* audio) {
-    ALCdevice* device;
-    device = alcOpenDevice(NULL);
-    if (!device) {
-        printf("failed to open autdio device\n");
-    }
-
-    ALboolean enumeration;
-
-    enumeration = alcIsExtensionPresent(NULL, "ALC_ENUMERATION_EXT");
-    if (enumeration == AL_FALSE)
-        printf("not support enumeration\n");
-    else
-        printf("support enumeration\n");
-
-    list_audio_devices(alcGetString(NULL, ALC_DEVICE_SPECIFIER));
-
-    audio->context = alcCreateContext(device, NULL);
-    if (!alcMakeContextCurrent(audio->context)) {
-        printf("failed to make context current\n");
-    }
-    al_check_error();
-}
-
-void shutdown_audio(audio_context* audio) {
-    ALCdevice* device = alcGetContextsDevice(audio->context);
-    alcMakeContextCurrent(NULL);
-    alcDestroyContext(audio->context);
-    alcCloseDevice(device);
-}
-
-ALuint create_audio_source(float pitch, float gain, vec3 position, vec3 velocity, int loop) {
-    ALuint source;
-    alGenSources(1, &source);
-
-    alSourcef(source, AL_PITCH, pitch);
-    al_check_error();
-    alSourcef(source, AL_GAIN, gain);
-    al_check_error();
-    alSourcefv(source, AL_POSITION, position);
-    al_check_error();
-    alSourcefv(source, AL_VELOCITY, velocity);
-    al_check_error();
-    alSourcei(source, AL_LOOPING, loop ? AL_TRUE : AL_FALSE);
-    al_check_error();
-    return source;
-}
-
-void set_audio_listener_properties(vec3 position, vec3 velocity, ALfloat orientation[6]) {
-    alListenerfv(AL_POSITION, position);
-    al_check_error();
-    alListenerfv(AL_VELOCITY, velocity);
-    al_check_error();
-    alListenerfv(AL_ORIENTATION, orientation);
-    al_check_error();
-}
-
 void sound_test(const char* path, float pitch, float gain) {
     audio_context audio;
     init_audio(&audio);
 
-    ALfloat listenerOri[] = { 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f };
+    float listenerOri[] = { 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f };
     set_audio_listener_properties((vec3){0, 0, 0}, (vec3){0, 0, 0}, listenerOri);
 
-    ALuint source = create_audio_source(pitch, gain, (vec3){0, 0, 0}, (vec3){0, 0, 0}, 0);
+    u32 source = create_audio_source(pitch, gain, (vec3){0, 0, 0}, (vec3){0, 0, 0}, 0);
 
-    ALuint buffer = gen_sound_buffer(path);
+    u32 buffer = gen_sound_buffer(path);
     if (!buffer) {
         printf("load %s failed\n", path);
         alDeleteSources(1, &source);
@@ -346,7 +294,7 @@ void sound_test(const char* path, float pitch, float gain) {
 int main(void)
 {
     glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
@@ -368,9 +316,9 @@ int main(void)
     GLC(glEnable(GL_BLEND));
     GLC(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
     GLC(glDepthFunc(GL_LESS));
-    GLC(glAlphaFunc(GL_GREATER, 0.1));
-    GLC(glEnable(GL_ALPHA_TEST));
-    glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
+    // GLC(glAlphaFunc(GL_GREATER, 0.1));
+    // GLC(glEnable(GL_ALPHA_TEST));
+    // glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
 
     // glDisable(GL_DITHER);
     // glDisable(GL_POINT_SMOOTH);
@@ -384,8 +332,7 @@ int main(void)
     audio_context audio;
     init_audio(&audio);
 
-    ALfloat listenerOri[] = { 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f };
-    set_audio_listener_properties((vec3){0, 0, 0}, (vec3){0, 0, 0}, listenerOri);
+    set_audio_listener_properties((vec3){0, 0, 0}, (vec3){0, 0, 0}, (f32[]){ 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f });
 
     // setting up
     setup_anim_system();
@@ -443,8 +390,8 @@ int main(void)
     });
 
     float pitch = 1, gain = 1;
-    ALuint buffers[2];
-    ALuint sources[2];
+    u32 buffers[2];
+    u32 sources[2];
 
     {
         sources[0] = create_audio_source(pitch, gain, (vec3){0, 0, 0}, (vec3){0, 0, 0}, 0);
@@ -466,13 +413,13 @@ int main(void)
         buffers[1] = gen_sound_buffer(audio_file_path);
         if (!buffers[1]) {
             printf("load %s failed\n", audio_file_path);
-            // alDeleteSources(1, &sources[1]);
+            alDeleteSources(1, &sources[1]);
             shutdown_audio(&audio);
             exit(1);
         }
 
         alSourcei(sources[1], AL_BUFFER, buffers[1]);
-        alSourcePlay(sources[1]);
+        // alSourcePlay(sources[1]);
     }
 
     while(!glfwWindowShouldClose(app_window))
@@ -510,10 +457,7 @@ int main(void)
 		con.window.render_callback(con.owner);
         update_game_object_system();
 
-        vec3 points[2] = {
-            {0, 0, 1},
-            {1, 1, 1},
-        };
+        float points[] = { 0, 0, 1, 1, 1, 1, };
         render_debug_line(points, (vec3){0, 0, 1});
 
         glfwSwapBuffers(app_window);
