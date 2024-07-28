@@ -9,7 +9,7 @@ static vertex_array vao;
 static u32 shader;
 
 void init_debug_line_renderer_instance() {
-    glLineWidth(2);
+    glLineWidth(1);
     GLC(init_vertex_array(&vao));
     shader_program program = parse_shader("res/shaders/line.shader");
     GLC(shader = create_shader(program.vertex, program.fragment));

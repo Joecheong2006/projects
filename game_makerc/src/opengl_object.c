@@ -96,12 +96,12 @@ error_type init_texture(texture* tex, char* texture_path, TextureFilter filter) 
         tex->filter = TextureFilterUnkown;
     }
 
-    int width, height, bpp;
-    u8* data = stbi_load(texture_path, &width, &height, &bpp, 0);
+    int bpp;
+    u8* data = stbi_load(texture_path, &tex->width, &tex->height, &bpp, 0);
     if (data) {
-        GLC(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, bpp == 3 ? GL_RGB : GL_RGBA, GL_UNSIGNED_BYTE, data));
+        GLC(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tex->width, tex->height, 0, bpp == 3 ? GL_RGB : GL_RGBA, GL_UNSIGNED_BYTE, data));
         GLC(glGenerateMipmap(GL_TEXTURE_2D));
-        printf("%s %d %d\n", texture_path, width, height);
+        printf("%s %d %d\n", texture_path, tex->width, tex->height);
     }
     else {
         printf("Failed to load texture\n");

@@ -29,8 +29,7 @@ in vec2 tex_coord;
 
 void main()
 {
-    float ph = 1 / per_sprite.y;
-    vec4 tex_color = texture(tex, (tex_coord + sprite_index) * per_sprite);
+    vec4 tex_color = texture(tex, (tex_coord + vec2(sprite_index.x, 1 / per_sprite.y - sprite_index.y - 1)) * per_sprite);
     if (tex_color.a == 0 || color.a == 0) {
         discard;
     }

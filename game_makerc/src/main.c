@@ -5,6 +5,7 @@
 #include <string.h>
 #include <cglm/cglm.h>
 #include "camera.h"
+#include "cglm/vec2.h"
 #include "string.h"
 #include "opengl_object.h"
 #include "sprite.h"
@@ -14,6 +15,7 @@
 #include "camera_shake.h"
 
 #include "anim_duration_system.h"
+#include "anim_position_slide.h"
 
 #include "game_object_system.h"
 
@@ -22,6 +24,11 @@
 #include "audio.h"
 
 #include "debug/line_renderer.h"
+
+#include "physics/rigid2d.h"
+#include "physics/collider2d.h"
+#include "physics/box2d.h"
+#include "physics/circle2d.h"
 
 #define PI 3.14159265359
 
@@ -88,7 +95,7 @@ void game_key_callback(void* owner, int key, int scancode, int action, int mods)
     }
 
     static camera_shake_object cam_shake;
-    if (key == GLFW_KEY_S && action == GLFW_PRESS) {
+    if (key == GLFW_KEY_R && action == GLFW_PRESS) {
         cam_shake = (camera_shake_object){ .duration = 0.2, .strength = 0.03 };
         create_camera_shake(&cam_shake);
     }
@@ -175,6 +182,63 @@ void sound_test(const char* path, float pitch, float gain) {
     alDeleteSources(1, &source);
     alDeleteBuffers(1, &buffer);
     shutdown_audio(&audio);
+}
+
+void render_transform_outline(transform* tran, vec3 color) {
+    vec2 bottom_left = { -tran->scale[0] * 0.5, -tran->scale[1] * 0.5 };
+    vec2 top_right = { tran->scale[0] * 0.5, tran->scale[1] * 0.5 };
+
+    float points[6];
+    glm_vec3_add(tran->position, bottom_left, points);
+    glm_vec3_add(points, (vec3){tran->scale[0], 0, 0}, points + 3);
+    render_debug_line(points, color);
+
+    glm_vec3_add(tran->position, bottom_left, points);
+    glm_vec3_add(points, (vec3){0, tran->scale[1], 0}, points + 3);
+    render_debug_line(points, color);
+
+    glm_vec3_add(tran->position, top_right, points);
+    glm_vec3_add(points, (vec3){-tran->scale[0], 0, 0}, points + 3);
+    render_debug_line(points, color);
+
+    glm_vec3_add(tran->position, top_right, points);
+    glm_vec3_add(points, (vec3){0, -tran->scale[1], 0}, points + 3);
+    render_debug_line(points, color);
+}
+
+void resolve_velocity(collision2d_state* state, rigid2d* r1, rigid2d* r2) {
+    const f32 total_inverse_mass = 1.0 / (r1->inverse_mass + r2->inverse_mass);
+    if (r2->is_static) {
+        glm_vec2_mulsubs(state->normal, state->depth, r1->tran->position);
+    }
+    else if (r1->is_static) {
+        glm_vec2_muladds(state->normal, state->depth, r2->tran->position);
+    }
+    else {
+        glm_vec2_mulsubs(state->normal, state->depth * r1->inverse_mass * total_inverse_mass, r1->tran->position);
+        glm_vec2_muladds(state->normal, state->depth * r2->inverse_mass * total_inverse_mass, r2->tran->position);
+    }
+
+    vec2 separate_v;
+    glm_vec2_sub(r2->v, r1->v, separate_v);
+    const f32 separate_normal = glm_vec2_dot(separate_v, state->normal);
+    if (separate_normal > 0) {
+        return;
+    }
+
+    const f32 e = glm_min(r1->restitution, r2->restitution);
+    const f32 J = separate_normal * (e + 1.0) * total_inverse_mass;
+
+    glm_vec2_muladds(state->normal, (1.0 - r1->is_static) * J * r1->inverse_mass, r1->v);
+    glm_vec2_mulsubs(state->normal, (1.0 - r2->is_static) * J * r2->inverse_mass, r2->v);
+}
+
+void sprite_index_anim(anim_position_slide* slide, float dur) {
+    const int key_frames = 2;
+    int index = dur * key_frames;
+    float* sprite_index = *slide->target;
+    sprite_index[0] = index % 2;
+    sprite_index[1] = 0;
 }
 
 int main(void)
@@ -265,7 +329,7 @@ int main(void)
     }
     {
         sources[1] = create_audio_source(pitch, gain, (vec3){0, 0, 0}, (vec3){0, 0, 0}, 0);
-        char* audio_file_path = "assets/audio/killshot-speedup.mp3";
+        char* audio_file_path = "assets/audio/yippee.mp3";
         buffers[1] = gen_sound_buffer(audio_file_path);
         if (!buffers[1]) {
             printf("load %s failed\n", audio_file_path);
@@ -275,18 +339,59 @@ int main(void)
         }
 
         alSourcei(sources[1], AL_BUFFER, buffers[1]);
-        // alSourcePlay(sources[1]);
+        alSourcePlay(sources[1]);
     }
 
-    sprite_texture sp_tex = {
-        .per_sprite = {48.0 / 192, 48.0 / 192},
-    };
+    sprite_texture sp_tex;
     init_texture(&sp_tex.tex, "assets/Sprout-Lands/Characters/Basic-Charakter.png", TextureFilterNearest);
+    glm_vec2_copy((vec2){48.0 / sp_tex.tex.width, 48.0 / sp_tex.tex.height}, sp_tex.per_sprite);
 
     sprite sp = {
         .sprite_index = {0, 0},
         .color = {1, 1, 1, 1}
     };
+    transform tran = {
+        .position = {0, 0, 1},
+        .scale = {2, 2, 1},
+        .parent = NULL,
+    };
+    rigid2d rig;
+    init_rigid2d(&rig, &tran);
+    rigid2d_set_mass(&rig, 0.01);
+
+    anim_position_slide sprite_anim;
+    init_anim_position_slide(&sprite_anim, (vec3){4, 0, 0}, sprite_index_anim);
+    set_anim_position_slide(&sprite_anim, &sp.sprite_index);
+    anim_duration anim = { .loop = 1 };
+    init_anim_position_slide_duration(&anim, &sprite_anim, 0.5);
+    create_anim_duration(&anim);
+
+    transform tran1;
+    init_transform(&tran1);
+    rigid2d r1;
+    init_rigid2d(&r1, &tran1);
+    // glm_vec2_copy((vec2){9.81, 0}, r1.g);
+    glm_vec2_copy((vec2){0, 0}, r1.g);
+    r1.restitution = 1;
+    r1.v[0] = 3;
+    rigid2d_set_mass(&r1, 0.2);
+    circle2d context1 = {
+        .center = {0, 0}, .radius = 0.5
+    };
+    collider2d collider1 = create_collider2d(ColliderCircle2d, &r1, &context1);
+
+    transform tran2;
+    init_transform(&tran2);
+    tran2.position[1] = 0.8;
+    tran2.position[0] = 2;
+    rigid2d r2;
+    init_rigid2d(&r2, &tran2);
+    glm_vec2_copy((vec2){0, 0}, r2.g);
+    r2.restitution = 0.7;
+    circle2d context2 = {
+        .center = {0, 0}, .radius = 0.5
+    };
+    collider2d collider2 = create_collider2d(ColliderCircle2d, &r2, &context2);
 
     while(!glfwWindowShouldClose(app_window))
     {
@@ -310,20 +415,33 @@ int main(void)
 		con.window.render_callback(con.owner);
         update_game_object_system();
 
-        float points[] = { 0, 0, 0, 2, 2, 0, };
-        render_debug_line(points, (vec3){0, 0, 1});
+        // static int index = 0;
+        // index = (int)(glfwGetTime() * 5) % 16;
+        // sp.sprite_index[0] = index % 4;
+        // sp.sprite_index[1] = (int)(index / 4);
 
-        transform tran = {
-            .position = {0, 0, 1},
-            .scale = {4, 4, 1},
-            .parent = NULL,
-        };
-        static int index = 0;
-        index = (int)(glfwGetTime() * 7) % 16;
-        sp.sprite_index[0] = index % 4;
-        sp.sprite_index[1] = (int)(index / 4);
+        const float dt = 1.0 / 144;
+        // rig.process(&rig, dt);
 
         render_sprite(&cam, &tran, &sp_tex, &sp);
+        render_transform_outline(&tran, (vec3){1, 1, 1});
+
+        collision2d_state state = collider1.collide(&collider1, &collider2);
+
+        vec3 outline_color1 = {1, 1, 1};
+        vec3 outline_color2 = {1, 1, 1};
+
+        if (state.depth > 0) {
+            outline_color1[0] = 0;
+            outline_color1[2] = 0;
+            resolve_velocity(&state, collider1.parent, collider2.parent);
+        }
+
+        r1.process(&r1, dt);
+        r2.process(&r2, dt);
+
+        render_transform_outline(&tran1, outline_color1);
+        render_transform_outline(&tran2, outline_color2);
 
         glfwSwapBuffers(app_window);
         glfwPollEvents();

@@ -1,6 +1,6 @@
 #include "anim_position_slide.h"
 
-void anim_position_duration_callback(anim_duration* anim, float dur) {
+static void anim_position_duration_callback(anim_duration* anim, float dur) {
     anim_position_slide* slide = anim->in;
     slide->callback(slide, dur / anim->time_duration);
 }

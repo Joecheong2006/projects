@@ -42,7 +42,7 @@ static void clean_anim_duration() {
     int len = get_anim_duration_num();
     for (int i = 0; i < len; ++i) {
         if (system->durations[i].ended) {
-            delete_anim_duration(&system->durations[i]);
+            delete_anim_duration(system->durations + i);
         }
     }
 
@@ -74,7 +74,6 @@ void delete_anim_duration(anim_duration* duration) {
     system->durations[duration->index] = vector_back(system->durations);
     system->durations[duration->index].index = temp.index;
     vector_pop(system->durations);
-    // printf("delete %d:%d\n", duration->index, system->durations[duration->index].index);
 }
 
 void shutdown_anim_system() {

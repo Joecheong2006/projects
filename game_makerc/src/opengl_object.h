@@ -48,6 +48,7 @@ typedef enum {
 typedef struct {
     u32 id;
     TextureFilter filter;
+    int width, height;
     char* tex_path;
 } texture;
 error_type init_texture(texture* tex, char* texture_path, TextureFilter filter);

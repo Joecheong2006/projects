@@ -1,0 +1,28 @@
+#ifndef _PHYSICS_COLLIDER2D_
+#define _PHYSICS_COLLIDER2D_
+#include "rigid2d.h"
+#include <cglm/cglm.h>
+
+typedef enum {
+    ColliderBox2d = 0,
+    ColliderCircle2d,
+} Collider2dType;
+
+typedef struct {
+    vec2 normal, contact;
+    float depth;
+} collision2d_state;
+
+typedef struct collider2d collider2d;
+typedef collision2d_state(*collider2d_collision_callback)(collider2d*, collider2d*);
+
+struct collider2d {
+    Collider2dType type;
+    collider2d_collision_callback collide;
+    void* self;
+    rigid2d* parent;
+};
+
+collider2d create_collider2d(Collider2dType type, rigid2d* parent, void* context);
+
+#endif

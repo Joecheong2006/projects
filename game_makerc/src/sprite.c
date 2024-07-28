@@ -1,4 +1,5 @@
 #include "sprite.h"
+#include "cglm/euler.h"
 #include "shader_program.h"
 #include <glad/glad.h>
 

@@ -5,7 +5,10 @@
 void anim_duration_end_callback(anim_duration* in, float dur) {
 	(void)dur;
     anim_duration* anim = in;
-    anim->ended = 1;
+    if (!anim->loop) {
+	    anim->ended = 1;
+    }
+    anim->time_start = glfwGetTime();
 }
 
 void init_anim_duration(anim_duration* anim, void* in, float time_duration, anim_duration_callback callback) {

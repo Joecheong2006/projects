@@ -8,7 +8,7 @@ struct anim_duration {
     anim_duration_callback callback[2];
     f32 time_start, time_duration;
     void* in;
-    i32 ended, index;
+    i32 ended, index, loop;
 };
 
 void init_anim_duration(anim_duration* anim, void* in, float time_duration, anim_duration_callback callback);
