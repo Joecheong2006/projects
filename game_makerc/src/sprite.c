@@ -1,5 +1,4 @@
 #include "sprite.h"
-#include "cglm/euler.h"
 #include "shader_program.h"
 #include <glad/glad.h>
 
@@ -42,7 +41,7 @@ void render_sprite(camera* cam,  transform* tran, sprite_texture* sprite_tex, sp
 	glActiveTexture(GL_TEXTURE0);
 	GLC(glBindTexture(GL_TEXTURE_2D, sprite_tex->tex.id));
 
-    int location;
+    i32 location;
     // GLC(location = glGetUniformLocation(sprite_instance.shader, "tex"));
     // GLC(glUniform1i(location, 0));
     GLC(location = glGetUniformLocation(sprite_instance.shader, "per_sprite"));

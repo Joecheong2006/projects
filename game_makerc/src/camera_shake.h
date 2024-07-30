@@ -1,10 +1,11 @@
 #ifndef _CAMERA_SHAKE_
 #define _CAMERA_SHAKE_
 #include <cglm/cglm.h>
+#include "util.h"
 
 typedef struct {
-    float duration, strength;
-    float time_start;
+    f32 duration, strength;
+    f32 time_start;
     vec3 origin_pos;
 } camera_shake_object;
 

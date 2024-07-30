@@ -3,6 +3,6 @@
 #include <cglm/cglm.h>
 
 void init_debug_line_renderer_instance();
-void render_debug_line(float points[6], vec3 color);
+void render_debug_line(vec3 p1, vec3 p2, vec3 color);
 
 #endif

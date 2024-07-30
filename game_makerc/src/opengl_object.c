@@ -9,7 +9,7 @@ void gl_clear_error()
     while(glGetError() != GL_NO_ERROR);
 }
 
-void gl_check_error(char*file, int line)
+void gl_check_error(char*file, i32 line)
 {
     GLenum error;
     while((error = glGetError())) {
@@ -36,7 +36,7 @@ static u32 primitive_type_size[] = {
     [GL_FLOAT - GL_FIRST_TYPE] = sizeof(f32),
 };
 
-static error_type init_buffer_object(u32* id, void* data, u32 type, int size, u32 usage) {
+static error_type init_buffer_object(u32* id, void* data, u32 type, i32 size, u32 usage) {
     glGenBuffers(1, id);
     glBindBuffer(type, *id);
     glBufferData(type, size, data, usage);
@@ -50,7 +50,7 @@ error_type init_vertex_buffer(vertex_buffer* vbo, i32 row, i32 col, u32 usage) {
     return init_buffer_object(&vbo->id, vbo->vertices, GL_ARRAY_BUFFER, sizeof(f32) * row * col, usage);
 }
 
-error_type init_index_buffer(index_buffer* ibo, int count, u32 usage) {
+error_type init_index_buffer(index_buffer* ibo, i32 count, u32 usage) {
     ASSERT(ibo != NULL && ibo->index != NULL);
     return init_buffer_object(&ibo->id, ibo->index, GL_ELEMENT_ARRAY_BUFFER, sizeof(u32) * count, usage);
 }
@@ -96,7 +96,7 @@ error_type init_texture(texture* tex, char* texture_path, TextureFilter filter) 
         tex->filter = TextureFilterUnkown;
     }
 
-    int bpp;
+    i32 bpp;
     u8* data = stbi_load(texture_path, &tex->width, &tex->height, &bpp, 0);
     if (data) {
         GLC(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tex->width, tex->height, 0, bpp == 3 ? GL_RGB : GL_RGBA, GL_UNSIGNED_BYTE, data));

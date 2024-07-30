@@ -129,7 +129,7 @@ void shutdown_audio(audio_context* audio) {
     alcCloseDevice(device);
 }
 
-ALuint create_audio_source(float pitch, float gain, vec3 position, vec3 velocity, int loop) {
+ALuint create_audio_source(f32 pitch, f32 gain, vec3 position, vec3 velocity, i32 loop) {
     ALuint source;
     alGenSources(1, &source);
 

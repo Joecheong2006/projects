@@ -7,11 +7,19 @@ static collider2d_collision_callback collider2d_collision_callback_table[] = {
 	[ColliderCircle2d] = circle2d_collision_callback
 };
 
+static get_inertia_callback get_inertia_table[] = {
+	[ColliderBox2d] = get_box2d_inertia,
+	[ColliderCircle2d] = get_circle2d_inertia,
+};
+
 collider2d create_collider2d(Collider2dType type, rigid2d* parent, void* context) {
-    return (collider2d) {
+	collider2d collider = {
         .type = type,
         .collide = collider2d_collision_callback_table[type],
         .self = context,
         .parent = parent,
-    };
+	};
+	parent->inertia = get_inertia_table[type](parent, &collider);
+	parent->inverse_inertia = 1.0 / parent->inertia;
+	return collider;
 }

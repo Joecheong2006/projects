@@ -6,15 +6,17 @@
 typedef enum {
     ColliderBox2d = 0,
     ColliderCircle2d,
+    ColliderCylinder2d,
 } Collider2dType;
 
 typedef struct {
     vec2 normal, contact;
-    float depth;
+    f32 depth;
 } collision2d_state;
 
 typedef struct collider2d collider2d;
 typedef collision2d_state(*collider2d_collision_callback)(collider2d*, collider2d*);
+typedef f32(*get_inertia_callback)(rigid2d*, collider2d*);
 
 struct collider2d {
     Collider2dType type;

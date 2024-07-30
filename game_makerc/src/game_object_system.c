@@ -10,7 +10,7 @@ game_object_system* get_game_object_system() {
     return &instance;
 }
 
-void init_game_object_system() {
+void setup_game_object_system() {
     get_game_object_system()->objects = make_vector();
 }
 

@@ -23,21 +23,22 @@
 
 #include "audio.h"
 
-#include "debug/line_renderer.h"
+#include "debug/primitive_shape_renderer.h"
 
-#include "physics/rigid2d.h"
-#include "physics/collider2d.h"
-#include "physics/box2d.h"
-#include "physics/circle2d.h"
+#include "physics2d_object_system.h"
+#include "physics2d/rigid2d.h"
+#include "physics2d/collider2d.h"
+#include "physics2d/box2d.h"
+#include "physics2d/circle2d.h"
 
 #define PI 3.14159265359
 
 #define WIDTH 640
 #define HEIGHT 640
 
-typedef void(*input_control_key_callback)(void* owner, int key, int scancode, int action, int mods);
+typedef void(*input_control_key_callback)(void* owner, i32 key, i32 scancode, i32 action, i32 mods);
 typedef void(*input_control_cursor_pos_callback)(void* owner, double xpos, double ypos);
-typedef void(*input_control_mouse_button_callback)(void* owner, int button, int action, int mods);
+typedef void(*input_control_mouse_button_callback)(void* owner, i32 button, i32 action, i32 mods);
 
 typedef struct {
     input_control_key_callback key_callback;
@@ -46,7 +47,7 @@ typedef struct {
 } input_control;
 
 typedef void(*window_control_render_callback)(void* owner);
-typedef void(*window_control_resize_callback)(void* window, int width, int height);
+typedef void(*window_control_resize_callback)(void* window, i32 width, i32 height);
 typedef struct {
     window_control_render_callback render_callback;
     window_control_resize_callback resize_callback;
@@ -60,7 +61,7 @@ typedef struct {
 
 typedef struct {
     GLFWwindow* window;
-    int width, height;
+    i32 width, height;
 } window_state;
 
 void close_application(window_state* window) {
@@ -71,7 +72,7 @@ typedef struct {
     window_state win_state;
 } Game;
 
-void game_window_resize_callback(void* owner, int width, int height) {
+void game_window_resize_callback(void* owner, i32 width, i32 height) {
     Game* game = owner;
     glViewport(0, 0, width, height);
 
@@ -82,7 +83,7 @@ void game_window_resize_callback(void* owner, int width, int height) {
     game->win_state.height = height;
 }
 
-void game_key_callback(void* owner, int key, int scancode, int action, int mods) {
+void game_key_callback(void* owner, i32 key, i32 scancode, i32 action, i32 mods) {
     (void)scancode, (void)mods;
     Game* game = owner;
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
@@ -90,7 +91,7 @@ void game_key_callback(void* owner, int key, int scancode, int action, int mods)
     }
 
     if (key == GLFW_KEY_T && action == GLFW_PRESS) {
-        static int line_mode = 0;
+        static i32 line_mode = 0;
         glPolygonMode(GL_FRONT_AND_BACK, (line_mode = !line_mode) ? GL_LINE : GL_FILL);
     }
 
@@ -112,7 +113,7 @@ void game_cursor_pos_callback(void* owner, double xpos, double ypos) {
     glm_mat4_mulv(m, uv, uv);
 }
 
-void game_mouse_button_callback(void* owner, int button, int action, int mods) {
+void game_mouse_button_callback(void* owner, i32 button, i32 action, i32 mods) {
 }
 
 void game_render_callback(void* owner) {
@@ -120,14 +121,14 @@ void game_render_callback(void* owner) {
     camera* cam = find_game_object_by_index(0)->self;
 }
 
-void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
+void framebuffer_size_callback(GLFWwindow* window, i32 width, i32 height) {
     callback_controller* c = glfwGetWindowUserPointer(window);
     if (c->window.resize_callback) {
         c->window.resize_callback(c->owner, width, height);
     }
 }
 
-void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+void key_callback(GLFWwindow* window, i32 key, i32 scancode, i32 action, i32 mods) {
     callback_controller* c = glfwGetWindowUserPointer(window);
     if (c->input.key_callback) {
         c->input.key_callback(c->owner, key, scancode, action, mods);
@@ -141,18 +142,18 @@ void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos) {
     }
 }
 
-void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
+void mouse_button_callback(GLFWwindow* window, i32 button, i32 action, i32 mods) {
     callback_controller* c = glfwGetWindowUserPointer(window);
     if (c->input.mouse_button_callback) {
         c->input.mouse_button_callback(c->owner, button, action, mods);
     }
 }
 
-void sound_test(const char* path, float pitch, float gain) {
+void sound_test(const char* path, f32 pitch, f32 gain) {
     audio_context audio;
     init_audio(&audio);
 
-    float listenerOri[] = { 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f };
+    f32 listenerOri[] = { 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f };
     set_audio_listener_properties((vec3){0, 0, 0}, (vec3){0, 0, 0}, listenerOri);
 
     u32 source = create_audio_source(pitch, gain, (vec3){0, 0, 0}, (vec3){0, 0, 0}, 0);
@@ -185,69 +186,184 @@ void sound_test(const char* path, float pitch, float gain) {
 }
 
 void render_transform_outline(transform* tran, vec3 color) {
-    vec2 bottom_left = { -tran->scale[0] * 0.5, -tran->scale[1] * 0.5 };
-    vec2 top_right = { tran->scale[0] * 0.5, tran->scale[1] * 0.5 };
+    vec3 bottom_left = { -tran->scale[0] * 0.5, -tran->scale[1] * 0.5, 0 };
+    vec3 top_right = { tran->scale[0] * 0.5, tran->scale[1] * 0.5, 0 };
+    vec3 bottom_right = { tran->scale[0] * 0.5, -tran->scale[1] * 0.5, 0 };
+    vec3 top_left = { -tran->scale[0] * 0.5, tran->scale[1] * 0.5, 0 };
 
-    float points[6];
-    glm_vec3_add(tran->position, bottom_left, points);
-    glm_vec3_add(points, (vec3){tran->scale[0], 0, 0}, points + 3);
-    render_debug_line(points, color);
+    mat4 m4;
+    mat3 m;
+    glm_euler(tran->euler_angle, m4);
+    glm_mat4_pick3(m4, m);
+    glm_mat3_mulv(m, bottom_left, bottom_left);
+    glm_mat3_mulv(m, bottom_right, bottom_right);
+    glm_mat3_mulv(m, top_left, top_left);
+    glm_mat3_mulv(m, top_right, top_right);
 
-    glm_vec3_add(tran->position, bottom_left, points);
-    glm_vec3_add(points, (vec3){0, tran->scale[1], 0}, points + 3);
-    render_debug_line(points, color);
+    glm_vec3_add(tran->position, bottom_left, bottom_left);
+    glm_vec3_add(tran->position, bottom_right, bottom_right);
+    glm_vec3_add(tran->position, top_left, top_left);
+    glm_vec3_add(tran->position, top_right, top_right);
 
-    glm_vec3_add(tran->position, top_right, points);
-    glm_vec3_add(points, (vec3){-tran->scale[0], 0, 0}, points + 3);
-    render_debug_line(points, color);
+    render_debug_line(top_right, top_left, color);
+    render_debug_line(top_left, bottom_left, color);
+    render_debug_line(bottom_left, bottom_right, color);
+    render_debug_line(bottom_right, top_right, color);
 
-    glm_vec3_add(tran->position, top_right, points);
-    glm_vec3_add(points, (vec3){0, -tran->scale[1], 0}, points + 3);
-    render_debug_line(points, color);
+    vec3 a;
+    glm_vec2_rotate((vec2){tran->scale[0] * 0.5, 0}, tran->euler_angle[2], a);
+    glm_vec2_add(a, tran->position, a);
+    render_debug_line(tran->position, a, color);
+
+    return;
+    f32 poi32s[6];
+    glm_vec3_add(tran->position, bottom_left, poi32s);
+    glm_vec3_add(poi32s, (vec3){tran->scale[0], 0, 0}, poi32s + 3);
+    render_debug_line(poi32s, poi32s + 3, color);
+
+    glm_vec3_add(tran->position, bottom_left, poi32s);
+    glm_vec3_add(poi32s, (vec3){0, tran->scale[1], 0}, poi32s + 3);
+    render_debug_line(poi32s, poi32s + 3, color);
+
+    glm_vec3_add(tran->position, top_right, poi32s);
+    glm_vec3_add(poi32s, (vec3){-tran->scale[0], 0, 0}, poi32s + 3);
+    render_debug_line(poi32s, poi32s + 3, color);
+
+    glm_vec3_add(tran->position, top_right, poi32s);
+    glm_vec3_add(poi32s, (vec3){0, -tran->scale[1], 0}, poi32s + 3);
+    render_debug_line(poi32s, poi32s + 3, color);
 }
 
 void resolve_velocity(collision2d_state* state, rigid2d* r1, rigid2d* r2) {
     const f32 total_inverse_mass = 1.0 / (r1->inverse_mass + r2->inverse_mass);
     if (r2->is_static) {
-        glm_vec2_mulsubs(state->normal, state->depth, r1->tran->position);
+        glm_vec2_muladds(state->normal, state->depth, r1->tran->position);
     }
     else if (r1->is_static) {
-        glm_vec2_muladds(state->normal, state->depth, r2->tran->position);
+        glm_vec2_mulsubs(state->normal, state->depth, r2->tran->position);
     }
     else {
-        glm_vec2_mulsubs(state->normal, state->depth * r1->inverse_mass * total_inverse_mass, r1->tran->position);
-        glm_vec2_muladds(state->normal, state->depth * r2->inverse_mass * total_inverse_mass, r2->tran->position);
+        glm_vec2_muladds(state->normal, state->depth * r1->inverse_mass * total_inverse_mass, r1->tran->position);
+        glm_vec2_mulsubs(state->normal, state->depth * r2->inverse_mass * total_inverse_mass, r2->tran->position);
     }
 
     vec2 separate_v;
-    glm_vec2_sub(r2->v, r1->v, separate_v);
-    const f32 separate_normal = glm_vec2_dot(separate_v, state->normal);
-    if (separate_normal > 0) {
+    glm_vec2_sub(r1->v, r2->v, separate_v);
+    const f32 relative_normal = glm_vec2_dot(separate_v, state->normal);
+    if (relative_normal > 0) {
         return;
     }
 
     const f32 e = glm_min(r1->restitution, r2->restitution);
-    const f32 J = separate_normal * (e + 1.0) * total_inverse_mass;
+    const f32 J = relative_normal * (e + 1.0) * total_inverse_mass;
 
-    glm_vec2_muladds(state->normal, (1.0 - r1->is_static) * J * r1->inverse_mass, r1->v);
-    glm_vec2_mulsubs(state->normal, (1.0 - r2->is_static) * J * r2->inverse_mass, r2->v);
+    glm_vec2_mulsubs(state->normal, (1.0 - r1->is_static) * J * r1->inverse_mass, r1->v);
+    glm_vec2_muladds(state->normal, (1.0 - r2->is_static) * J * r2->inverse_mass, r2->v);
+
+    {
+        vec2 contact1, contact2;
+        glm_vec2_sub(state->contact, r1->tran->position, contact1);
+        glm_vec2_sub(state->contact, r2->tran->position, contact2);
+        vec2 contact_perp1 = {-contact1[1], contact1[0]};
+        vec2 contact_perp2 = {-contact2[1], contact2[0]};
+
+        vec2 av1 = {contact_perp1[0] * r1->angular_v, contact_perp1[1] * r1->angular_v};
+        vec2 av2 = {contact_perp2[0] * r2->angular_v, contact_perp2[1] * r2->angular_v};
+        vec2 relative_a = {
+            r2->v[0] + av2[0] - r1->v[0] - av1[0],
+            r2->v[1] + av2[1] - r1->v[1] - av1[1],
+        };
+
+        const f32 relative_d = glm_vec2_dot(relative_a, state->normal);
+        if (relative_d > 0) {
+            return;
+        }
+
+        const f32 contact_count = 2;
+        f32 perp1_dot_n = glm_vec2_dot(contact_perp1, state->normal);
+        f32 perp2_dot_n = glm_vec2_dot(contact_perp2, state->normal);
+        f32 p1di = perp1_dot_n * perp1_dot_n / r1->inertia;
+        f32 p2di = perp2_dot_n * perp2_dot_n / r2->inertia;
+        const f32 J = -relative_d * (e + 1.0) / (p1di + p2di + r1->inverse_mass + r2->inverse_mass) / contact_count;
+        vec2 impluse = { J * state->normal[0], J * state->normal[1] };
+
+        r1->angular_v -= (1.0 - r1->is_static) * glm_vec2_cross(contact1, impluse) / r1->inertia;
+        r2->angular_v += (1.0 - r2->is_static) * glm_vec2_cross(contact2, impluse) / r2->inertia;
+    }
 }
 
-void sprite_index_anim(anim_position_slide* slide, float dur) {
-    const int key_frames = 2;
-    int index = dur * key_frames;
-    float* sprite_index = *slide->target;
+void sprite_index_anim(anim_position_slide* slide, f32 dur) {
+    const i32 key_frames = 2;
+    i32 index = dur * key_frames;
+    f32* sprite_index = *slide->target;
     sprite_index[0] = index % 2;
     sprite_index[1] = 0;
 }
 
-int main(void)
+typedef struct {
+    transform tran;
+    circle2d context;
+    rigid2d body;
+    collider2d collider;
+} rigid2d_circle;
+
+void rigid2d_circle_on_start(game_object* obj) {
+    rigid2d_circle* self = obj->self;
+    init_transform(&self->tran);
+    init_rigid2d(&self->body, &self->tran);
+    self->context = (circle2d){ .center = {0, 0}, .radius = 0.5 };
+    self->collider = create_collider2d(ColliderCircle2d, &self->body, &self->context);
+    self->body.collider = &self->collider;
+    create_physics2d_object(&self->body);
+}
+
+void rigid2d_circle_on_render(game_object* obj) {
+    rigid2d_circle* self = obj->self;
+    draw_debug_circle(self->tran.position, self->context.radius, (vec3){1, 1, 1});
+    vec3 a;
+    glm_vec2_rotate((vec2){self->context.radius, 0}, self->tran.euler_angle[2], a);
+    glm_vec2_add(a, self->tran.position, a);
+    render_debug_line(self->tran.position, a, (vec3){1 ,1, 1});
+}
+
+void rigid2d_circle_on_destory(game_object* obj) {
+    rigid2d_circle* self = obj->self;
+    destory_physics2d_object(&self->body);
+}
+
+typedef struct {
+    transform tran;
+    box2d context;
+    rigid2d body;
+    collider2d collider;
+} rigid2d_box;
+
+void rigid2d_box_on_start(game_object* obj) {
+    rigid2d_box* self = obj->self;
+    init_transform(&self->tran);
+    init_rigid2d(&self->body, &self->tran);
+    self->context = (box2d){ .center = {0, 0}, .size = {0.5, 0.5} };
+    self->collider = create_collider2d(ColliderBox2d, &self->body, &self->context);
+    self->body.collider = &self->collider;
+    create_physics2d_object(&self->body);
+}
+
+void rigid2d_box_on_render(game_object* obj) {
+    rigid2d_box* self = obj->self;
+    render_transform_outline(&self->tran, (vec3){1, 1, 1});
+}
+
+void rigid2d_box_on_destory(game_object* obj) {
+    rigid2d_box* self = obj->self;
+    destory_physics2d_object(&self->body);
+}
+
+i32 main(void)
 {
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
     stbi_set_flip_vertically_on_load(1);
 
     GLFWwindow* app_window = glfwCreateWindow(WIDTH, HEIGHT, "chess", NULL, NULL);
@@ -273,8 +389,10 @@ int main(void)
     set_audio_listener_properties((vec3){0, 0, 0}, (vec3){0, 0, 0}, (f32[]){ 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f });
 
     // setting up
-    setup_anim_system();
     init_sprite_instance();
+    setup_game_object_system();
+    setup_physics2d_object_system();
+    setup_anim_system();
     init_debug_line_renderer_instance();
 
     Game game;
@@ -299,7 +417,6 @@ int main(void)
     
     glClearColor(0.0, 0.1, 0.1, 0);
 
-    init_game_object_system();
     create_game_object(&(game_object){
         .self = &cam,
         .on_start = NULL,
@@ -309,7 +426,47 @@ int main(void)
         .on_destory = NULL,
     });
 
-    float pitch = 1, gain = 1;
+    i32 circle_count = 3;
+    rigid2d_circle circle_bodies[circle_count];
+    for (int i = 0; i < circle_count; i++) {
+        create_game_object(&(game_object){
+            .self = &circle_bodies[i],
+            .on_start = rigid2d_circle_on_start,
+            .on_activate = NULL,
+            .on_update = NULL,
+            .on_render = rigid2d_circle_on_render,
+            .on_destory = rigid2d_circle_on_destory,
+        });
+        circle_bodies[i].tran.position[0] = i - 0.5;
+        circle_bodies[i].tran.position[1] = -1.3;
+        circle_bodies[i].context.radius = 0.2;
+        circle_bodies[i].body.restitution = 0.2;
+        rigid2d_set_static(&circle_bodies[i].body);
+    }
+
+    rigid2d_circle c;
+        create_game_object(&(game_object){
+            .self = &c,
+            .on_start = rigid2d_circle_on_start,
+            .on_activate = NULL,
+            .on_update = NULL,
+            .on_render = rigid2d_circle_on_render,
+            .on_destory = rigid2d_circle_on_destory,
+        });
+    c.tran.position[1] = 2;
+    c.context.radius = 0.4;
+
+    rigid2d_box body2;
+    create_game_object(&(game_object){
+        .self = &body2,
+        .on_start = rigid2d_box_on_start,
+        .on_activate = NULL,
+        .on_update = NULL,
+        .on_render = rigid2d_box_on_render,
+        .on_destory = rigid2d_box_on_destory,
+    });
+
+    f32 pitch = 1, gain = 1;
     u32 buffers[2];
     u32 sources[2];
 
@@ -351,13 +508,10 @@ int main(void)
         .color = {1, 1, 1, 1}
     };
     transform tran = {
-        .position = {0, 0, 1},
+        .position = {0, 0, 0},
         .scale = {2, 2, 1},
         .parent = NULL,
     };
-    rigid2d rig;
-    init_rigid2d(&rig, &tran);
-    rigid2d_set_mass(&rig, 0.01);
 
     anim_position_slide sprite_anim;
     init_anim_position_slide(&sprite_anim, (vec3){4, 0, 0}, sprite_index_anim);
@@ -366,38 +520,11 @@ int main(void)
     init_anim_position_slide_duration(&anim, &sprite_anim, 0.5);
     create_anim_duration(&anim);
 
-    transform tran1;
-    init_transform(&tran1);
-    rigid2d r1;
-    init_rigid2d(&r1, &tran1);
-    // glm_vec2_copy((vec2){9.81, 0}, r1.g);
-    glm_vec2_copy((vec2){0, 0}, r1.g);
-    r1.restitution = 1;
-    r1.v[0] = 3;
-    rigid2d_set_mass(&r1, 0.2);
-    circle2d context1 = {
-        .center = {0, 0}, .radius = 0.5
-    };
-    collider2d collider1 = create_collider2d(ColliderCircle2d, &r1, &context1);
-
-    transform tran2;
-    init_transform(&tran2);
-    tran2.position[1] = 0.8;
-    tran2.position[0] = 2;
-    rigid2d r2;
-    init_rigid2d(&r2, &tran2);
-    glm_vec2_copy((vec2){0, 0}, r2.g);
-    r2.restitution = 0.7;
-    circle2d context2 = {
-        .center = {0, 0}, .radius = 0.5
-    };
-    collider2d collider2 = create_collider2d(ColliderCircle2d, &r2, &context2);
-
     while(!glfwWindowShouldClose(app_window))
     {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        float step = 1.0 / 144 * 4;
+        f32 step = 1.0 / 144 * 4;
         if (glfwGetKey(app_window, GLFW_KEY_UP) == GLFW_PRESS) {
             translate_camera(&cam, (vec3){0, step, 0});
         }
@@ -413,43 +540,23 @@ int main(void)
 
 		update_anim_system();
 		con.window.render_callback(con.owner);
+		update_physics2d_object_system();
         update_game_object_system();
 
-        // static int index = 0;
-        // index = (int)(glfwGetTime() * 5) % 16;
-        // sp.sprite_index[0] = index % 4;
-        // sp.sprite_index[1] = (int)(index / 4);
-
-        const float dt = 1.0 / 144;
-        // rig.process(&rig, dt);
+        const f32 dt = 1.0 / 144;
 
         render_sprite(&cam, &tran, &sp_tex, &sp);
         render_transform_outline(&tran, (vec3){1, 1, 1});
-
-        collision2d_state state = collider1.collide(&collider1, &collider2);
-
-        vec3 outline_color1 = {1, 1, 1};
-        vec3 outline_color2 = {1, 1, 1};
-
-        if (state.depth > 0) {
-            outline_color1[0] = 0;
-            outline_color1[2] = 0;
-            resolve_velocity(&state, collider1.parent, collider2.parent);
-        }
-
-        r1.process(&r1, dt);
-        r2.process(&r2, dt);
-
-        render_transform_outline(&tran1, outline_color1);
-        render_transform_outline(&tran2, outline_color2);
 
         glfwSwapBuffers(app_window);
         glfwPollEvents();
     }
 
-    glDeleteProgram(sprite_instance.shader);
     shutdown_game_object_system();
+    shutdown_physics2d_object_system();
     shutdown_anim_system();
+
+    glDeleteProgram(sprite_instance.shader);
 
     alDeleteBuffers(1, &sources[0]);
     alDeleteBuffers(1, &sources[1]);
@@ -458,8 +565,8 @@ int main(void)
     shutdown_audio(&audio);
 
     glfwDestroyWindow(app_window);
-    glfwTerminate();
 
+    glfwTerminate();
     CHECK_MEMORY_LEAK();
 
     return 0;

@@ -4,9 +4,9 @@
 #include <GLFW/glfw3.h>
 #include <string.h>
 
-static float randf(float start, float end, float dr) {
-    float range = end - start + 1;
-    return rand() % (int)(range / dr) * dr - range * 0.5f;
+static f32 randf(f32 start, f32 end, f32 dr) {
+    f32 range = end - start + 1;
+    return rand() % (i32)(range / dr) * dr - range * 0.5f;
 }
 
 void camera_shake_object_on_start(game_object* obj) {
@@ -17,7 +17,7 @@ void camera_shake_object_on_start(game_object* obj) {
 }
 
 void camera_shake_object_on_update(game_object* obj) {
-    static const float ds = 0.0001;
+    static const f32 ds = 0.0001;
     camera_shake_object* self = obj->self;
 
     camera* cam = find_game_object_by_index(0)->self;

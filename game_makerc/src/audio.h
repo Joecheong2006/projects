@@ -16,7 +16,7 @@ typedef struct {
 void init_audio(audio_context* audio);
 void shutdown_audio(audio_context* audio);
 
-u32 create_audio_source(float pitch, float gain, vec3 position, vec3 velocity, int loop);
+u32 create_audio_source(f32 pitch, f32 gain, vec3 position, vec3 velocity, i32 loop);
 void set_audio_listener_properties(vec3 position, vec3 velocity, f32 orientation[6]);
 
 #endif

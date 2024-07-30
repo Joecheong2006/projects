@@ -13,7 +13,7 @@
 #endif
 
 void gl_clear_error();
-void gl_check_error(char*file, int line);
+void gl_check_error(char*file, i32 line);
 
 typedef struct {
     f32* vertices;
@@ -28,7 +28,7 @@ typedef struct {
     u32 id;
 } index_buffer;
 
-error_type init_index_buffer(index_buffer* ibo, int count, u32 usage);
+error_type init_index_buffer(index_buffer* ibo, i32 count, u32 usage);
 
 typedef struct {
     u32 id;
@@ -48,7 +48,7 @@ typedef enum {
 typedef struct {
     u32 id;
     TextureFilter filter;
-    int width, height;
+    i32 width, height;
     char* tex_path;
 } texture;
 error_type init_texture(texture* tex, char* texture_path, TextureFilter filter);
