@@ -1,4 +1,5 @@
 #include "rigid2d.h"
+#include "collider2d.h"
 #include <string.h>
 
 void euler_method(rigid2d* rig, f32 dt) {
@@ -25,6 +26,10 @@ void rigid2d_set_mass(rigid2d* rig, f32 new_mass) {
     ASSERT(rig != NULL && new_mass > 0);
     rig->mass = new_mass;
     rig->inverse_mass = 1.0 / new_mass;
+    if (rig->collider) {
+        rig->inertia = rig->collider->get_inertia(rig->collider);
+        rig->inverse_inertia = 1.0 / rig->inertia;
+    }
 }
 
 void init_rigid2d(rigid2d* rig, transform* tran) {

@@ -7,6 +7,6 @@ typedef struct {
 } box2d;
 
 collision2d_state box2d_collision_callback(collider2d* collider1, collider2d* collider2);
-f32 get_box2d_inertia(rigid2d* rig, collider2d* box_collider);
+f32 get_box2d_inertia(collider2d* box_collider);
 
 #endif

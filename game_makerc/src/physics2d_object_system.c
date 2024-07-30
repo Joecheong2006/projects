@@ -51,7 +51,7 @@ static void resolve_rotation(collision2d_state* state, rigid2d* r1, rigid2d* r2)
     vec2 contact_perp1 = {-contact1[1], contact1[0]};
     vec2 contact_perp2 = {-contact2[1], contact2[0]};
 
-    draw_debug_circle(state->contact, 0.1, (vec3){1, 0, 0});
+    draw_debug_circle((vec3){state->contact[0], state->contact[1], 0}, 0.1, (vec3){1, 1, 0});
 
     vec2 av1 = {contact_perp1[0] * r1->angular_v, contact_perp1[1] * r1->angular_v};
     vec2 av2 = {contact_perp2[0] * r2->angular_v, contact_perp2[1] * r2->angular_v};
@@ -61,7 +61,7 @@ static void resolve_rotation(collision2d_state* state, rigid2d* r1, rigid2d* r2)
     };
 
     const f32 relative_d = glm_vec2_dot(relative_a, state->normal);
-    if (relative_d > 0) {
+    if (relative_d < 0) {
         return;
     }
 
@@ -96,15 +96,15 @@ void update_physics2d_object_system() {
 
 	for_vector(instance.objects, i, 0) {
 		rigid2d* body1 = instance.objects[i];
-		if (body1->is_static) {
-			continue;
-		}
 		for_vector(instance.objects, j, 0) {
 			rigid2d* body2 = instance.objects[j];
 			if (body1 == body2) {
 				break;
 			}
 			if (body1->collider == NULL || body2->collider == NULL) {
+				continue;
+			}
+			if (body1->is_static && body2->is_static) {
 				continue;
 			}
 			collision2d_state state = body1->collider->collide(body1->collider, body2->collider);

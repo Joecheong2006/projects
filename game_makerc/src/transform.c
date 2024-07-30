@@ -29,9 +29,11 @@ void tran_rotate(transform* tran, vec3 euler_angle) {
 	ASSERT(tran != NULL);
 	glm_vec3_add(tran->euler_angle, euler_angle, tran->euler_angle);
 	mat4 m;
+	mat3 m3;
 	glm_euler(euler_angle, m);
-	glm_mat4_mulv(m, tran->forward, tran->forward);
-	glm_mat4_mulv(m, tran->up, tran->up);
-	glm_mat4_mulv(m, tran->right, tran->right);
+	glm_mat4_pick3(m, m3);
+	glm_mat3_mulv(m3, tran->forward, tran->forward);
+	glm_mat3_mulv(m3, tran->up, tran->up);
+	glm_mat3_mulv(m3, tran->right, tran->right);
 }
 

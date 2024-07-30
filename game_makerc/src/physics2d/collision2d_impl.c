@@ -2,8 +2,6 @@
 #include "box2d.h"
 #include "circle2d.h"
 
-#include "../debug/primitive_shape_renderer.h"
-
 static void find_closest_point_on_line(vec2 closest, vec2 line_p1, vec2 line_p2, vec2 p) {
     vec2 tangent, line_normal;
     f32 line_len = glm_vec2_distance(line_p1, line_p2);

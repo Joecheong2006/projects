@@ -16,11 +16,12 @@ typedef struct {
 
 typedef struct collider2d collider2d;
 typedef collision2d_state(*collider2d_collision_callback)(collider2d*, collider2d*);
-typedef f32(*get_inertia_callback)(rigid2d*, collider2d*);
+typedef f32(*collider2d_get_inertia_callback)(collider2d*);
 
 struct collider2d {
     Collider2dType type;
     collider2d_collision_callback collide;
+    collider2d_get_inertia_callback get_inertia;
     void* self;
     rigid2d* parent;
 };

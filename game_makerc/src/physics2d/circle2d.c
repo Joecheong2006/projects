@@ -11,9 +11,9 @@ collision2d_state circle2d_collision_callback(collider2d* collider1, collider2d*
     }
 }
 
-f32 get_circle2d_inertia(rigid2d* rig, collider2d* circle_collider) {
-    ASSERT(circle_collider != NULL && rig != NULL);
+f32 get_circle2d_inertia(collider2d* circle_collider) {
+    ASSERT(circle_collider != NULL && circle_collider->parent != NULL);
     circle2d* circle = circle_collider->self;
-    return circle->radius * circle->radius * 0.5 * rig->mass;
+    return circle->radius * circle->radius * 0.5 * circle_collider->parent->mass;
 }
 

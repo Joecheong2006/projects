@@ -319,11 +319,11 @@ void rigid2d_circle_on_start(game_object* obj) {
 
 void rigid2d_circle_on_render(game_object* obj) {
     rigid2d_circle* self = obj->self;
-    draw_debug_circle(self->tran.position, self->context.radius, (vec3){1, 1, 1});
     vec3 a;
     glm_vec2_rotate((vec2){self->context.radius, 0}, self->tran.euler_angle[2], a);
     glm_vec2_add(a, self->tran.position, a);
-    render_debug_line(self->tran.position, a, (vec3){1 ,1, 1});
+    render_debug_line(self->tran.position, a, (vec3){1, 1, 1});
+    draw_debug_circle(self->tran.position, self->context.radius, (vec3){1, 1, 1});
 }
 
 void rigid2d_circle_on_destory(game_object* obj) {
@@ -356,6 +356,81 @@ void rigid2d_box_on_render(game_object* obj) {
 void rigid2d_box_on_destory(game_object* obj) {
     rigid2d_box* self = obj->self;
     destory_physics2d_object(&self->body);
+}
+
+#define CIRCLE_COUNT 18
+
+typedef struct {
+    rigid2d_circle circles[CIRCLE_COUNT + 2];
+    rigid2d_box box;
+} rigid2d_test;
+
+void rigid2d_test_on_start(game_object* obj) {
+    rigid2d_test* self = obj->self;
+    i32 circle_count  = CIRCLE_COUNT;
+    f32 per_angle = 360.0 / CIRCLE_COUNT;
+    for (int i = 0; i < circle_count; i++) {
+        create_game_object(&(game_object){
+            .self = &self->circles[i],
+            .on_start = rigid2d_circle_on_start,
+            .on_activate = NULL,
+            .on_update = NULL,
+            .on_render = rigid2d_circle_on_render,
+            .on_destory = rigid2d_circle_on_destory,
+        });
+        self->circles[i].tran.position[0] = cos(i * per_angle * PI / 180) * 3;
+        self->circles[i].tran.position[1] = sin(i * per_angle * PI / 180) * 3;
+        self->circles[i].context.radius = 0.2;
+        self->circles[i].body.restitution = 0.2;
+        rigid2d_set_static(&self->circles[i].body);
+    }
+
+    for (int i = 0; i < 2; i++) {
+        create_game_object(&(game_object){
+            .self = &self->circles[i + circle_count],
+            .on_start = rigid2d_circle_on_start,
+            .on_activate = NULL,
+            .on_update = NULL,
+            .on_render = rigid2d_circle_on_render,
+            .on_destory = rigid2d_circle_on_destory,
+        });
+        rigid2d_circle* circle = &self->circles[i + circle_count];
+        circle->tran.position[0] = i * 1;
+        circle->tran.position[1] = 1;
+        circle->context.radius = 0.4;
+        circle->body.restitution = 1;
+        rigid2d_set_mass(&circle->body, 1);
+    }
+
+    create_game_object(&(game_object){
+        .self = &self->box,
+        .on_start = rigid2d_box_on_start,
+        .on_activate = NULL,
+        .on_update = NULL,
+        .on_render = rigid2d_box_on_render,
+        .on_destory = rigid2d_box_on_destory,
+    });
+    rigid2d_set_mass(&self->box.body, 1);
+}
+
+void rigid2d_test_on_update(game_object* obj) {
+    static f32 angle = 0, per_angle = 360.0 / CIRCLE_COUNT;
+    angle += 1.0 / 144;
+    rigid2d_test* self = obj->self;
+    for (int i = 0; i < CIRCLE_COUNT; i++) {
+        self->circles[i].tran.position[0] = cos(i * per_angle * PI / 180 + angle) * 3;
+        self->circles[i].tran.position[1] = sin(i * per_angle * PI / 180 + angle) * 3;
+        self->circles[i].body.v[0] = -sin(i * per_angle * PI / 180 + angle) * 3;
+        self->circles[i].body.v[1] = cos(i * per_angle * PI / 180 + angle) * 3;
+    }
+}
+
+void rigid2d_test_on_destory(game_object* obj) {
+    rigid2d_test* self = obj->self;
+    for (int i = 0; i < (int)sizeof(self->circles) / (int)sizeof(rigid2d_circle); i++) {
+        destory_physics2d_object(&self->circles[i].body);
+    }
+    destory_physics2d_object(&self->box.body);
 }
 
 i32 main(void)
@@ -426,44 +501,14 @@ i32 main(void)
         .on_destory = NULL,
     });
 
-    i32 circle_count = 3;
-    rigid2d_circle circle_bodies[circle_count];
-    for (int i = 0; i < circle_count; i++) {
-        create_game_object(&(game_object){
-            .self = &circle_bodies[i],
-            .on_start = rigid2d_circle_on_start,
-            .on_activate = NULL,
-            .on_update = NULL,
-            .on_render = rigid2d_circle_on_render,
-            .on_destory = rigid2d_circle_on_destory,
-        });
-        circle_bodies[i].tran.position[0] = i - 0.5;
-        circle_bodies[i].tran.position[1] = -1.3;
-        circle_bodies[i].context.radius = 0.2;
-        circle_bodies[i].body.restitution = 0.2;
-        rigid2d_set_static(&circle_bodies[i].body);
-    }
-
-    rigid2d_circle c;
-        create_game_object(&(game_object){
-            .self = &c,
-            .on_start = rigid2d_circle_on_start,
-            .on_activate = NULL,
-            .on_update = NULL,
-            .on_render = rigid2d_circle_on_render,
-            .on_destory = rigid2d_circle_on_destory,
-        });
-    c.tran.position[1] = 2;
-    c.context.radius = 0.4;
-
-    rigid2d_box body2;
+    rigid2d_test test;
     create_game_object(&(game_object){
-        .self = &body2,
-        .on_start = rigid2d_box_on_start,
+        .self = &test,
+        .on_start = rigid2d_test_on_start,
         .on_activate = NULL,
-        .on_update = NULL,
-        .on_render = rigid2d_box_on_render,
-        .on_destory = rigid2d_box_on_destory,
+        .on_update = rigid2d_test_on_update,
+        .on_render = NULL,
+        .on_destory = rigid2d_test_on_destory,
     });
 
     f32 pitch = 1, gain = 1;
