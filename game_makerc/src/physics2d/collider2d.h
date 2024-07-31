@@ -12,6 +12,11 @@ typedef enum {
 typedef struct {
     vec2 normal, contact;
     f32 depth;
+} collision2d_point;
+
+typedef struct {
+    collision2d_point collision_points[4];
+    i32 points_count;
 } collision2d_state;
 
 typedef struct collider2d collider2d;

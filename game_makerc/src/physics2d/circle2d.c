@@ -7,7 +7,7 @@ collision2d_state circle2d_collision_callback(collider2d* collider1, collider2d*
     case ColliderCircle2d - ColliderCircle2d: return circle2d_circle2d_collision_impl(collider1, collider2);
     default:
         printf("not implement %d %d yet\n", collider1->type, collider2->type);
-        return (collision2d_state) { .depth = 0 };
+        return (collision2d_state) { .points_count = 0 };
     }
 }
 

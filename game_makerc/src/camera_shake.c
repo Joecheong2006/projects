@@ -29,7 +29,6 @@ void camera_shake_object_on_update(game_object* obj) {
     set_camera_position(cam, t);
 
     if (glfwGetTime() - self->time_start >= self->duration) {
-        printf("%g\n", glfwGetTime());
         set_camera_position(cam, self->origin_pos);
         destory_game_object(obj);
     }

@@ -13,13 +13,13 @@ typedef struct {
     (((queue_data*)(que))[-1])
 
 #define queue_is_empty(que)\
-	queue_status(que).size == 0
+	(queue_status(que).size == 0)
 
 #define queue_is_full(que)\
-	queue_status(que).size == queue_status(que).capacity
+	(queue_status(que).size == queue_status(que).capacity)
 
-#define queue_push(que, data)\
-    _queue_push(que, &(__typeof__(*(que))){data}, sizeof(__typeof__(*(que))))
+#define queue_push(que, ...)\
+    _queue_push(que, &(__typeof__(*(que))){__VA_ARGS__}, sizeof(__typeof__(*(que))))
 
 #define queue_pop(que)\
 	_queue_pop(que)

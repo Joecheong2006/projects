@@ -4,13 +4,16 @@
 #include <stdlib.h>
 #include <string.h>
 #include <cglm/cglm.h>
+#include <string.h>
+
 #include "camera.h"
 #include "cglm/vec2.h"
 #include "string.h"
 #include "opengl_object.h"
 #include "sprite.h"
 #include "stb_image.h"
-#include <string.h>
+
+#include "input_system.h"
 
 #include "camera_shake.h"
 
@@ -19,10 +22,10 @@
 
 #include "game_object_system.h"
 
+#include "basic/queue.h"
 #include "basic/memallocate.h"
 
 #include "audio.h"
-
 #include "debug/primitive_shape_renderer.h"
 
 #include "physics2d_object_system.h"
@@ -144,6 +147,8 @@ void framebuffer_size_callback(GLFWwindow* window, i32 width, i32 height) {
 }
 
 void key_callback(GLFWwindow* window, i32 key, i32 scancode, i32 action, i32 mods) {
+    update_input_key(key, scancode, action, mods);
+
     callback_controller* c = glfwGetWindowUserPointer(window);
     if (c->input.key_callback) {
         c->input.key_callback(c->owner, key, scancode, action, mods);
@@ -151,6 +156,8 @@ void key_callback(GLFWwindow* window, i32 key, i32 scancode, i32 action, i32 mod
 }
 
 void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos) {
+    update_input_mouse_cursor(xpos, ypos);
+
     callback_controller* c = glfwGetWindowUserPointer(window);
     if (c->input.cursor_pos_callback) {
         c->input.cursor_pos_callback(c->owner, xpos, ypos);
@@ -158,6 +165,8 @@ void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos) {
 }
 
 void mouse_button_callback(GLFWwindow* window, i32 button, i32 action, i32 mods) {
+    update_input_mouse_button(button, action, mods);
+
     callback_controller* c = glfwGetWindowUserPointer(window);
     if (c->input.mouse_button_callback) {
         c->input.mouse_button_callback(c->owner, button, action, mods);
@@ -227,71 +236,9 @@ void render_transform_outline(transform* tran, vec3 color) {
 
     vec3 red = {1, 0, 0};
 
-    vec3 direction;
-    glm_vec3_mul(tran->right, tran->scale, direction);
-    direction[0] *= 0.5;
-    direction[1] *= 0.5;
-    direction[2] *= 0.5;
-    glm_vec3_add(tran->position, direction, direction);
+    vec3 direction, right = {tran->right[0] * 0.5, tran->right[1] * 0.5, tran->right[2]};
+    glm_vec3_add(tran->position, right, direction);
     DRAW_DEBUG_LINE(tran->position, direction, red);
-}
-
-void resolve_velocity(collision2d_state* state, rigid2d* r1, rigid2d* r2) {
-    const f32 total_inverse_mass = 1.0 / (r1->inverse_mass + r2->inverse_mass);
-    if (r2->is_static) {
-        glm_vec2_muladds(state->normal, state->depth, r1->tran->position);
-    }
-    else if (r1->is_static) {
-        glm_vec2_mulsubs(state->normal, state->depth, r2->tran->position);
-    }
-    else {
-        glm_vec2_muladds(state->normal, state->depth * r1->inverse_mass * total_inverse_mass, r1->tran->position);
-        glm_vec2_mulsubs(state->normal, state->depth * r2->inverse_mass * total_inverse_mass, r2->tran->position);
-    }
-
-    vec2 separate_v;
-    glm_vec2_sub(r1->v, r2->v, separate_v);
-    const f32 relative_normal = glm_vec2_dot(separate_v, state->normal);
-    if (relative_normal > 0) {
-        return;
-    }
-
-    const f32 e = glm_min(r1->restitution, r2->restitution);
-    const f32 J = relative_normal * (e + 1.0) * total_inverse_mass;
-
-    glm_vec2_mulsubs(state->normal, (1.0 - r1->is_static) * J * r1->inverse_mass, r1->v);
-    glm_vec2_muladds(state->normal, (1.0 - r2->is_static) * J * r2->inverse_mass, r2->v);
-
-    {
-        vec2 contact1, contact2;
-        glm_vec2_sub(state->contact, r1->tran->position, contact1);
-        glm_vec2_sub(state->contact, r2->tran->position, contact2);
-        vec2 contact_perp1 = {-contact1[1], contact1[0]};
-        vec2 contact_perp2 = {-contact2[1], contact2[0]};
-
-        vec2 av1 = {contact_perp1[0] * r1->angular_v, contact_perp1[1] * r1->angular_v};
-        vec2 av2 = {contact_perp2[0] * r2->angular_v, contact_perp2[1] * r2->angular_v};
-        vec2 relative_a = {
-            r2->v[0] + av2[0] - r1->v[0] - av1[0],
-            r2->v[1] + av2[1] - r1->v[1] - av1[1],
-        };
-
-        const f32 relative_d = glm_vec2_dot(relative_a, state->normal);
-        if (relative_d > 0) {
-            return;
-        }
-
-        const f32 contact_count = 2;
-        f32 perp1_dot_n = glm_vec2_dot(contact_perp1, state->normal);
-        f32 perp2_dot_n = glm_vec2_dot(contact_perp2, state->normal);
-        f32 p1di = perp1_dot_n * perp1_dot_n / r1->inertia;
-        f32 p2di = perp2_dot_n * perp2_dot_n / r2->inertia;
-        const f32 J = -relative_d * (e + 1.0) / (p1di + p2di + r1->inverse_mass + r2->inverse_mass) / contact_count;
-        vec2 impluse = { J * state->normal[0], J * state->normal[1] };
-
-        r1->angular_v -= (1.0 - r1->is_static) * glm_vec2_cross(contact1, impluse) / r1->inertia;
-        r2->angular_v += (1.0 - r2->is_static) * glm_vec2_cross(contact2, impluse) / r2->inertia;
-    }
 }
 
 void sprite_index_anim(anim_position_slide* slide, f32 dur) {
@@ -361,11 +308,10 @@ void rigid2d_box_on_destory(game_object* obj) {
     destory_physics2d_object(&self->body);
 }
 
-#define CIRCLE_COUNT 18
-
+#define CIRCLE_COUNT 21
 typedef struct {
-    rigid2d_circle circles[CIRCLE_COUNT + 2];
-    rigid2d_box box;
+    rigid2d_circle circles[CIRCLE_COUNT];
+    rigid2d_box boxes[2];
 } rigid2d_test;
 
 void rigid2d_test_on_start(game_object* obj) {
@@ -383,48 +329,53 @@ void rigid2d_test_on_start(game_object* obj) {
         });
         self->circles[i].tran.position[0] = cos(i * per_angle * PI / 180) * 3;
         self->circles[i].tran.position[1] = sin(i * per_angle * PI / 180) * 3;
-        self->circles[i].context.radius = 0.2;
-        self->circles[i].body.restitution = 0.2;
+        self->circles[i].context.radius = 0.1;
+        self->circles[i].body.restitution = 0.1;
         rigid2d_set_static(&self->circles[i].body);
     }
 
-    for (int i = 0; i < 2; i++) {
-        create_game_object(&(game_object){
-            .self = &self->circles[i + circle_count],
-            .on_start = rigid2d_circle_on_start,
-            .on_activate = NULL,
-            .on_update = NULL,
-            .on_render = rigid2d_circle_on_render,
-            .on_destory = rigid2d_circle_on_destory,
-        });
-        rigid2d_circle* circle = &self->circles[i + circle_count];
-        circle->tran.position[0] = i * 1;
-        circle->tran.position[1] = 1;
-        circle->context.radius = 0.4;
-        circle->body.restitution = 0.8;
-        rigid2d_set_mass(&circle->body, 1);
-    }
-
     create_game_object(&(game_object){
-        .self = &self->box,
+        .self = &self->boxes[0],
         .on_start = rigid2d_box_on_start,
         .on_activate = NULL,
         .on_update = NULL,
         .on_render = rigid2d_box_on_render,
         .on_destory = rigid2d_box_on_destory,
     });
-    rigid2d_set_mass(&self->box.body, 1);
+    self->boxes[0].tran.position[0] -= 1.3;
+
+    create_game_object(&(game_object){
+        .self = &self->boxes[1],
+        .on_start = rigid2d_box_on_start,
+        .on_activate = NULL,
+        .on_update = NULL,
+        .on_render = rigid2d_box_on_render,
+        .on_destory = rigid2d_box_on_destory,
+    });
 }
 
 void rigid2d_test_on_update(game_object* obj) {
     static f32 angle = 0, per_angle = 360.0 / CIRCLE_COUNT;
-    angle += 1.0 / 144;
+
+    camera* cam = find_game_object_by_index(0)->self;
+
+    vec2 cursor;
+    input_mouse_cursor(cursor);
+
+    vec4 uv = { cursor[0] / cam->resolution[0] * 2 - 1, (1 - cursor[1] / cam->resolution[1]) * 2 - 1, 0, 1};
+    mat4 m;
+    glm_mat4_mul(cam->projection, cam->view, m);
+    glm_mat4_inv(m, m);
+    glm_mat4_mulv(m, uv, uv);
+
+    // angle = atan2(uv[1], uv[0]);
+
     rigid2d_test* self = obj->self;
+
+    angle += 1.0 / 500;
     for (int i = 0; i < CIRCLE_COUNT; i++) {
         self->circles[i].tran.position[0] = cos(i * per_angle * PI / 180 + angle) * 3;
         self->circles[i].tran.position[1] = sin(i * per_angle * PI / 180 + angle) * 3;
-        self->circles[i].body.v[0] = -sin(i * per_angle * PI / 180 + angle) * 3;
-        self->circles[i].body.v[1] = cos(i * per_angle * PI / 180 + angle) * 3;
     }
 }
 
@@ -433,7 +384,10 @@ void rigid2d_test_on_destory(game_object* obj) {
     for (int i = 0; i < (int)sizeof(self->circles) / (int)sizeof(rigid2d_circle); i++) {
         destory_physics2d_object(&self->circles[i].body);
     }
-    destory_physics2d_object(&self->box.body);
+
+    // for (int i = 0; i < (int)sizeof(self->boxes) / (int)sizeof(rigid2d_box); i++) {
+    //     destory_physics2d_object(&self->boxes[i].body);
+    // }
 }
 
 i32 main(void)
@@ -468,6 +422,7 @@ i32 main(void)
 
     // setting up
     INIT_DEBUG_LINE_RENDERER();
+    setup_input_system(app_window);
     init_sprite_instance();
     setup_game_object_system();
     setup_physics2d_object_system();
@@ -608,6 +563,7 @@ i32 main(void)
     shutdown_game_object_system();
     shutdown_physics2d_object_system();
     shutdown_anim_system();
+    shutdown_input_system();
 
     SHUTDOWN_DEBUG_LINE_RENDERER();
 
