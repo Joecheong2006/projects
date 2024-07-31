@@ -1,6 +1,6 @@
 #ifndef _AUDIO_
 #define _AUDIO_
-#include "util.h"
+#include "basic/util.h"
 #include <cglm/cglm.h>
 
 #include <AL/al.h>

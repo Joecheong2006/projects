@@ -16,7 +16,10 @@ void euler_method(rigid2d* rig, f32 dt) {
     rig->tran->position[0] += rig->v[0] * dt;
     rig->tran->position[1] += rig->v[1] * dt;
 
-    rig->tran->euler_angle[2] += rig->angular_v * dt;
+    if (!rig->freeze_rotation) {
+        vec3 euler_angle = {0, 0, rig->angular_v * dt};
+        tran_rotate(rig->tran, euler_angle);
+    }
 
     rig->a[0] = 0;
     rig->a[1] = 0;

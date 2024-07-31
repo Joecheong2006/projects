@@ -1,7 +1,6 @@
 #include "opengl_object.h"
 #include <glad/glad.h>
 #include "stb_image.h"
-#include "util.h"
 #include <stdio.h>
 
 void gl_clear_error()

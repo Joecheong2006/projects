@@ -4,4 +4,10 @@
 
 void draw_debug_circle(vec3 position, float radius, vec3 color);
 
+#if defined DEBUG || defined _DEBUG
+	#define DRAW_DEBUG_CIRCLE(position, radius, color) draw_debug_circle(position, radius, color)
+#else
+	#define DRAW_DEBUG_CIRCLE(position, radius, color)
+#endif
+
 #endif

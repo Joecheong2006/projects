@@ -1,7 +1,7 @@
 #ifndef _OPENGL_OBJECT_
 #define _OPENGL_OBJECT_
 #include "error_type.h"
-#include "util.h"
+#include "basic/util.h"
 
 #if defined(DEBUG)
 #define GLC(statement)\

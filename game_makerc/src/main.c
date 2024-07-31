@@ -19,7 +19,7 @@
 
 #include "game_object_system.h"
 
-#include "memallocate.h"
+#include "basic/memallocate.h"
 
 #include "audio.h"
 
@@ -73,14 +73,29 @@ typedef struct {
 } Game;
 
 void game_window_resize_callback(void* owner, i32 width, i32 height) {
-    Game* game = owner;
     glViewport(0, 0, width, height);
+    Game* game = owner;
 
     camera* cam = find_game_object_by_index(0)->self;
-    set_camera_ortho_mat4(cam->projection, (vec2){width, height});
+    cam->resolution[0] = width;
+    cam->resolution[1] = height;
 
     game->win_state.width = width;
     game->win_state.height = height;
+    
+#if 0
+    cam->persp = (camera_persp_state){
+        .fov = glm_rad(90),
+        .aspect = cam->resolution[0] / cam->resolution[1],
+        .near = 0.1,
+        .far = 100
+    };
+    cam->position[2] = 5;
+    glm_lookat(cam->position, (vec3){0, 0, -1}, (vec3){0, 1, 0}, cam->view);
+    set_camera_persp_mat4(cam);
+#else
+    set_camera_ortho_mat4(cam);
+#endif
 }
 
 void game_key_callback(void* owner, i32 key, i32 scancode, i32 action, i32 mods) {
@@ -205,33 +220,20 @@ void render_transform_outline(transform* tran, vec3 color) {
     glm_vec3_add(tran->position, top_left, top_left);
     glm_vec3_add(tran->position, top_right, top_right);
 
-    render_debug_line(top_right, top_left, color);
-    render_debug_line(top_left, bottom_left, color);
-    render_debug_line(bottom_left, bottom_right, color);
-    render_debug_line(bottom_right, top_right, color);
+    DRAW_DEBUG_LINE(top_right, top_left, color);
+    DRAW_DEBUG_LINE(top_left, bottom_left, color);
+    DRAW_DEBUG_LINE(bottom_left, bottom_right, color);
+    DRAW_DEBUG_LINE(bottom_right, top_right, color);
 
-    vec3 a;
-    glm_vec2_rotate((vec2){tran->scale[0] * 0.5, 0}, tran->euler_angle[2], a);
-    glm_vec2_add(a, tran->position, a);
-    render_debug_line(tran->position, a, color);
+    vec3 red = {1, 0, 0};
 
-    return;
-    f32 poi32s[6];
-    glm_vec3_add(tran->position, bottom_left, poi32s);
-    glm_vec3_add(poi32s, (vec3){tran->scale[0], 0, 0}, poi32s + 3);
-    render_debug_line(poi32s, poi32s + 3, color);
-
-    glm_vec3_add(tran->position, bottom_left, poi32s);
-    glm_vec3_add(poi32s, (vec3){0, tran->scale[1], 0}, poi32s + 3);
-    render_debug_line(poi32s, poi32s + 3, color);
-
-    glm_vec3_add(tran->position, top_right, poi32s);
-    glm_vec3_add(poi32s, (vec3){-tran->scale[0], 0, 0}, poi32s + 3);
-    render_debug_line(poi32s, poi32s + 3, color);
-
-    glm_vec3_add(tran->position, top_right, poi32s);
-    glm_vec3_add(poi32s, (vec3){0, -tran->scale[1], 0}, poi32s + 3);
-    render_debug_line(poi32s, poi32s + 3, color);
+    vec3 direction;
+    glm_vec3_mul(tran->right, tran->scale, direction);
+    direction[0] *= 0.5;
+    direction[1] *= 0.5;
+    direction[2] *= 0.5;
+    glm_vec3_add(tran->position, direction, direction);
+    DRAW_DEBUG_LINE(tran->position, direction, red);
 }
 
 void resolve_velocity(collision2d_state* state, rigid2d* r1, rigid2d* r2) {
@@ -319,11 +321,12 @@ void rigid2d_circle_on_start(game_object* obj) {
 
 void rigid2d_circle_on_render(game_object* obj) {
     rigid2d_circle* self = obj->self;
-    vec3 a;
+    vec3 a = {0, 0, 0};
+    vec3 color = {1, 1, 1};
     glm_vec2_rotate((vec2){self->context.radius, 0}, self->tran.euler_angle[2], a);
     glm_vec2_add(a, self->tran.position, a);
-    render_debug_line(self->tran.position, a, (vec3){1, 1, 1});
-    draw_debug_circle(self->tran.position, self->context.radius, (vec3){1, 1, 1});
+    DRAW_DEBUG_LINE(self->tran.position, a, color);
+    DRAW_DEBUG_CIRCLE(self->tran.position, self->context.radius, color);
 }
 
 void rigid2d_circle_on_destory(game_object* obj) {
@@ -398,7 +401,7 @@ void rigid2d_test_on_start(game_object* obj) {
         circle->tran.position[0] = i * 1;
         circle->tran.position[1] = 1;
         circle->context.radius = 0.4;
-        circle->body.restitution = 1;
+        circle->body.restitution = 0.8;
         rigid2d_set_mass(&circle->body, 1);
     }
 
@@ -464,11 +467,11 @@ i32 main(void)
     set_audio_listener_properties((vec3){0, 0, 0}, (vec3){0, 0, 0}, (f32[]){ 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f });
 
     // setting up
+    INIT_DEBUG_LINE_RENDERER();
     init_sprite_instance();
     setup_game_object_system();
     setup_physics2d_object_system();
     setup_anim_system();
-    init_debug_line_renderer_instance();
 
     Game game;
     game.win_state.window = app_window;
@@ -486,6 +489,11 @@ i32 main(void)
 
     camera cam;
     init_camera(&cam, (vec2){WIDTH, HEIGHT});
+
+    cam.ortho.depth[0] = -10;
+    cam.ortho.depth[1] = 10;
+    cam.ortho.size = 5;
+    set_camera_ortho_mat4(&cam);
 
     game.win_state.width = WIDTH;
     game.win_state.height = HEIGHT;
@@ -600,6 +608,8 @@ i32 main(void)
     shutdown_game_object_system();
     shutdown_physics2d_object_system();
     shutdown_anim_system();
+
+    SHUTDOWN_DEBUG_LINE_RENDERER();
 
     glDeleteProgram(sprite_instance.shader);
 

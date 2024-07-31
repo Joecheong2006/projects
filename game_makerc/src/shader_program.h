@@ -1,6 +1,6 @@
 #ifndef _SHADER_PROGRAM_
 #define _SHADER_PROGRAM_
-#include "string.h"
+#include "basic/string.h"
 #include "error_type.h"
 
 typedef struct {

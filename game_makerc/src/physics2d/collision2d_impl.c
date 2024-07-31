@@ -21,7 +21,7 @@ collision2d_state box2d_box2d_collision_impl(collider2d* collider1, collider2d* 
     };
 }
 
-static collision2d_state base_circle2d_box2d_collision(collider2d* collider1, collider2d* collider2) {
+collision2d_state circle2d_box2d_collision_impl(collider2d* collider1, collider2d* collider2) {
     circle2d* c = collider1->self;
     box2d* b = collider2->self;
     vec2 p1, p2;
@@ -41,7 +41,7 @@ static collision2d_state base_circle2d_box2d_collision(collider2d* collider1, co
         b->size[0], -b->size[1]
     };
 
-    float angle = collider2->parent->tran->euler_angle[2];
+    f32 angle = collider2->parent->tran->euler_angle[2];
     glm_vec2_rotate(top_right, angle, top_right);
     glm_vec2_rotate(top_left, angle, top_left);
     glm_vec2_rotate(bottom_right, angle, bottom_right);
@@ -104,12 +104,8 @@ static collision2d_state base_circle2d_box2d_collision(collider2d* collider1, co
     };
 }
 
-collision2d_state circle2d_box2d_collision_impl(collider2d* collider1, collider2d* collider2) {
-    return base_circle2d_box2d_collision(collider2, collider1);
-}
-
 collision2d_state box2d_circle2d_collision_impl(collider2d* collider1, collider2d* collider2) {
-    collision2d_state state = base_circle2d_box2d_collision(collider2, collider1);
+    collision2d_state state = circle2d_box2d_collision_impl(collider2, collider1);
     state.normal[0] *= -1;
     state.normal[1] *= -1;
     return state;

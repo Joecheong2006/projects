@@ -1,6 +1,6 @@
 #ifndef _PHYSICS_RIGID2D_
 #define _PHYSICS_RIGID2D_
-#include "../util.h"
+#include "../basic/util.h"
 #include "../transform.h"
 
 typedef struct rigid2d rigid2d;
@@ -13,7 +13,7 @@ struct rigid2d {
     vec2 a, v, g;
     f32 angular_v;
     f32 mass, inverse_mass, restitution, inertia, inverse_inertia;
-    i32 is_static;
+    i32 is_static, freeze_rotation;
     i32 index;
     rigid2d_process_callback process;
 };

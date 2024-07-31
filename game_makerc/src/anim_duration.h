@@ -1,6 +1,6 @@
 #ifndef _ANIM_DURATION_
 #define _ANIM_DURATION_
-#include "util.h"
+#include "basic/util.h"
 
 typedef struct anim_duration anim_duration;
 typedef void(*anim_duration_callback)(anim_duration*, f32);

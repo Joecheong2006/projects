@@ -16,6 +16,11 @@ void init_debug_line_renderer_instance() {
     shader_program_free(&program);
 }
 
+void shutdown_debug_line_renderer() {
+    glDeleteProgram(shader);
+    glDeleteVertexArrays(1, &vao.id);
+}
+
 void render_debug_line(vec3 p1, vec3 p2, vec3 color) {
     GLC(glUseProgram(shader));
     GLC(glBindVertexArray(vao.id));
