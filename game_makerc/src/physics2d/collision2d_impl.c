@@ -35,6 +35,7 @@ static i32 intersect_polygons(vec2 normal, f32* depth, vec2* v1, int c1, vec2* v
         glm_vec2_sub(v1[i], v1[(i + 1) % c1], line);
         vec2 tangent = {-line[1], line[0]};
         f32 min1, max1, min2, max2;
+        glm_vec2_normalize(tangent);
         project_points(&min1, &max1, v1, c1, tangent);
         project_points(&min2, &max2, v2, c2, tangent);
         if (min1 >= max2 || min2 >= max1) {
@@ -52,6 +53,7 @@ static i32 intersect_polygons(vec2 normal, f32* depth, vec2* v1, int c1, vec2* v
         glm_vec2_sub(v2[i], v2[(i + 1) % c2], line);
         vec2 tangent = {-line[1], line[0]};
         f32 min1, max1, min2, max2;
+        glm_vec2_normalize(tangent);
         project_points(&min1, &max1, v1, c1, tangent);
         project_points(&min2, &max2, v2, c2, tangent);
         if (min1 >= max2 || min2 >= max1) {
@@ -64,15 +66,11 @@ static i32 intersect_polygons(vec2 normal, f32* depth, vec2* v1, int c1, vec2* v
         }
     }
 
-    f32 inverse_len = 1.0 / glm_vec2_distance((vec2){0, 0}, normal);
-    *depth *= inverse_len;
-    normal[0] *= inverse_len;
-    normal[1] *= inverse_len;
     return 1;
 }
 
 static i32 nearly_equal(f32 a, f32 b) {
-    return fabs(a - b) - 0.0005 < 0;
+    return fabs(a - b) - 0.001 < 0;
 }
 
 static i32 nearly_equalv(vec2 a, vec2 b) {

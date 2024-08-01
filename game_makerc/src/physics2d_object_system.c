@@ -130,7 +130,7 @@ static void resolve_friction(f32 in_j, f32 inverse_count, vec2 out_impulse, coll
     vec2 impulse;
     
     const f32 static_friction = 0.4;
-    const f32 dynamic_friction = 0.15;
+    const f32 dynamic_friction = 0.16;
 
     if (fabs(J) < in_j * static_friction) {
     	impulse[0] = -J * tangent[0];

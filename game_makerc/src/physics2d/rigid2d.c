@@ -62,8 +62,8 @@ void init_rigid2d(rigid2d* rig, transform* tran) {
     // rig->process = euler_method;
     rig->process = verlet_method;
     rig->restitution = 1;
-    rig->drag = 0.12;
-    rig->angular_drag = 0.12;
+    rig->drag = 0.2;
+    rig->angular_drag = 0.2;
 }
 
 void rigid2d_set_mass(rigid2d* rig, f32 new_mass) {
