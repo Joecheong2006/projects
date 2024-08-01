@@ -1,6 +1,7 @@
 #include "collision2d_impl.h"
 #include "box2d.h"
 #include "circle2d.h"
+#include <math.h>
 // #include <float.h>
 
 #include "../debug/primitive_shape_renderer.h"
@@ -90,6 +91,14 @@ static i32 intersect_polygons(vec2 normal, f32* depth, vec2* v1, int c1, vec2* v
     return 1;
 }
 
+static i32 nearly_equal(f32 a, f32 b) {
+    return fabs(a - b) - 0.001 < 0;
+}
+
+static i32 nearly_equalv(vec2 a, vec2 b) {
+    return nearly_equal(a[0], b[0]) && nearly_equal(a[1], b[1]);
+}
+
 collision2d_state box2d_box2d_collision_impl(collider2d* collider1, collider2d* collider2) {
     box2d* b1 = collider1->self;
     box2d* b2 = collider2->self;
@@ -130,34 +139,27 @@ collision2d_state box2d_box2d_collision_impl(collider2d* collider1, collider2d* 
         };
     }
 
-    vec2 closest_point[4];
-    f32 closest_dis[4] = {FLT_MAX, FLT_MAX, FLT_MAX, FLT_MAX};
     int count = 0;
+    f32 min_dis = FLT_MAX;
+
+    vec2 contact_point[2];
 
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {
             vec2 cp;
             find_closest_point_on_line(cp, vp2[j], vp2[(j + 1) % 4], vp1[i]);
             f32 dis = glm_vec2_distance(vp1[i], cp);
-            if (dis < 0.01) {
-                continue;
+            if (nearly_equal(dis, min_dis)) {
+                if (!nearly_equalv(cp, contact_point[0])) {
+                    glm_vec2_copy(cp, contact_point[1]);
+                    count = 2;
+                }
             }
-            if (dis < closest_dis[i]) {
-                closest_dis[i] = dis;
-                glm_vec2_copy(cp, closest_point[i]);
+            else if (dis < min_dis) {
+                min_dis = dis;
+                glm_vec2_copy(cp, contact_point[0]);
+                count = 1;
             }
-        }
-    }
-
-    vec2 contact_point[2];
-
-    for (int i = 0; i < 4; i++) {
-        vec2 normal, pn;
-        glm_vec2_sub(vp1[i], p1, normal);
-        glm_vec2_sub(closest_point[i], vp1[i], pn);
-        if (glm_vec2_dot(normal, pn) < 0) {
-            glm_vec2_copy(vp1[i], contact_point[count]);
-            count++;
         }
     }
 
