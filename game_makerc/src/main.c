@@ -243,9 +243,8 @@ void render_transform_outline(transform* tran, vec3 color) {
 void sprite_index_anim(anim_position_slide* slide, f32 dur) {
     const i32 key_frames = 2;
     i32 index = dur * key_frames;
-    f32* sprite_index = *slide->target;
-    sprite_index[0] = index % 2;
-    sprite_index[1] = 0;
+    slide->target[0] = index % 2;
+    slide->target[1] = 0;
 }
 
 typedef struct {
@@ -265,7 +264,7 @@ void rigid2d_circle_on_start(game_object* obj) {
     create_physics2d_object(&self->body);
 }
 
-void rigid2d_circle_on_render(game_object* obj) {
+void rigid2d_circle_on_update(game_object* obj) {
     rigid2d_circle* self = obj->self;
     vec3 a = {0, 0, 0};
     vec3 color = {1, 1, 1};
@@ -273,6 +272,9 @@ void rigid2d_circle_on_render(game_object* obj) {
     glm_vec2_add(a, self->tran.position, a);
     DRAW_DEBUG_LINE(self->tran.position, a, color);
     DRAW_DEBUG_CIRCLE(self->tran.position, self->context.radius, color);
+    if (fabs(self->tran.position[0]) > 5 && fabs(self->tran.position[1]) > 5) {
+        destory_game_object(obj);
+    }
 }
 
 void rigid2d_circle_on_destory(game_object* obj) {
@@ -297,9 +299,12 @@ void rigid2d_box_on_start(game_object* obj) {
     create_physics2d_object(&self->body);
 }
 
-void rigid2d_box_on_render(game_object* obj) {
+void rigid2d_box_on_update(game_object* obj) {
     rigid2d_box* self = obj->self;
     render_transform_outline(&self->tran, (vec3){1, 1, 1});
+    if (fabs(self->tran.position[0]) > 5 && fabs(self->tran.position[1]) > 5) {
+        destory_game_object(obj);
+    }
 }
 
 void rigid2d_box_on_destory(game_object* obj) {
@@ -307,50 +312,46 @@ void rigid2d_box_on_destory(game_object* obj) {
     destory_physics2d_object(&self->body);
 }
 
-#define CIRCLE_COUNT 1
 #define BOX_COUNT 2
-#define MAX_BOXES 100
+#define MAX_POOL_OBJ 100
 typedef struct {
-    rigid2d_circle circles[CIRCLE_COUNT];
-    rigid2d_box ground;
-    rigid2d_box box_pool[MAX_BOXES];
-    i32 pool_box_count;
+    rigid2d_box ground[3];
+    rigid2d_box box_pool[MAX_POOL_OBJ];
+    rigid2d_circle circle_pool[MAX_POOL_OBJ];
+    i32 pool_box_count, pool_circle_count;
 } rigid2d_test;
 
 void rigid2d_test_on_start(game_object* obj) {
     rigid2d_test* self = obj->self;
-    self->pool_box_count = 0;
-    i32 circle_count  = CIRCLE_COUNT;
-    for (int i = 0; i < circle_count; i++) {
-        create_game_object(&(game_object){
-            .self = &self->circles[i],
-            .on_start = rigid2d_circle_on_start,
-            .on_activate = NULL,
-            .on_update = NULL,
-            .on_render = rigid2d_circle_on_render,
-            .on_destory = rigid2d_circle_on_destory,
-        });
-        self->circles[i].tran.position[0] = i * 1;
-        self->circles[i].tran.position[1] = i * 1.2;
-        self->circles[i].context.radius = 0.2;
-        self->circles[i].body.restitution = 0.5;
-    }
+    self->pool_box_count = self->pool_circle_count = 0;
 
-    create_game_object(&(game_object){
-        .self = &self->ground,
-        .on_start = rigid2d_box_on_start,
-        .on_activate = NULL,
-        .on_update = NULL,
-        .on_render = rigid2d_box_on_render,
-        .on_destory = rigid2d_box_on_destory,
-    });
-    self->ground.tran.position[1] -= 2;
-    self->ground.body.restitution = 0.5;
-    self->ground.context.size[0] = 5;
-    self->ground.tran.scale[0] = 10;
-    self->ground.context.size[1] = 0.3;
-    self->ground.tran.scale[1] = 0.6;
-    rigid2d_set_static(&self->ground.body);
+    f32 config[] = {
+        // pos      size        res     angle
+         0,   -2,   10, 0.25,   0.6,    0,
+        -5,    1,   6, 0.25,   0.6,    90,
+         5,    1,   6, 0.25,   0.6,    90,
+        // -3.5, -2,   3,  0.25,   0.5,    150,
+         // 3.5, -2,   3,  0.25,   0.5,   -150,
+    };
+
+    f32* cs = config;
+    for (int i = 0; i < 3; i++, cs += 6) {
+        create_game_object(&(game_object){
+            .self = self->ground + i,
+            .on_start = rigid2d_box_on_start,
+            .on_activate = NULL,
+            .on_update = rigid2d_box_on_update,
+            .on_destory = rigid2d_box_on_destory,
+        });
+        glm_vec2_copy(cs + 0, self->ground[i].tran.position);
+        glm_vec2_copy(cs + 2, self->ground[i].tran.scale);
+        glm_vec2_copy(self->ground[i].tran.scale, self->ground[i].context.size);
+        self->ground[i].body.restitution = cs[4];
+        self->ground[i].tran.euler_angle[2] = glm_rad(cs[5]);
+        self->ground[i].context.size[0] *= 0.5;
+        self->ground[i].context.size[1] *= 0.5;
+        rigid2d_set_static(&self->ground[i].body);
+    }
 }
 
 void rigid2d_test_on_update(game_object* obj) {
@@ -367,31 +368,66 @@ void rigid2d_test_on_update(game_object* obj) {
     glm_mat4_mulv(m, uv, uv);
     
     static i32 down = 0;
-    if (down == 0 && input_mouse_button_down(GLFW_MOUSE_BUTTON_LEFT)) {
+    if (down == 0 && self->pool_box_count < MAX_POOL_OBJ && input_mouse_button_down(GLFW_MOUSE_BUTTON_LEFT)) {
+        rigid2d_box* box = self->box_pool + self->pool_box_count;
         create_game_object(&(game_object){
-            .self = &self->box_pool[self->pool_box_count],
+            .self = box,
             .on_start = rigid2d_box_on_start,
             .on_activate = NULL,
-            .on_update = NULL,
-            .on_render = rigid2d_box_on_render,
+            .on_update = rigid2d_box_on_update,
             .on_destory = rigid2d_box_on_destory,
         });
-        glm_vec2_copy(uv, self->box_pool[self->pool_box_count].tran.position);
+        glm_vec2_copy(uv, box->tran.position);
+        box->body.restitution = 0.5;
         self->pool_box_count++;
+        rigid2d_set_mass(&box->body, 0.5);
         down = 1;
     }
-    if (input_mouse_button_release(GLFW_MOUSE_BUTTON_LEFT)) {
+    if (down == 0 && self->pool_circle_count < MAX_POOL_OBJ && input_mouse_button_down(GLFW_MOUSE_BUTTON_RIGHT)) {
+        rigid2d_circle* circle = self->circle_pool + self->pool_circle_count;
+        create_game_object(&(game_object){
+            .self = circle,
+            .on_start = rigid2d_circle_on_start,
+            .on_activate = NULL,
+            .on_update = rigid2d_circle_on_update,
+            .on_destory = rigid2d_circle_on_destory,
+        });
+        circle->context.radius = 0.3;
+        circle->body.restitution = 0.5;
+        glm_vec2_copy(uv, circle->tran.position);
+        self->pool_circle_count++;
+        rigid2d_set_mass(&circle->body, 0.5);
+        down = 1;
+    }
+    if (input_mouse_button_release(GLFW_MOUSE_BUTTON_LEFT) && input_mouse_button_release(GLFW_MOUSE_BUTTON_RIGHT)) {
         down = 0;
+    }
+
+    f32 step = 1.0 / 144 * 4;
+    if (input_key_press(GLFW_KEY_UP)) {
+        translate_camera(cam, (vec3){0, step, 0});
+    }
+    else if (input_key_press(GLFW_KEY_DOWN)) {
+        translate_camera(cam, (vec3){0, -step, 0});
+    }
+    if (input_key_press(GLFW_KEY_LEFT)) {
+        translate_camera(cam, (vec3){-step, 0, 0});
+    }
+    else if (input_key_press(GLFW_KEY_RIGHT)) {
+        translate_camera(cam, (vec3){step, 0, 0});
     }
 }
 
 void rigid2d_test_on_destory(game_object* obj) {
     rigid2d_test* self = obj->self;
-    for (int i = 0; i < (int)sizeof(self->circles) / (int)sizeof(rigid2d_circle); i++) {
-        destory_physics2d_object(&self->circles[i].body);
-    }
 
-    destory_physics2d_object(&self->ground.body);
+    for (i32 i = 0; i < self->pool_box_count; ++i) {
+        destory_physics2d_object(&self->box_pool[i].body);
+    }
+    for (i32 i = 0; i < self->pool_circle_count; ++i) {
+        destory_physics2d_object(&self->circle_pool[i].body);
+    }
+    // destory_physics2d_object(&self->ground.body);
 }
 
 i32 main(void)
@@ -449,6 +485,7 @@ i32 main(void)
     camera cam;
     init_camera(&cam, (vec2){WIDTH, HEIGHT});
 
+    translate_camera(&cam, (vec3){0, 1.5, 0});
     cam.ortho.depth[0] = -10;
     cam.ortho.depth[1] = 10;
     cam.ortho.size = 5;
@@ -464,7 +501,6 @@ i32 main(void)
         .on_start = NULL,
         .on_activate = NULL,
         .on_update = NULL,
-        .on_render = NULL,
         .on_destory = NULL,
     });
 
@@ -474,7 +510,6 @@ i32 main(void)
         .on_start = rigid2d_test_on_start,
         .on_activate = NULL,
         .on_update = rigid2d_test_on_update,
-        .on_render = NULL,
         .on_destory = rigid2d_test_on_destory,
     });
 
@@ -527,7 +562,7 @@ i32 main(void)
 
     anim_position_slide sprite_anim;
     init_anim_position_slide(&sprite_anim, (vec3){4, 0, 0}, sprite_index_anim);
-    set_anim_position_slide(&sprite_anim, &sp.sprite_index);
+    set_anim_position_slide(&sprite_anim, sp.sprite_index);
     anim_duration anim = { .loop = 1 };
     init_anim_position_slide_duration(&anim, &sprite_anim, 0.5);
     create_anim_duration(&anim);
@@ -536,26 +571,10 @@ i32 main(void)
     {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        f32 step = 1.0 / 144 * 4;
-        if (glfwGetKey(app_window, GLFW_KEY_UP) == GLFW_PRESS) {
-            translate_camera(&cam, (vec3){0, step, 0});
-        }
-        else if (glfwGetKey(app_window, GLFW_KEY_DOWN) == GLFW_PRESS) {
-            translate_camera(&cam, (vec3){0, -step, 0});
-        }
-        if (glfwGetKey(app_window, GLFW_KEY_LEFT) == GLFW_PRESS) {
-            translate_camera(&cam, (vec3){-step, 0, 0});
-        }
-        else if (glfwGetKey(app_window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
-            translate_camera(&cam, (vec3){step, 0, 0});
-        }
-
 		update_anim_system();
 		con.window.render_callback(con.owner);
 		update_physics2d_object_system();
         update_game_object_system();
-
-        const f32 dt = 1.0 / 144;
 
         render_sprite(&cam, &tran, &sp_tex, &sp);
         render_transform_outline(&tran, (vec3){1, 1, 1});

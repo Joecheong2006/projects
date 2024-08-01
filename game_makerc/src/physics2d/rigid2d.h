@@ -19,9 +19,11 @@ struct rigid2d {
 };
 
 void euler_method(rigid2d* rig, f32 dt);
+void verlet_method(rigid2d* rig, f32 dt);
 
 void init_rigid2d(rigid2d* rig, transform* tran);
 void rigid2d_set_mass(rigid2d* rig, f32 new_mass);
 void rigid2d_set_static(rigid2d* rig);
+void rigid2d_update_inertia(rigid2d* rig, collider2d* collider);
 
 #endif

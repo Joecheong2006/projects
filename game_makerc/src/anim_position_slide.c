@@ -10,9 +10,9 @@ void init_anim_position_slide(anim_position_slide* slide, vec3 translation, anim
     glm_vec3_copy(translation, slide->translation);
 }
 
-void set_anim_position_slide(anim_position_slide* slide, vec3* target_position) {
+void set_anim_position_slide(anim_position_slide* slide, f32* target_position) {
     slide->target = target_position;
-    glm_vec3_copy(*slide->target, slide->start);
+    glm_vec3_copy(slide->target, slide->start);
     slide->end[0] = slide->start[0] + slide->translation[0];
     slide->end[1] = slide->start[1] + slide->translation[1];
     slide->end[2] = slide->start[2] + slide->translation[2];
