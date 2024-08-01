@@ -76,7 +76,7 @@ static void resolve_rotation(f32* out_j, vec2 out_c1, vec2 out_c2, vec2 out_impu
     };
 
     const f32 relative_d = glm_vec2_dot(relative_a, state->normal);
-    if (relative_d < 0) {
+    if (relative_d <= 0) {
     	*out_j = 0;
     	glm_vec2_zero(out_impulse);
         return;
@@ -87,7 +87,7 @@ static void resolve_rotation(f32* out_j, vec2 out_c1, vec2 out_c2, vec2 out_impu
     const f32 perp2_dot_n = glm_vec2_dot(contact_perp2, state->normal);
     const f32 p1di = perp1_dot_n * perp1_dot_n * r1->inverse_inertia;
     const f32 p2di = perp2_dot_n * perp2_dot_n * r2->inverse_inertia;
-    const f32 J = -relative_d * (e + 1.0) / (p1di + p2di + r1->inverse_mass + r2->inverse_mass) * inverse_count;
+    const f32 J = -inverse_count* relative_d * (e + 1.0) / (p1di + p2di + r1->inverse_mass + r2->inverse_mass);
     *out_j = J;
     vec2 impulse = { J * state->normal[0], J * state->normal[1] };
 
@@ -129,8 +129,8 @@ static void resolve_friction(f32 in_j, f32 inverse_count, vec2 out_impulse, coll
 
     vec2 impulse;
     
-    const f32 static_friction = 0.22;
-    const f32 dynamic_friction = 0.11;
+    const f32 static_friction = 0.4;
+    const f32 dynamic_friction = 0.15;
 
     if (fabs(J) < in_j * static_friction) {
     	impulse[0] = -J * tangent[0];
@@ -167,7 +167,6 @@ static void resolve_collision(i32* collision_point_index, i32 collision_count, c
 	    glm_vec2_mulsubs(rimpulse[i], r2->inverse_mass, r2->v);
 	}
 
-	// return;
 	for (i32 i = 0; i < collision_count; ++i) {
 		i32 index = collision_point_index[i];
 		resolve_friction(Js[i], inverse_count, fimpulse[i], info->collision_points + index, r1, r2);
@@ -187,7 +186,8 @@ static void update_collision() {
 		for_vector(instance.objects, j, 0) {
 			rigid2d* body2 = instance.objects[j];
 			if (body1 == body2) {
-				continue;
+				// continue;
+				break;
 			}
 			if (body1->collider == NULL || body2->collider == NULL) {
 				continue;

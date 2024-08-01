@@ -2,7 +2,6 @@
 #include "box2d.h"
 #include "circle2d.h"
 #include <math.h>
-// #include <float.h>
 
 static void find_closest_point_on_line(vec2 closest, vec2 line_p1, vec2 line_p2, vec2 p) {
     vec2 tangent, line_normal;
@@ -235,8 +234,8 @@ collision2d_info circle2d_box2d_collision_impl(collider2d* collider1, collider2d
 
 collision2d_info box2d_circle2d_collision_impl(collider2d* collider1, collider2d* collider2) {
     collision2d_info info = circle2d_box2d_collision_impl(collider2, collider1);
-    // info.collision_points[0].normal[0] *= -1;
-    // info.collision_points[0].normal[1] *= -1;
+    info.collision_points[0].normal[0] *= -1;
+    info.collision_points[0].normal[1] *= -1;
     return info;
 }
 
