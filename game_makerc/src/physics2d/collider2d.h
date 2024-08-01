@@ -17,10 +17,10 @@ typedef struct {
 typedef struct {
     collision2d_point collision_points[4];
     i32 points_count;
-} collision2d_state;
+} collision2d_info;
 
 typedef struct collider2d collider2d;
-typedef collision2d_state(*collider2d_collision_callback)(collider2d*, collider2d*);
+typedef collision2d_info(*collider2d_collision_callback)(collider2d*, collider2d*);
 typedef f32(*collider2d_get_inertia_callback)(collider2d*);
 
 struct collider2d {

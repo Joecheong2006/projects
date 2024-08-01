@@ -7,7 +7,7 @@ typedef struct {
     f32 radius;
 } circle2d;
 
-collision2d_state circle2d_collision_callback(collider2d* collider1, collider2d* collider2);
+collision2d_info circle2d_collision_callback(collider2d* collider1, collider2d* collider2);
 f32 get_circle2d_inertia(collider2d* circle_collider);
 
 #endif

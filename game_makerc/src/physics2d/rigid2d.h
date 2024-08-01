@@ -11,16 +11,17 @@ struct rigid2d {
     transform* tran;
     collider2d* collider;
     vec2 a, v, g;
-    f32 angular_v;
-    f32 mass, inverse_mass, restitution, inertia, inverse_inertia;
+    f32 angular_v, angular_drag;
+    f32 mass, inverse_mass, restitution, inertia, inverse_inertia, drag;
     i32 is_static, freeze_rotation;
     i32 index;
     rigid2d_process_callback process;
 };
 
 void euler_method(rigid2d* rig, f32 dt);
-void rigid2d_set_mass(rigid2d* rig, f32 new_mass);
+
 void init_rigid2d(rigid2d* rig, transform* tran);
+void rigid2d_set_mass(rigid2d* rig, f32 new_mass);
 void rigid2d_set_static(rigid2d* rig);
 
 #endif

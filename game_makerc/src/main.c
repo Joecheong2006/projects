@@ -309,13 +309,17 @@ void rigid2d_box_on_destory(game_object* obj) {
 
 #define CIRCLE_COUNT 1
 #define BOX_COUNT 2
+#define MAX_BOXES 100
 typedef struct {
     rigid2d_circle circles[CIRCLE_COUNT];
-    rigid2d_box boxes[BOX_COUNT];
+    rigid2d_box ground;
+    rigid2d_box box_pool[MAX_BOXES];
+    i32 pool_box_count;
 } rigid2d_test;
 
 void rigid2d_test_on_start(game_object* obj) {
     rigid2d_test* self = obj->self;
+    self->pool_box_count = 0;
     i32 circle_count  = CIRCLE_COUNT;
     for (int i = 0; i < circle_count; i++) {
         create_game_object(&(game_object){
@@ -329,36 +333,56 @@ void rigid2d_test_on_start(game_object* obj) {
         self->circles[i].tran.position[0] = i * 1;
         self->circles[i].tran.position[1] = i * 1.2;
         self->circles[i].context.radius = 0.2;
-        self->circles[i].body.restitution = 0.2;
+        self->circles[i].body.restitution = 0.5;
     }
 
     create_game_object(&(game_object){
-        .self = &self->boxes[0],
+        .self = &self->ground,
         .on_start = rigid2d_box_on_start,
         .on_activate = NULL,
         .on_update = NULL,
         .on_render = rigid2d_box_on_render,
         .on_destory = rigid2d_box_on_destory,
     });
-    self->boxes[0].tran.position[0] += 1;
-    self->boxes[0].body.restitution = 0.5;
-
-    create_game_object(&(game_object){
-        .self = &self->boxes[1],
-        .on_start = rigid2d_box_on_start,
-        .on_activate = NULL,
-        .on_update = NULL,
-        .on_render = rigid2d_box_on_render,
-        .on_destory = rigid2d_box_on_destory,
-    });
-    self->boxes[1].tran.position[1] -= 1.4;
-    self->boxes[1].body.restitution = 0.5;
-    self->boxes[1].context.size[0] = 5;
-    self->boxes[1].tran.scale[0] = 10;
-    rigid2d_set_static(&self->boxes[1].body);
+    self->ground.tran.position[1] -= 2;
+    self->ground.body.restitution = 0.5;
+    self->ground.context.size[0] = 5;
+    self->ground.tran.scale[0] = 10;
+    self->ground.context.size[1] = 0.3;
+    self->ground.tran.scale[1] = 0.6;
+    rigid2d_set_static(&self->ground.body);
 }
 
 void rigid2d_test_on_update(game_object* obj) {
+    rigid2d_test* self = obj->self;
+    camera* cam = find_game_object_by_index(0)->self;
+
+    vec2 cursor;
+    input_mouse_cursor(cursor);
+
+    vec4 uv = { cursor[0] / cam->resolution[0] * 2 - 1, (1 - cursor[1] / cam->resolution[1]) * 2 - 1, 0, 1};
+    mat4 m;
+    glm_mat4_mul(cam->projection, cam->view, m);
+    glm_mat4_inv(m, m);
+    glm_mat4_mulv(m, uv, uv);
+    
+    static i32 down = 0;
+    if (down == 0 && input_mouse_button_down(GLFW_MOUSE_BUTTON_LEFT)) {
+        create_game_object(&(game_object){
+            .self = &self->box_pool[self->pool_box_count],
+            .on_start = rigid2d_box_on_start,
+            .on_activate = NULL,
+            .on_update = NULL,
+            .on_render = rigid2d_box_on_render,
+            .on_destory = rigid2d_box_on_destory,
+        });
+        glm_vec2_copy(uv, self->box_pool[self->pool_box_count].tran.position);
+        self->pool_box_count++;
+        down = 1;
+    }
+    if (input_mouse_button_release(GLFW_MOUSE_BUTTON_LEFT)) {
+        down = 0;
+    }
 }
 
 void rigid2d_test_on_destory(game_object* obj) {
@@ -367,9 +391,7 @@ void rigid2d_test_on_destory(game_object* obj) {
         destory_physics2d_object(&self->circles[i].body);
     }
 
-    // for (int i = 0; i < (int)sizeof(self->boxes) / (int)sizeof(rigid2d_box); i++) {
-    //     destory_physics2d_object(&self->boxes[i].body);
-    // }
+    destory_physics2d_object(&self->ground.body);
 }
 
 i32 main(void)

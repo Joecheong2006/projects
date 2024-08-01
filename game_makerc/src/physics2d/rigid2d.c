@@ -1,6 +1,7 @@
 #include "rigid2d.h"
 #include "collider2d.h"
 #include <string.h>
+#include <math.h>
 
 void euler_method(rigid2d* rig, f32 dt) {
     ASSERT(rig != NULL &&rig->tran != NULL);
@@ -10,29 +11,21 @@ void euler_method(rigid2d* rig, f32 dt) {
     rig->a[0] += rig->g[0];
     rig->a[1] += rig->g[1];
 
-    rig->v[0] += rig->a[0] * dt;
-    rig->v[1] += rig->a[1] * dt;
+    f32 drag_coefficent = pow(1.0 - rig->drag, dt);
+    rig->v[0] = drag_coefficent * rig->v[0] + rig->a[0] * dt;
+    rig->v[1] = drag_coefficent * rig->v[1] + rig->a[1] * dt;
 
     rig->tran->position[0] += rig->v[0] * dt;
     rig->tran->position[1] += rig->v[1] * dt;
 
     if (!rig->freeze_rotation) {
-        vec3 euler_angle = {0, 0, rig->angular_v * dt};
+        drag_coefficent = pow(1.0 - rig->angular_drag, dt);
+        vec3 euler_angle = {0, 0, rig->angular_v * dt * drag_coefficent};
         tran_rotate(rig->tran, euler_angle);
     }
 
     rig->a[0] = 0;
     rig->a[1] = 0;
-}
-
-void rigid2d_set_mass(rigid2d* rig, f32 new_mass) {
-    ASSERT(rig != NULL && new_mass > 0);
-    rig->mass = new_mass;
-    rig->inverse_mass = 1.0 / new_mass;
-    if (rig->collider) {
-        rig->inertia = rig->collider->get_inertia(rig->collider);
-        rig->inverse_inertia = 1.0 / rig->inertia;
-    }
 }
 
 void init_rigid2d(rigid2d* rig, transform* tran) {
@@ -43,6 +36,18 @@ void init_rigid2d(rigid2d* rig, transform* tran) {
     rig->g[1] = -9.81;
     rig->process = euler_method;
     rig->restitution = 1;
+    rig->drag = 0.12;
+    rig->angular_drag = 0.12;
+}
+
+void rigid2d_set_mass(rigid2d* rig, f32 new_mass) {
+    ASSERT(rig != NULL && new_mass > 0);
+    rig->mass = new_mass;
+    rig->inverse_mass = 1.0 / new_mass;
+    if (rig->collider) {
+        rig->inertia = rig->collider->get_inertia(rig->collider);
+        rig->inverse_inertia = 1.0 / rig->inertia;
+    }
 }
 
 void rigid2d_set_static(rigid2d* rig) {
