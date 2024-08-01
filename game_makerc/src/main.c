@@ -22,7 +22,6 @@
 
 #include "game_object_system.h"
 
-#include "basic/queue.h"
 #include "basic/memallocate.h"
 
 #include "audio.h"
@@ -308,16 +307,16 @@ void rigid2d_box_on_destory(game_object* obj) {
     destory_physics2d_object(&self->body);
 }
 
-#define CIRCLE_COUNT 21
+#define CIRCLE_COUNT 1
+#define BOX_COUNT 2
 typedef struct {
     rigid2d_circle circles[CIRCLE_COUNT];
-    rigid2d_box boxes[2];
+    rigid2d_box boxes[BOX_COUNT];
 } rigid2d_test;
 
 void rigid2d_test_on_start(game_object* obj) {
     rigid2d_test* self = obj->self;
     i32 circle_count  = CIRCLE_COUNT;
-    f32 per_angle = 360.0 / CIRCLE_COUNT;
     for (int i = 0; i < circle_count; i++) {
         create_game_object(&(game_object){
             .self = &self->circles[i],
@@ -327,11 +326,10 @@ void rigid2d_test_on_start(game_object* obj) {
             .on_render = rigid2d_circle_on_render,
             .on_destory = rigid2d_circle_on_destory,
         });
-        self->circles[i].tran.position[0] = cos(i * per_angle * PI / 180) * 3;
-        self->circles[i].tran.position[1] = sin(i * per_angle * PI / 180) * 3;
-        self->circles[i].context.radius = 0.1;
-        self->circles[i].body.restitution = 0.1;
-        rigid2d_set_static(&self->circles[i].body);
+        self->circles[i].tran.position[0] = i * 1;
+        self->circles[i].tran.position[1] = i * 1.2;
+        self->circles[i].context.radius = 0.2;
+        self->circles[i].body.restitution = 0.2;
     }
 
     create_game_object(&(game_object){
@@ -342,7 +340,8 @@ void rigid2d_test_on_start(game_object* obj) {
         .on_render = rigid2d_box_on_render,
         .on_destory = rigid2d_box_on_destory,
     });
-    self->boxes[0].tran.position[0] -= 1.3;
+    self->boxes[0].tran.position[0] += 1;
+    self->boxes[0].body.restitution = 0.5;
 
     create_game_object(&(game_object){
         .self = &self->boxes[1],
@@ -352,31 +351,14 @@ void rigid2d_test_on_start(game_object* obj) {
         .on_render = rigid2d_box_on_render,
         .on_destory = rigid2d_box_on_destory,
     });
+    self->boxes[1].tran.position[1] -= 1.4;
+    self->boxes[1].body.restitution = 0.5;
+    self->boxes[1].context.size[0] = 5;
+    self->boxes[1].tran.scale[0] = 10;
+    rigid2d_set_static(&self->boxes[1].body);
 }
 
 void rigid2d_test_on_update(game_object* obj) {
-    static f32 angle = 0, per_angle = 360.0 / CIRCLE_COUNT;
-
-    camera* cam = find_game_object_by_index(0)->self;
-
-    vec2 cursor;
-    input_mouse_cursor(cursor);
-
-    vec4 uv = { cursor[0] / cam->resolution[0] * 2 - 1, (1 - cursor[1] / cam->resolution[1]) * 2 - 1, 0, 1};
-    mat4 m;
-    glm_mat4_mul(cam->projection, cam->view, m);
-    glm_mat4_inv(m, m);
-    glm_mat4_mulv(m, uv, uv);
-
-    // angle = atan2(uv[1], uv[0]);
-
-    rigid2d_test* self = obj->self;
-
-    angle += 1.0 / 500;
-    for (int i = 0; i < CIRCLE_COUNT; i++) {
-        self->circles[i].tran.position[0] = cos(i * per_angle * PI / 180 + angle) * 3;
-        self->circles[i].tran.position[1] = sin(i * per_angle * PI / 180 + angle) * 3;
-    }
 }
 
 void rigid2d_test_on_destory(game_object* obj) {

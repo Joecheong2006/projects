@@ -17,7 +17,7 @@ void create_physics2d_object(rigid2d* body) {
 	vector_push(instance.objects, body);
 }
 
-static void resolve_velocity(collision2d_point* state, rigid2d* r1, rigid2d* r2) {
+static void resolve_velocity(vec2 out, collision2d_point* state, rigid2d* r1, rigid2d* r2) {
     const f32 total_inverse_mass = 1.0 / (r1->inverse_mass + r2->inverse_mass);
     if (r2->is_static) {
         glm_vec2_mulsubs(state->normal, state->depth, r1->tran->position);
@@ -40,11 +40,13 @@ static void resolve_velocity(collision2d_point* state, rigid2d* r1, rigid2d* r2)
     const f32 e = glm_min(r1->restitution, r2->restitution);
     const f32 J = -relative_normal * (e + 1.0) * total_inverse_mass;
 
-    glm_vec2_muladds(state->normal, J * r1->inverse_mass, r1->v);
-    glm_vec2_mulsubs(state->normal, J * r2->inverse_mass, r2->v);
+    out[0] = J * state->normal[0];
+    out[1] = J * state->normal[1];
+    glm_vec2_muladds(out, r1->inverse_mass, r1->v);
+    glm_vec2_mulsubs(out, r2->inverse_mass, r2->v);
 }
 
-static void resolve_rotation(collision2d_point* state, rigid2d* r1, rigid2d* r2) {
+static void resolve_rotation(vec2 out, collision2d_point* state, rigid2d* r1, rigid2d* r2) {
     vec2 contact1, contact2;
     glm_vec2_sub(state->contact, r1->tran->position, contact1);
     glm_vec2_sub(state->contact, r2->tran->position, contact2);
@@ -76,6 +78,8 @@ static void resolve_rotation(collision2d_point* state, rigid2d* r1, rigid2d* r2)
 
     r1->angular_v += glm_vec2_cross(contact1, impulse) * r1->inverse_inertia;
     r2->angular_v -= glm_vec2_cross(contact2, impulse) * r2->inverse_inertia;
+    out[0] = glm_vec2_cross(contact1, impulse) * r1->inverse_inertia;
+    out[1] = glm_vec2_cross(contact2, impulse) * r2->inverse_inertia;
 }
 
 void destory_physics2d_object(rigid2d* body) {
@@ -99,7 +103,8 @@ void update_physics2d_object_system() {
 		for_vector(instance.objects, j, 0) {
 			rigid2d* body2 = instance.objects[j];
 			if (body1 == body2) {
-				break;
+				continue;
+				// break;
 			}
 			if (body1->collider == NULL || body2->collider == NULL) {
 				continue;
@@ -108,11 +113,21 @@ void update_physics2d_object_system() {
 				continue;
 			}
 			collision2d_state state = body1->collider->collide(body1->collider, body2->collider);
+			vec2 rr[state.points_count];
+			vec2 vr[state.points_count];
+			int count = 0;
 			for (int i = 0; i < state.points_count; i++) {
 				if (state.collision_points[i].depth > 0) {
-					resolve_rotation(&state.collision_points[i], body1->collider->parent, body2->collider->parent);
-					resolve_velocity(&state.collision_points[i], body1->collider->parent, body2->collider->parent);
+					count++;
+					resolve_rotation(rr[i], &state.collision_points[i], body1->collider->parent, body2->collider->parent);
+					resolve_velocity(vr[i], &state.collision_points[i], body1->collider->parent, body2->collider->parent);
 				}
+			}
+			for (int i = 0; i < count; i++) {
+				// body1->collider->parent->angular_v += rr[i][0];
+				// body2->collider->parent->angular_v -= rr[i][1];
+			    // glm_vec2_adds(vr[i], body1->collider->parent->inverse_mass, body1->collider->parent->v);
+			    // glm_vec2_subs(vr[i], body2->collider->parent->inverse_mass, body2->collider->parent->v);
 			}
 		}
 	}
