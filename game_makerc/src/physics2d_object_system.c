@@ -33,16 +33,6 @@ static void resolve_penetration(collision2d_point* state, rigid2d* r1, rigid2d* 
 
 static void resolve_velocity(collision2d_point* state, rigid2d* r1, rigid2d* r2) {
     const f32 total_inverse_mass = 1.0 / (r1->inverse_mass + r2->inverse_mass);
-    if (r2->is_static) {
-        glm_vec2_mulsubs(state->normal, state->depth, r1->tran->position);
-    }
-    else if (r1->is_static) {
-        glm_vec2_muladds(state->normal, state->depth, r2->tran->position);
-    }
-    else {
-        glm_vec2_mulsubs(state->normal, state->depth * r1->inverse_mass * total_inverse_mass, r1->tran->position);
-        glm_vec2_muladds(state->normal, state->depth * r2->inverse_mass * total_inverse_mass, r2->tran->position);
-    }
 
     vec2 separate_v;
     glm_vec2_sub(r1->v, r2->v, separate_v);
@@ -76,7 +66,7 @@ static void resolve_rotation(f32* out_j, vec2 out_c1, vec2 out_c2, vec2 out_impu
     };
 
     const f32 relative_d = glm_vec2_dot(relative_a, state->normal);
-    if (relative_d <= 0) {
+    if (relative_d < 0) {
     	*out_j = 0;
     	glm_vec2_zero(out_impulse);
         return;
@@ -153,7 +143,6 @@ static void resolve_collision(i32* collision_point_index, i32 collision_count, c
 	vec2 c2[info->points_count];
 
 	f32 inverse_count = 1.0 / collision_count;
-	// f32 inverse_count = 1.0 ;
 
 	for (i32 i = 0; i < collision_count; ++i) {
 		i32 index = collision_point_index[i];
@@ -205,9 +194,6 @@ static void update_collision() {
 			for (int i = 0; i < info.points_count; ++i) {
 				if (info.collision_points[i].depth > 0) {
 					index[count++] = i;
-					// vec3 p = {0, 0, 0};
-					// glm_vec2_copy(info.collision_points[i].contact, p);
-					// draw_debug_circle(p, 0.1, (vec3){1, 1, 0});
 				}
 			}
 

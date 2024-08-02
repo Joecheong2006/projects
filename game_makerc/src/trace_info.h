@@ -20,7 +20,6 @@ void end_tracing(trace_info* info);
 
 #define END_SCOPE_SESSION(ti, name)\
     end_stimer(&__timer);\
-    printf("%g\n", __timer.dur * 1000);\
     submit_tracing_info(&ti, name, "function", __timer.begin, ti.pid, ti.tid, 1000000 * __timer.dur);}
 
 #endif

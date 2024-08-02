@@ -1,6 +1,7 @@
 #include "collision2d_impl.h"
 #include "box2d.h"
 #include "circle2d.h"
+#include "capsule2d.h"
 #include <math.h>
 
 static void find_closest_point_on_line(vec2 closest, vec2 line_p1, vec2 line_p2, vec2 p) {
@@ -202,7 +203,6 @@ collision2d_info circle2d_box2d_collision_impl(collider2d* collider1, collider2d
     }
 
     f32 min_dis = FLT_MAX;
-
     vec2 contact_point;
 
     for (int i = 0; i < 4; ++i) {
@@ -259,5 +259,161 @@ collision2d_info circle2d_circle2d_collision_impl(collider2d* collider1, collide
         },
         .points_count = 1,
     };
+}
+
+collision2d_info circle2d_capsule2d_collision_impl(collider2d* collider1, collider2d* collider2) {
+    circle2d* c = collider1->self;
+    capsule2d* cap = collider2->self;
+    vec2 p1, p2;
+    glm_vec2_add(collider1->parent->tran->position, c->center, p1);
+    glm_vec2_add(collider2->parent->tran->position, cap->center, p2);
+
+    i32 is_hori = cap->horizontal;
+    vec2 cap_p1 = {-cap->height * 0.5 * is_hori, -cap->height * 0.5 * (1 - is_hori)};
+    vec2 cap_p2 = {cap->height * 0.5 * is_hori, cap->height * 0.5 * (1 - is_hori)};
+
+    glm_vec2_rotate(cap_p1, collider2->parent->tran->euler_angle[2], cap_p1);
+    glm_vec2_rotate(cap_p2, collider2->parent->tran->euler_angle[2], cap_p2);
+
+    glm_vec2_add(cap_p1, p2, cap_p1);
+    glm_vec2_add(cap_p2, p2, cap_p2);
+
+    vec2 contact;
+    find_closest_point_on_line(contact, cap_p1, cap_p2, p1);
+
+    vec2 normal;
+    f32 distance = glm_vec2_distance(contact, p1);
+    glm_vec2_sub(contact, p1, normal);
+    glm_vec2_divs(normal, distance, normal);
+
+    return (collision2d_info) {
+        .collision_points[0] = {
+            .depth = c->radius + cap->radius - distance,
+            .normal = {normal[0], normal[1]},
+            .contact = {p1[0] + normal[0] * c->radius, p1[1] + normal[1] * c->radius},
+        },
+        .points_count = 1,
+    };
+}
+
+collision2d_info capsule2d_circle2d_collision_impl(collider2d* collider1, collider2d* collider2) {
+    collision2d_info info = circle2d_capsule2d_collision_impl(collider2, collider1);
+    info.collision_points[0].normal[0] *= -1;
+    info.collision_points[0].normal[1] *= -1;
+    return info;
+}
+
+collision2d_info box2d_capsule2d_collision_impl(collider2d* collider1, collider2d* collider2) {
+    box2d* box = collider1->self;
+    capsule2d* cap = collider2->self;
+    vec2 p1, p2;
+    glm_vec2_add(collider1->parent->tran->position, box->center, p1);
+    glm_vec2_add(collider2->parent->tran->position, cap->center, p2);
+
+    i32 is_hori = cap->horizontal;
+    vec2 cap_p1 = {-cap->height * 0.5 * is_hori, -cap->height * 0.5 * (1 - is_hori)};
+    vec2 cap_p2 = {cap->height * 0.5 * is_hori, cap->height * 0.5 * (1 - is_hori)};
+
+    glm_vec2_rotate(cap_p1, collider2->parent->tran->euler_angle[2], cap_p1);
+    glm_vec2_rotate(cap_p2, collider2->parent->tran->euler_angle[2], cap_p2);
+
+    glm_vec2_add(cap_p1, p2, cap_p1);
+    glm_vec2_add(cap_p2, p2, cap_p2);
+
+    vec2 box_p[] = {
+        {  box->size[0],  box->size[1], },
+        { -box->size[0],  box->size[1], },
+        { -box->size[0], -box->size[1], },
+        {  box->size[0], -box->size[1] }
+    };
+
+    for (int i = 0; i < 4; i++) {
+        glm_vec2_rotate(box_p[i], collider1->parent->tran->euler_angle[2], box_p[i]);
+        glm_vec2_add(p1, box_p[i], box_p[i]);
+    }
+
+    collision2d_info info = { .points_count = 0 };
+    for (i32 i = 0; i < 4; i++) {
+        vec2 cp;
+        find_closest_point_on_line(cp, cap_p1, cap_p2, box_p[i]);
+        f32 d = cap->radius - glm_vec2_distance(cp, box_p[i]);
+        if (d > 0) {
+            vec2 normal;
+            glm_vec2_sub(cp, box_p[i], normal);
+            glm_vec2_normalize_to(normal, info.collision_points[info.points_count].normal);
+            info.collision_points[info.points_count].depth = d;
+            glm_vec2_mulsubs(info.collision_points[info.points_count].normal, cap->radius, cp);
+            glm_vec2_copy(cp, info.collision_points[info.points_count].contact);
+            info.points_count++;
+        }
+    }
+    if (info.points_count == 2) {
+        return info;
+    }
+
+    f32 min_dis = FLT_MAX;
+    vec2 contact_point;
+
+    for (int i = 0; i < 4; ++i) {
+        vec2 cp;
+        find_closest_point_on_line(cp, box_p[i], box_p[(i + 1) % 4], cap_p1);
+        f32 dis = glm_vec2_distance(cp, cap_p1);
+        if (dis < min_dis) {
+            glm_vec2_copy(cp, contact_point);
+            min_dis = dis;
+        }
+    }
+
+    vec2 normal;
+    glm_vec2_sub(contact_point, cap_p1, normal);
+    glm_vec2_normalize(normal);
+    f32 depth = cap->radius - min_dis;
+
+    if (depth > 0) {
+        info.collision_points[info.points_count++] = (collision2d_point) {
+            .depth = depth,
+            .normal = {-normal[0], -normal[1]},
+            .contact = {cap_p1[0] + normal[0] * cap->radius, cap_p1[1] + normal[1] * cap->radius},
+        };
+    }
+
+    if (info.points_count == 2) {
+        return info;
+    }
+
+    min_dis = FLT_MAX;
+
+    for (int i = 0; i < 4; ++i) {
+        vec2 cp;
+        find_closest_point_on_line(cp, box_p[i], box_p[(i + 1) % 4], cap_p2);
+        f32 dis = glm_vec2_distance(cp, cap_p2);
+        if (dis < min_dis) {
+            glm_vec2_copy(cp, contact_point);
+            min_dis = dis;
+        }
+    }
+
+    glm_vec2_sub(contact_point, cap_p2, normal);
+    glm_vec2_normalize(normal);
+    depth = cap->radius - min_dis;
+
+    if (depth > 0) {
+        info.collision_points[info.points_count++] = (collision2d_point) {
+            .depth = depth,
+            .normal = {-normal[0], -normal[1]},
+            .contact = {cap_p2[0] + normal[0] * cap->radius, cap_p2[1] + normal[1] * cap->radius},
+        };
+    }
+
+    return info;
+}
+
+collision2d_info capsule2d_box2d_collision_impl(collider2d* collider1, collider2d* collider2) {
+    collision2d_info info = box2d_capsule2d_collision_impl(collider2, collider1);
+    for (i32 i = 0; i < info.points_count; i++) {
+        info.collision_points[i].normal[0] *= -1;
+        info.collision_points[i].normal[1] *= -1;
+    }
+    return info;
 }
 

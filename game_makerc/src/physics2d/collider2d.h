@@ -6,7 +6,7 @@
 typedef enum {
     ColliderBox2d = 0,
     ColliderCircle2d,
-    ColliderCylinder2d,
+    ColliderCapsule2d,
 } Collider2dType;
 
 typedef struct {

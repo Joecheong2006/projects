@@ -36,12 +36,12 @@ void verlet_method(rigid2d* rig, f32 dt) {
     rig->a[0] += rig->g[0];
     rig->a[1] += rig->g[1];
 
-    rig->tran->position[0] += rig->v[0] * dt + rig->a[0] * dt * dt * 0.5;
-    rig->tran->position[1] += rig->v[1] * dt + rig->a[1] * dt * dt * 0.5;
-
-    f32 drag_coefficent = pow(1.0 - rig->drag, dt);
+    f32 drag_coefficent = powf(1.0 - rig->drag, dt);
     rig->v[0] = drag_coefficent * rig->v[0] + rig->a[0] * dt;
     rig->v[1] = drag_coefficent * rig->v[1] + rig->a[1] * dt;
+
+    rig->tran->position[0] += rig->v[0] * dt + rig->a[0] * dt * dt * 0.5;
+    rig->tran->position[1] += rig->v[1] * dt + rig->a[1] * dt * dt * 0.5;
 
     if (!rig->freeze_rotation) {
         drag_coefficent = pow(1.0 - rig->angular_drag, dt);
@@ -62,8 +62,8 @@ void init_rigid2d(rigid2d* rig, transform* tran) {
     // rig->process = euler_method;
     rig->process = verlet_method;
     rig->restitution = 1;
-    rig->drag = 0.3;
-    rig->angular_drag = 0.3;
+    rig->drag = 0.15;
+    rig->angular_drag = 0.15;
 }
 
 void rigid2d_set_mass(rigid2d* rig, f32 new_mass) {

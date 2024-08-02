@@ -13,6 +13,8 @@
 #include "sprite.h"
 #include "stb_image.h"
 
+#include "trace_info.h"
+
 #include "input_system.h"
 
 #include "camera_shake.h"
@@ -32,6 +34,7 @@
 #include "physics2d/collider2d.h"
 #include "physics2d/box2d.h"
 #include "physics2d/circle2d.h"
+#include "physics2d/capsule2d.h"
 
 #define PI 3.14159265359
 
@@ -312,6 +315,51 @@ void rigid2d_box_on_destory(game_object* obj) {
     destory_physics2d_object(&self->body);
 }
 
+typedef struct {
+    transform tran;
+    capsule2d context;
+    rigid2d body;
+    collider2d collider;
+} rigid2d_capsule;
+
+void rigid2d_capsule_on_start(game_object* obj) {
+    rigid2d_capsule* self = obj->self;
+    init_transform(&self->tran);
+    init_rigid2d(&self->body, &self->tran);
+    self->context = (capsule2d){ .center = {0, 0}, .height = 1, .radius = 0.5, .horizontal = 0 };
+    self->collider = create_collider2d(ColliderCapsule2d, &self->body, &self->context);
+    self->body.collider = &self->collider;
+    create_physics2d_object(&self->body);
+}
+
+void rigid2d_capsule_on_update(game_object* obj) {
+    rigid2d_capsule* self = obj->self;
+
+    render_transform_outline(&self->tran, (vec3){1, 1, 1});
+
+    capsule2d* cap = &self->context;
+    i32 is_hori = cap->horizontal;
+    vec3 cap_p1 = {-cap->height * 0.5 * is_hori, -cap->height * 0.5 * (1 - is_hori)};
+    vec3 cap_p2 = {cap->height * 0.5 * is_hori, cap->height * 0.5 * (1 - is_hori)};
+
+    glm_vec2_rotate(cap_p1, self->tran.euler_angle[2], cap_p1);
+    glm_vec2_rotate(cap_p2, self->tran.euler_angle[2], cap_p2);
+    glm_vec2_add(cap_p1, self->tran.position, cap_p1);
+    glm_vec2_add(cap_p2, self->tran.position, cap_p2);
+
+    draw_debug_circle(cap_p1, cap->radius, (vec3){1, 1, 1});
+    draw_debug_circle(cap_p2, cap->radius, (vec3){1, 1, 1});
+
+    if (fabs(self->tran.position[0]) > 5 && fabs(self->tran.position[1]) > 5) {
+        destory_game_object(obj);
+    }
+}
+
+void rigid2d_capsule_on_destory(game_object* obj) {
+    rigid2d_box* self = obj->self;
+    destory_physics2d_object(&self->body);
+}
+
 #define BOX_COUNT 2
 #define MAX_POOL_OBJ 100
 typedef struct {
@@ -378,7 +426,7 @@ void rigid2d_test_on_update(game_object* obj) {
             .on_destory = rigid2d_box_on_destory,
         });
         glm_vec2_copy(uv, box->tran.position);
-        box->body.restitution = 0.3;
+        box->body.restitution = 0.5;
         self->pool_box_count++;
         rigid2d_set_mass(&box->body, 0.5);
         down = 1;
@@ -393,7 +441,7 @@ void rigid2d_test_on_update(game_object* obj) {
             .on_destory = rigid2d_circle_on_destory,
         });
         circle->context.radius = 0.3;
-        circle->body.restitution = 0.3;
+        circle->body.restitution = 0.5;
         glm_vec2_copy(uv, circle->tran.position);
         self->pool_circle_count++;
         rigid2d_set_mass(&circle->body, 0.5);
@@ -429,10 +477,6 @@ void rigid2d_test_on_destory(game_object* obj) {
     }
     // destory_physics2d_object(&self->ground.body);
 }
-
-#include <unistd.h>
-
-#include "trace_info.h"
 
 i32 main(void)
 {
@@ -537,6 +581,16 @@ i32 main(void)
         .on_destory = rigid2d_test_on_destory,
     });
 
+    rigid2d_capsule capsule_obj;
+    create_game_object(&(game_object){
+        .self = &capsule_obj,
+        .on_start = rigid2d_capsule_on_start,
+        .on_activate = NULL,
+        .on_update = rigid2d_capsule_on_update,
+        .on_destory = rigid2d_capsule_on_destory,
+    });
+    capsule_obj.body.restitution = 0.5;
+
     f32 pitch = 1, gain = 1;
     u32 buffers[2];
     u32 sources[2];
@@ -602,9 +656,9 @@ i32 main(void)
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		update_anim_system();
-		con.window.render_callback(con.owner);
 		update_physics2d_object_system();
         update_game_object_system();
+		con.window.render_callback(con.owner);
 
         render_sprite(&cam, &tran, &sp_tex, &sp);
         render_transform_outline(&tran, (vec3){1, 1, 1});
