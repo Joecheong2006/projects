@@ -12,7 +12,7 @@ static f32 randf(f32 start, f32 end, f32 dr) {
 void camera_shake_object_on_start(game_object* obj) {
     camera_shake_object* self = obj->self;
     camera* cam = find_game_object_by_index(0)->self;
-    glm_vec3_copy(cam->position, self->origin_pos);
+    glm_vec3_copy(cam->tran.position, self->origin_pos);
     self->time_start = glfwGetTime();
 }
 

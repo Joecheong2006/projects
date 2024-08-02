@@ -2,6 +2,7 @@
 #define _CAMERA2D_
 #include <cglm/cglm.h>
 #include "basic/util.h"
+#include "transform.h"
 
 typedef struct {
     vec2 depth;
@@ -16,7 +17,7 @@ typedef struct {
     mat4 projection;
     mat4 view;
     vec2 resolution;
-    vec3 position;
+    transform tran;
     union {
         camera_ortho_state ortho;
         camera_persp_state persp;

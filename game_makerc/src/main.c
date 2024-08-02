@@ -36,6 +36,8 @@
 #include "physics2d/circle2d.h"
 #include "physics2d/capsule2d.h"
 
+#define PERSPECTIVE_CAMERA
+
 #define PI 3.14159265359
 
 #define WIDTH 640
@@ -88,15 +90,14 @@ void game_window_resize_callback(void* owner, i32 width, i32 height) {
     game->win_state.width = width;
     game->win_state.height = height;
     
-#if 0
+#if defined(PERSPECTIVE_CAMERA)
     cam->persp = (camera_persp_state){
-        .fov = glm_rad(45),
+        .fov = glm_rad(60),
         .aspect = cam->resolution[0] / cam->resolution[1],
         .near = 0.1,
         .far = 100
     };
-    cam->position[2] = 5;
-    glm_lookat(cam->position, (vec3){0, 0, -1}, (vec3){0, 1, 0}, cam->view);
+
     set_camera_persp_mat4(cam);
 #else
     set_camera_ortho_mat4(cam);
@@ -164,6 +165,7 @@ void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos) {
     if (c->input.cursor_pos_callback) {
         c->input.cursor_pos_callback(c->owner, xpos, ypos);
     }
+
 }
 
 void mouse_button_callback(GLFWwindow* window, i32 button, i32 action, i32 mods) {
@@ -414,6 +416,8 @@ void rigid2d_test_on_update(game_object* obj) {
     glm_mat4_mul(cam->projection, cam->view, m);
     glm_mat4_inv(m, m);
     glm_mat4_mulv(m, uv, uv);
+
+    draw_debug_circle(uv, 0.1, (vec3){0, 1, 1});
     
     static i32 down = 0;
     if (down == 0 && self->pool_box_count < MAX_POOL_OBJ && input_mouse_button_down(GLFW_MOUSE_BUTTON_LEFT)) {
@@ -449,20 +453,6 @@ void rigid2d_test_on_update(game_object* obj) {
     }
     if (input_mouse_button_release(GLFW_MOUSE_BUTTON_LEFT) && input_mouse_button_release(GLFW_MOUSE_BUTTON_RIGHT)) {
         down = 0;
-    }
-
-    f32 step = 1.0 / 144 * 4;
-    if (input_key_press(GLFW_KEY_UP)) {
-        translate_camera(cam, (vec3){0, step, 0});
-    }
-    else if (input_key_press(GLFW_KEY_DOWN)) {
-        translate_camera(cam, (vec3){0, -step, 0});
-    }
-    if (input_key_press(GLFW_KEY_LEFT)) {
-        translate_camera(cam, (vec3){-step, 0, 0});
-    }
-    else if (input_key_press(GLFW_KEY_RIGHT)) {
-        translate_camera(cam, (vec3){step, 0, 0});
     }
 }
 
@@ -507,6 +497,8 @@ i32 main(void)
     glfwMakeContextCurrent(app_window);
     gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
     END_SCOPE_SESSION(ti, "glfw make context");
+
+    glfwSetInputMode(app_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     printf("Opengl Version %s\n", glGetString(GL_VERSION));
 
@@ -653,6 +645,70 @@ i32 main(void)
 
     while(!glfwWindowShouldClose(app_window))
     {
+        f32 step = 1.0 / 144 * 4;
+#if !defined PERSPECTIVE_CAMERA
+        if (input_key_press(GLFW_KEY_UP)) {
+            translate_camera(&cam, (vec3){0, step, 0});
+        }
+        else if (input_key_press(GLFW_KEY_DOWN)) {
+            translate_camera(&cam, (vec3){0, -step, 0});
+        }
+        if (input_key_press(GLFW_KEY_LEFT)) {
+            translate_camera(&cam, (vec3){-step, 0, 0});
+        }
+        else if (input_key_press(GLFW_KEY_RIGHT)) {
+            translate_camera(&cam, (vec3){step, 0, 0});
+        }
+
+#else
+        step *= 0.7;
+        vec3 dir;
+        if (input_key_press(GLFW_KEY_W)) {
+            glm_vec3_copy(cam.tran.forward, dir);
+            translate_camera(&cam, (vec3){dir[0] * step, dir[1] * step, dir[2] * step});
+        }
+        else if (input_key_press(GLFW_KEY_S)) {
+            glm_vec3_copy(cam.tran.forward, dir);
+            translate_camera(&cam, (vec3){dir[0] * -step, dir[1] * -step, dir[2] * -step});
+        }
+        if (input_key_press(GLFW_KEY_A)) {
+            glm_vec3_copy(cam.tran.right, dir);
+            translate_camera(&cam, (vec3){dir[0] * -step, dir[1] * -step, dir[2] * -step});
+        }
+        else if (input_key_press(GLFW_KEY_D)) {
+            glm_vec3_copy(cam.tran.right, dir);
+            translate_camera(&cam, (vec3){dir[0] * step, dir[1] * step, dir[2] * step});
+        }
+        if (input_key_press(GLFW_KEY_SPACE)) {
+            glm_vec3_copy(cam.tran.up, dir);
+            translate_camera(&cam, (vec3){dir[0] * step, dir[1] * step, dir[2] * step});
+        }
+
+        static vec2 last_pos = {WIDTH / 2.0, HEIGHT / 2.0};
+
+        vec2 current_pos, offset;
+        input_mouse_cursor(current_pos);
+
+        if (input_mouse_button_down(GLFW_MOUSE_BUTTON_LEFT)) {
+            glm_vec2_copy(current_pos, last_pos);
+        }
+
+        glm_vec2_sub(current_pos, last_pos, offset);
+        cam.tran.euler_angle[1] -= offset[1] * 0.04;
+        cam.tran.euler_angle[2] += offset[0] * 0.04;
+        glm_vec2_copy(current_pos, last_pos);
+
+        vec3 direction;
+        direction[0] = cos(glm_rad(cam.tran.euler_angle[2])) * cos(glm_rad(cam.tran.euler_angle[1]));
+        direction[1] = sin(glm_rad(cam.tran.euler_angle[1]));
+        direction[2] = sin(glm_rad(cam.tran.euler_angle[2])) * cos(glm_rad(cam.tran.euler_angle[1]));
+        glm_vec3_normalize_to(direction, cam.tran.forward);
+        vec3 center;
+        glm_vec3_add(cam.tran.forward, cam.tran.position, center);
+        glm_lookat(cam.tran.position, center, cam.tran.up, cam.view);
+        glm_vec3_cross(cam.tran.forward, cam.tran.up, cam.tran.right);
+#endif
+
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		update_anim_system();
