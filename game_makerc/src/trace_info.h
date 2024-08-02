@@ -4,13 +4,13 @@
 #include "stimer.h"
 
 typedef struct {
+    char* file_name;
     void* file;
     i32 pid, tid;
     u64 count;
 } trace_info;
 
 void setup_trace_info(trace_info* info);
-void start_tracing(trace_info* info, char* file);
 void submit_tracing_info(trace_info* info, const char name[], char* cat, i32 ts, i32 pid, i32 tid, i32 dur);
 void end_tracing(trace_info* info);
 

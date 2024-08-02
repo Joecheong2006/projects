@@ -480,9 +480,8 @@ void rigid2d_test_on_destory(game_object* obj) {
 
 i32 main(void)
 {
-    static trace_info ti;
+    trace_info ti = { .file_name = "tracing-init.json", };
     setup_trace_info(&ti);
-    start_tracing(&ti, "tracing-init.json");
 
     BEGIN_SCOPE_SESSION();
     glfwInit();
