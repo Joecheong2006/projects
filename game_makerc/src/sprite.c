@@ -51,7 +51,8 @@ void render_sprite(camera* cam,  transform* tran, sprite_texture* sprite_tex, sp
     GLC(location = glGetUniformLocation(sprite_instance.shader, "color"));
     GLC(glUniform4fv(location, 1, sp->color));
 
-    mat4 m, trans, scale;
+    mat4 m, trans, scale, rotate;
+    glm_euler(tran->euler_angle, rotate);
     glm_mat4_identity(trans);
     if (tran->parent) {
         glm_vec3_copy(tran->local_position, tran->position);
@@ -63,6 +64,7 @@ void render_sprite(camera* cam,  transform* tran, sprite_texture* sprite_tex, sp
     glm_scale(scale, tran->scale);
 
     glm_mat4_mul(cam->projection, cam->view, m);
+    glm_mat4_mul(m, rotate, m);
     glm_mat4_mul(m, trans, m);
     glm_mat4_mul(m, scale, m);
 

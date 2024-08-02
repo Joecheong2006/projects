@@ -90,7 +90,7 @@ void game_window_resize_callback(void* owner, i32 width, i32 height) {
     
 #if 0
     cam->persp = (camera_persp_state){
-        .fov = glm_rad(90),
+        .fov = glm_rad(45),
         .aspect = cam->resolution[0] / cam->resolution[1],
         .near = 0.1,
         .far = 100
@@ -641,6 +641,7 @@ i32 main(void)
         .position = {0, 0, 0},
         .scale = {2, 2, 1},
         .parent = NULL,
+        .euler_angle = {0, 0, 0}
     };
 
     anim_position_slide sprite_anim;
