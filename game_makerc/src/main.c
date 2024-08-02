@@ -130,7 +130,7 @@ void game_cursor_pos_callback(void* owner, double xpos, double ypos) {
     glm_mat4_mulv(m, uv, uv);
 }
 
-void game_mouse_button_callback(void* owner, i32 button, i32 action, i32 mods) {
+void game_mouse_button_callback(void* , i32 button, i32 action, i32 mods) {
 }
 
 void game_render_callback(void* owner) {
@@ -327,9 +327,9 @@ void rigid2d_test_on_start(game_object* obj) {
 
     f32 config[] = {
         // pos      size        res     angle
-         0,   -2,   10, 0.25,   0.6,    0,
-        -5,    1,   6, 0.25,   0.6,    90,
-         5,    1,   6, 0.25,   0.6,    90,
+         0,   -2,   10, 0.25,   1,    0,
+        -5,    1,   6, 0.25,   1,    90,
+         5,    1,   6, 0.25,   1,    90,
         // -3.5, -2,   3,  0.25,   0.5,    150,
          // 3.5, -2,   3,  0.25,   0.5,   -150,
     };
@@ -378,7 +378,7 @@ void rigid2d_test_on_update(game_object* obj) {
             .on_destory = rigid2d_box_on_destory,
         });
         glm_vec2_copy(uv, box->tran.position);
-        box->body.restitution = 0.5;
+        box->body.restitution = 0.3;
         self->pool_box_count++;
         rigid2d_set_mass(&box->body, 0.5);
         down = 1;
@@ -393,7 +393,7 @@ void rigid2d_test_on_update(game_object* obj) {
             .on_destory = rigid2d_circle_on_destory,
         });
         circle->context.radius = 0.3;
-        circle->body.restitution = 0.5;
+        circle->body.restitution = 0.3;
         glm_vec2_copy(uv, circle->tran.position);
         self->pool_circle_count++;
         rigid2d_set_mass(&circle->body, 0.5);
@@ -430,15 +430,29 @@ void rigid2d_test_on_destory(game_object* obj) {
     // destory_physics2d_object(&self->ground.body);
 }
 
+#include <unistd.h>
+
+#include "trace_info.h"
+
 i32 main(void)
 {
+    static trace_info ti;
+    setup_trace_info(&ti);
+    start_tracing(&ti, "tracing-init.json");
+
+    BEGIN_SCOPE_SESSION();
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     stbi_set_flip_vertically_on_load(1);
+    END_SCOPE_SESSION(ti, "glfw init");
 
-    GLFWwindow* app_window = glfwCreateWindow(WIDTH, HEIGHT, "chess", NULL, NULL);
+    GLFWwindow* app_window = NULL;
+    BEGIN_SCOPE_SESSION();
+    app_window = glfwCreateWindow(WIDTH, HEIGHT, "chess", NULL, NULL);
+    END_SCOPE_SESSION(ti, "create window");
+
     glfwSwapInterval(1);
 
     glfwSetKeyCallback(app_window, key_callback);
@@ -446,27 +460,37 @@ i32 main(void)
     glfwSetMouseButtonCallback(app_window, mouse_button_callback);
     glfwSetCursorPosCallback(app_window, cursor_pos_callback);
     
+    BEGIN_SCOPE_SESSION();
     glfwMakeContextCurrent(app_window);
     gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
+    END_SCOPE_SESSION(ti, "glfw make context");
+
     printf("Opengl Version %s\n", glGetString(GL_VERSION));
 
+    BEGIN_SCOPE_SESSION();
     GLC(glEnable(GL_DEPTH_TEST));
     GLC(glEnable(GL_BLEND));
     GLC(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
     GLC(glDepthFunc(GL_LESS));
+    END_SCOPE_SESSION(ti, "enable gl stuffs");
 
     audio_context audio;
+
+    BEGIN_SCOPE_SESSION();
     init_audio(&audio);
+    END_SCOPE_SESSION(ti, "init audio");
 
     set_audio_listener_properties((vec3){0, 0, 0}, (vec3){0, 0, 0}, (f32[]){ 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f });
 
     // setting up
+    BEGIN_SCOPE_SESSION();
     INIT_DEBUG_LINE_RENDERER();
     setup_input_system(app_window);
     init_sprite_instance();
     setup_game_object_system();
     setup_physics2d_object_system();
     setup_anim_system();
+    END_SCOPE_SESSION(ti, "setup game");
 
     Game game;
     game.win_state.window = app_window;
@@ -518,6 +542,7 @@ i32 main(void)
     u32 sources[2];
 
     {
+        BEGIN_SCOPE_SESSION();
         sources[0] = create_audio_source(pitch, gain, (vec3){0, 0, 0}, (vec3){0, 0, 0}, 0);
         char* audio_file_path = "assets/audio/minecraft1.mp3";
         buffers[0] = gen_sound_buffer(audio_file_path);
@@ -530,8 +555,10 @@ i32 main(void)
 
         alSourcei(sources[0], AL_BUFFER, buffers[0]);
         alSourcePlay(sources[0]);
+        END_SCOPE_SESSION(ti, "load minecraft1.mp3");
     }
     {
+        BEGIN_SCOPE_SESSION();
         sources[1] = create_audio_source(pitch, gain, (vec3){0, 0, 0}, (vec3){0, 0, 0}, 0);
         char* audio_file_path = "assets/audio/yippee.mp3";
         buffers[1] = gen_sound_buffer(audio_file_path);
@@ -544,11 +571,14 @@ i32 main(void)
 
         alSourcei(sources[1], AL_BUFFER, buffers[1]);
         alSourcePlay(sources[1]);
+        END_SCOPE_SESSION(ti, "load yippee.mp3");
     }
 
     sprite_texture sp_tex;
+    BEGIN_SCOPE_SESSION();
     init_texture(&sp_tex.tex, "assets/Sprout-Lands/Characters/Basic-Charakter.png", TextureFilterNearest);
     glm_vec2_copy((vec2){48.0 / sp_tex.tex.width, 48.0 / sp_tex.tex.height}, sp_tex.per_sprite);
+    END_SCOPE_SESSION(ti, "load tex Basic-Charakter.png");
 
     sprite sp = {
         .sprite_index = {0, 0},
@@ -602,6 +632,8 @@ i32 main(void)
 
     glfwTerminate();
     CHECK_MEMORY_LEAK();
+
+    end_tracing(&ti);
 
     return 0;
 }

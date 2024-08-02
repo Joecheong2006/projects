@@ -129,8 +129,8 @@ static void resolve_friction(f32 in_j, f32 inverse_count, vec2 out_impulse, coll
 
     vec2 impulse;
     
-    const f32 static_friction = 0.4;
-    const f32 dynamic_friction = 0.16;
+    const f32 static_friction = 0.2;
+    const f32 dynamic_friction = 0.1;
 
     if (fabs(J) < in_j * static_friction) {
     	impulse[0] = -J * tangent[0];
@@ -153,6 +153,7 @@ static void resolve_collision(i32* collision_point_index, i32 collision_count, c
 	vec2 c2[info->points_count];
 
 	f32 inverse_count = 1.0 / collision_count;
+	// f32 inverse_count = 1.0 ;
 
 	for (i32 i = 0; i < collision_count; ++i) {
 		i32 index = collision_point_index[i];
@@ -173,23 +174,26 @@ static void resolve_collision(i32* collision_point_index, i32 collision_count, c
 	}
 
 	for (i32 i = 0; i < collision_count; ++i) {
-		r1->angular_v += glm_vec2_cross(c1[i], fimpulse[i]) * r1->inverse_inertia * 0.4;
-		r2->angular_v -= glm_vec2_cross(c2[i], fimpulse[i]) * r2->inverse_inertia * 0.4;
-	    glm_vec2_muladds(fimpulse[i], r1->inverse_mass * 0.4, r1->v);
-	    glm_vec2_mulsubs(fimpulse[i], r2->inverse_mass * 0.4, r2->v);
+		r1->angular_v += glm_vec2_cross(c1[i], fimpulse[i]) * r1->inverse_inertia;
+		r2->angular_v -= glm_vec2_cross(c2[i], fimpulse[i]) * r2->inverse_inertia;
+	    glm_vec2_muladds(fimpulse[i], r1->inverse_mass, r1->v);
+	    glm_vec2_mulsubs(fimpulse[i], r2->inverse_mass, r2->v);
 	}
 }
 
 static void update_collision() {
 	for_vector(instance.objects, i, 0) {
 		rigid2d* body1 = instance.objects[i];
+		if (!body1->collider) {
+			continue;
+		}
 		for_vector(instance.objects, j, 0) {
 			rigid2d* body2 = instance.objects[j];
 			if (body1 == body2) {
-				// continue;
-				break;
+				continue;
+				// break;
 			}
-			if (body1->collider == NULL || body2->collider == NULL) {
+			if (body2->collider == NULL) {
 				continue;
 			}
 			if (body1->is_static && body2->is_static) {
@@ -201,6 +205,9 @@ static void update_collision() {
 			for (int i = 0; i < info.points_count; ++i) {
 				if (info.collision_points[i].depth > 0) {
 					index[count++] = i;
+					// vec3 p = {0, 0, 0};
+					// glm_vec2_copy(info.collision_points[i].contact, p);
+					// draw_debug_circle(p, 0.1, (vec3){1, 1, 0});
 				}
 			}
 
@@ -222,7 +229,7 @@ void setup_physics2d_object_system() {
 }
 
 void update_physics2d_object_system() {
-	const f32 step_count = 3, dt = 1.0 / 144;
+	const f32 step_count = 2, dt = 1.0 / 144;
 	for (int i = 0; i < step_count; i++) {
 		for_vector(instance.objects, i, 0) {
 			rigid2d* body = instance.objects[i];

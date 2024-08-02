@@ -70,11 +70,11 @@ static i32 intersect_polygons(vec2 normal, f32* depth, vec2* v1, int c1, vec2* v
 }
 
 static i32 nearly_equal(f32 a, f32 b) {
-    return fabs(a - b) - 0.001 < 0;
+    return fabs(a - b) - 0.0005 < 0;
 }
 
 static i32 nearly_equalv(vec2 a, vec2 b) {
-    return nearly_equal(a[0], b[0]) && nearly_equal(a[1], b[1]);
+    return glm_vec2_distance(a, b) < 0.0005;
 }
 
 collision2d_info box2d_box2d_collision_impl(collider2d* collider1, collider2d* collider2) {
