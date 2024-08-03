@@ -1,4 +1,4 @@
-#include "opengl_object.h"
+#include "opengl_buffer_object.h"
 #include <glad/glad.h>
 #include "stb_image.h"
 #include <stdio.h>
@@ -42,15 +42,14 @@ static error_type init_buffer_object(u32* id, void* data, u32 type, i32 size, u3
     return ErrorNone;
 }
 
-error_type init_vertex_buffer(vertex_buffer* vbo, i32 row, i32 col, u32 usage) {
+error_type init_vertex_buffer(vertex_buffer* vbo, u32 count, u32 usage) {
     ASSERT(vbo != NULL && vbo->vertices != NULL);
-    vbo->row = row;
-    vbo->col = col;
-    return init_buffer_object(&vbo->id, vbo->vertices, GL_ARRAY_BUFFER, sizeof(f32) * row * col, usage);
+    return init_buffer_object(&vbo->id, vbo->vertices, GL_ARRAY_BUFFER, sizeof(f32) * count, usage);
 }
 
 error_type init_index_buffer(index_buffer* ibo, i32 count, u32 usage) {
     ASSERT(ibo != NULL && ibo->index != NULL);
+    ibo->count = count;
     return init_buffer_object(&ibo->id, ibo->index, GL_ELEMENT_ARRAY_BUFFER, sizeof(u32) * count, usage);
 }
 
@@ -63,9 +62,9 @@ error_type init_vertex_array(vertex_array* vao) {
     return ErrorNone;
 }
 
-error_type vertex_array_add_attribute(vertex_array* vao, vertex_buffer* vbo, i32 size, u32 data_type) {
-    ASSERT(vao != NULL && vbo != NULL);
-    glVertexAttribPointer(vao->attribute_count, size, data_type, GL_FALSE, sizeof(f32) * vbo->row, (void*)vao->offset_count);
+error_type vertex_array_add_attribute(vertex_array* vao, i32 size, u32 data_type) {
+    ASSERT(vao != NULL);
+    glVertexAttribPointer(vao->attribute_count, size, data_type, GL_FALSE, vao->stride, (void*)vao->offset_count);
     glEnableVertexAttribArray(vao->attribute_count++);
     vao->offset_count += primitive_type_size[data_type - GL_FIRST_TYPE] * size;
     return ErrorNone;
@@ -76,8 +75,6 @@ error_type init_texture(texture* tex, char* texture_path, TextureFilter filter) 
     glGenTextures(1, &tex->id);
     glBindTexture(GL_TEXTURE_2D, tex->id);
 
-    // GLC(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT));
-    // GLC(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT));
     GLC(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
     GLC(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
 
@@ -95,10 +92,23 @@ error_type init_texture(texture* tex, char* texture_path, TextureFilter filter) 
         tex->filter = TextureFilterUnkown;
     }
 
-    i32 bpp;
-    u8* data = stbi_load(texture_path, &tex->width, &tex->height, &bpp, 0);
+    i32 channels;
+    u8* data = stbi_load(texture_path, &tex->width, &tex->height, &channels, 0);
+
+    GLenum internal_format = 0, data_format = 0;
+    if (channels == 3) {
+        internal_format = GL_RGB8;
+        data_format = GL_RGB;
+    }
+    else if (channels == 4) {
+        internal_format = GL_RGBA8;
+        data_format = GL_RGBA;
+    }
+
+    ASSERT_MSG(internal_format && data_format, "invalid texture channels");
+
     if (data) {
-        GLC(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tex->width, tex->height, 0, bpp == 3 ? GL_RGB : GL_RGBA, GL_UNSIGNED_BYTE, data));
+        GLC(glTexImage2D(GL_TEXTURE_2D, 0, internal_format, tex->width, tex->height, 0, data_format, GL_UNSIGNED_BYTE, data));
         GLC(glGenerateMipmap(GL_TEXTURE_2D));
         printf("%s %d %d\n", texture_path, tex->width, tex->height);
     }

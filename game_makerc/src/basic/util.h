@@ -20,13 +20,16 @@ typedef double f64;
 
 #if defined(DEBUG)
 	#if defined(WIN32)
-		#define ASSERT(x) if (!(x)) __debugbreak()
+		#define ASSERT(x) if (!(x)) __debugbreak();
+		#define ASSERT_MSG(x, msg) if (!(x)) { printf("%s\n", msg); __debugbreak(); }
 	#else
 		#include <assert.h>
 		#define ASSERT(x) assert(x);
+		#define ASSERT_MSG(x, msg) if (!(x)) { printf("%s\n", msg); assert(x); }
 	#endif
 #else
 	#define ASSERT(x)
+	#define ASSERT_MSG(x, msg)
 #endif
 
 #endif

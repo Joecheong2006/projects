@@ -1,14 +1,12 @@
 #ifndef _AUDIO_
 #define _AUDIO_
 #include "basic/util.h"
-#include <cglm/cglm.h>
-
-#include <AL/al.h>
-#include <AL/alc.h>
+#include <cglm/vec3.h>
 
 void al_check_error();
 u32 gen_sound_buffer(const char* file_name);
 
+typedef struct ALCcontext ALCcontext;
 typedef struct {
     ALCcontext* context;
 } audio_context;

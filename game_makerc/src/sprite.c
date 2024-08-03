@@ -14,9 +14,10 @@ void init_sprite_instance() {
             -0.5, -0.5,  0.0, 0.0, 0.0,
         }
     };
-    GLC(init_vertex_buffer(&sprite_instance.vbo, 5, 4, GL_STATIC_DRAW));
-    GLC(vertex_array_add_attribute(&sprite_instance.vao, &sprite_instance.vbo, 3, GL_FLOAT));
-    GLC(vertex_array_add_attribute(&sprite_instance.vao, &sprite_instance.vbo, 2, GL_FLOAT));
+    sprite_instance.vao.stride = sizeof(f32) * 5;
+    GLC(init_vertex_buffer(&sprite_instance.vbo, 4 * 5, GL_STATIC_DRAW));
+    GLC(vertex_array_add_attribute(&sprite_instance.vao, 3, GL_FLOAT));
+    GLC(vertex_array_add_attribute(&sprite_instance.vao, 2, GL_FLOAT));
 
     sprite_instance.ibo = (index_buffer){
         .index = (u32[]){
@@ -34,7 +35,9 @@ void init_sprite_instance() {
 }
 
 void render_sprite(camera* cam,  transform* tran, sprite_texture* sprite_tex, sprite* sp) {
-    ASSERT(cam != NULL && tran != NULL && sprite_tex != NULL);
+    ASSERT_MSG(cam != NULL, "invalid camera");
+    ASSERT_MSG(tran != NULL, "invalid transform");
+    ASSERT_MSG(sprite_tex != NULL, "invalid sprite_texture");
 	GLC(glUseProgram(sprite_instance.shader));
 	GLC(glBindVertexArray(sprite_instance.vao.id));
 

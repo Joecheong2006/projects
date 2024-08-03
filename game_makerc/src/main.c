@@ -5,11 +5,12 @@
 #include <string.h>
 #include <cglm/cglm.h>
 #include <string.h>
+#include <AL/al.h>
 
 #include "camera.h"
 #include "cglm/vec2.h"
 #include "string.h"
-#include "opengl_object.h"
+#include "opengl/opengl_buffer_object.h"
 #include "sprite.h"
 #include "stb_image.h"
 
@@ -36,7 +37,7 @@
 #include "physics2d/circle2d.h"
 #include "physics2d/capsule2d.h"
 
-#define PERSPECTIVE_CAMERA
+// #define PERSPECTIVE_CAMERA
 
 #define PI 3.14159265359
 
@@ -246,9 +247,9 @@ void render_transform_outline(transform* tran, vec3 color) {
 }
 
 void sprite_index_anim(anim_position_slide* slide, f32 dur) {
-    const i32 key_frames = 2;
+    const i32 key_frames = 4;
     i32 index = dur * key_frames;
-    slide->target[0] = index % 2;
+    slide->target[0] = index % 2 + 2;
     slide->target[1] = 0;
 }
 
@@ -389,7 +390,6 @@ void rigid2d_test_on_start(game_object* obj) {
         create_game_object(&(game_object){
             .self = self->ground + i,
             .on_start = rigid2d_box_on_start,
-            .on_activate = NULL,
             .on_update = rigid2d_box_on_update,
             .on_destory = rigid2d_box_on_destory,
         });
@@ -425,7 +425,6 @@ void rigid2d_test_on_update(game_object* obj) {
         create_game_object(&(game_object){
             .self = box,
             .on_start = rigid2d_box_on_start,
-            .on_activate = NULL,
             .on_update = rigid2d_box_on_update,
             .on_destory = rigid2d_box_on_destory,
         });
@@ -440,7 +439,6 @@ void rigid2d_test_on_update(game_object* obj) {
         create_game_object(&(game_object){
             .self = circle,
             .on_start = rigid2d_circle_on_start,
-            .on_activate = NULL,
             .on_update = rigid2d_circle_on_update,
             .on_destory = rigid2d_circle_on_destory,
         });
@@ -558,7 +556,6 @@ i32 main(void)
     create_game_object(&(game_object){
         .self = &cam,
         .on_start = NULL,
-        .on_activate = NULL,
         .on_update = NULL,
         .on_destory = NULL,
     });
@@ -567,20 +564,9 @@ i32 main(void)
     create_game_object(&(game_object){
         .self = &test,
         .on_start = rigid2d_test_on_start,
-        .on_activate = NULL,
         .on_update = rigid2d_test_on_update,
         .on_destory = rigid2d_test_on_destory,
     });
-
-    rigid2d_capsule capsule_obj;
-    create_game_object(&(game_object){
-        .self = &capsule_obj,
-        .on_start = rigid2d_capsule_on_start,
-        .on_activate = NULL,
-        .on_update = rigid2d_capsule_on_update,
-        .on_destory = rigid2d_capsule_on_destory,
-    });
-    capsule_obj.body.restitution = 0.5;
 
     f32 pitch = 1, gain = 1;
     u32 buffers[2];
@@ -642,6 +628,8 @@ i32 main(void)
     anim_duration anim = { .loop = 1 };
     init_anim_position_slide_duration(&anim, &sprite_anim, 0.5);
     create_anim_duration(&anim);
+
+    end_tracing(&ti);
 
     while(!glfwWindowShouldClose(app_window))
     {
@@ -742,8 +730,6 @@ i32 main(void)
 
     glfwTerminate();
     CHECK_MEMORY_LEAK();
-
-    end_tracing(&ti);
 
     return 0;
 }

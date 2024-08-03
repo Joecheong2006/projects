@@ -315,7 +315,7 @@ int main(void)
     GLC(glEnable(GL_BLEND));
     GLC(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
     GLC(glDepthFunc(GL_LESS));
-    // GLC(glAlphaFunc(GL_GREATER, 0.1));
+    // GLC(glAlphaFunc(GL_LESS, 0.1));
     // GLC(glEnable(GL_ALPHA_TEST));
     // glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
 

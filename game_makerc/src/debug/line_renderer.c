@@ -1,5 +1,5 @@
 #include "line_renderer.h"
-#include "../opengl_object.h"
+#include "../opengl/opengl_buffer_object.h"
 #include "../shader_program.h"
 #include "../camera.h"
 #include "../game_object_system.h"

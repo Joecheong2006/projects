@@ -4,81 +4,81 @@
 			"name":"glfw init",
 			"cat":"function",
 			"ph":"X",
-			"ts":5710,
-			"pid":214844,
+			"ts":17314,
+			"pid":121119,
 			"tid":0,
-			"dur":122238
+			"dur":88909
 		},
 		{
 			"name":"create window",
 			"cat":"function",
 			"ph":"X",
-			"ts":127979,
-			"pid":214844,
+			"ts":106251,
+			"pid":121119,
 			"tid":0,
-			"dur":100668
+			"dur":104176
 		},
 		{
 			"name":"glfw make context",
 			"cat":"function",
 			"ph":"X",
-			"ts":228678,
-			"pid":214844,
+			"ts":210463,
+			"pid":121119,
 			"tid":0,
-			"dur":902
+			"dur":914
 		},
 		{
 			"name":"enable gl stuffs",
 			"cat":"function",
 			"ph":"X",
-			"ts":229625,
-			"pid":214844,
+			"ts":211408,
+			"pid":121119,
 			"tid":0,
-			"dur":7
+			"dur":4
 		},
 		{
 			"name":"init audio",
 			"cat":"function",
 			"ph":"X",
-			"ts":229643,
-			"pid":214844,
+			"ts":211421,
+			"pid":121119,
 			"tid":0,
-			"dur":8061
+			"dur":8229
 		},
 		{
 			"name":"setup game",
 			"cat":"function",
 			"ph":"X",
-			"ts":237746,
-			"pid":214844,
+			"ts":219683,
+			"pid":121119,
 			"tid":0,
-			"dur":707
+			"dur":592
 		},
 		{
 			"name":"load minecraft1.mp3",
 			"cat":"function",
 			"ph":"X",
-			"ts":238481,
-			"pid":214844,
+			"ts":220301,
+			"pid":121119,
 			"tid":0,
-			"dur":288630
+			"dur":286166
 		},
 		{
 			"name":"load yippee.mp3",
 			"cat":"function",
 			"ph":"X",
-			"ts":527145,
-			"pid":214844,
+			"ts":506499,
+			"pid":121119,
 			"tid":0,
-			"dur":1159
+			"dur":1166
 		},
 		{
 			"name":"load tex Basic-Charakter.png",
 			"cat":"function",
 			"ph":"X",
-			"ts":528324,
-			"pid":214844,
+			"ts":507684,
+			"pid":121119,
 			"tid":0,
-			"dur":1055
+			"dur":1026
 		}	]
 }
