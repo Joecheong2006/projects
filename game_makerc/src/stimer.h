@@ -1,14 +1,13 @@
 #ifndef _STIMER_
 #define _STIMER_
-#include <time.h>
 #include "basic/util.h"
 
 typedef struct {
-    clock_t begin;
-    f64 dur;
+    f64 begin, dur;
 } stimer;
 
 void start_stimer(stimer* t);
 void end_stimer(stimer* t);
+f32 get_current_time();
 
 #endif

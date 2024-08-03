@@ -19,7 +19,7 @@ typedef float f32;
 typedef double f64;
 
 #if defined(DEBUG)
-	#if defined(WIN32)
+	#if defined(_WIN32)
 		#define ASSERT(x) if (!(x)) __debugbreak();
 		#define ASSERT_MSG(x, msg) if (!(x)) { printf("%s\n", msg); __debugbreak(); }
 	#else

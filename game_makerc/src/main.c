@@ -37,7 +37,7 @@
 #include "physics2d/circle2d.h"
 #include "physics2d/capsule2d.h"
 
-// #define PERSPECTIVE_CAMERA
+#define PERSPECTIVE_CAMERA
 
 #define PI 3.14159265359
 
@@ -465,6 +465,8 @@ void rigid2d_test_on_destory(game_object* obj) {
     }
     // destory_physics2d_object(&self->ground.body);
 }
+
+#include <windows.h>
 
 i32 main(void)
 {
