@@ -1,7 +1,7 @@
 #ifndef _OPENGL_BUFFER_OBJECT_
 #define _OPENGL_BUFFER_OBJECT_
-#include "../error_type.h"
-#include "../basic/util.h"
+#include "error_type.h"
+#include "core/util.h"
 
 #if defined(DEBUG)
 #define GLC(statement)\

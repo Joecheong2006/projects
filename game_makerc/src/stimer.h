@@ -1,6 +1,6 @@
 #ifndef _STIMER_
 #define _STIMER_
-#include "basic/util.h"
+#include "core/util.h"
 
 typedef struct {
     f64 begin, end, dur;

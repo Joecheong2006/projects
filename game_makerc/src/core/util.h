@@ -28,14 +28,13 @@ _Static_assert(sizeof(f32) == 4, "expected f32 to be 4 byte");
 _Static_assert(sizeof(f64) == 8, "expected f64 to be 4 byte");
 
 #if defined(DEBUG)
+	#include "core/log.h"
 	#if defined(_WIN32)
-		#define ASSERT(x) if (!(x)) __debugbreak();
-		#define ASSERT_MSG(x, msg) if (!(x)) { printf("%s\n", msg); __debugbreak(); }
+		#define ASSERT_MSG(x, msg) if (!(x)) { log_msg(LogLevelFatal, " %s:%d %s %s\n", __FILE__, __LINE__, #x, msg); __debugbreak(); }
 	#else
-		#include <assert.h>
-		#define ASSERT(x) assert(x);
-		#define ASSERT_MSG(x, msg) if (!(x)) { printf("%s\n", msg); assert(x); }
+		#define ASSERT_MSG(x, msg) if (!(x)) { log_msg(LogLevelFatal, " %s:%d %s %s\n", __FILE__, __LINE__, #x, msg); __builtin_trap(); }
 	#endif
+	#define ASSERT(x) ASSERT_MSG(x, "")
 #else
 	#define ASSERT(x)
 	#define ASSERT_MSG(x, msg)

@@ -1,7 +1,7 @@
 #ifndef _CAMERA2D_
 #define _CAMERA2D_
 #include <cglm/cglm.h>
-#include "basic/util.h"
+#include "core/util.h"
 #include "transform.h"
 
 typedef struct {

@@ -90,6 +90,7 @@ error_type init_texture(texture* tex, char* texture_path, TextureFilter filter) 
     else {
         printf("unkwon texture filter %d\n", filter);
         tex->filter = TextureFilterUnkown;
+        return ErrorInvalidParam;
     }
 
     i32 channels;
@@ -104,6 +105,9 @@ error_type init_texture(texture* tex, char* texture_path, TextureFilter filter) 
         internal_format = GL_RGBA8;
         data_format = GL_RGBA;
     }
+    else {
+        return ErrorInvalidFormat;
+    }
 
     ASSERT_MSG(internal_format && data_format, "invalid texture channels");
 
@@ -114,6 +118,7 @@ error_type init_texture(texture* tex, char* texture_path, TextureFilter filter) 
     }
     else {
         printf("Failed to load texture\n");
+        return ErrorLoadFile;
     }
 
     stbi_image_free(data);

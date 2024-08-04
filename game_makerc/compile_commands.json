@@ -9,6 +9,7 @@
       "-Ilib/stb_image",
       "-Ilib/openal/",
       "-Ilib",
+      "-Isrc",
       "-DDEBUG"
     ],
     "directory": "/home/joe/project/game_makerc",

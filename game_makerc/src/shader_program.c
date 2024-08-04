@@ -1,5 +1,5 @@
 #include "shader_program.h"
-#include "basic/util.h"
+#include "core/util.h"
 #include <stdio.h>
 #include <string.h>
 #include <glad/glad.h>

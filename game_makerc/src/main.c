@@ -607,7 +607,9 @@ i32 main(void)
 
     sprite_texture sp_tex;
     BEGIN_SCOPE_SESSION();
-    init_texture(&sp_tex.tex, "assets/Sprout-Lands/Characters/Basic-Charakter.png", TextureFilterNearest);
+    if (init_texture(&sp_tex.tex, "assets/Sprout-Lands/Characters/Basic-Charakter.png", TextureFilterNearest) != ErrorNone) {
+        exit(1);
+    }
     glm_vec2_copy((vec2){48.0 / sp_tex.tex.width, 48.0 / sp_tex.tex.height}, sp_tex.per_sprite);
     END_SCOPE_SESSION(ti, "load tex Basic-Charakter.png");
 

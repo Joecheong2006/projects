@@ -2,7 +2,6 @@
 #include <GLFW/glfw3.h>
 #include <stdio.h>
 #include "basic/vector.h"
-#include "basic/util.h"
 
 static struct anim_duration_system {
     vector(anim_duration) durations;

@@ -1,7 +1,7 @@
 #ifndef _PHYSICS_RIGID2D_
 #define _PHYSICS_RIGID2D_
-#include "../basic/util.h"
-#include "../transform.h"
+#include "core/util.h"
+#include "transform.h"
 
 typedef struct rigid2d rigid2d;
 typedef void(*rigid2d_process_callback)(rigid2d*,f32);

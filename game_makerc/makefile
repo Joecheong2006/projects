@@ -7,7 +7,7 @@ LIB_WIN = -Llib/openal/router/WIN64 -Llib/sndfile -Llib/glfw lib/glfw/libglfw3dl
 LIB_LIN = -lglfw -lGL -lOpenGL -lopenal -lsndfile -lm
 
 SOURCE = src src/**
-INCLUDE = -Ilib -Ilib/glad/include -Ilib/stb_image -Ilib/glfw -Ilib/sndfile/include -Ilib/openal
+INCLUDE = -Isrc -Ilib -Ilib/glad/include -Ilib/stb_image -Ilib/glfw -Ilib/sndfile/include -Ilib/openal
 LIBRARY = lib/glad/src lib/stb_image
 
 SRC = $(wildcard $(patsubst %, %/*.c, $(SOURCE)))

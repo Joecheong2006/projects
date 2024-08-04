@@ -1,6 +1,6 @@
 #ifndef _TRACE_INFO_
 #define _TRACE_INFO_
-#include "basic/util.h"
+#include "core/util.h"
 #include "stimer.h"
 
 typedef struct {

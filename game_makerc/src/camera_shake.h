@@ -1,7 +1,7 @@
 #ifndef _CAMERA_SHAKE_
 #define _CAMERA_SHAKE_
 #include <cglm/cglm.h>
-#include "basic/util.h"
+#include "core/util.h"
 
 typedef struct {
     f32 duration, strength;

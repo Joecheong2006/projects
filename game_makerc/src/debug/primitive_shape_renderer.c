@@ -1,6 +1,6 @@
 #include "primitive_shape_renderer.h"
 #include <math.h>
-#include "../basic/util.h"
+#include "core/util.h"
 
 #define PI 3.14159265359
 #define CIRCLE_POINT_COUNT 36

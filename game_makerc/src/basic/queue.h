@@ -1,6 +1,6 @@
 #ifndef _QUEUE_H
 #define _QUEUE_H
-#include "util.h"
+#include "core/util.h"
 
 typedef struct {
 	i64 size, capacity;
