@@ -1,6 +1,6 @@
 #include "anim_duration_system.h"
 #include "core/assert.h"
-#include <GLFW/glfw3.h>
+#include "platform/platform.h"
 #include <stdio.h>
 #include "basic/vector.h"
 
@@ -13,13 +13,13 @@ anim_duration_system* get_anim_duration_system() {
 }
 
 void setup_anim_system() {
-    get_anim_duration_system()->durations = make_vector();
+    instance.durations = make_vector();
 }
 
 void create_anim_duration(anim_duration* duration) {
     ASSERT(duration != NULL);
     activate_anim_duration(duration);
-    vector_pushe(get_anim_duration_system()->durations, *duration);
+    vector_pushe(instance.durations, *duration);
 }
 
 static int get_last_empty_slot_index() {
@@ -53,9 +53,10 @@ static void clean_anim_duration() {
 }
 
 void update_anim_system() {
-    float time = glfwGetTime();
+    f32 time = platform_get_time();
 
-    for_vector(instance.durations, i, 0) {
+    i32 len = vector_size(instance.durations);
+    for (i32 i = 0; i < len; i++) {
         anim_duration_start(time, instance.durations + i);
     }
 
@@ -70,7 +71,7 @@ void delete_anim_duration(anim_duration* duration) {
 }
 
 void shutdown_anim_system() {
-    printf("%lld\n", vector_size(instance.durations));
+    LOG_TRACE("%lld\n", vector_size(instance.durations));
     free_vector(instance.durations);
 }
 

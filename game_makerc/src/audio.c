@@ -24,7 +24,7 @@ void al_check_error() {
 
     error = alGetError();
     if (error != AL_NO_ERROR) {
-        printf("al error %d %s\n", error, get_al_error_msg(error));
+        LOG_ERROR(" al error %d %s\n", error, get_al_error_msg(error));
     }
 }
 
@@ -105,22 +105,22 @@ void init_audio(audio_context* audio) {
     ALCdevice* device;
     device = alcOpenDevice(NULL);
     if (!device) {
-        printf("failed to open autdio device\n");
+        LOG_WARN(" %s", "failed to open autdio device\n");
     }
 
     ALboolean enumeration;
 
     enumeration = alcIsExtensionPresent(NULL, "ALC_ENUMERATION_EXT");
     if (enumeration == AL_FALSE)
-        printf("not support enumeration\n");
+        LOG_TRACE(" %s", "not support enumeration\n");
     else
-        printf("support enumeration\n");
+        LOG_TRACE(" %s", "support enumeration\n");
 
     list_audio_devices(alcGetString(NULL, ALC_DEVICE_SPECIFIER));
 
     audio->context = alcCreateContext(device, NULL);
     if (!alcMakeContextCurrent(audio->context)) {
-        printf("failed to make context current\n");
+        LOG_ERROR(" %s", "failed to make context current\n");
     }
     al_check_error();
 }

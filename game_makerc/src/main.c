@@ -40,7 +40,7 @@
 #include "physics2d/circle2d.h"
 #include "physics2d/capsule2d.h"
 
-#define PERSPECTIVE_CAMERA
+// #define PERSPECTIVE_CAMERA
 
 #define PI 3.14159265359
 
@@ -84,7 +84,6 @@ typedef struct {
 } Game;
 
 void game_window_resize_callback(void* owner, i32 width, i32 height) {
-    glViewport(0, 0, width, height);
     Game* game = owner;
 
     camera* cam = find_game_object_by_index(0)->self;
@@ -95,17 +94,12 @@ void game_window_resize_callback(void* owner, i32 width, i32 height) {
     game->win_state.height = height;
     
 #if defined(PERSPECTIVE_CAMERA)
-    cam->persp = (camera_persp_state){
-        .fov = glm_rad(60),
-        .aspect = cam->resolution[0] / cam->resolution[1],
-        .near = 0.1,
-        .far = 100
-    };
-
     set_camera_persp_mat4(cam);
 #else
     set_camera_ortho_mat4(cam);
 #endif
+
+    glViewport(0, 0, width, height);
 }
 
 void game_key_callback(void* owner, i32 key, i32 scancode, i32 action, i32 mods) {
@@ -472,7 +466,6 @@ void rigid2d_test_on_destory(game_object* obj) {
 i32 main(void) {
     platform_state state;
     setup_platform(&state);
-    shutdown_platform(&state);
     LOG_INFO("%s\n", "hello world!");
     LOG_WARN("%s\n", "hello world!");
     LOG_DEBUG("%s\n", "hello world!");
@@ -480,7 +473,6 @@ i32 main(void) {
     LOG_ERROR("%s\n", "hello world!");
     LOG_FATAL("%s\n", "hello world!");
     
-    return 0;
     trace_info ti = { .file_name = "tracing-init.json", };
     setup_trace_info(&ti);
 
@@ -509,7 +501,7 @@ i32 main(void) {
     gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
     END_SCOPE_SESSION(ti, "glfw make context");
 
-    glfwSetInputMode(app_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    // glfwSetInputMode(app_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     printf("Opengl Version %s\n", glGetString(GL_VERSION));
 
@@ -540,6 +532,8 @@ i32 main(void) {
 
     Game game;
     game.win_state.window = app_window;
+    game.win_state.height = HEIGHT;
+    game.win_state.width = WIDTH;
 
     callback_controller con = (callback_controller){
         .owner = &game,
@@ -556,10 +550,23 @@ i32 main(void) {
     init_camera(&cam, (vec2){WIDTH, HEIGHT});
 
     translate_camera(&cam, (vec3){0, 1.5, 0});
+
+    
+#if defined(PERSPECTIVE_CAMERA)
+    cam.persp = (camera_persp_state){
+        .fov = glm_rad(60),
+        .aspect = cam.resolution[0] / cam.resolution[1],
+        .near = 0.1,
+        .far = 100
+    };
+    set_camera_persp_mat4(&cam);
+#else
     cam.ortho.depth[0] = -10;
     cam.ortho.depth[1] = 10;
     cam.ortho.size = 5;
     set_camera_ortho_mat4(&cam);
+#endif
+
 
     game.win_state.width = WIDTH;
     game.win_state.height = HEIGHT;
@@ -710,6 +717,7 @@ i32 main(void) {
         glm_vec3_add(cam.tran.forward, cam.tran.position, center);
         glm_lookat(cam.tran.position, center, cam.tran.up, cam.view);
         glm_vec3_cross(cam.tran.forward, cam.tran.up, cam.tran.right);
+        set_camera_persp_mat4(&cam);
 #endif
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -744,6 +752,8 @@ i32 main(void) {
     glfwDestroyWindow(app_window);
 
     glfwTerminate();
+    
+    shutdown_platform(&state);
     CHECK_MEMORY_LEAK();
 
     return 0;

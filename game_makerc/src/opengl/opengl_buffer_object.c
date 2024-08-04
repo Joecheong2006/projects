@@ -1,8 +1,8 @@
 #include "opengl_buffer_object.h"
 #include "core/assert.h"
+#include "core/log.h"
 #include <stb_image.h>
 #include <glad/glad.h>
-#include <stdio.h>
 
 void gl_clear_error()
 {
@@ -13,7 +13,7 @@ void gl_check_error(char*file, i32 line)
 {
     GLenum error;
     while((error = glGetError())) {
-        printf("error[%s:%d:%d]\n", file, line, error);
+        LOG_ERROR(" error[%s:%d:%d]\n", file, line, error);
     }
 }
 
@@ -89,7 +89,7 @@ error_type init_texture(texture* tex, char* texture_path, TextureFilter filter) 
         GLC(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
     }
     else {
-        printf("unkwon texture filter %d\n", filter);
+        LOG_WARN(" unkwon texture filter %d\n", filter);
         tex->filter = TextureFilterUnkown;
         return ErrorInvalidParam;
     }
@@ -115,10 +115,10 @@ error_type init_texture(texture* tex, char* texture_path, TextureFilter filter) 
     if (data) {
         GLC(glTexImage2D(GL_TEXTURE_2D, 0, internal_format, tex->width, tex->height, 0, data_format, GL_UNSIGNED_BYTE, data));
         GLC(glGenerateMipmap(GL_TEXTURE_2D));
-        printf("%s %d %d\n", texture_path, tex->width, tex->height);
+        LOG_INFO(" %s %d %d\n", texture_path, tex->width, tex->height);
     }
     else {
-        printf("Failed to load texture\n");
+        LOG_INFO(" %s\n", "Failed to load texture");
         return ErrorLoadFile;
     }
 

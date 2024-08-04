@@ -8,6 +8,5 @@ typedef struct {
 
 void start_stimer(stimer* t);
 void end_stimer(stimer* t);
-f64 get_current_time();
 
 #endif

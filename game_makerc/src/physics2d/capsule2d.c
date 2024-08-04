@@ -7,7 +7,7 @@ collision2d_info capsule2d_collision_callback(collider2d* collider1, collider2d*
     case ColliderCapsule2d - ColliderCircle2d: return capsule2d_circle2d_collision_impl(collider1, collider2);
     case ColliderCapsule2d - ColliderBox2d: return capsule2d_box2d_collision_impl(collider1, collider2);
     default:
-        printf("not implement %d %d yet\n", collider1->type, collider2->type);
+        LOG_WARN("not implement %d %d yet\n", collider1->type, collider2->type);
         return (collision2d_info) { .points_count = 0 };
     }
 }

@@ -5,7 +5,7 @@
 typedef struct anim_duration anim_duration;
 typedef void(*anim_duration_callback)(anim_duration*, f32);
 struct anim_duration {
-    anim_duration_callback callback[2];
+    anim_duration_callback callback;
     f32 time_start, time_duration;
     void* in;
     i32 ended, index, loop;

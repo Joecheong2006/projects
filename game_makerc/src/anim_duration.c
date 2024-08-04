@@ -1,21 +1,21 @@
 #include "anim_duration.h"
 #include "anim_duration_system.h"
-#include <GLFW/glfw3.h>
+#include "platform/platform.h"
 #include "core/assert.h"
 
 void anim_duration_end_callback(anim_duration* in, f32 dur) {
+	ASSERT_MSG(in, "invalid anim_duration");
 	(void)dur;
     anim_duration* anim = in;
     if (!anim->loop) {
 	    anim->ended = 1;
     }
-    anim->time_start = glfwGetTime();
+    anim->time_start = platform_get_time();
 }
 
 void init_anim_duration(anim_duration* anim, void* in, f32 time_duration, anim_duration_callback callback) {
 	ASSERT(anim != NULL && in != NULL);
-    anim->callback[0] = callback;
-    anim->callback[1] = anim_duration_end_callback;
+    anim->callback = callback;
     anim->in = in;
     anim->time_start = -1;
     anim->time_duration = time_duration;
@@ -24,16 +24,20 @@ void init_anim_duration(anim_duration* anim, void* in, f32 time_duration, anim_d
 }
 
 void activate_anim_duration(anim_duration* anim) {
-	ASSERT(anim != NULL);
-    anim->time_start = glfwGetTime();
+	ASSERT_MSG(anim != NULL, "invalid anim param");
+    anim->time_start = platform_get_time();
     anim->index = get_anim_duration_num();
 }
 
 void anim_duration_start(f32 time, anim_duration* anim) {
-	ASSERT(anim != NULL);
+	ASSERT_MSG(anim != NULL, "invalid anim param");
 	if (anim->ended) {
 	    return;
 	}
 	f32 dur = time - anim->time_start;
-    anim->callback[(i32)(dur / anim->time_duration)](anim, dur);
+    if (dur / anim->time_duration <= 1) {
+	    anim->callback(anim, dur);
+	    return;
+    }
+    anim_duration_end_callback(anim, dur);
 }

@@ -3,6 +3,7 @@
 #include <string.h>
 #include <glad/glad.h>
 #include "core/assert.h"
+#include "core/log.h"
 
 string parse_shader_type(const char* file_path, const char* type)
 {
@@ -10,21 +11,17 @@ string parse_shader_type(const char* file_path, const char* type)
     string ret = make_string("");
 
     FILE* file = fopen(file_path, "r");
-    if(file == NULL)
-    {
-        printf("can't open file");
+    if (!file) {
+        LOG_ERROR(" %s", "can't open file\n");
         return ret;
     }
 
     char line[0xff];
     int is_type = 0;
-    while(fgets(line, 0xff, file) != NULL)
-    {
-        if(strstr(line, "#shader"))
-        {
+    while(fgets(line, 0xff, file) != NULL) {
+        if(strstr(line, "#shader")) {
             is_type = 0;
-            if(strstr(line, type))
-            {
+            if(strstr(line, type)) {
                 is_type = 1;
                 continue;
             }
