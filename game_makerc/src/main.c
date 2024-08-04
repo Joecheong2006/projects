@@ -481,8 +481,8 @@ i32 main(void) {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    stbi_set_flip_vertically_on_load(1);
     END_SCOPE_SESSION(ti, "glfw init");
+    stbi_set_flip_vertically_on_load(1);
 
     GLFWwindow* app_window = NULL;
     BEGIN_SCOPE_SESSION();

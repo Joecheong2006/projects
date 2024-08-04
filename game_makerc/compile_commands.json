@@ -13,7 +13,7 @@
       "-Isrc",
       "-DDEBUG"
     ],
-    "directory": "D:/project/game_makerc",
+    "directory": "/home/joe/project/game_makerc",
     "file": "src/main.c"
   }
 ]
