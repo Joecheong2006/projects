@@ -466,8 +466,6 @@ void rigid2d_test_on_destory(game_object* obj) {
     // destory_physics2d_object(&self->ground.body);
 }
 
-#include <windows.h>
-
 i32 main(void)
 {
     trace_info ti = { .file_name = "tracing-init.json", };

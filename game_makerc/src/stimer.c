@@ -5,7 +5,7 @@
 #if defined(_WIN32)
 #include <windows.h>
 #include <mmsystem.h>
-static f32 pcfreq;
+static f64 pcfreq;
 static i64 start;
 __attribute__((constructor(130)))
 static void init_windows_time() {
@@ -18,24 +18,24 @@ static void init_windows_time() {
     start = ticks.QuadPart;
 }
 
-f32 get_current_time() {
+f64 get_current_time() {
     LARGE_INTEGER ticks;
     QueryPerformanceCounter(&ticks);
     return (ticks.QuadPart - start) / pcfreq;
 }
 #else
-f32 get_current_time() {
-    return (f32)clock() / CLOCKS_PER_SEC;
+f64 get_current_time() {
+    return (f64)clock() / CLOCKS_PER_SEC;
 }
 #endif
 
 void start_stimer(stimer* t) {
     ASSERT_MSG(t != NULL, "invalid stimer");
-    // t->begin = (f64)clock() / CLOCKS_PER_SEC;
     t->begin = get_current_time();
 }
 
 void end_stimer(stimer* t) {
     ASSERT_MSG(t != NULL, "invalid stimer");
-    t->dur = (f64)(clock() - t->begin) / CLOCKS_PER_SEC;
+    t->end = get_current_time();
+    t->dur = (f64)(t->end - t->begin);
 }

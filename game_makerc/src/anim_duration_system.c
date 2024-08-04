@@ -70,7 +70,7 @@ void delete_anim_duration(anim_duration* duration) {
 }
 
 void shutdown_anim_system() {
-    printf("%ld\n", vector_size(instance.durations));
+    printf("%lld\n", vector_size(instance.durations));
     free_vector(instance.durations);
 }
 

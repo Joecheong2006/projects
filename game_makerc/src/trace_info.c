@@ -16,7 +16,7 @@ void end_tracing(trace_info* info) {
     if (!info->file) {
     	return;
     }
-    fprintf(info->file, "\r\t]\n}\n");
+    fprintf(info->file, "\t]\n}\n");
     fclose(info->file);
 }
 

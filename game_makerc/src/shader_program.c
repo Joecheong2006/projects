@@ -17,15 +17,15 @@ string parse_shader_type(const char* file_path, const char* type)
     }
 
     char line[0xff];
-    bool is_type = false;
+    int is_type = 0;
     while(fgets(line, 0xff, file) != NULL)
     {
         if(strstr(line, "#shader"))
         {
-            is_type = false;
+            is_type = 0;
             if(strstr(line, type))
             {
-                is_type = true;
+                is_type = 1;
                 continue;
             }
         }
