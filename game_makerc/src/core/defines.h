@@ -27,4 +27,10 @@ _Static_assert(sizeof(i64) == 8, "expected i64 to be 8 byte");
 _Static_assert(sizeof(f32) == 4, "expected f32 to be 4 byte");
 _Static_assert(sizeof(f64) == 8, "expected f64 to be 4 byte");
 
+#if defined(_WIN32) || defined(__WIN64)
+	#define PLATFORM_WINDOWS
+#elif defined(__linux__) && !defined(__ANDROID__)
+	#define PLATFORM_LINUX
+#endif
+
 #endif

@@ -11,6 +11,18 @@ void shutdown_platform(platform_state* target);
 
 f64 platform_get_time();
 void platform_sleep(i32 ms);
-void platform_console_log(const char* msg, i32 color);
+
+typedef enum {
+    ConsoleTextColorWhite = 0,
+    ConsoleTextColorBlack,
+    ConsoleTextColorRed,
+    ConsoleTextColorGreen,
+    ConsoleTextColorYellow,
+    ConsoleTextColorBlue,
+    ConsoleTextColorMagenta,
+    ConsoleTextColorCyan,
+} ConsoleTextColor;
+
+void platform_console_log(const char* msg, ConsoleTextColor color);
 
 #endif

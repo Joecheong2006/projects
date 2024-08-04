@@ -14,6 +14,15 @@ static char* level_str[] = {
 	[LogLevelFatal] = "[FATAL]",
 };
 
+static ConsoleTextColor level_colors_map[] = {
+	[LogLevelInfo] = ConsoleTextColorWhite,
+	[LogLevelWarn] = ConsoleTextColorYellow,
+	[LogLevelDebug] = ConsoleTextColorGreen,
+	[LogLevelTrace] = ConsoleTextColorCyan,
+	[LogLevelError] = ConsoleTextColorMagenta,
+	[LogLevelFatal] = ConsoleTextColorRed,
+};
+
 void log_msg(log_level level, const char* msg, ...) {
 	ASSERT_MSG(level >= 0 && level <= LogLevelFatal, "invalid log level");
 	char out_msg[1024];
@@ -27,5 +36,5 @@ void log_msg(log_level level, const char* msg, ...) {
 	char log_out[1024 + 7];
 	sprintf(log_out, "%s%s", level_str[level], out_msg);
 
-	printf("%s", log_out);
+	platform_console_log(log_out, level_colors_map[level]);
 }

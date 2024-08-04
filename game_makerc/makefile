@@ -6,7 +6,7 @@ DLL = lib/glfw/glfw3.dll lib/openal/router/Win64/OpenAL32.dll lib/sndfile/sndfil
 LIB_WIN = -Llib/openal/router/WIN64 -Llib/sndfile -Llib/glfw lib/glfw/libglfw3dll.a -lopengl32 -lOpenAL32 -lsndfile -lWinmm
 LIB_LIN = -lglfw -lGL -lOpenGL -lopenal -lsndfile -lm
 
-SOURCE = src src/**
+SOURCE = src src/** src/**/**
 INCLUDE = -Isrc -Ilib -Ilib/glad/include -Ilib/stb_image -Ilib/glfw -Ilib/sndfile/include -Ilib/openal
 LIBRARY = lib/glad/src lib/stb_image
 

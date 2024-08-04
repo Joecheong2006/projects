@@ -7,7 +7,8 @@
 #include <string.h>
 #include <AL/al.h>
 
-#include "core/assert.h"
+#include "core/log.h"
+#include "platform/platform.h"
 
 #include "camera.h"
 #include "cglm/vec2.h"
@@ -469,12 +470,16 @@ void rigid2d_test_on_destory(game_object* obj) {
 }
 
 i32 main(void) {
+    platform_state state;
+    setup_platform(&state);
+    shutdown_platform(&state);
     LOG_INFO("%s\n", "hello world!");
     LOG_WARN("%s\n", "hello world!");
     LOG_DEBUG("%s\n", "hello world!");
     LOG_TRACE("%s\n", "hello world!");
     LOG_ERROR("%s\n", "hello world!");
     LOG_FATAL("%s\n", "hello world!");
+    
     return 0;
     trace_info ti = { .file_name = "tracing-init.json", };
     setup_trace_info(&ti);

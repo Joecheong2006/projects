@@ -1,8 +1,9 @@
 #include "platform/platform.h"
 
-#if PLATFORM_WINDOWS
+#ifdef PLATFORM_WINDOWS
 
-#include "core/defines.h"
+#include "core/assert.h"
+#include "core/log.h"
 
 #include <stdlib.h>
 #include <windows.h>
@@ -10,31 +11,34 @@
 
 typedef struct {
 	HINSTANCE h_instance;
-	f64 pcfreq;
-	i64 start;
-	UINT min_period;
+	HWND hwnd;
 } win_state;
+
+static f64 pcfreq;
+static i64 start;
+static UINT min_period;
 
 i32 setup_platform(platform_state* target) {
 	ASSERT_MSG(target, "invalid platform target to setup");
 	target->state = 0;
-	win_state* state = melloc(sizeof(win_state));
+	win_state* state = malloc(sizeof(win_state));
 	if (!state) {
 		return 0;
 	}
 	state->h_instance = GetModuleHandle(0);
 	{
 	    LARGE_INTEGER ticks;
-	    if (!QueryPerformanceFrequency(&ticks))
-	        LOG_INFO("QueryPerformanceFrequency failed");
-	    state->pcfreq = ticks.QuadPart;
+	    if (!QueryPerformanceFrequency(&ticks)) {
+	        LOG_INFO("%s\n", "QueryPerformanceFrequency failed");
+	    }
+	    pcfreq = ticks.QuadPart;
 	    QueryPerformanceCounter(&ticks);
-	    state->start = ticks.QuadPart;
+	    start = ticks.QuadPart;
 	}
     {
         TIMECAPS tc;
         timeGetDevCaps(&tc, sizeof(TIMECAPS));
-        state->min_period = tc.wPeriodMin;
+        min_period = tc.wPeriodMin;
     }
 
     target->state = state;
@@ -51,7 +55,7 @@ void shutdown_platform(platform_state* target) {
 f64 platform_get_time() {
     LARGE_INTEGER ticks;
     QueryPerformanceCounter(&ticks);
-    return (ticks.QuadPart - start) / pcfreq;
+    return (f64)(ticks.QuadPart - start) / pcfreq;
 }
 
 void platform_sleep(i32 ms) {
@@ -60,7 +64,27 @@ void platform_sleep(i32 ms) {
 	timeEndPeriod(min_period);
 }
 
-void platform_console_log(const char* msg, i32 color) {
+static i32 console_color_map[] = {
+	[ConsoleTextColorWhite] =  FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE,
+	[ConsoleTextColorBlack] = 0,
+	[ConsoleTextColorRed] = FOREGROUND_RED,
+	[ConsoleTextColorGreen] = FOREGROUND_GREEN,
+	[ConsoleTextColorYellow] = FOREGROUND_RED | FOREGROUND_GREEN,
+	[ConsoleTextColorBlue] = FOREGROUND_BLUE,
+	[ConsoleTextColorMagenta] = FOREGROUND_RED | FOREGROUND_BLUE,
+	[ConsoleTextColorCyan] = FOREGROUND_GREEN | FOREGROUND_BLUE,
+};
+
+void platform_console_log(const char* msg, ConsoleTextColor color) {
+	ASSERT_MSG(color <= ConsoleTextColorCyan && color >= ConsoleTextColorWhite, "invalid console text color");
+    HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
+    SetConsoleTextAttribute(handle, console_color_map[color]);
+#if defined(_MSC_VER)
+    OutputDebugString(msg);
+#else
+    WriteConsole(handle, msg, strlen(msg), NULL, NULL);
+#endif
+    SetConsoleTextAttribute(handle, console_color_map[ConsoleTextColorWhite]);
 }
 
 #endif
