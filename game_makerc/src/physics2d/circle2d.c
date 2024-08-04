@@ -1,4 +1,5 @@
 #include "circle2d.h"
+#include "core/assert.h"
 #include "collision2d_impl.h"
 
 collision2d_info circle2d_collision_callback(collider2d* collider1, collider2d* collider2) {

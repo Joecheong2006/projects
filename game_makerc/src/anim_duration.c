@@ -1,6 +1,7 @@
 #include "anim_duration.h"
 #include "anim_duration_system.h"
 #include <GLFW/glfw3.h>
+#include "core/assert.h"
 
 void anim_duration_end_callback(anim_duration* in, f32 dur) {
 	(void)dur;

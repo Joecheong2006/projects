@@ -1,4 +1,5 @@
 #include "stimer.h"
+#include "core/assert.h"
 #include <time.h>
 #include <stdio.h>
 

@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <glad/glad.h>
+#include "core/assert.h"
 
 string parse_shader_type(const char* file_path, const char* type)
 {

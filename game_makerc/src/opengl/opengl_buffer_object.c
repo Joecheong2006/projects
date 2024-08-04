@@ -1,6 +1,7 @@
 #include "opengl_buffer_object.h"
+#include "core/assert.h"
+#include <stb_image.h>
 #include <glad/glad.h>
-#include "stb_image.h"
 #include <stdio.h>
 
 void gl_clear_error()

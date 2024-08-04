@@ -2,6 +2,7 @@
 #include "basic/memallocate.h"
 #include <string.h>
 #include <limits.h>
+#include "core/assert.h"
 
 #include <AL/alc.h>
 #include <AL/alext.h>

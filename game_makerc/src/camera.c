@@ -1,4 +1,5 @@
 #include "camera.h"
+#include "core/assert.h"
 
 void init_camera(camera* cam, vec2 resolution) {
     glm_mat4_identity(cam->projection);

@@ -1,5 +1,6 @@
 #include "log.h"
-#include "core/defines.h"
+#include "core/assert.h"
+#include "platform/platform.h"
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
@@ -23,5 +24,8 @@ void log_msg(log_level level, const char* msg, ...) {
 	vsnprintf(out_msg, sizeof(out_msg), msg, arg_ptr);
 	va_end(arg_ptr);
 
-	printf("%s%s", level_str[level], out_msg);
+	char log_out[1024 + 7];
+	sprintf(log_out, "%s%s", level_str[level], out_msg);
+
+	printf("%s", log_out);
 }

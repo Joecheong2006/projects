@@ -1,4 +1,5 @@
 #include "physics2d_object_system.h"
+#include "core/assert.h"
 #include "physics2d/collider2d.h"
 #include "basic/vector.h"
 

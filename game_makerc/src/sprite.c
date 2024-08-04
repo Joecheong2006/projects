@@ -1,6 +1,7 @@
 #include "sprite.h"
 #include "shader_program.h"
 #include <glad/glad.h>
+#include "core/assert.h"
 
 struct sprite_instance sprite_instance;
 

@@ -1,4 +1,5 @@
 #include "capsule2d.h"
+#include "core/assert.h"
 #include "collision2d_impl.h"
 
 collision2d_info capsule2d_collision_callback(collider2d* collider1, collider2d* collider2) {
@@ -12,6 +13,7 @@ collision2d_info capsule2d_collision_callback(collider2d* collider1, collider2d*
 }
 
 f32 get_capsule2d_inertia(collider2d* collider) {
+	ASSERT_MSG(collider, "invalid collider");
 	capsule2d* cap = collider->self;
 	float mr = (collider->parent->mass / 12.0f) * ((cap->height * cap->height) + (cap->radius* cap->radius));
 	float mc = collider->parent->mass * ((0.5f * cap->radius * cap->radius) + (cap->height * cap->height * 0.25f));

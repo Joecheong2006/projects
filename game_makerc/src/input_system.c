@@ -1,5 +1,6 @@
 #include "input_system.h"
 #include <GLFW/glfw3.h>
+#include "core/assert.h"
 
 static struct {
     GLFWwindow* app_window;

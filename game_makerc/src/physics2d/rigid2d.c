@@ -1,5 +1,6 @@
 #include "rigid2d.h"
 #include "collider2d.h"
+#include "core/assert.h"
 #include <string.h>
 #include <math.h>
 

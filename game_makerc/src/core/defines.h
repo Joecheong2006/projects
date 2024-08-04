@@ -27,20 +27,4 @@ _Static_assert(sizeof(i64) == 8, "expected i64 to be 8 byte");
 _Static_assert(sizeof(f32) == 4, "expected f32 to be 4 byte");
 _Static_assert(sizeof(f64) == 8, "expected f64 to be 4 byte");
 
-#if defined(_WIN32)
-#include  <intrin.h>
-#define DEBUG_BREAK() __debugbreak()
-#else
-#define DEBUG_BREAK() __builtin_trap()
-#endif
-
-#if defined(DEBUG)
-	#include "core/log.h"
-	#define ASSERT_MSG(x, msg) if (!(x)) { log_msg(LogLevelFatal, " %s:%d %s %s\n", __FILE__, __LINE__, #x, msg); DEBUG_BREAK(); }
-	#define ASSERT(x) ASSERT_MSG(x, "")
-#else
-	#define ASSERT(x)
-	#define ASSERT_MSG(x, msg)
-#endif
-
 #endif

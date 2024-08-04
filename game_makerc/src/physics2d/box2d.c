@@ -1,5 +1,6 @@
 #include "box2d.h"
 #include "collision2d_impl.h"
+#include "core/assert.h"
 
 collision2d_info box2d_collision_callback(collider2d* collider1, collider2d* collider2) {
     switch (collider1->type - collider2->type) {

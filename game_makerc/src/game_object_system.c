@@ -1,4 +1,5 @@
 #include "game_object_system.h"
+#include "core/assert.h"
 #include "basic/vector.h"
 
 static struct game_object_system {
