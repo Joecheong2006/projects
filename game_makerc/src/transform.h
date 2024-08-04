@@ -1,5 +1,5 @@
-#ifndef _TRANSFORM_
-#define _TRANSFORM_
+#ifndef _TRANSFORM_H_
+#define _TRANSFORM_H_
 #include <cglm/cglm.h>
 
 typedef struct transform transform;

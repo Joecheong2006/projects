@@ -1,5 +1,5 @@
-#ifndef _PHYSICS_COLLISION2D_
-#define _PHYSICS_COLLISION2D_
+#ifndef _PHYSICS_COLLISION2D_H_
+#define _PHYSICS_COLLISION2D_H_
 #include "collider2d.h"
 
 collision2d_info box2d_box2d_collision_impl(collider2d* collider1, collider2d* collider2);

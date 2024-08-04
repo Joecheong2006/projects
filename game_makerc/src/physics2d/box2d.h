@@ -1,5 +1,5 @@
-#ifndef _PHYSICS_BOX2D_
-#define _PHYSICS_BOX2D_
+#ifndef _PHYSICS_BOX2D_H_
+#define _PHYSICS_BOX2D_H_
 #include "collider2d.h"
 
 typedef struct {

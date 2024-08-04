@@ -1,5 +1,5 @@
-#ifndef _ANIM_POSITION_SLIDE_
-#define _ANIM_POSITION_SLIDE_
+#ifndef _ANIM_POSITION_SLIDE_H_
+#define _ANIM_POSITION_SLIDE_H_
 #include <cglm/cglm.h>
 #include "anim_duration.h"
 

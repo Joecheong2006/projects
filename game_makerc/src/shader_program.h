@@ -1,5 +1,5 @@
-#ifndef _SHADER_PROGRAM_
-#define _SHADER_PROGRAM_
+#ifndef _SHADER_PROGRAM_H_
+#define _SHADER_PROGRAM_H_
 #include "basic/string.h"
 #include "error_type.h"
 

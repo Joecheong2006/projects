@@ -1,5 +1,5 @@
-#ifndef _ERROR_TYPE_
-#define _ERROR_TYPE_
+#ifndef _ERROR_TYPE_H_
+#define _ERROR_TYPE_H_
 
 typedef enum {
     ErrorNone,

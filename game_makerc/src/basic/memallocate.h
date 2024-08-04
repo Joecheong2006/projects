@@ -1,5 +1,5 @@
-#ifndef MEMALLOCATE_H
-#define MEMALLOCATE_H
+#ifndef _MEMALLOCATE_H_
+#define _MEMALLOCATE_H_
 
 #include <stdlib.h>
 

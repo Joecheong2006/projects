@@ -1,5 +1,5 @@
-#ifndef _GAME_OBJECT_SYSTEM_
-#define _GAME_OBJECT_SYSTEM_
+#ifndef _GAME_OBJECT_SYSTEM_H_
+#define _GAME_OBJECT_SYSTEM_H_
 #include "game_object.h"
 
 typedef struct game_object_system game_object_system;

@@ -1,5 +1,5 @@
 #include "transform.h"
-#include "core/util.h"
+#include "core/defines.h"
 #include <string.h>
 
 void init_transform(transform* tran) {

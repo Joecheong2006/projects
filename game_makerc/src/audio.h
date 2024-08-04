@@ -1,6 +1,6 @@
-#ifndef _AUDIO_
-#define _AUDIO_
-#include "core/util.h"
+#ifndef _AUDIO_H_
+#define _AUDIO_H_
+#include "core/defines.h"
 #include <cglm/vec3.h>
 
 void al_check_error();

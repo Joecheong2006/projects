@@ -1,14 +1,14 @@
 #include "line_renderer.h"
-#include "../opengl/opengl_buffer_object.h"
-#include "../shader_program.h"
-#include "../camera.h"
-#include "../game_object_system.h"
+#include "opengl/opengl_buffer_object.h"
+#include "shader_program.h"
+#include "camera.h"
+#include "game_object_system.h"
 #include <glad/glad.h>
 
 static vertex_array vao;
 static u32 shader;
 
-void init_debug_line_renderer_instance() {
+void init_debug_line_renderer() {
     glLineWidth(1);
     GLC(init_vertex_array(&vao));
     shader_program program = parse_shader("res/shaders/line.shader");

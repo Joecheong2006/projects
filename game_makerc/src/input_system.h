@@ -1,5 +1,5 @@
-#ifndef _INPUT_SYSTEM_
-#define _INPUT_SYSTEM_
+#ifndef _INPUT_SYSTEM_H_
+#define _INPUT_SYSTEM_H_
 #include "basic/queue.h"
 
 typedef struct {

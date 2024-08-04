@@ -1,5 +1,5 @@
-#ifndef _GAME_OBJECT_
-#define _GAME_OBJECT_
+#ifndef _GAME_OBJECT_H_
+#define _GAME_OBJECT_H_
 
 typedef struct game_object game_object;
 typedef void(*game_object_start_callback)(game_object*);

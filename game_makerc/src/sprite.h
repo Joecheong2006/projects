@@ -1,5 +1,5 @@
-#ifndef _SPRITE_
-#define _SPRITE_
+#ifndef _SPRITE_H_
+#define _SPRITE_H_
 #include "opengl/opengl_buffer_object.h"
 #include "camera.h"
 #include "transform.h"

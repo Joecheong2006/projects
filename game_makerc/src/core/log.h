@@ -1,5 +1,5 @@
-#ifndef _LOG_
-#define _LOG_
+#ifndef _CORE_LOG_H_
+#define _CORE_LOG_H_
 
 typedef enum {
 	LogLevelInfo = 0,

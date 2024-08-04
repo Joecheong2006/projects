@@ -1,5 +1,5 @@
 #include "log.h"
-#include "core/util.h"
+#include "core/defines.h"
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>

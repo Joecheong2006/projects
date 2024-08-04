@@ -1,5 +1,5 @@
-#ifndef _PHYSICS_COLLIDER2D_
-#define _PHYSICS_COLLIDER2D_
+#ifndef _PHYSICS_COLLIDER2D_H_
+#define _PHYSICS_COLLIDER2D_H_
 #include "rigid2d.h"
 #include <cglm/cglm.h>
 

@@ -1,6 +1,6 @@
-#ifndef _PHYSICS_RIGID2D_
-#define _PHYSICS_RIGID2D_
-#include "core/util.h"
+#ifndef _PHYSICS_RIGID2D_H_
+#define _PHYSICS_RIGID2D_H_
+#include "core/defines.h"
 #include "transform.h"
 
 typedef struct rigid2d rigid2d;

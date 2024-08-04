@@ -1,6 +1,6 @@
 #include "primitive_shape_renderer.h"
 #include <math.h>
-#include "core/util.h"
+#include "core/defines.h"
 
 #define PI 3.14159265359
 #define CIRCLE_POINT_COUNT 36
@@ -26,7 +26,7 @@ void draw_debug_circle(vec3 position, f32 radius, vec3 color) {
     	p2[0] = position[0] + circle_points[i + 1][0] * radius;
     	p2[1] = position[1] + circle_points[i + 1][1] * radius;
     	p2[2] = position[2];
-    	DRAW_DEBUG_LINE(p1, p2, color);
+    	render_debug_line(p1, p2, color);
     }
 	p1[0] = position[0] + circle_points[0][0] * radius;
 	p1[1] = position[1] + circle_points[0][1] * radius;
@@ -34,6 +34,6 @@ void draw_debug_circle(vec3 position, f32 radius, vec3 color) {
 	p2[0] = position[0] + circle_points[CIRCLE_POINT_COUNT - 1][0] * radius;
 	p2[1] = position[1] + circle_points[CIRCLE_POINT_COUNT - 1][1] * radius;
 	p2[2] = position[2];
-	DRAW_DEBUG_LINE(p1, p2, color);
+	render_debug_line(p1, p2, color);
 }
 

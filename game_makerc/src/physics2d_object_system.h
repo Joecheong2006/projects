@@ -1,5 +1,5 @@
-#ifndef _PHYSICS2D_OBJECT_SYSTEM_
-#define _PHYSICS2D_OBJECT_SYSTEM_
+#ifndef _PHYSICS2D_OBJECT_SYSTEM_H_
+#define _PHYSICS2D_OBJECT_SYSTEM_H_
 #include "physics2d/rigid2d.h"
 
 typedef struct physics2d_object_system physics2d_object_system;

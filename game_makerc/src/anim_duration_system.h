@@ -1,5 +1,5 @@
-#ifndef _ANIM_DURATION_SYSTEM_
-#define _ANIM_DURATION_SYSTEM_
+#ifndef _ANIM_DURATION_SYSTEM_H_
+#define _ANIM_DURATION_SYSTEM_H_
 #include "anim_duration.h"
 
 typedef struct anim_duration_system anim_duration_system;

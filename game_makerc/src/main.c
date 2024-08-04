@@ -234,16 +234,16 @@ void render_transform_outline(transform* tran, vec3 color) {
     glm_vec3_add(tran->position, top_left, top_left);
     glm_vec3_add(tran->position, top_right, top_right);
 
-    DRAW_DEBUG_LINE(top_right, top_left, color);
-    DRAW_DEBUG_LINE(top_left, bottom_left, color);
-    DRAW_DEBUG_LINE(bottom_left, bottom_right, color);
-    DRAW_DEBUG_LINE(bottom_right, top_right, color);
+    render_debug_line(top_right, top_left, color);
+    render_debug_line(top_left, bottom_left, color);
+    render_debug_line(bottom_left, bottom_right, color);
+    render_debug_line(bottom_right, top_right, color);
 
     vec3 red = {1, 0, 0};
 
     vec3 direction, right = {tran->right[0] * 0.5, tran->right[1] * 0.5, tran->right[2]};
     glm_vec3_add(tran->position, right, direction);
-    DRAW_DEBUG_LINE(tran->position, direction, red);
+    render_debug_line(tran->position, direction, red);
 }
 
 void sprite_index_anim(anim_position_slide* slide, f32 dur) {
@@ -276,8 +276,8 @@ void rigid2d_circle_on_update(game_object* obj) {
     vec3 color = {1, 1, 1};
     glm_vec2_rotate((vec2){self->context.radius, 0}, self->tran.euler_angle[2], a);
     glm_vec2_add(a, self->tran.position, a);
-    DRAW_DEBUG_LINE(self->tran.position, a, color);
-    DRAW_DEBUG_CIRCLE(self->tran.position, self->context.radius, color);
+    render_debug_line(self->tran.position, a, color);
+    draw_debug_circle(self->tran.position, self->context.radius, color);
     if (fabs(self->tran.position[0]) > 5 && fabs(self->tran.position[1]) > 5) {
         destory_game_object(obj);
     }
@@ -468,6 +468,8 @@ void rigid2d_test_on_destory(game_object* obj) {
 
 i32 main(void)
 {
+    ASSERT_MSG(1 == 0, "testing");
+    return 0;
     trace_info ti = { .file_name = "tracing-init.json", };
     setup_trace_info(&ti);
 
@@ -517,7 +519,7 @@ i32 main(void)
 
     // setting up
     BEGIN_SCOPE_SESSION();
-    INIT_DEBUG_LINE_RENDERER();
+    init_debug_line_renderer();
     setup_input_system(app_window);
     init_sprite_instance();
     setup_game_object_system();
@@ -718,7 +720,7 @@ i32 main(void)
     shutdown_anim_system();
     shutdown_input_system();
 
-    SHUTDOWN_DEBUG_LINE_RENDERER();
+    shutdown_debug_line_renderer();
 
     glDeleteProgram(sprite_instance.shader);
 
