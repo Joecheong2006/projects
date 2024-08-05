@@ -32,6 +32,7 @@ static void resolve_penetration(collision2d_point* state, rigid2d* r1, rigid2d* 
     }
 }
 
+#if 0
 static void resolve_velocity(collision2d_point* state, rigid2d* r1, rigid2d* r2) {
     const f32 total_inverse_mass = 1.0 / (r1->inverse_mass + r2->inverse_mass);
 
@@ -48,6 +49,7 @@ static void resolve_velocity(collision2d_point* state, rigid2d* r1, rigid2d* r2)
     glm_vec2_muladds(state->normal, J * r1->inverse_mass, r1->v);
     glm_vec2_mulsubs(state->normal, J * r2->inverse_mass, r2->v);
 }
+#endif
 
 static void resolve_rotation(f32* out_j, vec2 out_c1, vec2 out_c2, vec2 out_impulse, f32 inverse_count, collision2d_point* state, rigid2d* r1, rigid2d* r2) {
     vec2 contact1, contact2;

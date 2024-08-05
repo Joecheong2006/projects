@@ -52,7 +52,7 @@ void shutdown_platform(platform_state* target) {
 	free(target->state);
 }
 
-f64 platform_get_time() {
+f64 platform_get_time(void) {
     LARGE_INTEGER ticks;
     QueryPerformanceCounter(&ticks);
     return (f64)(ticks.QuadPart - start) / pcfreq;

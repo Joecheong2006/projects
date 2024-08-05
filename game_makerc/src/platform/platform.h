@@ -9,7 +9,7 @@ typedef struct {
 i32 setup_platform(platform_state* target);
 void shutdown_platform(platform_state* target);
 
-f64 platform_get_time();
+f64 platform_get_time(void);
 void platform_sleep(i32 ms);
 
 typedef enum {

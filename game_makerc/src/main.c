@@ -132,14 +132,6 @@ void game_cursor_pos_callback(void* owner, double xpos, double ypos) {
     glm_mat4_mulv(m, uv, uv);
 }
 
-void game_mouse_button_callback(void* , i32 button, i32 action, i32 mods) {
-}
-
-void game_render_callback(void* owner) {
-    Game* game = owner;
-    camera* cam = find_game_object_by_index(0)->self;
-}
-
 void framebuffer_size_callback(GLFWwindow* window, i32 width, i32 height) {
     callback_controller* c = glfwGetWindowUserPointer(window);
     if (c->window.resize_callback) {
@@ -466,6 +458,7 @@ void rigid2d_test_on_destory(game_object* obj) {
 i32 main(void) {
     platform_state state;
     setup_platform(&state);
+
     LOG_INFO("%s\n", "hello world!");
     LOG_WARN("%s\n", "hello world!");
     LOG_DEBUG("%s\n", "hello world!");
@@ -483,6 +476,10 @@ i32 main(void) {
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     END_SCOPE_SESSION(ti, "glfw init");
     stbi_set_flip_vertically_on_load(1);
+
+    BEGIN_SCOPE_SESSION();
+    platform_sleep(13);
+    END_SCOPE_SESSION(ti, "testing sleep for 34ms");
 
     GLFWwindow* app_window = NULL;
     BEGIN_SCOPE_SESSION();
@@ -539,9 +536,9 @@ i32 main(void) {
         .owner = &game,
         .input.cursor_pos_callback = game_cursor_pos_callback,
         .input.key_callback = game_key_callback,
-        .input.mouse_button_callback = game_mouse_button_callback,
+        .input.mouse_button_callback = NULL,
         .window.resize_callback = game_window_resize_callback,
-        .window.render_callback = game_render_callback,
+        .window.render_callback = NULL,
     };
 
     glfwSetWindowUserPointer(app_window, &con);
@@ -725,7 +722,9 @@ i32 main(void) {
 		update_anim_system();
 		update_physics2d_object_system();
         update_game_object_system();
-		con.window.render_callback(con.owner);
+        if (con.window.render_callback) {
+    		con.window.render_callback(con.owner);
+        }
 
         render_sprite(&cam, &tran, &sp_tex, &sp);
         render_transform_outline(&tran, (vec3){1, 1, 1});

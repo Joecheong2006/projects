@@ -6,32 +6,27 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <time.h>
-#include <sys/time.h>
+
+struct timespec begin;
 
 i32 setup_platform(platform_state* target) {
+	timespec_get(&begin, TIME_UTC);
+	return 1;
 }
 
 void shutdown_platform(platform_state* target) {
 }
 
-f64 platform_get_time() {
-	return (f64)clock() / CLOCKS_PER_SEC;
-	struct timespec t;
-	clock_gettime(CLOCK_MONOTONIC, &t);
-	// return (f64)t.tv_sec + (f64)t.tv_nsec * 0.000000001;
+f64 platform_get_time(void) {
+	struct timespec end;
+	timespec_get(&end, TIME_UTC);
+	return end.tv_sec - begin.tv_sec + (end.tv_nsec - begin.tv_nsec) * 0.000000001;
 }
 
 void platform_sleep(i32 ms) {
-#if _POSIX_C_SOURCE >= 199309L
-	struct timespec ts; ts.tv_sec = ms / 1000;
+	struct timespec ts; ts.tv_sec = ms * 0.0001;
 	ts.tv_nsec = (ms % 1000) * 1000 * 1000;
 	nanosleep(&ts, 0);
-#else
-	if (ms >= 1000) {
-		sleep(ms / 1000);
-	}
-	usleep((ms % 1000) * 1000);
-#endif
 }
 
 static char* console_color_map[] = {
