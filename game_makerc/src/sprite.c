@@ -58,9 +58,16 @@ void render_sprite(camera* cam,  transform* tran, sprite_texture* sprite_tex, sp
     mat4 m, trans, scale, rotate;
     glm_euler(tran->euler_angle, rotate);
     glm_mat4_identity(trans);
+    vec3 local_pos = {0, 0, 0};
+    vec3 parent_pos = {0, 0, 0};
+    for (transform* t = tran; t->parent != NULL; t = t->parent) {
+        glm_vec3_add(local_pos, t->local_position, local_pos);
+        glm_vec3_copy(t->parent->position, parent_pos);
+    }
     if (tran->parent) {
-        glm_vec3_copy(tran->local_position, tran->position);
-        glm_vec3_add(tran->position, tran->parent->position, tran->position);
+        // glm_vec3_copy(tran->local_position, tran->position);
+        // glm_vec3_add(tran->position, tran->parent->position, tran->position);
+        glm_vec3_add(parent_pos, local_pos, tran->position);
     }
     glm_translate(trans, tran->position);
 

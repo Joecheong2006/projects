@@ -1,4 +1,5 @@
 #include <glad/glad.h>
+#define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -16,6 +17,8 @@
 #include "opengl/opengl_buffer_object.h"
 #include "sprite.h"
 #include "stb_image.h"
+
+#include "window_callback.h"
 
 #include "trace_info.h"
 
@@ -47,29 +50,6 @@
 #define WIDTH 640
 #define HEIGHT 640
 
-typedef void(*input_control_key_callback)(void* owner, i32 key, i32 scancode, i32 action, i32 mods);
-typedef void(*input_control_cursor_pos_callback)(void* owner, double xpos, double ypos);
-typedef void(*input_control_mouse_button_callback)(void* owner, i32 button, i32 action, i32 mods);
-
-typedef struct {
-    input_control_key_callback key_callback;
-    input_control_cursor_pos_callback cursor_pos_callback;
-    input_control_mouse_button_callback mouse_button_callback;
-} input_control;
-
-typedef void(*window_control_render_callback)(void* owner);
-typedef void(*window_control_resize_callback)(void* window, i32 width, i32 height);
-typedef struct {
-    window_control_render_callback render_callback;
-    window_control_resize_callback resize_callback;
-} window_control;
-
-typedef struct {
-    void* owner;
-    input_control input;
-    window_control window;
-} callback_controller;
-
 typedef struct {
     GLFWwindow* window;
     i32 width, height;
@@ -97,7 +77,7 @@ typedef struct {
     u32 buffers[2];
     u32 sources[2];
 
-    callback_controller con;
+    window_callback_setup con;
 } Game;
 
 void game_window_resize_callback(void* owner, i32 width, i32 height) {
@@ -136,52 +116,6 @@ void game_key_callback(void* owner, i32 key, i32 scancode, i32 action, i32 mods)
     if (key == GLFW_KEY_R && action == GLFW_PRESS) {
         cam_shake = (camera_shake_object){ .duration = 0.2, .strength = 0.03 };
         create_camera_shake(&cam_shake);
-    }
-}
-
-void game_cursor_pos_callback(void* owner, double xpos, double ypos) {
-    Game* game = owner;
-    vec4 uv = { xpos / game->win_state.width * 2 - 1, (1 - ypos / game->win_state.height) * 2 - 1, 0, 1};
-    mat4 m;
-
-    camera* cam = find_game_object_by_index(0)->self;
-    glm_mat4_mul(cam->projection, cam->view, m);
-    glm_mat4_inv(m, m);
-    glm_mat4_mulv(m, uv, uv);
-}
-
-void framebuffer_size_callback(GLFWwindow* window, i32 width, i32 height) {
-    callback_controller* c = glfwGetWindowUserPointer(window);
-    if (c->window.resize_callback) {
-        c->window.resize_callback(c->owner, width, height);
-    }
-}
-
-void key_callback(GLFWwindow* window, i32 key, i32 scancode, i32 action, i32 mods) {
-    update_input_key(key, scancode, action, mods);
-
-    callback_controller* c = glfwGetWindowUserPointer(window);
-    if (c->input.key_callback) {
-        c->input.key_callback(c->owner, key, scancode, action, mods);
-    }
-}
-
-void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos) {
-    update_input_mouse_cursor(xpos, ypos);
-
-    callback_controller* c = glfwGetWindowUserPointer(window);
-    if (c->input.cursor_pos_callback) {
-        c->input.cursor_pos_callback(c->owner, xpos, ypos);
-    }
-
-}
-
-void mouse_button_callback(GLFWwindow* window, i32 button, i32 action, i32 mods) {
-    update_input_mouse_button(button, action, mods);
-
-    callback_controller* c = glfwGetWindowUserPointer(window);
-    if (c->input.mouse_button_callback) {
-        c->input.mouse_button_callback(c->owner, button, action, mods);
     }
 }
 
@@ -474,6 +408,7 @@ void rigid2d_test_on_destory(game_object* obj) {
 }
 
 void camera_controller_start(game_object* obj) {
+    (void)obj;
     camera* cam = find_game_object_by_index(0)->self;
 #if defined(PERSPECTIVE_CAMERA)
     cam->persp = (camera_persp_state){
@@ -585,7 +520,7 @@ i32 on_initialize(void* self) {
 
     BEGIN_SCOPE_SESSION();
     platform_sleep(13);
-    END_SCOPE_SESSION(ti, "testing sleep for 34ms");
+    END_SCOPE_SESSION(ti, "testing sleep for 13ms");
 
     BEGIN_SCOPE_SESSION();
     game->win_state.window = glfwCreateWindow(WIDTH, HEIGHT, "chess", NULL, NULL);
@@ -594,11 +529,6 @@ i32 on_initialize(void* self) {
     END_SCOPE_SESSION(ti, "create window");
 
     glfwSwapInterval(1);
-
-    glfwSetKeyCallback(game->win_state.window, key_callback);
-    glfwSetFramebufferSizeCallback(game->win_state.window, framebuffer_size_callback);
-    glfwSetMouseButtonCallback(game->win_state.window, mouse_button_callback);
-    glfwSetCursorPosCallback(game->win_state.window, cursor_pos_callback);
     
     BEGIN_SCOPE_SESSION();
     glfwMakeContextCurrent(game->win_state.window);
@@ -632,16 +562,15 @@ i32 on_initialize(void* self) {
     setup_anim_system();
     END_SCOPE_SESSION(ti, "setup game");
 
-    game->con = (callback_controller){
+    game->con = (window_callback_setup) {
         .owner = game,
-        .input.cursor_pos_callback = game_cursor_pos_callback,
-        .input.key_callback = game_key_callback,
-        .input.mouse_button_callback = NULL,
-        .window.resize_callback = game_window_resize_callback,
-        .window.render_callback = NULL,
+        .input.on_cursor_pos = NULL,
+        .input.on_key = game_key_callback,
+        .input.on_mouse_button = NULL,
+        .window.on_resize = game_window_resize_callback,
+        .window.on_render = NULL,
     };
-
-    glfwSetWindowUserPointer(game->win_state.window, &game->con);
+    setup_window_callback(game->win_state.window, &game->con);
 
     init_camera(&game->cam, (vec2){WIDTH, HEIGHT});
     translate_camera(&game->cam, (vec3){0, 1.5, 0});
@@ -709,7 +638,7 @@ i32 on_initialize(void* self) {
 
     BEGIN_SCOPE_SESSION();
     if (init_texture(&game->sp_obj.sp_tex.tex, "assets/Sprout-Lands/Characters/Basic-Charakter.png", TextureFilterNearest) != ErrorNone) {
-        exit(1);
+        return 0;
     }
     glm_vec2_copy((vec2){48.0 / game->sp_obj.sp_tex.tex.width, 48.0 / game->sp_obj.sp_tex.tex.height}, game->sp_obj.sp_tex.per_sprite);
     END_SCOPE_SESSION(ti, "load tex Basic-Charakter.png");
@@ -749,8 +678,8 @@ void on_update(void* self) {
 	update_anim_system();
 	update_physics2d_object_system();
     update_game_object_system();
-    if (game->con.window.render_callback) {
-		game->con.window.render_callback(game->con.owner);
+    if (game->con.window.on_render) {
+		game->con.window.on_render(game->con.owner);
     }
 
     render_sprite(&game->cam, &game->sp_obj.tran, &game->sp_obj.sp_tex, &game->sp_obj.sp);
@@ -797,7 +726,10 @@ int main() {
         .on_terminate = on_terminate,
     };
 
-    setup.on_initialize(&game);
+    if (!setup.on_initialize(&game)) {
+        LOG_FATAL("%s", "failed to initialize application\n");
+        exit(1);
+    }
     while (setup.is_running(&game)) {
         setup.on_update(&game);
     }

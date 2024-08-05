@@ -15,11 +15,11 @@ static char* level_str[] = {
 };
 
 static ConsoleTextColor level_colors_map[] = {
-	[LogLevelInfo] = ConsoleTextColorWhite,
+	[LogLevelInfo] = ConsoleTextColorMagenta,
 	[LogLevelWarn] = ConsoleTextColorYellow,
 	[LogLevelDebug] = ConsoleTextColorGreen,
 	[LogLevelTrace] = ConsoleTextColorCyan,
-	[LogLevelError] = ConsoleTextColorMagenta,
+	[LogLevelError] = ConsoleTextColorRed,
 	[LogLevelFatal] = ConsoleTextColorRed,
 };
 
