@@ -149,6 +149,20 @@ ALuint create_audio_source(f32 pitch, f32 gain, vec3 position, vec3 velocity, i3
     return source;
 }
 
+static AudioSourceState al_audio_state_map[] = {
+    [AudioSourceInital] = AL_INITIAL,
+    [AudioSourcePlaying] = AL_PLAYING,
+    [AudioSourcePaused] = AL_PAUSED,
+    [AudioSourceStopped] = AL_STOPPED,
+};
+
+AudioSourceState get_audio_source_state(u32 source) {
+    i32 source_state;
+    alGetSourcei(source, AL_SOURCE_STATE, &source_state);
+    ASSERT_MSG(source_state < 0, "invalid audio source state");
+    return al_audio_state_map[source_state];
+}
+
 void set_audio_listener_properties(vec3 position, vec3 velocity, ALfloat orientation[6]) {
     alListenerfv(AL_POSITION, position);
     al_check_error();
@@ -156,4 +170,20 @@ void set_audio_listener_properties(vec3 position, vec3 velocity, ALfloat orienta
     al_check_error();
     alListenerfv(AL_ORIENTATION, orientation);
     al_check_error();
+}
+
+void set_audio_source_buffer(u32 source, u32 buffer) {
+    alSourcei(source, AL_BUFFER, buffer);
+}
+
+void audio_play(u32 source) {
+    alSourcePlay(source);
+}
+
+void release_audio_source(u32 source) {
+    alDeleteSources(1, &source);
+}
+
+void release_audio_source_buffer(u32 buffer) {
+    alDeleteBuffers(1, &buffer);
 }

@@ -6,7 +6,6 @@
 #include <string.h>
 #include <cglm/cglm.h>
 #include <string.h>
-#include <AL/al.h>
 
 #include "core/log.h"
 #include "platform/platform.h"
@@ -131,27 +130,26 @@ void sound_test(const char* path, f32 pitch, f32 gain) {
     u32 buffer = gen_sound_buffer(path);
     if (!buffer) {
         printf("load %s failed\n", path);
-        alDeleteSources(1, &source);
+        release_audio_source(source);
         shutdown_audio(&audio);
         return;
     }
 
-    alSourcei(source, AL_BUFFER, buffer);
+    set_audio_source_buffer(source, buffer);
     al_check_error();
 
-    alSourcePlay(source);
+    audio_play(source);
     al_check_error();
 
-    ALint source_state;
-    alGetSourcei(source, AL_SOURCE_STATE, &source_state);
+    AudioSourceState state = get_audio_source_state(source);
     al_check_error();
-    while (source_state == AL_PLAYING) {
-        alGetSourcei(source, AL_SOURCE_STATE, &source_state);
+    while (state == AudioSourcePlaying) {
+        state = get_audio_source_state(source);
         al_check_error();
     }
 
-    alDeleteSources(1, &source);
-    alDeleteBuffers(1, &buffer);
+    release_audio_source(source);
+    release_audio_source_buffer(buffer);
     shutdown_audio(&audio);
 }
 
@@ -606,33 +604,31 @@ i32 on_initialize(void* self) {
     {
         BEGIN_SCOPE_SESSION();
         game->sources[0] = create_audio_source(pitch, gain, (vec3){0, 0, 0}, (vec3){0, 0, 0}, 0);
-        char* audio_file_path = "assets/audio/minecraft1.mp3";
+        const char* audio_file_path = "assets/audio/minecraft1.mp3";
         game->buffers[0] = gen_sound_buffer(audio_file_path);
         if (!game->buffers[0]) {
-            printf("load %s failed\n", audio_file_path);
-            alDeleteSources(1, &game->sources[0]);
-            shutdown_audio(&game->audio);
-            exit(1);
+            LOG_WARN("load %s failed\n", audio_file_path);
+            release_audio_source(game->sources[0]);
+            return 0;
         }
 
-        alSourcei(game->sources[0], AL_BUFFER, game->buffers[0]);
-        alSourcePlay(game->sources[0]);
+        set_audio_source_buffer(game->sources[0], game->buffers[0]);
+        audio_play(game->sources[0]);
         END_SCOPE_SESSION(ti, "load minecraft1.mp3");
     }
     {
         BEGIN_SCOPE_SESSION();
         game->sources[1] = create_audio_source(pitch, gain, (vec3){0, 0, 0}, (vec3){0, 0, 0}, 0);
-        char* audio_file_path = "assets/audio/yippee.mp3";
+        const char* audio_file_path = "assets/audio/yippee.mp3";
         game->buffers[1] = gen_sound_buffer(audio_file_path);
         if (!game->buffers[1]) {
-            printf("load %s failed\n", audio_file_path);
-            alDeleteSources(1, &game->sources[1]);
-            shutdown_audio(&game->audio);
-            exit(1);
+            LOG_WARN("load %s failed\n", audio_file_path);
+            release_audio_source(game->sources[1]);
+            return 0;
         }
 
-        alSourcei(game->sources[1], AL_BUFFER, game->buffers[1]);
-        alSourcePlay(game->sources[1]);
+        set_audio_source_buffer(game->sources[1], game->buffers[1]);
+        audio_play(game->sources[1]);
         END_SCOPE_SESSION(ti, "load yippee.mp3");
     }
 
@@ -699,10 +695,10 @@ void on_terminate(void* self) {
 
     glDeleteProgram(sprite_instance.shader);
 
-    alDeleteBuffers(1, &game->sources[0]);
-    alDeleteBuffers(1, &game->sources[1]);
-    alDeleteBuffers(1, &game->buffers[0]);
-    alDeleteBuffers(1, &game->buffers[1]);
+    release_audio_source(game->sources[0]);
+    release_audio_source(game->sources[1]);
+    release_audio_source_buffer(game->buffers[0]);
+    release_audio_source_buffer(game->buffers[1]);
     shutdown_audio(&game->audio);
 
     glfwDestroyWindow(game->win_state.window);
