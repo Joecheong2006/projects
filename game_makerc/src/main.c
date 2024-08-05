@@ -80,7 +80,24 @@ void close_application(window_state* window) {
 }
 
 typedef struct {
+    sprite_texture sp_tex;
+    sprite sp;
+    transform tran;
+    anim_position_slide sprite_anim;
+} sprite_obj;
+
+typedef struct {
     window_state win_state;
+    platform_state plat_state;
+
+    audio_context audio;
+    camera cam;
+    sprite_obj sp_obj;
+
+    u32 buffers[2];
+    u32 sources[2];
+
+    callback_controller con;
 } Game;
 
 void game_window_resize_callback(void* owner, i32 width, i32 height) {
@@ -94,6 +111,7 @@ void game_window_resize_callback(void* owner, i32 width, i32 height) {
     game->win_state.height = height;
     
 #if defined(PERSPECTIVE_CAMERA)
+    cam->persp.aspect = cam->resolution[0] / cam->resolution[1];
     set_camera_persp_mat4(cam);
 #else
     set_camera_ortho_mat4(cam);
@@ -455,9 +473,97 @@ void rigid2d_test_on_destory(game_object* obj) {
     // destory_physics2d_object(&self->ground.body);
 }
 
-i32 main(void) {
-    platform_state state;
-    setup_platform(&state);
+void camera_controller_start(game_object* obj) {
+    camera* cam = find_game_object_by_index(0)->self;
+#if defined(PERSPECTIVE_CAMERA)
+    cam->persp = (camera_persp_state){
+        .fov = glm_rad(60),
+        .aspect = cam->resolution[0] / cam->resolution[1],
+        .near = 0.1,
+        .far = 100
+    };
+    set_camera_persp_mat4(cam);
+#else
+    cam->ortho.depth[0] = -10;
+    cam->ortho.depth[1] = 10;
+    cam->ortho.size = 5;
+    set_camera_ortho_mat4(cam);
+#endif
+}
+
+void camera_controller_update(game_object* obj) {
+    (void)obj;
+    f32 step = 1.0 / 144 * 4;
+    camera* cam = find_game_object_by_index(0)->self;
+#if !defined PERSPECTIVE_CAMERA
+    if (input_key_press(GLFW_KEY_UP)) {
+        translate_camera(cam, (vec3){0, step, 0});
+    }
+    else if (input_key_press(GLFW_KEY_DOWN)) {
+        translate_camera(cam, (vec3){0, -step, 0});
+    }
+    if (input_key_press(GLFW_KEY_LEFT)) {
+        translate_camera(cam, (vec3){-step, 0, 0});
+    }
+    else if (input_key_press(GLFW_KEY_RIGHT)) {
+        translate_camera(cam, (vec3){step, 0, 0});
+    }
+
+#else
+    step *= 0.7;
+    vec3 dir;
+    if (input_key_press(GLFW_KEY_W)) {
+        glm_vec3_copy(cam->tran.forward, dir);
+        translate_camera(cam, (vec3){dir[0] * step, dir[1] * step, dir[2] * step});
+    }
+    else if (input_key_press(GLFW_KEY_S)) {
+        glm_vec3_copy(cam->tran.forward, dir);
+        translate_camera(cam, (vec3){dir[0] * -step, dir[1] * -step, dir[2] * -step});
+    }
+    if (input_key_press(GLFW_KEY_A)) {
+        glm_vec3_copy(cam->tran.right, dir);
+        translate_camera(cam, (vec3){dir[0] * -step, dir[1] * -step, dir[2] * -step});
+    }
+    else if (input_key_press(GLFW_KEY_D)) {
+        glm_vec3_copy(cam->tran.right, dir);
+        translate_camera(cam, (vec3){dir[0] * step, dir[1] * step, dir[2] * step});
+    }
+    if (input_key_press(GLFW_KEY_SPACE)) {
+        glm_vec3_copy(cam->tran.up, dir);
+        translate_camera(cam, (vec3){dir[0] * step, dir[1] * step, dir[2] * step});
+    }
+
+    static vec2 last_pos = {WIDTH / 2.0, HEIGHT / 2.0};
+
+    vec2 current_pos, offset;
+    input_mouse_cursor(current_pos);
+
+    if (input_mouse_button_down(GLFW_MOUSE_BUTTON_LEFT)) {
+        glm_vec2_copy(current_pos, last_pos);
+    }
+
+    glm_vec2_sub(current_pos, last_pos, offset);
+    cam->tran.euler_angle[1] -= offset[1] * 0.04;
+    cam->tran.euler_angle[2] += offset[0] * 0.04;
+    glm_vec2_copy(current_pos, last_pos);
+
+    vec3 direction;
+    direction[0] = cos(glm_rad(cam->tran.euler_angle[2])) * cos(glm_rad(cam->tran.euler_angle[1]));
+    direction[1] = sin(glm_rad(cam->tran.euler_angle[1]));
+    direction[2] = sin(glm_rad(cam->tran.euler_angle[2])) * cos(glm_rad(cam->tran.euler_angle[1]));
+    glm_vec3_normalize_to(direction, cam->tran.forward);
+    vec3 center;
+    glm_vec3_add(cam->tran.forward, cam->tran.position, center);
+    glm_lookat(cam->tran.position, center, cam->tran.up, cam->view);
+    glm_vec3_cross(cam->tran.forward, cam->tran.up, cam->tran.right);
+    set_camera_persp_mat4(cam);
+#endif
+}
+
+static rigid2d_test test;
+i32 on_initialize(void* self) {
+    Game* game = self;
+    setup_platform(&game->plat_state);
 
     LOG_INFO("%s\n", "hello world!");
     LOG_WARN("%s\n", "hello world!");
@@ -481,24 +587,25 @@ i32 main(void) {
     platform_sleep(13);
     END_SCOPE_SESSION(ti, "testing sleep for 34ms");
 
-    GLFWwindow* app_window = NULL;
     BEGIN_SCOPE_SESSION();
-    app_window = glfwCreateWindow(WIDTH, HEIGHT, "chess", NULL, NULL);
+    game->win_state.window = glfwCreateWindow(WIDTH, HEIGHT, "chess", NULL, NULL);
+    game->win_state.height = HEIGHT;
+    game->win_state.width = WIDTH;
     END_SCOPE_SESSION(ti, "create window");
 
     glfwSwapInterval(1);
 
-    glfwSetKeyCallback(app_window, key_callback);
-    glfwSetFramebufferSizeCallback(app_window, framebuffer_size_callback);
-    glfwSetMouseButtonCallback(app_window, mouse_button_callback);
-    glfwSetCursorPosCallback(app_window, cursor_pos_callback);
+    glfwSetKeyCallback(game->win_state.window, key_callback);
+    glfwSetFramebufferSizeCallback(game->win_state.window, framebuffer_size_callback);
+    glfwSetMouseButtonCallback(game->win_state.window, mouse_button_callback);
+    glfwSetCursorPosCallback(game->win_state.window, cursor_pos_callback);
     
     BEGIN_SCOPE_SESSION();
-    glfwMakeContextCurrent(app_window);
+    glfwMakeContextCurrent(game->win_state.window);
     gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
     END_SCOPE_SESSION(ti, "glfw make context");
 
-    // glfwSetInputMode(app_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetInputMode(game->win_state.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     printf("Opengl Version %s\n", glGetString(GL_VERSION));
 
@@ -509,10 +616,8 @@ i32 main(void) {
     GLC(glDepthFunc(GL_LESS));
     END_SCOPE_SESSION(ti, "enable gl stuffs");
 
-    audio_context audio;
-
     BEGIN_SCOPE_SESSION();
-    init_audio(&audio);
+    init_audio(&game->audio);
     END_SCOPE_SESSION(ti, "init audio");
 
     set_audio_listener_properties((vec3){0, 0, 0}, (vec3){0, 0, 0}, (f32[]){ 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f });
@@ -520,20 +625,15 @@ i32 main(void) {
     // setting up
     BEGIN_SCOPE_SESSION();
     init_debug_line_renderer();
-    setup_input_system(app_window);
+    setup_input_system(game->win_state.window);
     init_sprite_instance();
     setup_game_object_system();
     setup_physics2d_object_system();
     setup_anim_system();
     END_SCOPE_SESSION(ti, "setup game");
 
-    Game game;
-    game.win_state.window = app_window;
-    game.win_state.height = HEIGHT;
-    game.win_state.width = WIDTH;
-
-    callback_controller con = (callback_controller){
-        .owner = &game,
+    game->con = (callback_controller){
+        .owner = game,
         .input.cursor_pos_callback = game_cursor_pos_callback,
         .input.key_callback = game_key_callback,
         .input.mouse_button_callback = NULL,
@@ -541,43 +641,30 @@ i32 main(void) {
         .window.render_callback = NULL,
     };
 
-    glfwSetWindowUserPointer(app_window, &con);
+    glfwSetWindowUserPointer(game->win_state.window, &game->con);
 
-    camera cam;
-    init_camera(&cam, (vec2){WIDTH, HEIGHT});
+    init_camera(&game->cam, (vec2){WIDTH, HEIGHT});
+    translate_camera(&game->cam, (vec3){0, 1.5, 0});
 
-    translate_camera(&cam, (vec3){0, 1.5, 0});
-
-    
-#if defined(PERSPECTIVE_CAMERA)
-    cam.persp = (camera_persp_state){
-        .fov = glm_rad(60),
-        .aspect = cam.resolution[0] / cam.resolution[1],
-        .near = 0.1,
-        .far = 100
-    };
-    set_camera_persp_mat4(&cam);
-#else
-    cam.ortho.depth[0] = -10;
-    cam.ortho.depth[1] = 10;
-    cam.ortho.size = 5;
-    set_camera_ortho_mat4(&cam);
-#endif
-
-
-    game.win_state.width = WIDTH;
-    game.win_state.height = HEIGHT;
+    game->win_state.width = WIDTH;
+    game->win_state.height = HEIGHT;
     
     glClearColor(0.0, 0.1, 0.1, 0);
 
     create_game_object(&(game_object){
-        .self = &cam,
+        .self = &game->cam,
         .on_start = NULL,
         .on_update = NULL,
         .on_destory = NULL,
     });
 
-    rigid2d_test test;
+    create_game_object(&(game_object){
+        .self = NULL,
+        .on_start = camera_controller_start,
+        .on_update = camera_controller_update,
+        .on_destory = NULL,
+    });
+
     create_game_object(&(game_object){
         .self = &test,
         .on_start = rigid2d_test_on_start,
@@ -586,174 +673,134 @@ i32 main(void) {
     });
 
     f32 pitch = 1, gain = 1;
-    u32 buffers[2];
-    u32 sources[2];
 
     {
         BEGIN_SCOPE_SESSION();
-        sources[0] = create_audio_source(pitch, gain, (vec3){0, 0, 0}, (vec3){0, 0, 0}, 0);
+        game->sources[0] = create_audio_source(pitch, gain, (vec3){0, 0, 0}, (vec3){0, 0, 0}, 0);
         char* audio_file_path = "assets/audio/minecraft1.mp3";
-        buffers[0] = gen_sound_buffer(audio_file_path);
-        if (!buffers[0]) {
+        game->buffers[0] = gen_sound_buffer(audio_file_path);
+        if (!game->buffers[0]) {
             printf("load %s failed\n", audio_file_path);
-            alDeleteSources(1, &sources[0]);
-            shutdown_audio(&audio);
+            alDeleteSources(1, &game->sources[0]);
+            shutdown_audio(&game->audio);
             exit(1);
         }
 
-        alSourcei(sources[0], AL_BUFFER, buffers[0]);
-        alSourcePlay(sources[0]);
+        alSourcei(game->sources[0], AL_BUFFER, game->buffers[0]);
+        alSourcePlay(game->sources[0]);
         END_SCOPE_SESSION(ti, "load minecraft1.mp3");
     }
     {
         BEGIN_SCOPE_SESSION();
-        sources[1] = create_audio_source(pitch, gain, (vec3){0, 0, 0}, (vec3){0, 0, 0}, 0);
+        game->sources[1] = create_audio_source(pitch, gain, (vec3){0, 0, 0}, (vec3){0, 0, 0}, 0);
         char* audio_file_path = "assets/audio/yippee.mp3";
-        buffers[1] = gen_sound_buffer(audio_file_path);
-        if (!buffers[1]) {
+        game->buffers[1] = gen_sound_buffer(audio_file_path);
+        if (!game->buffers[1]) {
             printf("load %s failed\n", audio_file_path);
-            alDeleteSources(1, &sources[1]);
-            shutdown_audio(&audio);
+            alDeleteSources(1, &game->sources[1]);
+            shutdown_audio(&game->audio);
             exit(1);
         }
 
-        alSourcei(sources[1], AL_BUFFER, buffers[1]);
-        alSourcePlay(sources[1]);
+        alSourcei(game->sources[1], AL_BUFFER, game->buffers[1]);
+        alSourcePlay(game->sources[1]);
         END_SCOPE_SESSION(ti, "load yippee.mp3");
     }
 
-    sprite_texture sp_tex;
     BEGIN_SCOPE_SESSION();
-    if (init_texture(&sp_tex.tex, "assets/Sprout-Lands/Characters/Basic-Charakter.png", TextureFilterNearest) != ErrorNone) {
+    if (init_texture(&game->sp_obj.sp_tex.tex, "assets/Sprout-Lands/Characters/Basic-Charakter.png", TextureFilterNearest) != ErrorNone) {
         exit(1);
     }
-    glm_vec2_copy((vec2){48.0 / sp_tex.tex.width, 48.0 / sp_tex.tex.height}, sp_tex.per_sprite);
+    glm_vec2_copy((vec2){48.0 / game->sp_obj.sp_tex.tex.width, 48.0 / game->sp_obj.sp_tex.tex.height}, game->sp_obj.sp_tex.per_sprite);
     END_SCOPE_SESSION(ti, "load tex Basic-Charakter.png");
 
-    sprite sp = {
+    game->sp_obj.sp = (sprite) {
         .sprite_index = {0, 0},
         .color = {1, 1, 1, 1}
     };
-    transform tran = {
+    game->sp_obj.tran = (transform) {
         .position = {0, 0, 0},
         .scale = {2, 2, 1},
         .parent = NULL,
         .euler_angle = {0, 0, 0}
     };
 
-    anim_position_slide sprite_anim;
-    init_anim_position_slide(&sprite_anim, (vec3){4, 0, 0}, sprite_index_anim);
-    set_anim_position_slide(&sprite_anim, sp.sprite_index);
+    init_anim_position_slide(&game->sp_obj.sprite_anim, (vec3){4, 0, 0}, sprite_index_anim);
+    set_anim_position_slide(&game->sp_obj.sprite_anim, game->sp_obj.sp.sprite_index);
     anim_duration anim = { .loop = 1 };
-    init_anim_position_slide_duration(&anim, &sprite_anim, 0.5);
+    init_anim_position_slide_duration(&anim, &game->sp_obj.sprite_anim, 0.5);
     create_anim_duration(&anim);
 
     end_tracing(&ti);
 
-    while(!glfwWindowShouldClose(app_window))
-    {
-        f32 step = 1.0 / 144 * 4;
-#if !defined PERSPECTIVE_CAMERA
-        if (input_key_press(GLFW_KEY_UP)) {
-            translate_camera(&cam, (vec3){0, step, 0});
-        }
-        else if (input_key_press(GLFW_KEY_DOWN)) {
-            translate_camera(&cam, (vec3){0, -step, 0});
-        }
-        if (input_key_press(GLFW_KEY_LEFT)) {
-            translate_camera(&cam, (vec3){-step, 0, 0});
-        }
-        else if (input_key_press(GLFW_KEY_RIGHT)) {
-            translate_camera(&cam, (vec3){step, 0, 0});
-        }
+    return 1;
+}
 
-#else
-        step *= 0.7;
-        vec3 dir;
-        if (input_key_press(GLFW_KEY_W)) {
-            glm_vec3_copy(cam.tran.forward, dir);
-            translate_camera(&cam, (vec3){dir[0] * step, dir[1] * step, dir[2] * step});
-        }
-        else if (input_key_press(GLFW_KEY_S)) {
-            glm_vec3_copy(cam.tran.forward, dir);
-            translate_camera(&cam, (vec3){dir[0] * -step, dir[1] * -step, dir[2] * -step});
-        }
-        if (input_key_press(GLFW_KEY_A)) {
-            glm_vec3_copy(cam.tran.right, dir);
-            translate_camera(&cam, (vec3){dir[0] * -step, dir[1] * -step, dir[2] * -step});
-        }
-        else if (input_key_press(GLFW_KEY_D)) {
-            glm_vec3_copy(cam.tran.right, dir);
-            translate_camera(&cam, (vec3){dir[0] * step, dir[1] * step, dir[2] * step});
-        }
-        if (input_key_press(GLFW_KEY_SPACE)) {
-            glm_vec3_copy(cam.tran.up, dir);
-            translate_camera(&cam, (vec3){dir[0] * step, dir[1] * step, dir[2] * step});
-        }
+i32 is_running(void * self) {
+    Game* game = self;
+    return !glfwWindowShouldClose(game->win_state.window);
+}
 
-        static vec2 last_pos = {WIDTH / 2.0, HEIGHT / 2.0};
+void on_update(void* self) {
+    Game* game = self;
 
-        vec2 current_pos, offset;
-        input_mouse_cursor(current_pos);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        if (input_mouse_button_down(GLFW_MOUSE_BUTTON_LEFT)) {
-            glm_vec2_copy(current_pos, last_pos);
-        }
-
-        glm_vec2_sub(current_pos, last_pos, offset);
-        cam.tran.euler_angle[1] -= offset[1] * 0.04;
-        cam.tran.euler_angle[2] += offset[0] * 0.04;
-        glm_vec2_copy(current_pos, last_pos);
-
-        vec3 direction;
-        direction[0] = cos(glm_rad(cam.tran.euler_angle[2])) * cos(glm_rad(cam.tran.euler_angle[1]));
-        direction[1] = sin(glm_rad(cam.tran.euler_angle[1]));
-        direction[2] = sin(glm_rad(cam.tran.euler_angle[2])) * cos(glm_rad(cam.tran.euler_angle[1]));
-        glm_vec3_normalize_to(direction, cam.tran.forward);
-        vec3 center;
-        glm_vec3_add(cam.tran.forward, cam.tran.position, center);
-        glm_lookat(cam.tran.position, center, cam.tran.up, cam.view);
-        glm_vec3_cross(cam.tran.forward, cam.tran.up, cam.tran.right);
-        set_camera_persp_mat4(&cam);
-#endif
-
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		update_anim_system();
-		update_physics2d_object_system();
-        update_game_object_system();
-        if (con.window.render_callback) {
-    		con.window.render_callback(con.owner);
-        }
-
-        render_sprite(&cam, &tran, &sp_tex, &sp);
-        render_transform_outline(&tran, (vec3){1, 1, 1});
-
-        glfwSwapBuffers(app_window);
-        glfwPollEvents();
+	update_anim_system();
+	update_physics2d_object_system();
+    update_game_object_system();
+    if (game->con.window.render_callback) {
+		game->con.window.render_callback(game->con.owner);
     }
 
+    render_sprite(&game->cam, &game->sp_obj.tran, &game->sp_obj.sp_tex, &game->sp_obj.sp);
+    render_transform_outline(&game->sp_obj.tran, (vec3){1, 1, 1});
+
+    glfwSwapBuffers(game->win_state.window);
+    glfwPollEvents();
+}
+
+void on_terminate(void* self) {
+    Game* game = self;
     shutdown_game_object_system();
     shutdown_physics2d_object_system();
     shutdown_anim_system();
     shutdown_input_system();
-
     shutdown_debug_line_renderer();
 
     glDeleteProgram(sprite_instance.shader);
 
-    alDeleteBuffers(1, &sources[0]);
-    alDeleteBuffers(1, &sources[1]);
-    alDeleteBuffers(1, &buffers[0]);
-    alDeleteBuffers(1, &buffers[1]);
-    shutdown_audio(&audio);
+    alDeleteBuffers(1, &game->sources[0]);
+    alDeleteBuffers(1, &game->sources[1]);
+    alDeleteBuffers(1, &game->buffers[0]);
+    alDeleteBuffers(1, &game->buffers[1]);
+    shutdown_audio(&game->audio);
 
-    glfwDestroyWindow(app_window);
+    glfwDestroyWindow(game->win_state.window);
 
     glfwTerminate();
     
-    shutdown_platform(&state);
+    shutdown_platform(&game->plat_state);
     CHECK_MEMORY_LEAK();
+}
 
-    return 0;
+#include "application_setup.h"
+
+int main() {
+    Game game;
+
+    application_setup setup = {
+        .app = &game,
+        .on_initialize = on_initialize,
+        .is_running = is_running,
+        .on_update = on_update,
+        .on_terminate = on_terminate,
+    };
+
+    setup.on_initialize(&game);
+    while (setup.is_running(&game)) {
+        setup.on_update(&game);
+    }
+    
+    setup.on_terminate(&game);
 }
