@@ -17,10 +17,11 @@ void shutdown_audio(audio_context* audio);
 u32 create_audio_source(f32 pitch, f32 gain, vec3 position, vec3 velocity, i32 loop);
 
 typedef enum {
+    AudioSourceUnkwon,
     AudioSourceInital,
     AudioSourcePlaying,
     AudioSourcePaused,
-    AudioSourceStopped
+    AudioSourceStopped,
 } AudioSourceState;
 
 AudioSourceState get_audio_source_state(u32 source);
