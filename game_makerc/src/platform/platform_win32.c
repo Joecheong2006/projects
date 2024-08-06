@@ -21,6 +21,7 @@ static UINT min_period;
 i32 setup_platform(platform_state* target) {
 	ASSERT_MSG(target, "invalid platform target to setup");
 	target->state = 0;
+	target->os = PlatformOsWindows;
 	win_state* state = malloc(sizeof(win_state));
 	if (!state) {
 		return 0;

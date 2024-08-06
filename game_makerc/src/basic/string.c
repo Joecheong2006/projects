@@ -32,7 +32,7 @@ void _string_push(string* dest, const string string)
     (*dest)[vector_status(*dest).size] = '\0';
 }
 
-void free_string(string str)
+void free_string(const string str)
 {
     free_vector(str);
 }

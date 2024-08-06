@@ -16,6 +16,6 @@ typedef vector(char) string;
 string _make_string(const string ctx);
 string _make_stringn(const string ctx, u64 len);
 void _string_push(string* dest, const string string);
-void free_string(string str);
+void free_string(const string str);
 
 #endif

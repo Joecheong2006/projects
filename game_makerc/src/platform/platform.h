@@ -2,8 +2,15 @@
 #define _PLATFORM_PLATFORM_H_
 #include "core/defines.h"
 
+typedef enum {
+	PlatformOsUnkown,
+	PlatformOsWindows,
+	PlatformOsLinux,
+} PlatformOs;
+
 typedef struct {
 	void* state;
+	PlatformOs os;
 } platform_state;
 
 i32 setup_platform(platform_state* target);

@@ -18,7 +18,7 @@ static void find_closest_point_on_line(vec2 closest, vec2 line_p1, vec2 line_p2,
 static void project_points(f32* min, f32* max, vec2* v, int c, vec2 t) {
     *min = FLT_MAX;
     *max = FLT_MIN;
-    for (int i = 0; i < c; i++) {
+    for (i32 i = 0; i < c; ++i) {
         f32 proj = glm_vec2_dot(v[i], t);
         if (proj > *max) {
             *max = proj;
@@ -29,9 +29,9 @@ static void project_points(f32* min, f32* max, vec2* v, int c, vec2 t) {
     }
 }
 
-static i32 intersect_polygons(vec2 normal, f32* depth, vec2* v1, int c1, vec2* v2, int c2) {
+static i32 intersect_polygons(vec2 normal, f32* depth, vec2* v1, i32 c1, vec2* v2, i32 c2) {
     *depth = FLT_MAX;
-    for (int i = 0; i < c1; ++i) {
+    for (i32 i = 0; i < c1; ++i) {
         vec2 line;
         glm_vec2_sub(v1[i], v1[(i + 1) % c1], line);
         vec2 tangent = {-line[1], line[0]};
@@ -49,7 +49,7 @@ static i32 intersect_polygons(vec2 normal, f32* depth, vec2* v1, int c1, vec2* v
         }
     }
 
-    for (int i = 0; i < c2; ++i) {
+    for (i32 i = 0; i < c2; ++i) {
         vec2 line;
         glm_vec2_sub(v2[i], v2[(i + 1) % c2], line);
         vec2 tangent = {-line[1], line[0]};
@@ -93,7 +93,7 @@ collision2d_info box2d_box2d_collision_impl(collider2d* collider1, collider2d* c
         {  b1->size[0], -b1->size[1] }
     };
 
-    for (int i = 0; i < 4; i++) {
+    for (i32 i = 0; i < 4; i++) {
         glm_vec2_rotate(vp1[i], collider1->parent->tran->euler_angle[2], vp1[i]);
         glm_vec2_add(p1, vp1[i], vp1[i]);
     }
@@ -105,7 +105,7 @@ collision2d_info box2d_box2d_collision_impl(collider2d* collider1, collider2d* c
         {  b2->size[0], -b2->size[1] }
     };
 
-    for (int i = 0; i < 4; i++) {
+    for (i32 i = 0; i < 4; i++) {
         glm_vec2_rotate(vp2[i], collider2->parent->tran->euler_angle[2], vp2[i]);
         glm_vec2_add(p2, vp2[i], vp2[i]);
     }
@@ -132,8 +132,8 @@ collision2d_info box2d_box2d_collision_impl(collider2d* collider1, collider2d* c
 
     vec2 contact_point[2];
 
-    for (int i = 0; i < 4; ++i) {
-        for (int j = 0; j < 4; ++j) {
+    for (i32 i = 0; i < 4; ++i) {
+        for (i32 j = 0; j < 4; ++j) {
             vec2 cp;
             find_closest_point_on_line(cp, vp2[j], vp2[(j + 1) % 4], vp1[i]);
             f32 dis = glm_vec2_distance(vp1[i], cp);
@@ -151,8 +151,8 @@ collision2d_info box2d_box2d_collision_impl(collider2d* collider1, collider2d* c
         }
     }
 
-    for (int i = 0; i < 4; ++i) {
-        for (int j = 0; j < 4; ++j) {
+    for (i32 i = 0; i < 4; ++i) {
+        for (i32 j = 0; j < 4; ++j) {
             vec2 cp;
             find_closest_point_on_line(cp, vp1[j], vp1[(j + 1) % 4], vp2[i]);
             f32 dis = glm_vec2_distance(vp2[i], cp);
@@ -172,7 +172,7 @@ collision2d_info box2d_box2d_collision_impl(collider2d* collider1, collider2d* c
 
     collision2d_info info;
     info.points_count = count;
-    for (int i = 0; i < count; ++i) {
+    for (i32 i = 0; i < count; ++i) {
         info.collision_points[i] = (collision2d_point) {
             .contact = { contact_point[i][0], contact_point[i][1] },
             .depth = depth,
@@ -197,7 +197,7 @@ collision2d_info circle2d_box2d_collision_impl(collider2d* collider1, collider2d
         {  b->size[0], -b->size[1] }
     };
 
-    for (int i = 0; i < 4; i++) {
+    for (i32 i = 0; i < 4; i++) {
         glm_vec2_rotate(vp[i], collider2->parent->tran->euler_angle[2], vp[i]);
         glm_vec2_add(p2, vp[i], vp[i]);
     }
@@ -205,7 +205,7 @@ collision2d_info circle2d_box2d_collision_impl(collider2d* collider1, collider2d
     f32 min_dis = FLT_MAX;
     vec2 contact_point;
 
-    for (int i = 0; i < 4; ++i) {
+    for (i32 i = 0; i < 4; ++i) {
         vec2 cp;
         find_closest_point_on_line(cp, vp[i], vp[(i + 1) % 4], p1);
         f32 dis = glm_vec2_distance(cp, p1);

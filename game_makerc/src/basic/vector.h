@@ -62,9 +62,9 @@ struct vector_data
 
 
 void* _make_vector(void);
-void* _vector_reserve(void* vec, u64 size);
-void* _vector_add(void* vec, u64 size);
-void _vector_new_value(void* vec, void* data, u64 size);
+void* _vector_reserve(const void* vec, u64 size);
+void* _vector_add(const void* vec, u64 size);
+void _vector_new_value(const void* vec, const void* data, u64 size);
 void _free_vector(void* vec);
 
 #endif

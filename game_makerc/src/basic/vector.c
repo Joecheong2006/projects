@@ -12,7 +12,7 @@ void* _make_vector(void)
     return val;
 }
 
-void* _vector_reserve(void* vec, u64 size)
+void* _vector_reserve(const void* vec, u64 size)
 {
     char* result = (char*)realloc(&vector_status(vec), size + sizeof(struct vector_data));
     assert(result != NULL);
@@ -21,7 +21,7 @@ void* _vector_reserve(void* vec, u64 size)
     return result;
 }
 
-void* _vector_add(void* vec, u64 size)
+void* _vector_add(const void* vec, u64 size)
 {
     struct vector_data* data = &vector_status(vec);
 
@@ -32,7 +32,7 @@ void* _vector_add(void* vec, u64 size)
     return _vector_reserve(vec, data->capacity);
 }
 
-void _vector_new_value(void* vec, void* data, u64 size)
+void _vector_new_value(const void* vec, const void* data, u64 size)
 {
     memcpy(((char*)vec) + (vector_size(vec) - 1) * size, data, size);
 }

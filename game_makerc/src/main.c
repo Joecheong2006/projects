@@ -42,7 +42,7 @@
 #include "physics2d/circle2d.h"
 #include "physics2d/capsule2d.h"
 
-// #define PERSPECTIVE_CAMERA
+#define PERSPECTIVE_CAMERA
 
 #define PI 3.14159265359
 
@@ -706,14 +706,173 @@ void on_terminate(void* self) {
     glfwTerminate();
     
     shutdown_platform(&game->plat_state);
-    CHECK_MEMORY_LEAK();
 }
 
 #include "application_setup.h"
+#include "entry_point.h"
 
-int main() {
-    Game game;
+#include "basic/vector.h"
+#include "basic/string.h"
 
+typedef struct {
+    GLFWwindow* window;
+    VkInstance instance;
+} vulkan_test;
+
+i32 enable_validation_layers(const char** layer_names, u32 layers_count) {
+    u32 layer_count = 0;
+    vkEnumerateInstanceLayerProperties(&layer_count, NULL);
+    VkLayerProperties layers[layer_count];
+    vkEnumerateInstanceLayerProperties(&layer_count, layers);
+
+    for (u32 i = 0; i < layers_count; i++) {
+        i32 layer_founded = 0;
+        for (u32 j = 0; j < layer_count; j++) {
+            if (strcmp(layers[i].layerName, layer_names[i]) == 0) {
+                layer_founded = 1;
+                break;
+            }
+        }
+        if (!layer_founded) {
+            return 0;
+        }
+            
+    }
+    return 1;
+}
+
+const vector(char*) get_vulkan_required_instance_extensions() {
+    const vector(char*) result = make_vector();
+
+    u32 glfw_extension_count = 0;
+    const char** glfw_extensions = glfwGetRequiredInstanceExtensions(&glfw_extension_count);
+
+    for (u32 i = 0; i < glfw_extension_count; i++) {
+        vector_push(result, make_string((const string)glfw_extensions[i]));
+    }
+
+    return result;
+}
+
+i32 vulkan_test_init(void* self) {
+    vulkan_test* vt = self;
+    glfwInit();
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+
+    vt->window = glfwCreateWindow(WIDTH, HEIGHT, "vulkan test", NULL, NULL);
+
+    VkApplicationInfo app_info;
+    memset(&app_info, 0, sizeof(VkApplicationInfo));
+    app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+    app_info.pApplicationName = "test";
+    app_info.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
+    app_info.pEngineName = "engine";
+    app_info.engineVersion = VK_MAKE_VERSION(1, 0, 0);
+    app_info.apiVersion = VK_API_VERSION_1_0;
+
+    VkInstanceCreateInfo create_info;
+    memset(&create_info, 0, sizeof(VkInstanceCreateInfo));
+    create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+    create_info.pApplicationInfo = &app_info;
+
+    const char* validation_layer_names[] = {
+        "VK_LAYER_KHRONOS_validation",
+    };
+    const u32 validation_layer_count = sizeof(validation_layer_names) / sizeof(char*);
+    i32 validation_layer_available = enable_validation_layers(validation_layer_names, validation_layer_count);
+
+    const char** glfw_extensions = get_vulkan_required_instance_extensions();
+    for (u32 i = 0; i < validation_layer_count; i++) {
+        vector_push(glfw_extensions, make_string(VK_EXT_DEBUG_UTILS_EXTENSION_NAME));
+    }
+
+    u32 glfw_extension_count = vector_size(glfw_extensions);
+    
+    create_info.enabledExtensionCount = glfw_extension_count;
+    create_info.ppEnabledExtensionNames = glfw_extensions;
+
+    if (validation_layer_available) {
+        LOG_WARN("\t%s\n", "validation layers are not available");
+    }
+    else {
+        LOG_TRACE("\t%s\n", "validation layers are available");
+    }
+
+    if (!validation_layer_available) {
+        create_info.enabledLayerCount = 0;
+    }
+    else {
+        create_info.enabledLayerCount = validation_layer_count;
+        create_info.ppEnabledLayerNames = validation_layer_names;
+    }
+
+    LOG_INFO("\t%s\n", "----- glfw extensions -----");
+    for (u32 i = 0; i < glfw_extension_count; i++) {
+        LOG_TRACE("\t%s\n", glfw_extensions[i]);
+    }
+
+    LOG_INFO("\t%s\n", "----- vuklan extensions -----");
+    u32 extension_count = 0;
+    vkEnumerateInstanceExtensionProperties(NULL, &extension_count, NULL);
+
+    VkExtensionProperties extensions[extension_count];
+    vkEnumerateInstanceExtensionProperties(NULL, &extension_count, extensions);
+
+    for (u32 i = 0; i < extension_count; i++) {
+        LOG_TRACE("\t%s\n", extensions[i].extensionName);
+    }
+
+    VkResult result = vkCreateInstance(&create_info, NULL, &vt->instance);
+    if (result != VK_SUCCESS) {
+        LOG_FATAL("%s with code %d\n", "failed to create vuklan instance", result);
+        return 0;
+    }
+    LOG_INFO("\t%s\n", "create vuklan instance success");
+
+    for (u32 i = 0; i < glfw_extension_count; i++) {
+        free_string((const string)glfw_extensions[i]);
+    }
+    free_vector(glfw_extensions);
+
+    i32 leak_count = check_memory_leak();
+    LOG_TRACE("\tleak_count = %d\n", leak_count);
+    return 1;
+}
+
+i32 vulkan_test_is_running(void* self) {
+    vulkan_test* vt = self;
+    return !glfwWindowShouldClose(vt->window);
+}
+
+void vulkan_test_update(void* self) {
+    vulkan_test* vt = self;
+
+    glfwPollEvents();
+}
+
+void vulkan_test_terminate(void* self) {
+    vulkan_test* vt = self;
+
+    vkDestroyInstance(vt->instance, NULL);
+    glfwDestroyWindow(vt->window);
+    glfwTerminate();
+}
+
+application_setup create_application() {
+    {
+        static vulkan_test test;
+        application_setup setup = {
+            .app = &test,
+            .on_initialize = vulkan_test_init,
+            .is_running = vulkan_test_is_running,
+            .on_update = vulkan_test_update,
+            .on_terminate = vulkan_test_terminate,
+        };
+        return setup;
+    }
+
+    static Game game;
     application_setup setup = {
         .app = &game,
         .on_initialize = on_initialize,
@@ -721,14 +880,5 @@ int main() {
         .on_update = on_update,
         .on_terminate = on_terminate,
     };
-
-    if (!setup.on_initialize(&game)) {
-        LOG_FATAL("%s", "failed to initialize application\n");
-        exit(1);
-    }
-    while (setup.is_running(&game)) {
-        setup.on_update(&game);
-    }
-    
-    setup.on_terminate(&game);
+    return setup;
 }

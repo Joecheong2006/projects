@@ -11,6 +11,7 @@ struct timespec begin;
 
 i32 setup_platform(platform_state* target) {
 	timespec_get(&begin, TIME_UTC);
+	target->os = PlatformOsLinux;
 	return 1;
 }
 
