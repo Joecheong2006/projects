@@ -1,23 +1,15 @@
+#include "game_test.h"
+
 #include <glad/glad.h>
-#define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <cglm/cglm.h>
-#include <string.h>
 
 #include "core/log.h"
-#include "platform/platform.h"
 
 #include "camera.h"
 #include "cglm/vec2.h"
 #include "string.h"
 #include "opengl/opengl_buffer_object.h"
-#include "sprite.h"
 #include "stb_image.h"
-
-#include "window_callback.h"
 
 #include "trace_info.h"
 
@@ -26,13 +18,9 @@
 #include "camera_shake.h"
 
 #include "anim_duration_system.h"
-#include "anim_position_slide.h"
 
 #include "game_object_system.h"
 
-#include "basic/memallocate.h"
-
-#include "audio.h"
 #include "debug/primitive_shape_renderer.h"
 
 #include "physics2d_object_system.h"
@@ -49,35 +37,9 @@
 #define WIDTH 640
 #define HEIGHT 640
 
-typedef struct {
-    GLFWwindow* window;
-    i32 width, height;
-} window_state;
-
 void close_application(window_state* window) {
     glfwSetWindowShouldClose(window->window, GLFW_TRUE);
 }
-
-typedef struct {
-    sprite_texture sp_tex;
-    sprite sp;
-    transform tran;
-    anim_position_slide sprite_anim;
-} sprite_obj;
-
-typedef struct {
-    window_state win_state;
-    platform_state plat_state;
-
-    audio_context audio;
-    camera cam;
-    sprite_obj sp_obj;
-
-    u32 buffers[2];
-    u32 sources[2];
-
-    window_callback_setup con;
-} Game;
 
 void game_window_resize_callback(void* owner, i32 width, i32 height) {
     Game* game = owner;
@@ -501,7 +463,7 @@ void camera_controller_update(game_object* obj) {
 }
 
 static rigid2d_test test;
-i32 on_initialize(void* self) {
+i32 game_test_on_initialize(void* self) {
     Game* game = self;
     setup_platform(&game->plat_state);
 
@@ -670,12 +632,12 @@ i32 on_initialize(void* self) {
     return 1;
 }
 
-i32 is_running(void * self) {
+i32 game_test_is_running(void * self) {
     Game* game = self;
     return !glfwWindowShouldClose(game->win_state.window);
 }
 
-void on_update(void* self) {
+void game_test_on_update(void* self) {
     Game* game = self;
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -704,7 +666,7 @@ void on_update(void* self) {
     glfwPollEvents();
 }
 
-void on_terminate(void* self) {
+void game_test_on_terminate(void* self) {
     Game* game = self;
     shutdown_game_object_system();
     shutdown_physics2d_object_system();
@@ -725,248 +687,4 @@ void on_terminate(void* self) {
     glfwTerminate();
     
     shutdown_platform(&game->plat_state);
-}
-
-#include "application_setup.h"
-#include "entry_point.h"
-
-#include "basic/vector.h"
-#include "basic/string.h"
-
-typedef struct {
-    GLFWwindow* window;
-    VkInstance instance;
-    VkDebugUtilsMessengerEXT debug_messenger;
-} vulkan_test;
-
-static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(
-    VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-    VkDebugUtilsMessageTypeFlagsEXT messageType,
-    const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-    void* pUserData) {
-    LOG_DEBUG("\t%s\n", pCallbackData->pMessage);
-    return VK_FALSE;
-}
-
-i32 enable_validation_layers(const char** layer_names, u32 layers_count) {
-    u32 layer_count = 0;
-    vkEnumerateInstanceLayerProperties(&layer_count, NULL);
-    VkLayerProperties layers[layer_count];
-    vkEnumerateInstanceLayerProperties(&layer_count, layers);
-
-    for (u32 i = 0; i < layers_count; i++) {
-        i32 layer_founded = 0;
-        for (u32 j = 0; j < layer_count; j++) {
-            if (strcmp(layers[j].layerName, layer_names[i]) == 0) {
-                layer_founded = 1;
-                break;
-            }
-        }
-        if (!layer_founded) {
-            return 0;
-        }
-            
-    }
-    return 1;
-}
-
-const vector(cstring) get_vulkan_required_instance_extensions() {
-    const vector(cstring) result = make_vector();
-
-    u32 glfw_extension_count = 0;
-    const char** glfw_extensions = glfwGetRequiredInstanceExtensions(&glfw_extension_count);
-
-    for (u32 i = 0; i < glfw_extension_count; i++) {
-        vector_push(result, make_string(glfw_extensions[i]));
-    }
-
-    return result;
-}
-
-void populate_debug_create_info(VkDebugUtilsMessengerCreateInfoEXT* create_info);
-i32 init_vulkan(VkInstance* vk_instance) {
-    VkApplicationInfo app_info;
-    memset(&app_info, 0, sizeof(VkApplicationInfo));
-    app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    app_info.pApplicationName = "test";
-    app_info.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-    app_info.pEngineName = "engine";
-    app_info.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-    app_info.apiVersion = VK_API_VERSION_1_0;
-
-    VkInstanceCreateInfo create_info;
-    memset(&create_info, 0, sizeof(VkInstanceCreateInfo));
-    create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-    create_info.pApplicationInfo = &app_info;
-
-    const char* validation_layer_names[] = {
-        "VK_LAYER_KHRONOS_validation",
-    };
-    const u32 validation_layer_count = sizeof(validation_layer_names) / sizeof(char*);
-    const i32 validation_layer_available = enable_validation_layers(validation_layer_names, validation_layer_count);
-
-    const vector(cstring) glfw_extensions = get_vulkan_required_instance_extensions();
-    for (u32 i = 0; i < validation_layer_count; i++) {
-        vector_push(glfw_extensions, make_string(VK_EXT_DEBUG_UTILS_EXTENSION_NAME));
-    }
-
-    const u32 glfw_extension_count = vector_size(glfw_extensions);
-    
-    create_info.enabledExtensionCount = glfw_extension_count;
-    create_info.ppEnabledExtensionNames = glfw_extensions;
-
-    VkDebugUtilsMessengerCreateInfoEXT debug_create_info;
-    if (validation_layer_available) {
-        LOG_TRACE("\t%s\n", "validation layers are not available");
-    }
-    else {
-        LOG_WARN("\t%s\n", "validation layers are available");
-    }
-
-    if (!validation_layer_available) {
-        create_info.enabledLayerCount = 0;
-    }
-    else {
-        create_info.enabledLayerCount = validation_layer_count;
-        create_info.ppEnabledLayerNames = validation_layer_names;
-
-        populate_debug_create_info(&debug_create_info);
-        create_info.pNext = &debug_create_info;
-    }
-
-    LOG_INFO("\t%s\n", "----- glfw extensions -----");
-    for (u32 i = 0; i < glfw_extension_count; i++) {
-        LOG_TRACE("\t%s\n", glfw_extensions[i]);
-    }
-
-    LOG_INFO("\t%s\n", "----- vuklan extensions -----");
-    u32 extension_count = 0;
-    vkEnumerateInstanceExtensionProperties(NULL, &extension_count, NULL);
-
-    VkExtensionProperties extensions[extension_count];
-    vkEnumerateInstanceExtensionProperties(NULL, &extension_count, extensions);
-
-    for (u32 i = 0; i < extension_count; i++) {
-        LOG_TRACE("\t%s\n", extensions[i].extensionName);
-    }
-
-    VkResult result = vkCreateInstance(&create_info, NULL, vk_instance);
-    if (result != VK_SUCCESS) {
-        LOG_FATAL("%s with code %d\n", "failed to create vuklan instance", result);
-        return 0;
-    }
-    LOG_INFO("\t%s\n", "create vuklan instance successfully");
-
-    for (u32 i = 0; i < glfw_extension_count; i++) {
-        free_string(glfw_extensions[i]);
-    }
-    free_vector(glfw_extensions);
-    return 1;
-}
-
-
-VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) {
-    PFN_vkCreateDebugUtilsMessengerEXT func = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
-    if (func) {
-        return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
-    }
-    return VK_ERROR_EXTENSION_NOT_PRESENT;
-}
-
-void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator) {
-    PFN_vkDestroyDebugUtilsMessengerEXT func = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
-    if (func) {
-        func(instance, debugMessenger, pAllocator);
-    }
-}
-
-void populate_debug_create_info(VkDebugUtilsMessengerCreateInfoEXT* create_info) {
-    memset(create_info, 0, sizeof(VkDebugUtilsMessengerCreateInfoEXT));
-    create_info->sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-    create_info->messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-    create_info->messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-    create_info->pfnUserCallback = debug_callback;
-    create_info->pUserData = NULL;
-}
-
-i32 setup_vulkan_debug_messenger(VkInstance instance, VkDebugUtilsMessengerEXT* debug_messenger) {
-
-    VkDebugUtilsMessengerCreateInfoEXT create_info;
-    populate_debug_create_info(&create_info);
-
-    if (CreateDebugUtilsMessengerEXT(instance, &create_info, NULL, debug_messenger) == VK_SUCCESS) {
-        LOG_INFO("\t%s\n", "create vulkan debug messenger successfully");
-        return 1;
-    }
-
-    LOG_WARN("\t%s\n", "failed to create vulkan debug messenger");
-    return 0;
-}
-
-
-i32 vulkan_test_init(void* self) {
-    vulkan_test* vt = self;
-    glfwInit();
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-
-    vt->window = glfwCreateWindow(WIDTH, HEIGHT, "vulkan test", NULL, NULL);
-
-    if (!init_vulkan(&vt->instance)) {
-        return 0;
-    }
-
-    if (!setup_vulkan_debug_messenger(vt->instance, &vt->debug_messenger)) {
-        return 0;
-    }
-
-    return 1;
-}
-
-i32 vulkan_test_is_running(void* self) {
-    vulkan_test* vt = self;
-    return 0;
-    return !glfwWindowShouldClose(vt->window);
-}
-
-void vulkan_test_update(void* self) {
-    vulkan_test* vt = self;
-
-    glfwPollEvents();
-}
-
-void vulkan_test_terminate(void* self) {
-    vulkan_test* vt = self;
-
-    DestroyDebugUtilsMessengerEXT(vt->instance, vt->debug_messenger, NULL);
-    vkDestroyInstance(vt->instance, NULL);
-    glfwDestroyWindow(vt->window);
-    glfwTerminate();
-
-    i32 leak_count = check_memory_leak();
-    LOG_TRACE("\tleak_count = %d\n", leak_count);
-}
-
-application_setup create_application() {
-    {
-        static vulkan_test test;
-        application_setup setup = {
-            .app = &test,
-            .on_initialize = vulkan_test_init,
-            .is_running = vulkan_test_is_running,
-            .on_update = vulkan_test_update,
-            .on_terminate = vulkan_test_terminate,
-        };
-        return setup;
-    }
-
-    static Game game;
-    application_setup setup = {
-        .app = &game,
-        .on_initialize = on_initialize,
-        .is_running = is_running,
-        .on_update = on_update,
-        .on_terminate = on_terminate,
-    };
-    return setup;
 }

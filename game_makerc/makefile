@@ -1,6 +1,6 @@
 CC = gcc
-CFLAGS = -std=c11 -Wall -Wextra -g3 -DDEBUG
-# CFLAGS = -std=c11 -Wall -Wextra -g3
+# CFLAGS = -std=c11 -Wall -Wextra -g3 -DDEBUG -fPIC
+CFLAGS = -std=c11 -Wall -Wextra -g3 -fPIC
 
 DLL = lib/glfw/glfw3.dll lib/openal/router/Win64/OpenAL32.dll lib/sndfile/sndfile.dll
 LIB_WIN = -Llib/openal/router/WIN64 -Llib/sndfile -Llib/glfw lib/glfw/libglfw3dll.a -lopengl32 -lOpenAL32 -lsndfile -lWinmm
@@ -16,42 +16,38 @@ DEP = $(OBJ:%.o=%.d)
 
 LIBOBJ = $(wildcard $(patsubst %, %/*.o, $(LIBRARY))) 
 BIN = bin
-OUT = $(BIN)/demo
+OUT_NAME := $(BIN)/gamefw
 
 LIB := 
 ifeq ($(OS),Windows_NT)
 	DLLFILES += lib/glfw/glfw3.dll
 	LIB += $(LIB_WIN)
+	OUT = $(OUT_NAME).dll
 else
 	LIB += $(LIB_LIN)
+	OUT = $(OUT_NAME).so
 endif
 
 
 all: bin app
 
-run:
-	@./$(OUT)
-
 clean:
 	@rm -rf $(OBJ) $(DEP) $(BIN)
 	
 build:
-	cd lib/glad && $(CC) -Iinclude -o src/glad.o -c src/glad.c
-	cd lib/stb_image && $(CC) -c stb_image.c
+	cd lib/glad && $(CC) -Iinclude -o src/glad.o -c src/glad.c -fPIC
+	cd lib/stb_image && $(CC) -c stb_image.c -fPIC
 
 bin:
 	@mkdir -p $(BIN)
 	@cp -p $(DLL) $(BIN)/.
 
 app: $(OBJ)
-	$(CC) -o $(OUT) $(OBJ) $(LIBOBJ) $(LIB)
+	$(CC) -shared -fPIC -o $(OUT) $(OBJ) $(LIBOBJ) $(LIB)
 
 release: bin $(OBJ)
-	$(CC) -o $(OUT) $(OBJ) $(LIBOBJ) $(LIB) -mwindows
+	$(CC) -shared -fPIC -o $(OUT) $(OBJ) $(LIBOBJ) $(LIB) -mwindows
 
-debug:
-	@gdb -q $(OUT) --eval-command=run --eval-command=exit
-	
 %.o: %.c
 	$(CC) $(CFLAGS) $(INCLUDE) -o $@ -c $< -MMD
 
