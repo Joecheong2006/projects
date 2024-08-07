@@ -7,7 +7,7 @@ int main() {
     application_setup setup = create_application();
 
     if (!setup.on_initialize(setup.app)) {
-        LOG_FATAL("%s", "failed to initialize application\n");
+        LOG_FATAL("\t%s", "failed to initialize application\n");
         exit(1);
     }
     while (setup.is_running(setup.app)) {

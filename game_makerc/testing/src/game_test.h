@@ -1,6 +1,7 @@
 #ifndef _GAME_TEST_H_
 #define _GAME_TEST_H_
 
+#include "application_setup.h"
 #include "core/defines.h"
 #include "platform/platform.h"
 #include "anim_position_slide.h"
@@ -36,9 +37,6 @@ typedef struct {
     window_callback_setup con;
 } Game;
 
-i32 game_test_on_initialize(void* self);
-i32 game_test_is_running(void * self);
-void game_test_on_update(void* self);
-void game_test_on_terminate(void* self);
+application_setup game_test_start();
 
 #endif

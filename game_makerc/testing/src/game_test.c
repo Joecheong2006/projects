@@ -30,9 +30,7 @@
 #include "physics2d/circle2d.h"
 #include "physics2d/capsule2d.h"
 
-#define PERSPECTIVE_CAMERA
-
-#define PI 3.14159265359
+// #define PERSPECTIVE_CAMERA
 
 #define WIDTH 640
 #define HEIGHT 640
@@ -463,7 +461,7 @@ void camera_controller_update(game_object* obj) {
 }
 
 static rigid2d_test test;
-i32 game_test_on_initialize(void* self) {
+static i32 game_test_on_initialize(void* self) {
     Game* game = self;
     setup_platform(&game->plat_state);
 
@@ -632,12 +630,12 @@ i32 game_test_on_initialize(void* self) {
     return 1;
 }
 
-i32 game_test_is_running(void * self) {
+static i32 game_test_is_running(void * self) {
     Game* game = self;
     return !glfwWindowShouldClose(game->win_state.window);
 }
 
-void game_test_on_update(void* self) {
+static void game_test_on_update(void* self) {
     Game* game = self;
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -666,7 +664,7 @@ void game_test_on_update(void* self) {
     glfwPollEvents();
 }
 
-void game_test_on_terminate(void* self) {
+static void game_test_on_terminate(void* self) {
     Game* game = self;
     shutdown_game_object_system();
     shutdown_physics2d_object_system();
@@ -687,4 +685,15 @@ void game_test_on_terminate(void* self) {
     glfwTerminate();
     
     shutdown_platform(&game->plat_state);
+}
+
+application_setup game_test_start() {
+    static Game game;
+    return (application_setup) {
+        .app = &game,
+        .on_initialize = game_test_on_initialize,
+        .is_running = game_test_is_running,
+        .on_update = game_test_on_update,
+        .on_terminate = game_test_on_terminate,
+    };
 }
