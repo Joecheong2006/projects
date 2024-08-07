@@ -3,8 +3,6 @@
 #include "physics2d/collider2d.h"
 #include "basic/vector.h"
 
-#include "debug/primitive_shape_renderer.h"
-
 static struct physics2d_object_system {
 	vector(rigid2d*) objects;
 } instance;
@@ -146,6 +144,7 @@ static void resolve_collision(i32* collision_point_index, i32 collision_count, c
 	vec2 c2[info->points_count];
 
 	f32 inverse_count = 1.0 / collision_count;
+	// f32 inverse_count = 1.0 / 1;
 
 	for (i32 i = 0; i < collision_count; ++i) {
 		i32 index = collision_point_index[i];
@@ -185,7 +184,7 @@ static void update_collision() {
 				continue;
 				// break;
 			}
-			if (body2->collider == NULL) {
+			if (!body2->collider) {
 				continue;
 			}
 			if (body1->is_static && body2->is_static) {

@@ -60,13 +60,25 @@ void render_sprite(camera* cam,  transform* tran, sprite_texture* sprite_tex, sp
     glm_mat4_identity(trans);
     vec3 local_pos = {0, 0, 0};
     vec3 parent_pos = {0, 0, 0};
+    vec3 r = {0, 0, 0};
+    transform* parent = NULL;
     for (transform* t = tran; t->parent != NULL; t = t->parent) {
-        glm_vec3_add(local_pos, t->local_position, local_pos);
+        parent = t->parent;
+        vec3 pos;
+    	mat4 m;
+    	mat3 m3;
+        glm_vec3_copy(t->local_position, pos);
+    	glm_euler(parent->euler_angle, m);
+    	glm_mat4_pick3(m, m3);
+    	glm_mat3_mulv(m3, pos, pos);
+
+    	glm_vec3_add(parent->euler_angle, r, r);
+
+        glm_vec3_add(local_pos, pos, local_pos);
         glm_vec3_copy(t->parent->position, parent_pos);
     }
     if (tran->parent) {
-        // glm_vec3_copy(tran->local_position, tran->position);
-        // glm_vec3_add(tran->position, tran->parent->position, tran->position);
+        glm_vec3_copy(r, tran->local_euler_angle);
         glm_vec3_add(parent_pos, local_pos, tran->position);
     }
     glm_translate(trans, tran->position);
@@ -78,6 +90,8 @@ void render_sprite(camera* cam,  transform* tran, sprite_texture* sprite_tex, sp
     glm_mat4_mul(m, rotate, m);
     glm_mat4_mul(m, trans, m);
     glm_mat4_mul(m, scale, m);
+    glm_euler(tran->local_euler_angle, rotate);
+    glm_mat4_mul(m, rotate, m);
 
     GLC(location = glGetUniformLocation(sprite_instance.shader, "view"));
     GLC(glUniformMatrix4fv(location, 1, GL_FALSE, &m[0][0]));

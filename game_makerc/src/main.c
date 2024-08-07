@@ -168,6 +168,13 @@ void render_transform_outline(transform* tran, vec3 color) {
     glm_mat3_mulv(m, top_left, top_left);
     glm_mat3_mulv(m, top_right, top_right);
 
+    glm_euler(tran->local_euler_angle, m4);
+    glm_mat4_pick3(m4, m);
+    glm_mat3_mulv(m, bottom_left, bottom_left);
+    glm_mat3_mulv(m, bottom_right, bottom_right);
+    glm_mat3_mulv(m, top_left, top_left);
+    glm_mat3_mulv(m, top_right, top_right);
+
     glm_vec3_add(tran->position, bottom_left, bottom_left);
     glm_vec3_add(tran->position, bottom_right, bottom_right);
     glm_vec3_add(tran->position, top_left, top_left);
@@ -643,7 +650,9 @@ i32 on_initialize(void* self) {
         .sprite_index = {0, 0},
         .color = {1, 1, 1, 1}
     };
+
     game->sp_obj.tran = (transform) {
+        .local_position = {0, 0, 0},
         .position = {0, 0, 0},
         .scale = {2, 2, 1},
         .parent = NULL,
@@ -677,6 +686,16 @@ void on_update(void* self) {
     if (game->con.window.on_render) {
 		game->con.window.on_render(game->con.owner);
     }
+
+    static transform p1 = (transform) {
+        .position = {0, 2, 0},
+        .scale = {2, 2, 1},
+        .parent = NULL,
+        .euler_angle = {0, 0, 0}
+    };
+    p1.euler_angle[2] = glm_rad(glfwGetTime() * 100);
+    game->sp_obj.tran.local_position[1] = 3;
+    game->sp_obj.tran.parent = &p1;
 
     render_sprite(&game->cam, &game->sp_obj.tran, &game->sp_obj.sp_tex, &game->sp_obj.sp);
     render_transform_outline(&game->sp_obj.tran, (vec3){1, 1, 1});
@@ -717,7 +736,17 @@ void on_terminate(void* self) {
 typedef struct {
     GLFWwindow* window;
     VkInstance instance;
+    VkDebugUtilsMessengerEXT debug_messenger;
 } vulkan_test;
+
+static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(
+    VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+    VkDebugUtilsMessageTypeFlagsEXT messageType,
+    const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+    void* pUserData) {
+    LOG_DEBUG("\t%s\n", pCallbackData->pMessage);
+    return VK_FALSE;
+}
 
 i32 enable_validation_layers(const char** layer_names, u32 layers_count) {
     u32 layer_count = 0;
@@ -728,7 +757,7 @@ i32 enable_validation_layers(const char** layer_names, u32 layers_count) {
     for (u32 i = 0; i < layers_count; i++) {
         i32 layer_founded = 0;
         for (u32 j = 0; j < layer_count; j++) {
-            if (strcmp(layers[i].layerName, layer_names[i]) == 0) {
+            if (strcmp(layers[j].layerName, layer_names[i]) == 0) {
                 layer_founded = 1;
                 break;
             }
@@ -741,27 +770,21 @@ i32 enable_validation_layers(const char** layer_names, u32 layers_count) {
     return 1;
 }
 
-const vector(char*) get_vulkan_required_instance_extensions() {
-    const vector(char*) result = make_vector();
+const vector(cstring) get_vulkan_required_instance_extensions() {
+    const vector(cstring) result = make_vector();
 
     u32 glfw_extension_count = 0;
     const char** glfw_extensions = glfwGetRequiredInstanceExtensions(&glfw_extension_count);
 
     for (u32 i = 0; i < glfw_extension_count; i++) {
-        vector_push(result, make_string((const string)glfw_extensions[i]));
+        vector_push(result, make_string(glfw_extensions[i]));
     }
 
     return result;
 }
 
-i32 vulkan_test_init(void* self) {
-    vulkan_test* vt = self;
-    glfwInit();
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-
-    vt->window = glfwCreateWindow(WIDTH, HEIGHT, "vulkan test", NULL, NULL);
-
+void populate_debug_create_info(VkDebugUtilsMessengerCreateInfoEXT* create_info);
+i32 init_vulkan(VkInstance* vk_instance) {
     VkApplicationInfo app_info;
     memset(&app_info, 0, sizeof(VkApplicationInfo));
     app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -780,23 +803,24 @@ i32 vulkan_test_init(void* self) {
         "VK_LAYER_KHRONOS_validation",
     };
     const u32 validation_layer_count = sizeof(validation_layer_names) / sizeof(char*);
-    i32 validation_layer_available = enable_validation_layers(validation_layer_names, validation_layer_count);
+    const i32 validation_layer_available = enable_validation_layers(validation_layer_names, validation_layer_count);
 
-    const char** glfw_extensions = get_vulkan_required_instance_extensions();
+    const vector(cstring) glfw_extensions = get_vulkan_required_instance_extensions();
     for (u32 i = 0; i < validation_layer_count; i++) {
         vector_push(glfw_extensions, make_string(VK_EXT_DEBUG_UTILS_EXTENSION_NAME));
     }
 
-    u32 glfw_extension_count = vector_size(glfw_extensions);
+    const u32 glfw_extension_count = vector_size(glfw_extensions);
     
     create_info.enabledExtensionCount = glfw_extension_count;
     create_info.ppEnabledExtensionNames = glfw_extensions;
 
+    VkDebugUtilsMessengerCreateInfoEXT debug_create_info;
     if (validation_layer_available) {
-        LOG_WARN("\t%s\n", "validation layers are not available");
+        LOG_TRACE("\t%s\n", "validation layers are not available");
     }
     else {
-        LOG_TRACE("\t%s\n", "validation layers are available");
+        LOG_WARN("\t%s\n", "validation layers are available");
     }
 
     if (!validation_layer_available) {
@@ -805,6 +829,9 @@ i32 vulkan_test_init(void* self) {
     else {
         create_info.enabledLayerCount = validation_layer_count;
         create_info.ppEnabledLayerNames = validation_layer_names;
+
+        populate_debug_create_info(&debug_create_info);
+        create_info.pNext = &debug_create_info;
     }
 
     LOG_INFO("\t%s\n", "----- glfw extensions -----");
@@ -823,25 +850,82 @@ i32 vulkan_test_init(void* self) {
         LOG_TRACE("\t%s\n", extensions[i].extensionName);
     }
 
-    VkResult result = vkCreateInstance(&create_info, NULL, &vt->instance);
+    VkResult result = vkCreateInstance(&create_info, NULL, vk_instance);
     if (result != VK_SUCCESS) {
         LOG_FATAL("%s with code %d\n", "failed to create vuklan instance", result);
         return 0;
     }
-    LOG_INFO("\t%s\n", "create vuklan instance success");
+    LOG_INFO("\t%s\n", "create vuklan instance successfully");
 
     for (u32 i = 0; i < glfw_extension_count; i++) {
-        free_string((const string)glfw_extensions[i]);
+        free_string(glfw_extensions[i]);
     }
     free_vector(glfw_extensions);
+    return 1;
+}
 
-    i32 leak_count = check_memory_leak();
-    LOG_TRACE("\tleak_count = %d\n", leak_count);
+
+VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) {
+    PFN_vkCreateDebugUtilsMessengerEXT func = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
+    if (func) {
+        return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
+    }
+    return VK_ERROR_EXTENSION_NOT_PRESENT;
+}
+
+void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator) {
+    PFN_vkDestroyDebugUtilsMessengerEXT func = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
+    if (func) {
+        func(instance, debugMessenger, pAllocator);
+    }
+}
+
+void populate_debug_create_info(VkDebugUtilsMessengerCreateInfoEXT* create_info) {
+    memset(create_info, 0, sizeof(VkDebugUtilsMessengerCreateInfoEXT));
+    create_info->sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+    create_info->messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+    create_info->messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+    create_info->pfnUserCallback = debug_callback;
+    create_info->pUserData = NULL;
+}
+
+i32 setup_vulkan_debug_messenger(VkInstance instance, VkDebugUtilsMessengerEXT* debug_messenger) {
+
+    VkDebugUtilsMessengerCreateInfoEXT create_info;
+    populate_debug_create_info(&create_info);
+
+    if (CreateDebugUtilsMessengerEXT(instance, &create_info, NULL, debug_messenger) == VK_SUCCESS) {
+        LOG_INFO("\t%s\n", "create vulkan debug messenger successfully");
+        return 1;
+    }
+
+    LOG_WARN("\t%s\n", "failed to create vulkan debug messenger");
+    return 0;
+}
+
+
+i32 vulkan_test_init(void* self) {
+    vulkan_test* vt = self;
+    glfwInit();
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+
+    vt->window = glfwCreateWindow(WIDTH, HEIGHT, "vulkan test", NULL, NULL);
+
+    if (!init_vulkan(&vt->instance)) {
+        return 0;
+    }
+
+    if (!setup_vulkan_debug_messenger(vt->instance, &vt->debug_messenger)) {
+        return 0;
+    }
+
     return 1;
 }
 
 i32 vulkan_test_is_running(void* self) {
     vulkan_test* vt = self;
+    return 0;
     return !glfwWindowShouldClose(vt->window);
 }
 
@@ -854,9 +938,13 @@ void vulkan_test_update(void* self) {
 void vulkan_test_terminate(void* self) {
     vulkan_test* vt = self;
 
+    DestroyDebugUtilsMessengerEXT(vt->instance, vt->debug_messenger, NULL);
     vkDestroyInstance(vt->instance, NULL);
     glfwDestroyWindow(vt->window);
     glfwTerminate();
+
+    i32 leak_count = check_memory_leak();
+    LOG_TRACE("\tleak_count = %d\n", leak_count);
 }
 
 application_setup create_application() {

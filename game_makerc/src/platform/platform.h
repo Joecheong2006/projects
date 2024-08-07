@@ -3,9 +3,9 @@
 #include "core/defines.h"
 
 typedef enum {
-	PlatformOsUnkown,
-	PlatformOsWindows,
-	PlatformOsLinux,
+	PlatformUnkown,
+	PlatformWindows,
+	PlatformLinux,
 } PlatformOs;
 
 typedef struct {

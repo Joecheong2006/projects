@@ -5,7 +5,8 @@
 typedef struct transform transform;
 struct transform {
     transform* parent;
-    vec3 position, local_position, euler_angle, scale;
+    vec3 position, euler_angle, scale;
+    vec3 local_position, local_euler_angle;
     vec3 right, up, forward;
 };
 

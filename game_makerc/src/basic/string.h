@@ -3,6 +3,7 @@
 #include "vector.h"
 
 typedef vector(char) string;
+typedef const vector(char) cstring;
 
 #define string_push(str, ctx)\
     _string_push(&str, ctx);
@@ -13,9 +14,9 @@ typedef vector(char) string;
 #define make_stringn(ctx, len)\
     _make_stringn(ctx, len)
 
-string _make_string(const string ctx);
-string _make_stringn(const string ctx, u64 len);
-void _string_push(string* dest, const string string);
-void free_string(const string str);
+string _make_string(cstring ctx);
+string _make_stringn(cstring ctx, u64 len);
+void _string_push(string* dest, cstring string);
+void free_string(cstring str);
 
 #endif

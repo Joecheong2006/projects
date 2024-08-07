@@ -132,6 +132,7 @@ collision2d_info box2d_box2d_collision_impl(collider2d* collider1, collider2d* c
 
     vec2 contact_point[2];
 
+#if 1
     for (i32 i = 0; i < 4; ++i) {
         for (i32 j = 0; j < 4; ++j) {
             vec2 cp;
@@ -169,6 +170,42 @@ collision2d_info box2d_box2d_collision_impl(collider2d* collider1, collider2d* c
             }
         }
     }
+#else
+    for (i32 i = 0; i < 4; ++i) {
+        for (i32 j = 0; j < 4; ++j) {
+            vec2 cp;
+            find_closest_point_on_line(cp, vp2[j], vp2[(j + 1) % 4], vp1[i]);
+            f32 dis = glm_vec2_distance(vp1[i], cp);
+            if (dis < min_dis) {
+                vec2 cd;
+                glm_vec2_sub(cp, vp1[i], cd);
+                if (glm_vec2_dot(normal, cd) < 0 && count < 2) {
+                    glm_vec2_copy(cp, contact_point[count++]);
+                    min_dis = dis;
+                }
+            }
+        }
+    }
+
+    min_dis = FLT_MAX;
+    for (i32 i = 0; i < 4; ++i) {
+        for (i32 j = 0; j < 4; ++j) {
+            vec2 cp;
+            find_closest_point_on_line(cp, vp1[j], vp1[(j + 1) % 4], vp2[i]);
+            f32 dis = glm_vec2_distance(vp2[i], cp);
+            if (dis < min_dis) {
+                vec2 cd, n;
+                glm_vec2_sub(cp, vp2[i], cd);
+                n[0] = normal[0] * -1;
+                n[1] = normal[1] * -1;
+                if (glm_vec2_dot(n, cd) < 0 && count < 2) {
+                    glm_vec2_copy(cp, contact_point[count++]);
+                    min_dis = dis;
+                }
+            }
+        }
+    }
+#endif
 
     collision2d_info info;
     info.points_count = count;

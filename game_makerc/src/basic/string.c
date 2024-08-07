@@ -2,14 +2,14 @@
 #include <string.h>
 #include <assert.h>
 
-string _make_string(const string ctx)
+string _make_string(cstring ctx)
 {
     string result = make_vector();
     string_push(result, ctx);
     return result;
 }
 
-string _make_stringn(const string ctx, u64 len) {
+string _make_stringn(cstring ctx, u64 len) {
     string result = make_vector();
     char str[len + 1];
     memcpy(str, ctx, len);
@@ -18,7 +18,7 @@ string _make_stringn(const string ctx, u64 len) {
     return result;
 }
 
-void _string_push(string* dest, const string string)
+void _string_push(string* dest, cstring string)
 {
     u64 sl = strlen(string) + 1;
     *dest = _vector_reserve((*dest), vector_status(*dest).size + sl);
@@ -32,7 +32,7 @@ void _string_push(string* dest, const string string)
     (*dest)[vector_status(*dest).size] = '\0';
 }
 
-void free_string(const string str)
+void free_string(cstring str)
 {
     free_vector(str);
 }
