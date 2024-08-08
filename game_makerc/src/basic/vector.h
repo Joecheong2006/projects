@@ -24,6 +24,8 @@ struct vector_data
 #define vector_capacity(vec)\
     (vector_status(vec).capacity)
 
+#define vector_is_empty(vec)\
+    (vector_size(vec) == 0)
 
 #define vector_push(vec, ...) {\
         vec = _vector_add(vec, sizeof(__typeof__(*(vec))));\
