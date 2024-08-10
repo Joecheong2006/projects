@@ -8,6 +8,7 @@
 
 #include "game_test.h"
 #include "core/log.h"
+#include "core/assert.h"
 
 #include "basic/memallocate.h"
 
@@ -344,7 +345,7 @@ static i32 create_logical_device(vulkan_test* vt, const char** validation_layer_
     }
 
     f32 queue_priority = 1.0f;
-    for (u32 i = 0; i < 2; i++) {
+    for (u32 i = 0; i < queue_create_info_count; i++) {
         VkDeviceQueueCreateInfo queue_create_info;
         memset(&queue_create_info, 0, sizeof(VkDeviceQueueCreateInfo));
         queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
@@ -466,6 +467,85 @@ static i32 create_image_views(vulkan_test* vt) {
     return 1;
 }
 
+vector(char) load_file(const char* path, const char* fmt) {
+    FILE* file = fopen(path, fmt);
+    if (!file) {
+        return NULL;
+    }
+
+    fseek(file, 0, SEEK_END);
+    i32 size = ftell(file);
+    fseek(file, 0, SEEK_SET);
+
+    vector(char) out = make_vector();
+    vector_resize(out, size);
+    fread(out, 1, size, file);
+
+    fclose(file);
+    return out;
+}
+
+static i32 create_shader_module(vulkan_test* vt, VkShaderModule* shader_module, const vector(char) code) {
+    VkShaderModuleCreateInfo create_info;
+    memset(&create_info, 0, sizeof(VkShaderModuleCreateInfo));
+    create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    create_info.pCode = (const u32*)code;
+    create_info.codeSize = vector_size(code);
+
+    if (vkCreateShaderModule(vt->device, &create_info, NULL, shader_module) != VK_SUCCESS) {
+        return 0;
+    }
+    return 1;
+}
+
+i32 create_graphics_pipeline(vulkan_test* vt) {
+    const char* vert_file = "res/shaders/vert.spv";
+    const char* frag_file = "res/shaders/frag.spv";
+    const vector(char) vert = load_file(vert_file, "rb");
+    const vector(char) frag = load_file(frag_file, "rb");
+
+    if (!vert) {
+        LOG_FATAL("\t%s %s\n", "failed to load file", vert_file);
+        return 0;
+    }
+
+    if (!frag) {
+        LOG_FATAL("\t%s %s\n", "failed to load file", frag_file);
+        return 0;
+    }
+
+    VkShaderModule vert_shader_module;
+    if (!create_shader_module(vt, &vert_shader_module, vert)) {
+        return 0;
+    }
+
+    VkShaderModule frag_shader_module;
+    if (!create_shader_module(vt, &frag_shader_module, frag)) {
+        vkDestroyShaderModule(vt->device, vert_shader_module, NULL);
+        return 0;
+    }
+
+    free_vector(vert);
+    free_vector(frag);
+
+    VkPipelineShaderStageCreateInfo shader_stages[2];
+    memset(&shader_stages[0], 0, sizeof(VkPipelineShaderStageCreateInfo));
+    shader_stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    shader_stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+    shader_stages[0].module = vert_shader_module;
+    shader_stages[0].pName = "main";
+
+    memset(&shader_stages[1], 0, sizeof(VkPipelineShaderStageCreateInfo));
+    shader_stages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    shader_stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+    shader_stages[1].module = frag_shader_module;
+    shader_stages[1].pName = "main";
+
+    vkDestroyShaderModule(vt->device, vert_shader_module, NULL);
+    vkDestroyShaderModule(vt->device, frag_shader_module, NULL);
+    return 1;
+}
+
 i32 vulkan_test_init(void* self) {
     vulkan_test* vt = self;
     memset(vt, 0, sizeof(vulkan_test));
@@ -521,6 +601,7 @@ i32 vulkan_test_init(void* self) {
     vt->swap_chain_images = make_vector();
     if (!create_swap_chain(vt)) {
         LOG_FATAL("\t%s\n", "failed to create swap chain");
+        free_vector(vt->swap_chain_images);
         return 0;
     }
     LOG_INFO("\t%s\n", "create swap chain successfully");
@@ -528,9 +609,16 @@ i32 vulkan_test_init(void* self) {
     vt->swap_chain_image_views = make_vector();
     if (!create_image_views(vt)) {
         LOG_FATAL("\t%s\n", "failed to create image views");
+        free_vector(vt->swap_chain_image_views);
         return 0;
     }
     LOG_INFO("\t%s\n", "create image views successfully");
+
+    if (!create_graphics_pipeline(vt)) {
+        LOG_TRACE("\t%s\n", "failed to create graphics pipeline");
+        return 0;
+    }
+    LOG_INFO("\t%s\n", "create graphics pipeline successfully");
 
     return 1;
 }
@@ -583,7 +671,6 @@ application_setup create_application() {
         .on_update = vulkan_test_update,
         .on_terminate = vulkan_test_terminate,
     };
-    
 
     return game_test_start();
 }
