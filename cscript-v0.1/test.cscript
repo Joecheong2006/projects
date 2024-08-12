@@ -1,0 +1,7 @@
+(])[ {}' "'*+-=\ 21.432=69_i32=32 0b101 0xff var fun if elif else while for
+
+var abs = 1
+
+fun add(var a, var b) -> var
+	ret a + b
+end
