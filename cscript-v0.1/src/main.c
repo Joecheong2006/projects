@@ -94,14 +94,21 @@ primitive_data primitive_data_negate(primitive_data* a) {
 }
 
 typedef enum {
+    AstNodeTypeExpr,
+    AstNodeTypeExprAdd,
+    AstNodeTypeExprMinus,
+    AstNodeTypeExprMultiply,
+    AstNodeTypeExprDivide,
+
     AstNodeTypeTerm,
     AstNodeTypeNegate,
-    AstNodeTypeExpr,
+
     AstNodeTypeFuncDef,
     AstNodeTypeAssign,
     AstNodeTypeVarDecl,
     AstNodeTypeIf,
     AstNodeTypeWhile,
+
 } AstNodeType;
 
 typedef struct ast_node ast_node;
@@ -198,6 +205,8 @@ ast_node* parse_expr_with_brackets(parser* par) {
         return NULL;
     }
     ++par->pointer;
+    // NOTE: create a new node type mayby cleaner. For now it's fine
+    expr->type = AstNodeTypeExpr;
     return expr;
 }
 
@@ -234,22 +243,36 @@ ast_node* parse_operator(parser* par) {
     switch ((i32)tok->type) {
     case '+': {
         ++par->pointer;
-        return make_ast_node(AstNodeTypeExpr, tok->val, ast_procedure_add);
+        return make_ast_node(AstNodeTypeExprAdd, tok->val, ast_procedure_add);
     }
     case '-': {
         ++par->pointer;
-        return make_ast_node(AstNodeTypeNegate, tok->val, ast_procedure_minus);
+        return make_ast_node(AstNodeTypeExprMinus, tok->val, ast_procedure_minus);
     }
     case '*': {
         ++par->pointer;
-        return make_ast_node(AstNodeTypeExpr, tok->val, ast_procedure_multiply);
+        return make_ast_node(AstNodeTypeExprMultiply, tok->val, ast_procedure_multiply);
     }
     case '/': {
         ++par->pointer;
-        return make_ast_node(AstNodeTypeExpr, tok->val, ast_procedure_divide);
+        return make_ast_node(AstNodeTypeExprDivide, tok->val, ast_procedure_divide);
     }
     default:
         return NULL;
+    }
+}
+
+i32 bottom_up_need_to_reround(AstNodeType current, AstNodeType previous) {
+    switch (current) {
+    case AstNodeTypeExprDivide: {
+    case AstNodeTypeExprMultiply:
+        if (previous == AstNodeTypeExprAdd || previous == AstNodeTypeExprMinus) {
+            return 1;
+        }
+        return 0;
+    }
+    default:
+        return 0;
     }
 }
 
@@ -271,10 +294,17 @@ ast_node* parse_expr_bottom_up(parser* par) {
             ast_tree_free(lhs);
             return NULL;
         }
-        ret = ope;
-        ret->lhs = lhs;
-        ret->rhs = rhs;
-        lhs = ope;
+        
+        if (bottom_up_need_to_reround(ope->type, lhs->type)) {
+            ope->rhs = rhs;
+            ope->lhs = lhs->rhs;
+            lhs->rhs = ope;
+            continue;
+        }
+
+        ope->lhs = lhs;
+        ope->rhs = rhs;
+        ret = lhs = ope;
 #else
         token* ope_tok = parser_peek_token(par, 0);
         if (ope_tok == NULL) {
@@ -336,14 +366,14 @@ void print_ast_tree(ast_node* node) {
     }
 }
 
-// TODO(Aug15th): issue arithmetic priority
+// TODO(Aug15th): implement error reporting
 int main(void) {
     // lexer lex = {NULL, -1, 1, 1, 0};
     // lexer_load_file_text(&lex, "test.cscript");
 
-    // const char expr[] = "2 * 5 + (1-2)";
+    // const char expr[] = "2 * 5 + (1-2.0)";
     // const char expr[] = "1-(1-1-1-1-1)-1-3";
-    const char expr[] = "-+++--+-+1";
+    const char expr[] = "(2 + (4 * (3 / 2.0)) + 1) * 1.1 + 1";
     lexer lex = {expr, sizeof(expr) - 1, 1, 1, 0};
 
     parser par = { generate_tokens(&lex), 0 };
@@ -371,11 +401,12 @@ int main(void) {
     }
 
     ast_node* node = parse_expr_bottom_up(&par);
-    print_ast_tree(node);
+    // print_ast_tree(node);
 
     if (node) {
         primitive_data d = node->procedure(node);
-        printf("ret %d\n", d.int32);
+        // printf("ret %d\n", d.int32);
+        printf("ret %g\n", d.float32);
     }
 
     ast_tree_free(node);

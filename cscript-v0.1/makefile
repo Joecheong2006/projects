@@ -1,5 +1,7 @@
 CC = gcc
-CFLAGS = -std=c99 -Wall -Wextra -Wpedantic -Wstrict-aliasing -Werror -g3 -DDEBUG
+CFLAGS = -std=c99 -Wall -Wextra -Wpedantic -Wstrict-aliasing -Werror
+DEBUG_FLAGS = -g3 -DDEBUG
+RELEASE_FLAGS = -O2
 DEBUGGER = gdb
 
 SRC = $(wildcard src/*.c src/**/*.c)
@@ -15,17 +17,23 @@ else
 endif
 
 
-all: bin app
+all: bin app 
+
+rel: CFLAGS += $(RELEASE_FLAGS)
+rel: bin $(OBJ)
+	@$(CC) $(CFLAGS) $(OBJ) -o $(BIN)/$(OUT)
+	@echo "Compilation completed"
 
 bin:
 	@mkdir -p $(BIN)
 
+app: CFLAGS += $(DEBUG_FLAGS)
 app: $(OBJ)
 	@$(CC) $(CFLAGS) $(OBJ) -o $(BIN)/$(OUT)
 	@echo "Compilation completed"
 
 debug:
-	@$(DEBUGGER) -q $(OUT) --eval-command=run --eval-command=exit
+	@$(DEBUGGER) -q $(BIN)/$(OUT) --eval-command=run --eval-command=exit
 
 run:
 	@./$(BIN)/$(OUT) 

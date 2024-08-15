@@ -1,6 +1,7 @@
 #include "lexer.h"
 #include <string.h>
 #include <stdio.h>
+#include <assert.h>
 
 const char* TokenTypeString[] = {
     [TokenTypeIdentifier - 256] = "",
@@ -32,7 +33,6 @@ const char* TokenTypeString[] = {
 static vector(char) load_file(const char* file_name, const char* mode) {
     FILE* file = fopen(file_name, mode);
     if (!file) {
-        fclose(file);
         return NULL;
     }
 
@@ -42,7 +42,8 @@ static vector(char) load_file(const char* file_name, const char* mode) {
 
     vector(char) result = make_vector();
     vector_resize(result, size + 1);
-    fread(result, 1, size, file);
+    u32 readed = fread(result, 1, size, file);
+    assert(readed == size);
     result[size] = EOF;
     fclose(file);
     return result;
