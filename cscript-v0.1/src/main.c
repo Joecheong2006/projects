@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include <string.h>
 #include "lexer.h"
 #include "container/memallocate.h"
@@ -23,34 +22,37 @@
 // <funcdef>    ::= "fun" <identifier> "(" <funcparams> ")" "end"
 // <funcall>    ::= <identifier> "(" <funcparams> ")"
 // <assign>     ::= <identifer> "=" (<expr> | <term>)
-// <vardecl>    ::= "var" <identifier> "=" <term>
+// <vardecl>    ::= "var" <identifier> "=" <expr>
 // <statement>  ::= <vardecl> | <funcall> | <assign> <end>
 // <if>         ::= "if" <expr> do {<statement>} ["end"]
 // <elif>       ::= "elif" <expr> do {<statement>} ["end"]
 // <else>       ::= "else" {<statement>} "end"
 // <while>      ::= "while" <expr> do {<statement>} "end"
 
+typedef struct {
+    token* tok;
+    const char* msg;
+} error_info;
+
 typedef enum {
+    AstNodeTypeTerm,
+    AstNodeTypeNegate,
+
     AstNodeTypeExpr,
     AstNodeTypeExprAdd,
     AstNodeTypeExprMinus,
     AstNodeTypeExprMultiply,
     AstNodeTypeExprDivide,
 
-    AstNodeTypeTerm,
-    AstNodeTypeNegate,
-
     AstNodeTypeFuncDef,
     AstNodeTypeAssign,
     AstNodeTypeVarDecl,
     AstNodeTypeIf,
     AstNodeTypeWhile,
-
 } AstNodeType;
 
 typedef struct ast_node ast_node;
 typedef primitive_data(*ast_procedure)(ast_node*);
-
 struct ast_node {
     ast_node *lhs, *rhs;
     ast_procedure procedure;
@@ -100,8 +102,29 @@ primitive_data ast_procedure_negate(ast_node* node) {
 
 typedef struct {
     vector(token) tokens;
+    vector(error_info) errors;
     i32 pointer;
 } parser;
+
+void parser_init(parser* par, vector(token) tokens) {
+    par->tokens = tokens;
+    par->errors = make_vector();
+    par->pointer = 0;
+}
+
+void parser_free(parser* par) {
+    for_vector(par->tokens, i, 0) {
+        if (par->tokens[i].type == TokenTypeIdentifier) {
+            free_string(par->tokens[i].val.string);
+        }
+    }
+    free_vector(par->tokens);
+    free_vector(par->errors);
+}
+
+void parser_report_error(parser* par, token* tok, const char* msg) {
+    vector_push(par->errors, tok, msg);
+}
 
 token* parser_peek_token(parser* par, i32 n) {
     if (par->pointer + n < (i32)vector_size(par->tokens)) {
@@ -112,10 +135,21 @@ token* parser_peek_token(parser* par, i32 n) {
 
 // NOTE: predefine parse function
 void ast_tree_free(ast_node* node);
+ast_node* parse_identifier(parser* par);
 ast_node* parse_term(parser* par);
 ast_node* parse_expr_with_brackets(parser* par);
 ast_node* parse_operator(parser* par);
-ast_node* parse_expr_bottom_up(parser* par);
+ast_node* parse_expr_bottom_up(parser* par, i32(*is_terminal)(token*));
+ast_node* parse_expr(parser* par);
+ast_node* parse_vardecl(parser* par);
+
+i32 expr_brackets_terminal(token* tok) {
+    return tok->type == ')';
+}
+
+i32 expr_default_terminal(token* tok) {
+    return tok->type == ';' || tok->type == '\n' || tok->type == TokenTypeEOF;
+}
 
 ast_node* make_ast_node(AstNodeType type, primitive_data data, ast_procedure procedure) {
     ast_node* node = MALLOC(sizeof(ast_node));
@@ -127,24 +161,42 @@ ast_node* make_ast_node(AstNodeType type, primitive_data data, ast_procedure pro
     return node;
 }
 
+ast_node* make_ast_node_sign(AstNodeType type) {
+    return make_ast_node(type, (primitive_data){0}, ast_procedure_null);
+}
+
 ast_node* parse_expr_with_brackets(parser* par) {
     token* tok = parser_peek_token(par, 0);
     if (tok->type != '(') {
-        printf("missing (\n");
+        parser_report_error(par, tok, "missing (");
         return NULL;
     }
     ++par->pointer;
-    ast_node* expr = parse_expr_bottom_up(par);
+    ast_node* expr = parse_expr_bottom_up(par, expr_brackets_terminal);
+    if (!expr) {
+        return NULL;
+    }
+
     tok = parser_peek_token(par, 0);
     if (tok->type != ')') {
         ast_tree_free(expr);
-        printf("missing )\n");
+        parser_report_error(par, tok, "missing )");
         return NULL;
     }
     ++par->pointer;
     // NOTE: create a new node type mayby cleaner. For now it's fine
     expr->type = AstNodeTypeExpr;
     return expr;
+}
+
+ast_node* parse_identifier(parser* par) {
+    token* tok = parser_peek_token(par, 0);
+    if (tok->type != TokenTypeIdentifier) {
+        parser_report_error(par, tok, "missing identifier");
+        return NULL;
+    }
+    ++par->pointer;
+    return make_ast_node(AstNodeTypeTerm, tok->val, ast_procedure_null);
 }
 
 ast_node* parse_term(parser* par) {
@@ -171,6 +223,7 @@ ast_node* parse_term(parser* par) {
         return parse_term(par);
     }
     default:
+        parser_report_error(par, tok, "unkown term");
         return NULL;
     }
 }
@@ -213,9 +266,9 @@ i32 bottom_up_need_to_reround(AstNodeType current, AstNodeType previous) {
     }
 }
 
-ast_node* parse_expr_bottom_up(parser* par) {
+ast_node* parse_expr_bottom_up(parser* par, i32(*is_terminal)(token*)) {
     ast_node* lhs = parse_term(par);
-    if (lhs == NULL) {
+    if (!lhs) {
         return NULL;
     }
 
@@ -223,7 +276,13 @@ ast_node* parse_expr_bottom_up(parser* par) {
     while (1) {
         ast_node* ope = parse_operator(par);
         if (!ope) {
-            return ret;
+            token* tok = parser_peek_token(par, 0);
+            if (is_terminal(tok)) {
+                return ret;
+            }
+            ast_tree_free(ret);
+            parser_report_error(par, tok, "missing operator");
+            return NULL;
         }
         ast_node* rhs = parse_term(par);
         if (!rhs) {
@@ -244,6 +303,41 @@ ast_node* parse_expr_bottom_up(parser* par) {
     }
 }
 
+ast_node* parse_expr(parser* par) {
+    return parse_expr_bottom_up(par, expr_default_terminal);
+}
+
+ast_node* parse_vardecl(parser* par) {
+    token* tok = parser_peek_token(par, 0);
+    if (tok->type != TokenTypeKeywordVar) {
+        parser_report_error(par, tok, "missing var");
+        return NULL;
+    }
+    ++par->pointer;
+
+    ast_node* vardecl = make_ast_node_sign(AstNodeTypeVarDecl);
+    vardecl->lhs = parse_identifier(par);
+    if (!vardecl->lhs) {
+        FREE(vardecl);
+        return NULL;
+    }
+
+    tok = parser_peek_token(par, 0);
+    if ((i32)tok->type != '=') {
+        parser_report_error(par, tok, "missing equal sign");
+        FREE(vardecl);
+        return NULL;
+    }
+    ++par->pointer;
+
+    vardecl->rhs = parse_expr(par);
+    if (!vardecl->rhs) {
+        FREE(vardecl);
+        return NULL;
+    }
+    return vardecl;
+}
+
 void ast_tree_free(ast_node* node) {
     if (node == NULL)
         return;
@@ -257,7 +351,7 @@ void print_ast_tree(ast_node* node) {
         return;
     print_ast_tree(node->lhs);
     print_ast_tree(node->rhs);
-    printf("%d %d ", node->type, node->val.type[2]);
+    printf("type %d ", node->type);
     if (node->type == AstNodeTypeTerm) {
         printf("%d\n", node->val.int32);
     }
@@ -266,17 +360,18 @@ void print_ast_tree(ast_node* node) {
     }
 }
 
-// TODO(Aug15th): implement error reporting
+// TODO(Aug15th): implmenet more parse function and start up design object struct
 int main(void) {
     // lexer lex = {NULL, -1, 1, 1, 0};
     // lexer_load_file_text(&lex, "test.cscript");
 
-    // const char expr[] = "2 * 5 + (1-2.0)";
-    // const char expr[] = "1-(1-1-1-1-1)-1-3";
-    const char expr[] = "(2 + 4 * (3 / (.2 * 10)) + 1) * 1.1 + 1";
-    lexer lex = {expr, sizeof(expr) - 1, 1, 1, 0};
+    // const char text[] = "1-(1-1-1-1-1)-1-3";
+    const char text[] = "(2+4*(3/(.2*10))+3-1-1)*1.1+1";
+    // const char text[] = "var a = 1-1-1--3 * 3";
+    lexer lex = {text, sizeof(text) - 1, 1, 1, 0};
 
-    parser par = { generate_tokens(&lex), 0 };
+    parser par;
+    parser_init(&par, generate_tokens(&lex));
 
     for_vector(par.tokens, i, 0) {
         char buf[100];
@@ -290,7 +385,6 @@ int main(void) {
         }
         else if (par.tokens[i].type == TokenTypeIdentifier) {
             printf("id:  %s len: %d\n", par.tokens[i].val.string, (i32)strlen(par.tokens[i].val.string));
-            free_string(par.tokens[i].val.string);
         }
         else {
             if (par.tokens[i].type < 256)
@@ -300,17 +394,19 @@ int main(void) {
         }
     }
 
-    ast_node* node = parse_expr_bottom_up(&par);
-
+    ast_node* node = parse_expr(&par);
     if (node) {
         primitive_data d = node->procedure(node);
         // printf("ret %d\n", d.int32);
         printf("ret %g\n", d.float32);
     }
-
     ast_tree_free(node);
 
-    free_vector(par.tokens);
+    for_vector(par.errors, i, 0) {
+        printf("%d:%d %s\n", par.errors[i].tok->line, par.errors[i].tok->count, par.errors[i].msg);
+    }
+
+    parser_free(&par);
     // free_vector(lex.ctx);
 
     printf("leak count = %d\n", check_memory_leak());
