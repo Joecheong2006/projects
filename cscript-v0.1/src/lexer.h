@@ -1,6 +1,7 @@
 #ifndef _LEXER_H_
 #define _LEXER_H_
 #include "container/string.h"
+#include "primitive_data.h"
 
 typedef enum {
     TokenTypeIdentifier = 256,
@@ -29,13 +30,6 @@ typedef enum {
     TokenTypeEOF,
 } TokenType;
 extern const char* TokenTypeString[TokenTypeEOF - 255];
-
-typedef union {
-    i32 int32;
-    f32 float32;
-    const char* string;
-    i32 type[3];
-} primitive_data;
 
 typedef struct {
     primitive_data val;

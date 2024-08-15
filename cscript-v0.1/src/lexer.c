@@ -75,10 +75,27 @@ static i32 is_0_9(char ch) {
     return ch >= '0' && ch <= '9';
 }
 
+static token generate_float_after_dot(lexer* lex) {
+    i32 val = 0, count = 0, percision_count = 1;
+    char c = lex->ctx[lex->str_count];
+    while (c >= '0' && c <= '9') {
+        val = val * 10 + (c - '0');
+        percision_count *= 10;
+        ++count;
+        c = lex->ctx[++lex->str_count];
+    }
+    lex->position += count;
+    token tok = {
+        .val.float32 = (f32)val / percision_count, lex->line, lex->position - count, TokenTypeLiteralFloat32
+    };
+    tok.val.type[2] = tok.type;
+    return tok;
+}
+
 static token generate_number_literal_token(lexer* lex) {
     i32 val = 0, count = 0, percision_count = 0;
     char c = lex->ctx[lex->str_count];
-    if (c == '0' && !is_0_9(lex->ctx[lex->str_count + 1])) {
+    if (c == '0' && !is_0_9(lex->ctx[lex->str_count + 1]) && lex->ctx[lex->str_count + 1] != '.') {
         c = lexer_get_consumed(lex);
         switch (c) {
         case 'x': {
@@ -91,10 +108,11 @@ static token generate_number_literal_token(lexer* lex) {
                 c = lex->ctx[++lex->str_count];
             }
             lex->position += count;
-            return (token) {
+            token tok = {
                 .val.int32 = val, lex->line, lex->position - count - 2, TokenTypeLiteralInt32,
             };
-            break;
+            tok.val.type[2] = tok.type;
+            return tok;
         }
         case 'b': {
             c = lexer_get_consumed(lex);
@@ -104,10 +122,11 @@ static token generate_number_literal_token(lexer* lex) {
                 c = lex->ctx[++lex->str_count];
             }
             lex->position += count;
-            return (token) {
+            token tok = {
                 .val.int32 = val, lex->line, lex->position - count - 2, TokenTypeLiteralInt32
             };
-            break;
+            tok.val.type[2] = tok.type;
+            return tok;
         }
         default:
             // exit(1);
@@ -141,13 +160,17 @@ static token generate_number_literal_token(lexer* lex) {
     }
     lex->position += count;
     if (percision_count == 0) {
-        return (token) {
+        token tok = {
             .val.int32 = val, lex->line, lex->position - count, TokenTypeLiteralInt32
         };
+        tok.val.type[2] = tok.type;
+        return tok;
     }
-    return (token) {
+    token tok = {
         .val.float32 = (f32)val / percision_count, lex->line, lex->position - count, TokenTypeLiteralFloat32
     };
+    tok.val.type[2] = tok.type;
+    return tok;
 }
 
 static token generate_text_token(lexer* lex) {
@@ -198,7 +221,7 @@ vector(token) generate_tokens(lexer* lex) {
         case '[': case ']':
         case '{': case '}':
         case '+': case '*': case '-': case '/':
-        case ';': case ':': case '\'': case '"': case '\\': case ',': case '.':
+        case ';': case ':': case '\'': case '"': case '\\': case ',':
         case '\t': { vector_push(result, .val.string = NULL, lex->line, lex->position, c); lexer_consume(lex); break; }
         case '\n': { vector_push(result, .val.string = NULL, lex->line++, lex->position, '\n'); lexer_consume(lex); lex->position = 1; break; }
         case '>': { MATCH_ONE_AFTER(c, '=', TokenTypeOperatorGreaterThan); }
@@ -207,10 +230,18 @@ vector(token) generate_tokens(lexer* lex) {
         case '!': { MATCH_ONE_AFTER(c, '=', TokenTypeOperatorNotEqual); }
         case ' ': { lexer_consume(lex); break; }
         case 0: { vector_push(result, .val.string = NULL, lex->line, lex->position, TokenTypeEOF); return result; }
+        case '.': {
+            if (is_0_9(lex->ctx[lex->str_count + 1])) {
+                lexer_consume(lex);
+                token tok = generate_float_after_dot(lex);
+                vector_pushe(result, tok);
+                continue;
+            }
+            vector_push(result, .val.string = NULL, lex->line, lex->position, c); lexer_consume(lex); break; 
+        }
         default: {
             if (c >= '0' && c <= '9') {
                 token tok = generate_number_literal_token(lex);
-                tok.val.type[2] = tok.type;
                 vector_pushe(result, tok);
             }
             else if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '_') {

@@ -15,83 +15,20 @@
 // <end>        ::= "\n" | ";"
 // <identifer>  ::= <letter> | "_" {(<letter> | <digit> | "_")}
 // <literal>    ::= <int> | <float> | char | string
-// <term>       ::= <literal> | <identifier> | "(" <expr> ")" | <funcall>
-// <expr>       ::= <term> <operator> (<term> | <expr>)
+// <term>       ::= <literal> | <identifier> | "(" <expr> ")" | <funcall> | "-" <term> | "+" <term>
+// <expr>       ::= <term> {<operator> <expr>}
 // <operator>   ::= "-" | "+" | "*" | "/"
 // <params>     ::= <identifier> {"," <identifier>}
 // <funcparams> ::= [<params>]
 // <funcdef>    ::= "fun" <identifier> "(" <funcparams> ")" "end"
 // <funcall>    ::= <identifier> "(" <funcparams> ")"
 // <assign>     ::= <identifer> "=" (<expr> | <term>)
-// <vardecl>    ::= var <identifier> "=" <term>
+// <vardecl>    ::= "var" <identifier> "=" <term>
 // <statement>  ::= <vardecl> | <funcall> | <assign> <end>
-// <if>         ::= if (<expr> | <term>) do {<statement>} ["end"]
-// <elif>       ::= elif (<expr> | <term>) do {<statement>} ["end"]
-// <while>      ::= while (<expr> | <term>) do {<statement>} ["end"]
-
-// var a = 1
-
-i32 primitive_data_guess_type(primitive_data* a, primitive_data* b) {
-    return a->type[2] > b->type[2] ? a->type[2] : b->type[2];
-}
-
-void primitive_data_cast_to(i32 type, primitive_data* pd) {
-    switch (type - pd->type[2]) {
-    case TokenTypeLiteralInt32 - TokenTypeLiteralFloat32: {
-        pd->int32 = pd->float32;
-        pd->type[2] = type;
-        break;
-    }
-    case TokenTypeLiteralFloat32 - TokenTypeLiteralInt32: {
-        pd->float32 = pd->int32;
-        pd->type[2] = type;
-        break;
-    }
-    default:
-        break;
-    }
-}
-
-#define IMPL_PRIMITIVE_ARITHMETIC(oper, name)\
-primitive_data primitive_data_##name(primitive_data* a, primitive_data* b) {\
-    i32 type = primitive_data_guess_type(a, b);\
-    primitive_data result = {.type[2] = type};\
-    primitive_data_cast_to(type, a);\
-    primitive_data_cast_to(type, b);\
-    switch (type) {\
-    case TokenTypeLiteralInt32: {\
-        result.int32 = a->int32 oper b->int32;\
-        return result;\
-    }\
-    case TokenTypeLiteralFloat32: {\
-        result.float32 = a->float32 oper b->float32;\
-        return result;\
-    }\
-    default:\
-        return result;\
-    }\
-}
-
-IMPL_PRIMITIVE_ARITHMETIC(+, add)
-IMPL_PRIMITIVE_ARITHMETIC(-, minus)
-IMPL_PRIMITIVE_ARITHMETIC(*, multiply)
-IMPL_PRIMITIVE_ARITHMETIC(/, divide)
-
-primitive_data primitive_data_negate(primitive_data* a) {
-    primitive_data result = {.type[2] = a->type[2]};
-    switch (a->type[2]) {
-    case TokenTypeLiteralInt32: {
-        result.int32 = -a->int32;
-        return result;
-    }
-    case TokenTypeLiteralFloat32: {
-        result.float32 = -a->float32;
-        return result;
-    }
-    default:
-        return result;
-    }
-}
+// <if>         ::= "if" <expr> do {<statement>} ["end"]
+// <elif>       ::= "elif" <expr> do {<statement>} ["end"]
+// <else>       ::= "else" {<statement>} "end"
+// <while>      ::= "while" <expr> do {<statement>} "end"
 
 typedef enum {
     AstNodeTypeExpr,
@@ -284,7 +221,6 @@ ast_node* parse_expr_bottom_up(parser* par) {
 
     ast_node* ret = lhs;
     while (1) {
-#if 1
         ast_node* ope = parse_operator(par);
         if (!ope) {
             return ret;
@@ -305,42 +241,6 @@ ast_node* parse_expr_bottom_up(parser* par) {
         ope->lhs = lhs;
         ope->rhs = rhs;
         ret = lhs = ope;
-#else
-        token* ope_tok = parser_peek_token(par, 0);
-        if (ope_tok == NULL) {
-            return ope;
-        }
-        switch ((i32)ope_tok->type) {
-        case '+': {
-            ++par->pointer;
-            ast_node* rhs = parse_term(par);
-            if (!rhs) {
-                ast_tree_free(lhs);
-                return NULL;
-            }
-            ope = make_ast_node(AstNodeTypeExpr, ope_tok->val, ast_procedure_add);
-            ope->lhs = lhs;
-            ope->rhs = rhs;
-            lhs = ope;
-            continue;
-        }
-        case '-': {
-            ++par->pointer;
-            ast_node* rhs = parse_term(par);
-            if (!rhs) {
-                ast_tree_free(lhs);
-                return NULL;
-            }
-            ope = make_ast_node(AstNodeTypeExpr, ope_tok->val, ast_procedure_minus);
-            ope->lhs = lhs;
-            ope->rhs = rhs;
-            lhs = ope;
-            continue;
-        }
-        default:
-            return ope;
-        }
-#endif
     }
 }
 
@@ -373,7 +273,7 @@ int main(void) {
 
     // const char expr[] = "2 * 5 + (1-2.0)";
     // const char expr[] = "1-(1-1-1-1-1)-1-3";
-    const char expr[] = "(2 + (4 * (3 / 2.0)) + 1) * 1.1 + 1";
+    const char expr[] = "(2 + 4 * (3 / (.2 * 10)) + 1) * 1.1 + 1";
     lexer lex = {expr, sizeof(expr) - 1, 1, 1, 0};
 
     parser par = { generate_tokens(&lex), 0 };
@@ -401,7 +301,6 @@ int main(void) {
     }
 
     ast_node* node = parse_expr_bottom_up(&par);
-    // print_ast_tree(node);
 
     if (node) {
         primitive_data d = node->procedure(node);
