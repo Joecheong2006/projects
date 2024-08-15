@@ -2,6 +2,8 @@
 #include "lexer.h"
 #include "container/memallocate.h"
 
+// TODO(Aug15th): starting to extend parser and start up design object struct
+
 // <digit>      ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
 // <letter>     ::= "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T" | "U" | "V" | "W" | "X" | "Y" | "Z" | "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k" | "l" | "m" | "n" | "o" | "p" | "q" | "r" | "s" | "t" | "u" | "v" | "w" | "x" | "y" | "z"
 // <hex>        ::= <digt> | [a-fA-F]
@@ -35,6 +37,7 @@ typedef struct {
 } error_info;
 
 typedef enum {
+    AstNodeTypeEnd,
     AstNodeTypeTerm,
     AstNodeTypeNegate,
 
@@ -133,22 +136,39 @@ token* parser_peek_token(parser* par, i32 n) {
     return NULL;
 }
 
-// NOTE: predefine parse function
+// NOTE: predefine parse function. Just put these here for now.
 void ast_tree_free(ast_node* node);
+i32 parse_end(parser* par);
 ast_node* parse_identifier(parser* par);
 ast_node* parse_term(parser* par);
 ast_node* parse_expr_with_brackets(parser* par);
 ast_node* parse_operator(parser* par);
-ast_node* parse_expr_bottom_up(parser* par, i32(*is_terminal)(token*));
+ast_node* parse_expr_bottom_up(parser* par, ast_node*(*is_terminal)(parser*,ast_node*));
 ast_node* parse_expr(parser* par);
 ast_node* parse_vardecl(parser* par);
 
-i32 expr_brackets_terminal(token* tok) {
-    return tok->type == ')';
+ast_node* expr_brackets_terminal(parser* par, ast_node* node) {
+    token* tok = parser_peek_token(par, 0);
+    if (tok->type == ')')
+        return node;
+    ast_tree_free(node);
+    parser_report_error(par, tok, "expected )");
+    return NULL;
 }
 
-i32 expr_default_terminal(token* tok) {
-    return tok->type == ';' || tok->type == '\n' || tok->type == TokenTypeEOF;
+ast_node* expr_default_terminal(parser* par, ast_node* node) {
+    token* tok = parser_peek_token(par, 0);
+    if (tok->type != ')' && (tok->type == ';' || tok->type == '\n' || tok->type == TokenTypeEOF)) {
+        return node;
+    }
+    ast_tree_free(node);
+    if (tok->type == ')') {
+        parser_report_error(par, tok, "missing operator ( before ;");
+    }
+    else {
+        parser_report_error(par, tok, "expected ; or \\n at end of var decl");
+    }
+    return NULL;
 }
 
 ast_node* make_ast_node(AstNodeType type, primitive_data data, ast_procedure procedure) {
@@ -163,6 +183,11 @@ ast_node* make_ast_node(AstNodeType type, primitive_data data, ast_procedure pro
 
 ast_node* make_ast_node_sign(AstNodeType type) {
     return make_ast_node(type, (primitive_data){0}, ast_procedure_null);
+}
+
+i32 parse_end(parser* par) {
+    token* tok = parser_peek_token(par, 0);
+    return tok->type == '\n' || tok->type == ';';
 }
 
 ast_node* parse_expr_with_brackets(parser* par) {
@@ -184,7 +209,7 @@ ast_node* parse_expr_with_brackets(parser* par) {
         return NULL;
     }
     ++par->pointer;
-    // NOTE: create a new node type mayby cleaner. For now it's fine
+    // NOTE: create a new node type maybe cleaner but for now it's fine
     expr->type = AstNodeTypeExpr;
     return expr;
 }
@@ -223,7 +248,7 @@ ast_node* parse_term(parser* par) {
         return parse_term(par);
     }
     default:
-        parser_report_error(par, tok, "unkown term");
+        parser_report_error(par, tok, "missing term");
         return NULL;
     }
 }
@@ -266,7 +291,7 @@ i32 bottom_up_need_to_reround(AstNodeType current, AstNodeType previous) {
     }
 }
 
-ast_node* parse_expr_bottom_up(parser* par, i32(*is_terminal)(token*)) {
+ast_node* parse_expr_bottom_up(parser* par, ast_node*(*is_terminal)(parser*,ast_node*)) {
     ast_node* lhs = parse_term(par);
     if (!lhs) {
         return NULL;
@@ -276,13 +301,7 @@ ast_node* parse_expr_bottom_up(parser* par, i32(*is_terminal)(token*)) {
     while (1) {
         ast_node* ope = parse_operator(par);
         if (!ope) {
-            token* tok = parser_peek_token(par, 0);
-            if (is_terminal(tok)) {
-                return ret;
-            }
-            ast_tree_free(ret);
-            parser_report_error(par, tok, "missing operator");
-            return NULL;
+            return is_terminal(par, ret);
         }
         ast_node* rhs = parse_term(par);
         if (!rhs) {
@@ -325,16 +344,17 @@ ast_node* parse_vardecl(parser* par) {
     tok = parser_peek_token(par, 0);
     if ((i32)tok->type != '=') {
         parser_report_error(par, tok, "missing equal sign");
-        FREE(vardecl);
+        ast_tree_free(vardecl);
         return NULL;
     }
     ++par->pointer;
 
     vardecl->rhs = parse_expr(par);
     if (!vardecl->rhs) {
-        FREE(vardecl);
+        ast_tree_free(vardecl);
         return NULL;
     }
+
     return vardecl;
 }
 
@@ -360,14 +380,13 @@ void print_ast_tree(ast_node* node) {
     }
 }
 
-// TODO(Aug15th): implmenet more parse function and start up design object struct
 int main(void) {
     // lexer lex = {NULL, -1, 1, 1, 0};
     // lexer_load_file_text(&lex, "test.cscript");
 
     // const char text[] = "1-(1-1-1-1-1)-1-3";
-    const char text[] = "(2+4*(3/(.2*10))+3-1-1)*1.1+1";
     // const char text[] = "var a = 1-1-1--3 * 3";
+    const char text[] = "(2+4*(3/(.2*10))+3-1-1)*1.1+1";
     lexer lex = {text, sizeof(text) - 1, 1, 1, 0};
 
     parser par;
