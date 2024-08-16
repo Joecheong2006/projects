@@ -38,6 +38,11 @@ typedef struct {
 } token;
 
 typedef struct {
+    token* tok;
+    const char* msg;
+} error_info;
+
+typedef struct {
     const char* ctx;
     i32 ctx_len;
     i32 line, position, str_count;
