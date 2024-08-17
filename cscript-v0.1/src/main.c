@@ -2,7 +2,7 @@
 #include "lexer.h"
 #include "container/memallocate.h"
 
-// TODO(Aug15th): starting to extend parser and start up design object struct
+#include "command.h"
 
 // <digit>      ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
 // <letter>     ::= "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T" | "U" | "V" | "W" | "X" | "Y" | "Z" | "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k" | "l" | "m" | "n" | "o" | "p" | "q" | "r" | "s" | "t" | "u" | "v" | "w" | "x" | "y" | "z"
@@ -23,8 +23,8 @@
 // <funcparams> ::= [<params>]
 // <funcdef>    ::= "fun" <identifier> "(" <funcparams> ")" "end"
 // <funcall>    ::= <identifier> "(" <funcparams> ")"
-// <assign>     ::= <identifer> "=" (<expr> | <term>)
-// <vardecl>    ::= "var" <identifier> "=" <expr>
+// <assign>     ::= <identifer> "=" <expr>
+// <vardecl>    ::= "var" <assign>
 // <statement>  ::= <vardecl> | <funcall> | <assign> <end>
 // <if>         ::= "if" <expr> do {<statement>} ["end"]
 // <elif>       ::= "elif" <expr> do {<statement>} ["end"]
@@ -39,12 +39,6 @@ void print_ast_tree(ast_node* node) {
     print_ast_tree(node->lhs);
     print_ast_tree(node->rhs);
     printf("type %d ", node->type);
-    if (node->type == AstNodeTypeTerm) {
-        printf("%d\n", node->tok->val.int32);
-    }
-    else {
-        printf("\n");
-    }
 }
 
 int main(void) {
@@ -53,7 +47,7 @@ int main(void) {
 
     // const char text[] = "1-(1-1-1-1-1)-1-3";
     // const char text[] = "var a = 1-1-1--3*3";
-    const char text[] = "var a=(2+4*(3/(.2*10))+3-1-1)*1.1+(0.5+.5) + (.5-0.3-0.2);var a = 1-1-1--3*3";
+    const char text[] = "var a=(2+4*(3/(.2*10))+3-1-1)*1.1+(0.5+.5) + (.5-0.3-0.2)";
     lexer lex = {text, sizeof(text) - 1, 1, 1, 0};
 
     parser par;
@@ -83,10 +77,13 @@ int main(void) {
     vector(ast_node*) ins = parser_parse(&par);
     if (ins) {
         for_vector(ins, i, 0) {
-            primitive_data ret = ins[i]->procedure(ins[i]);
-            if (ret.type[2] == -1) {
-                printf("raise error: %s\n", ret.string);
+            print_ast_tree(ins[i]);
+            putchar('\n');
+            command* cmd = ins[i]->gen_command(ins[i]);
+            if (cmd->exec(NULL, cmd)) {
+                printf("%g\n", cmd->data->float32);
             }
+            command_free(cmd);
         }
         for_vector(ins, i, 0) {
             ast_tree_free(ins[i]);

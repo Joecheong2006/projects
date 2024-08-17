@@ -1,5 +1,6 @@
 #include "parser.h"
 #include "container/memallocate.h"
+#include "command.h"
 
 static void omit_separator(parser* par);
 static ast_node* parse_identifier(parser* par);
@@ -12,74 +13,6 @@ static ast_node* parse_vardecl(parser* par);
 
 static ast_node* expr_brackets_terminal(parser* par, ast_node* node);
 static ast_node* expr_default_terminal(parser* par, ast_node* node);
-
-static primitive_data ast_procedure_null(ast_node* node);
-static primitive_data ast_procedure_ret(ast_node* node);
-static primitive_data ast_procedure_add(ast_node* node);
-static primitive_data ast_procedure_minus(ast_node* node);
-static primitive_data ast_procedure_multiply(ast_node* node);
-static primitive_data ast_procedure_divide(ast_node* node);
-static primitive_data ast_procedure_negate(ast_node* node);
-static primitive_data ast_procedure_vardecl(ast_node* node);
-
-primitive_data ast_procedure_null(ast_node* node) {
-    (void)node;
-    return (primitive_data) {
-        .string = NULL,
-    };
-}
-
-primitive_data ast_procedure_ret(ast_node* node) {
-    return node->tok->val;
-}
-
-primitive_data ast_procedure_add(ast_node* node) {
-    primitive_data a = node->lhs->procedure(node->lhs);
-    primitive_data b = node->rhs->procedure(node->rhs);
-    return primitive_data_add(&a, &b);
-}
-
-primitive_data ast_procedure_minus(ast_node* node) {
-    primitive_data a = node->lhs->procedure(node->lhs);
-    primitive_data b = node->rhs->procedure(node->rhs);
-    return primitive_data_minus(&a, &b);
-}
-
-primitive_data ast_procedure_multiply(ast_node* node) {
-    primitive_data a = node->lhs->procedure(node->lhs);
-    primitive_data b = node->rhs->procedure(node->rhs);
-    return primitive_data_multiply(&a, &b);
-}
-
-primitive_data ast_procedure_divide(ast_node* node) {
-    primitive_data a = node->lhs->procedure(node->lhs);
-    primitive_data b = node->rhs->procedure(node->rhs);
-    return primitive_data_divide(&a, &b);
-}
-
-primitive_data ast_procedure_negate(ast_node* node) {
-    primitive_data a = node->lhs->procedure(node->lhs);
-    return primitive_data_negate(&a);
-}
-
-primitive_data ast_procedure_vardecl(ast_node* node) {
-    primitive_data result = { .type[2] = 0 };
-    primitive_data val = node->rhs->procedure(node->rhs);
-    if (val.type[2] == -1) {
-        result = val;
-        return result;
-    }
-    else if (val.type[2] == TokenTypeLiteralInt32) {
-        printf("%d\n", val.int32);
-    }
-    else if (val.type[2] == TokenTypeLiteralFloat32) {
-        printf("%g\n", val.float32);
-    }
-    else {
-        printf("unkown primitive_data type %d\n", val.type[2]);
-    }
-    return result;
-}
 
 ast_node* expr_brackets_terminal(parser* par, ast_node* node) {
     token* tok = parser_peek_token(par, 0);
@@ -109,18 +42,14 @@ ast_node* expr_default_terminal(parser* par, ast_node* node) {
     return NULL;
 }
 
-ast_node* make_ast_node(AstNodeType type, token* tok, ast_procedure procedure) {
+ast_node* make_ast_node(AstNodeType type, token* tok, command*(*gen_command)(ast_node*)) {
     ast_node* node = MALLOC(sizeof(ast_node));
     node->type = type;
-    node->procedure = procedure;
+    node->gen_command = gen_command;
     node->tok = tok;
     node->lhs = NULL;
     node->rhs = NULL;
     return node;
-}
-
-ast_node* make_ast_node_sign(AstNodeType type) {
-    return make_ast_node(type, NULL, ast_procedure_null);
 }
 
 ast_node* parse_expr_with_brackets(parser* par) {
@@ -173,7 +102,7 @@ ast_node* parse_identifier(parser* par) {
         return NULL;
     }
     ++par->pointer;
-    return make_ast_node(AstNodeTypeTerm, NULL, ast_procedure_null);
+    return make_ast_node(AstNodeTypeTerm, tok, gen_command_null);
 }
 
 ast_node* parse_term(parser* par) {
@@ -181,17 +110,17 @@ ast_node* parse_term(parser* par) {
     switch ((i32)tok->type) {
     case TokenTypeIdentifier: {
         ++par->pointer;
-        return make_ast_node(AstNodeTypeTerm, NULL, ast_procedure_null);
+        return make_ast_node(AstNodeTypeTerm, tok, gen_command_null);
     }
     case TokenTypeLiteralInt32: case TokenTypeLiteralString: case TokenTypeLiteralFloat32: {
         ++par->pointer;
-        return make_ast_node(AstNodeTypeTerm, tok, ast_procedure_ret);
+        return make_ast_node(AstNodeTypeTerm, tok, gen_command_ret);
     }
     case '(':
         return parse_expr_with_brackets(par);
     case '-': {
         ++par->pointer;
-        ast_node* neg = make_ast_node(AstNodeTypeExpr, NULL, ast_procedure_negate);
+        ast_node* neg = make_ast_node(AstNodeTypeExpr, tok, gen_command_negate);
         neg->lhs = parse_term(par);
         return neg;
     }
@@ -210,19 +139,19 @@ ast_node* parse_operator(parser* par) {
     switch ((i32)tok->type) {
     case '+': {
         ++par->pointer;
-        return make_ast_node(AstNodeTypeExprAdd, NULL, ast_procedure_add);
+        return make_ast_node(AstNodeTypeExprAdd, tok, gen_command_add);
     }
     case '-': {
         ++par->pointer;
-        return make_ast_node(AstNodeTypeExprMinus, NULL, ast_procedure_minus);
+        return make_ast_node(AstNodeTypeExprMinus, tok, gen_command_minus);
     }
     case '*': {
         ++par->pointer;
-        return make_ast_node(AstNodeTypeExprMultiply, NULL, ast_procedure_multiply);
+        return make_ast_node(AstNodeTypeExprMultiply, tok, gen_command_multiply);
     }
     case '/': {
         ++par->pointer;
-        return make_ast_node(AstNodeTypeExprDivide, NULL, ast_procedure_divide);
+        return make_ast_node(AstNodeTypeExprDivide, tok, gen_command_divide);
     }
     default:
         return NULL;
@@ -286,7 +215,7 @@ ast_node* parse_vardecl(parser* par) {
     }
     ++par->pointer;
 
-    ast_node* vardecl = make_ast_node(AstNodeTypeVarDecl, NULL, ast_procedure_vardecl);
+    ast_node* vardecl = make_ast_node(AstNodeTypeVarDecl, tok, gen_command_vardecl);
     vardecl->lhs = parse_identifier(par);
     if (!vardecl->lhs) {
         FREE(vardecl);

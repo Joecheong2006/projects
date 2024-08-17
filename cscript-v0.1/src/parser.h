@@ -20,11 +20,11 @@ typedef enum {
     AstNodeTypeWhile,
 } AstNodeType;
 
+struct command;
 typedef struct ast_node ast_node;
-typedef primitive_data(*ast_procedure)(ast_node*);
 struct ast_node {
     ast_node *lhs, *rhs;
-    ast_procedure procedure;
+    struct command*(*gen_command)(ast_node*);
     token* tok;
     AstNodeType type;
 };
