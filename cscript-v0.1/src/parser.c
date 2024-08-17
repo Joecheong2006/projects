@@ -129,7 +129,7 @@ ast_node* parse_identifier(parser* par) {
         return NULL;
     }
     ++par->pointer;
-    return make_ast_node(AstNodeTypeTerm, tok, gen_command_identifier);
+    return make_ast_node(AstNodeTypeTerm, tok, gen_command_access_identifier);
 }
 
 ast_node* parse_term(parser* par) {
@@ -213,7 +213,8 @@ ast_node* parse_expr_bottom_up(parser* par, ast_node*(*is_terminal)(parser*,ast_
         }
         ast_node* rhs = parse_term(par);
         if (!rhs) {
-            ast_tree_free(lhs);
+            ast_tree_free(ope);
+            ast_tree_free(ret);
             return NULL;
         }
         
@@ -245,7 +246,7 @@ ast_node* parse_vardecl(parser* par) {
     ast_node* vardecl = make_ast_node(AstNodeTypeVarDecl, tok, gen_command_vardecl);
     vardecl->lhs = parse_identifier(par);
     if (!vardecl->lhs) {
-        FREE(vardecl);
+        ast_tree_free(vardecl);
         return NULL;
     }
 
@@ -259,7 +260,8 @@ ast_node* parse_vardecl(parser* par) {
 
     vardecl->rhs = parse_expr(par);
     if (!vardecl->rhs) {
-        ast_tree_free(vardecl);
+        ast_tree_free(vardecl->lhs);
+        FREE(vardecl);
         return NULL;
     }
     return vardecl;

@@ -63,8 +63,13 @@ static i32 command_exec_negate(interpreter* inter, command* cmd) {
     return 1;
 }
 
+static i32 command_exec_access_identifier(interpreter* inter, command* cmd) {
+    (void)inter, (void)cmd;
+    return 1;
+}
+
 static i32 command_exec_vardecl(interpreter* inter, command* cmd) {
-    // TODO: create variable from cmd->arg2
+    // TODO: create variable from cmd->arg1
     if (!cmd->arg2->exec(inter, cmd->arg2)) {
         return 0;
     }
@@ -129,8 +134,8 @@ command* gen_command_negate(ast_node* node) {
     return result;
 }
 
-command* gen_command_identifier(ast_node* node) {
-    command* result = make_command(command_exec_negate, &node->tok->val);
+command* gen_command_access_identifier(ast_node* node) {
+    command* result = make_command(command_exec_access_identifier, &node->tok->val);
     result->name = node->tok->val.string;
     result->data->string = 0;
     return result;

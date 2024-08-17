@@ -3,6 +3,14 @@
 #include "primitive_data.h"
 #include "interpreter.h"
 
+typedef enum {
+    CommandTypeBinaryOperation,
+    CommandTypeUnaryOperation,
+    CommandTypeAccessVariable,
+    CommandTypeGetConstant,
+    CommandTypeNone,
+} CommandType;
+
 typedef struct command command;
 struct command {
     command *arg1, *arg2;
@@ -22,7 +30,7 @@ command* gen_command_minus(struct ast_node* node);
 command* gen_command_multiply(struct ast_node* node);
 command* gen_command_divide(struct ast_node* node);
 command* gen_command_negate(struct ast_node* node);
-command* gen_command_identifier(struct ast_node* node);
+command* gen_command_access_identifier(struct ast_node* node);
 command* gen_command_vardecl(struct ast_node* node);
 
 #endif
