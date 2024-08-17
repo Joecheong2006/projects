@@ -40,7 +40,7 @@ static vector(char) load_file(const char* file_name, const char* mode) {
     u32 size = ftell(file);
     fseek(file, 0, SEEK_SET);
 
-    vector(char) result = make_vector();
+    vector(char) result = make_vector(char);
     vector_resize(result, size + 1);
     u32 readed = fread(result, 1, size, file);
     assert(readed == size);
@@ -213,7 +213,7 @@ static token generate_text_token(lexer* lex) {
     break;
 
 vector(token) generate_tokens(lexer* lex) {
-    vector(token) result = make_vector();
+    vector(token) result = make_vector(token);
     while (1) {
         char c = lex->ctx[lex->str_count];
         switch (c) {

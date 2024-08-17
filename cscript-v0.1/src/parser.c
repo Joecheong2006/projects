@@ -2,6 +2,33 @@
 #include "container/memallocate.h"
 #include "command.h"
 
+// <digit>      ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
+// <letter>     ::= "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T" | "U" | "V" | "W" | "X" | "Y" | "Z" | "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k" | "l" | "m" | "n" | "o" | "p" | "q" | "r" | "s" | "t" | "u" | "v" | "w" | "x" | "y" | "z"
+// <hex>        ::= <digt> | [a-fA-F]
+// <binary>     ::= "0" | "1"
+// <intpart>    ::= <digit> {<digit>}
+// <base2>      ::= "0b" <binary> {<binary>}
+// <base16      ::= "0x" <hex> {<hex>}
+// <int>        ::= ["+" | "-"] <intpart> | <base2>
+// <float>      ::= ["+" | "-"] <intpart> | "" "." <intpart>
+// <end>        ::= "\n" | ";"
+// <identifer>  ::= <letter> | "_" {(<letter> | <digit> | "_")}
+// <literal>    ::= <int> | <float> | char | string
+// <term>       ::= <literal> | <identifier> | "(" <expr> ")" | <funcall> | "-" <term> | "+" <term>
+// <expr>       ::= <term> {<operator> <expr>}
+// <operator>   ::= "-" | "+" | "*" | "/"
+// <params>     ::= <identifier> {"," <identifier>}
+// <funcparams> ::= [<params>]
+// <funcdef>    ::= "fun" <identifier> "(" <funcparams> ")" "end"
+// <funcall>    ::= <identifier> "(" <funcparams> ")"
+// <assign>     ::= <identifer> "=" <expr>
+// <vardecl>    ::= "var" <assign>
+// <statement>  ::= <vardecl> | <funcall> | <assign> <end>
+// <if>         ::= "if" <expr> do {<statement>} ["end"]
+// <elif>       ::= "elif" <expr> do {<statement>} ["end"]
+// <else>       ::= "else" {<statement>} "end"
+// <while>      ::= "while" <expr> do {<statement>} "end"
+
 static void omit_separator(parser* par);
 static ast_node* parse_identifier(parser* par);
 static ast_node* parse_term(parser* par);
@@ -257,7 +284,7 @@ vector(ast_node*) parser_parse(parser* par) {
     if (!tok) {
         return NULL;
     }
-    vector(ast_node*) result = make_vector();
+    vector(ast_node*) result = make_vector(ast_node*);
     while (tok) {
         switch ((i32)tok->type) {
         case TokenTypeKeywordVar: vector_push(result, parse_vardecl(par)); break;
@@ -287,7 +314,7 @@ void ast_tree_free(ast_node* node) {
 
 void parser_init(parser* par, vector(token) tokens) {
     par->tokens = tokens;
-    par->errors = make_vector();
+    par->errors = make_vector(error_info);
     par->pointer = 0;
 }
 

@@ -64,7 +64,7 @@ static i32 command_exec_negate(interpreter* inter, command* cmd) {
 }
 
 static i32 command_exec_vardecl(interpreter* inter, command* cmd) {
-    // TODO: create variable from cmd->lhs
+    // TODO: create variable from cmd->arg2
     if (!cmd->arg2->exec(inter, cmd->arg2)) {
         return 0;
     }
@@ -81,9 +81,9 @@ void command_free(command* cmd) {
 
 command* make_command(i32(*exec)(interpreter*,command*), primitive_data* data) {
     command* cmd = MALLOC(sizeof(command));
+    cmd->arg1 = cmd->arg2 = NULL;
     cmd->data = data;
     cmd->exec = exec;
-    cmd->arg1 = cmd->arg2 = NULL;
     return cmd;
 }
 
@@ -129,7 +129,7 @@ command* gen_command_negate(ast_node* node) {
     return result;
 }
 
-command* gen_command_identifier(struct ast_node* node) {
+command* gen_command_identifier(ast_node* node) {
     command* result = make_command(command_exec_negate, &node->tok->val);
     result->name = node->tok->val.string;
     result->data->string = 0;

@@ -6,12 +6,12 @@
 struct vector_data
 {
     u32 size, capacity;
+    u64 type_size;
 };
 
 #define vector(T) T*
 
-#define make_vector()\
-    _make_vector()
+#define make_vector(type) _make_vector(sizeof(type))
 
 #define vector_status(vec)\
     (((struct vector_data*)(vec))[-1])
@@ -27,17 +27,17 @@ struct vector_data
     (vector_size(vec) == 0)
 
 #define vector_push(vec, ...) {\
-        vec = _vector_add(vec, sizeof(__typeof__(*(vec))));\
-        _vector_new_value(vec, &(__typeof__(*(vec))){__VA_ARGS__}, sizeof(__typeof__(*(vec))));\
+        vec = _vector_add(vec);\
+        _vector_new_value(vec, &(__typeof__(*(vec))){__VA_ARGS__});\
     }
 
 #define vector_pushe(vec, ...) {\
-        vec = _vector_add(vec, sizeof(__typeof__(*(vec))));\
-        _vector_new_value(vec, &(__VA_ARGS__), sizeof(__typeof__(*(vec))));\
+        vec = _vector_add(vec);\
+        _vector_new_value(vec, &(__VA_ARGS__));\
     }
 
 #define vector_reserve(vec, reserve_size)\
-    vec = _vector_reserve(vec, reserve_size * sizeof(__typeof(*(vec))))
+    vec = _vector_reserve(vec, reserve_size * vector_status(vec).type_size)
 
 #define vector_resize(vec, new_size) {\
         vector_reserve(vec, new_size);\
@@ -62,10 +62,10 @@ struct vector_data
     _free_vector((void*)(vec))
 
 
-void* _make_vector(void);
+void* _make_vector(u64 type_size);
 void* _vector_reserve(void* vec, u64 size);
-void* _vector_add(void* vec, u64 size);
-void _vector_new_value(void* vec, void* data, u64 size);
+void* _vector_add(void* vec);
+void _vector_new_value(void* vec, void* data);
 void _free_vector(void* vec);
 
 #endif

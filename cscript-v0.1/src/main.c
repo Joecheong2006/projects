@@ -3,37 +3,9 @@
 #include "container/memallocate.h"
 
 #include "command.h"
+#include "parser.h"
 
 // TODO(Aug17): create scope and object struct 
-
-// <digit>      ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
-// <letter>     ::= "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T" | "U" | "V" | "W" | "X" | "Y" | "Z" | "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k" | "l" | "m" | "n" | "o" | "p" | "q" | "r" | "s" | "t" | "u" | "v" | "w" | "x" | "y" | "z"
-// <hex>        ::= <digt> | [a-fA-F]
-// <binary>     ::= "0" | "1"
-// <intpart>    ::= <digit> {<digit>}
-// <base2>      ::= "0b" <binary> {<binary>}
-// <base16      ::= "0x" <hex> {<hex>}
-// <int>        ::= ["+" | "-"] <intpart> | <base2>
-// <float>      ::= ["+" | "-"] <intpart> | "" "." <intpart>
-// <end>        ::= "\n" | ";"
-// <identifer>  ::= <letter> | "_" {(<letter> | <digit> | "_")}
-// <literal>    ::= <int> | <float> | char | string
-// <term>       ::= <literal> | <identifier> | "(" <expr> ")" | <funcall> | "-" <term> | "+" <term>
-// <expr>       ::= <term> {<operator> <expr>}
-// <operator>   ::= "-" | "+" | "*" | "/"
-// <params>     ::= <identifier> {"," <identifier>}
-// <funcparams> ::= [<params>]
-// <funcdef>    ::= "fun" <identifier> "(" <funcparams> ")" "end"
-// <funcall>    ::= <identifier> "(" <funcparams> ")"
-// <assign>     ::= <identifer> "=" <expr>
-// <vardecl>    ::= "var" <assign>
-// <statement>  ::= <vardecl> | <funcall> | <assign> <end>
-// <if>         ::= "if" <expr> do {<statement>} ["end"]
-// <elif>       ::= "elif" <expr> do {<statement>} ["end"]
-// <else>       ::= "else" {<statement>} "end"
-// <while>      ::= "while" <expr> do {<statement>} "end"
-
-#include "parser.h"
 
 void print_ast_tree(ast_node* node) {
     if (node == NULL)

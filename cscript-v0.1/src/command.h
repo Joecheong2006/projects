@@ -1,11 +1,7 @@
 #ifndef _COMMAND_H_
 #define _COMMAND_H_
 #include "primitive_data.h"
-
-// TODO(Aug17): put this somewhere else.
-typedef struct {
-    i32 pointer;
-} interpreter;
+#include "interpreter.h"
 
 typedef struct command command;
 struct command {

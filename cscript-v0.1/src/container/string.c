@@ -4,13 +4,13 @@
 
 string _make_string(cstring ctx)
 {
-    string result = make_vector();
+    string result = make_vector(char);
     string_push(result, ctx);
     return result;
 }
 
 string _make_stringn(cstring ctx, u64 len) {
-    string result = make_vector();
+    string result = make_vector(char);
     char str[len + 1];
     memcpy(str, ctx, len);
     str[len] = 0;
