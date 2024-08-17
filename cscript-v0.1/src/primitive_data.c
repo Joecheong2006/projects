@@ -30,9 +30,9 @@ primitive_data primitive_data_##name(primitive_data* a, primitive_data* b) {\
     i32 type = primitive_data_guess_type(a, b);\
     primitive_data result = {.type[2] = type};\
     primitive_data_cast_to(type, a);\
-    if (a->type[2] == -1) return *a;\
+    if (a->type[2] < 0) return *a;\
     primitive_data_cast_to(type, b);\
-    if (a->type[2] == -1) return *a;\
+    if (b->type[2] < 0) return *b;\
     switch (type) {\
     case TokenTypeLiteralInt32: {\
         result.int32 = a->int32 oper b->int32;\

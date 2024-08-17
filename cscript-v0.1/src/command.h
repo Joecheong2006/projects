@@ -9,8 +9,9 @@ typedef struct {
 
 typedef struct command command;
 struct command {
-    command *lhs, *rhs;
+    command *arg1, *arg2;
     primitive_data* data;
+    const char* name;
     i32(*exec)(interpreter*,command*);
 };
 
@@ -25,6 +26,7 @@ command* gen_command_minus(struct ast_node* node);
 command* gen_command_multiply(struct ast_node* node);
 command* gen_command_divide(struct ast_node* node);
 command* gen_command_negate(struct ast_node* node);
+command* gen_command_identifier(struct ast_node* node);
 command* gen_command_vardecl(struct ast_node* node);
 
 #endif

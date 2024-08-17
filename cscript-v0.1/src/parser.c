@@ -102,7 +102,7 @@ ast_node* parse_identifier(parser* par) {
         return NULL;
     }
     ++par->pointer;
-    return make_ast_node(AstNodeTypeTerm, tok, gen_command_null);
+    return make_ast_node(AstNodeTypeTerm, tok, gen_command_identifier);
 }
 
 ast_node* parse_term(parser* par) {
@@ -238,34 +238,37 @@ ast_node* parse_vardecl(parser* par) {
     return vardecl;
 }
 
+static void clean_up_fatal(parser* par, vector(ast_node*) node) {
+    for_vector(node, i, 0) {
+        if (!node[i])
+            continue;
+        ast_tree_free(node[i]);
+    }
+    free_vector(node);
+    for_vector(par->tokens, i, 0) {
+        if (par->tokens[i].type == TokenTypeIdentifier) {
+            free_string(par->tokens[i].val.string);
+        }
+    }
+}
+
 vector(ast_node*) parser_parse(parser* par) {
-    vector(ast_node*) result = make_vector();
     token* tok = parser_peek_token(par, 0);
     if (!tok) {
-        free_vector(result);
         return NULL;
     }
+    vector(ast_node*) result = make_vector();
     while (tok) {
         switch ((i32)tok->type) {
         case TokenTypeKeywordVar: vector_push(result, parse_vardecl(par)); break;
         default: {
             parser_report_error(par, tok, "invalid token");
-            for_vector(result, i, 0) {
-                if (!result[i])
-                    continue;
-                ast_tree_free(result[i]);
-            }
-            free_vector(result);
+            clean_up_fatal(par, result);
             return NULL;
         }
         }
         if (vector_back(result) == NULL) {
-            for_vector(result, i, 0) {
-                if (!result[i])
-                    continue;
-                ast_tree_free(result[i]);
-            }
-            free_vector(result);
+            clean_up_fatal(par, result);
             return NULL;
         }
         omit_separator(par);
@@ -289,11 +292,6 @@ void parser_init(parser* par, vector(token) tokens) {
 }
 
 void parser_free(parser* par) {
-    for_vector(par->tokens, i, 0) {
-        if (par->tokens[i].type == TokenTypeIdentifier) {
-            free_string(par->tokens[i].val.string);
-        }
-    }
     free_vector(par->tokens);
     free_vector(par->errors);
 }

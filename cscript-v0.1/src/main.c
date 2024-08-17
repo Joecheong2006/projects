@@ -4,6 +4,8 @@
 
 #include "command.h"
 
+// TODO(Aug17): create scope and object struct 
+
 // <digit>      ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
 // <letter>     ::= "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T" | "U" | "V" | "W" | "X" | "Y" | "Z" | "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k" | "l" | "m" | "n" | "o" | "p" | "q" | "r" | "s" | "t" | "u" | "v" | "w" | "x" | "y" | "z"
 // <hex>        ::= <digt> | [a-fA-F]
@@ -47,7 +49,8 @@ int main(void) {
 
     // const char text[] = "1-(1-1-1-1-1)-1-3";
     // const char text[] = "var a = 1-1-1--3*3";
-    const char text[] = "var a=(2+4*(3/(.2*10))+3-1-1)*1.1+(0.5+.5) + (.5-0.3-0.2)";
+    const char text[] = "var a=(2+4*(3/(.2*10))+3-1-1)*1.1+(0.5+.5) + (.5-0.3-0.2)\n"
+                        "var cat = 1-1.0-1--3*3";
     lexer lex = {text, sizeof(text) - 1, 1, 1, 0};
 
     parser par;
@@ -77,11 +80,12 @@ int main(void) {
     vector(ast_node*) ins = parser_parse(&par);
     if (ins) {
         for_vector(ins, i, 0) {
-            print_ast_tree(ins[i]);
-            putchar('\n');
+            // print_ast_tree(ins[i]);
+            // putchar('\n');
             command* cmd = ins[i]->gen_command(ins[i]);
             if (cmd->exec(NULL, cmd)) {
-                printf("%g\n", cmd->data->float32);
+                printf("%s = %g\n", cmd->arg1->name, cmd->arg2->data->float32);
+                free_string(cmd->arg1->name);
             }
             command_free(cmd);
         }
