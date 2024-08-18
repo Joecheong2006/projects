@@ -76,11 +76,11 @@ static i32 command_exec_vardecl(interpreter* inter, command* cmd) {
     return 1;
 }
 
-void command_free(command* cmd) {
+void free_command(command* cmd) {
     if (cmd == NULL)
         return;
-    command_free(cmd->arg1);
-    command_free(cmd->arg2);
+    free_command(cmd->arg1);
+    free_command(cmd->arg2);
     FREE(cmd);
 }
 

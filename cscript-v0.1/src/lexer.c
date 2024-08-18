@@ -13,7 +13,7 @@ const char* TokenTypeString[] = {
     [TokenTypeOperatorLessThan - 256] = "<=",
  
     [TokenTypeKeywordVar - 256] = "var",
-    [TokenTypeKeywordFun - 256] = "fun",
+    [TokenTypeKeywordFun - 256] = "func",
     [TokenTypeKeywordIf - 256] = "if",
     [TokenTypeKeywordElif - 256] = "elif",
     [TokenTypeKeywordElse - 256] = "else",
@@ -88,7 +88,7 @@ static token generate_float_after_dot(lexer* lex) {
     token tok = {
         .val.float32 = (f32)val / percision_count, lex->line, lex->position - count, TokenTypeLiteralFloat32
     };
-    tok.val.type[2] = tok.type;
+    tok.val.type[2] = PrimitiveDataTypeFloat32;
     return tok;
 }
 
@@ -111,7 +111,7 @@ static token generate_number_literal_token(lexer* lex) {
             token tok = {
                 .val.int32 = val, lex->line, lex->position - count - 2, TokenTypeLiteralInt32,
             };
-            tok.val.type[2] = tok.type;
+            tok.val.type[2] = PrimitiveDataTypeInt32;
             return tok;
         }
         case 'b': {
@@ -125,7 +125,7 @@ static token generate_number_literal_token(lexer* lex) {
             token tok = {
                 .val.int32 = val, lex->line, lex->position - count - 2, TokenTypeLiteralInt32
             };
-            tok.val.type[2] = tok.type;
+            tok.val.type[2] = PrimitiveDataTypeInt32;
             return tok;
         }
         default:
@@ -163,13 +163,13 @@ static token generate_number_literal_token(lexer* lex) {
         token tok = {
             .val.int32 = val, lex->line, lex->position - count, TokenTypeLiteralInt32
         };
-        tok.val.type[2] = tok.type;
+        tok.val.type[2] = PrimitiveDataTypeInt32;
         return tok;
     }
     token tok = {
         .val.float32 = (f32)val / percision_count, lex->line, lex->position - count, TokenTypeLiteralFloat32
     };
-    tok.val.type[2] = tok.type;
+    tok.val.type[2] = PrimitiveDataTypeFloat32;
     return tok;
 }
 

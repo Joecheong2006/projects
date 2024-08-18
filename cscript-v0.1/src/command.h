@@ -17,10 +17,11 @@ struct command {
     primitive_data* data;
     const char* name;
     i32(*exec)(interpreter*,command*);
+    CommandType type;
 };
 
 command* make_command(i32(*exec)(interpreter*,command*), primitive_data* data);
-void command_free(command* cmd);
+void free_command(command* cmd);
 
 struct ast_node;
 command* gen_command_null(struct ast_node* node);

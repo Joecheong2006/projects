@@ -12,18 +12,20 @@
 // <int>        ::= ["+" | "-"] <intpart> | <base2>
 // <float>      ::= ["+" | "-"] <intpart> | "" "." <intpart>
 // <end>        ::= "\n" | ";"
-// <identifer>  ::= <letter> | "_" {(<letter> | <digit> | "_")}
+// <name>       ::= <letter> | "_" {(<letter> | <digit> | "_")}
+// <identifer>  ::= <name> {"." <name>}
+// <member>     ::= <identifier> {"." <identifier>}
 // <literal>    ::= <int> | <float> | char | string
-// <term>       ::= <literal> | <identifier> | "(" <expr> ")" | <funcall> | "-" <term> | "+" <term>
+// <term>       ::= <literal> | <member> | "(" <expr> ")" | <funcall> | "-" <term> | "+" <term>
 // <expr>       ::= <term> {<operator> <expr>}
 // <operator>   ::= "-" | "+" | "*" | "/"
+// <assignment> ::= <member> ("+=" | "-=" | "*=" | "/=") <expr>
 // <params>     ::= <identifier> {"," <identifier>}
 // <funcparams> ::= [<params>]
 // <funcdef>    ::= "fun" <identifier> "(" <funcparams> ")" "end"
-// <funcall>    ::= <identifier> "(" <funcparams> ")"
-// <assign>     ::= <identifer> "=" <expr>
-// <vardecl>    ::= "var" <assign>
-// <statement>  ::= <vardecl> | <funcall> | <assign> <end>
+// <funcall>    ::= <member> "(" <funcparams> ")"
+// <vardecl>    ::= "var" <identifier> "=" <expr>
+// <statement>  ::= <vardecl> | <funcall> | <assignment> <end>
 // <if>         ::= "if" <expr> do {<statement>} ["end"]
 // <elif>       ::= "elif" <expr> do {<statement>} ["end"]
 // <else>       ::= "else" {<statement>} "end"
@@ -31,6 +33,7 @@
 
 static void omit_separator(parser* par);
 static ast_node* parse_identifier(parser* par);
+static ast_node* parse_member(parser* par);
 static ast_node* parse_term(parser* par);
 static ast_node* parse_expr_with_brackets(parser* par);
 static ast_node* parse_operator(parser* par);
@@ -132,12 +135,25 @@ ast_node* parse_identifier(parser* par) {
     return make_ast_node(AstNodeTypeTerm, tok, gen_command_access_identifier);
 }
 
+ast_node* parse_member(parser* par) {
+    ast_node* id = parse_identifier(par);
+    ast_node* result = id;
+    while (1) {
+        token* tok = parser_peek_token(par, 0);
+        if (tok->type != '.') {
+            return result;
+        }
+        ast_node* af = parse_identifier(par);
+        id = id->lhs = af;
+    }
+    return result;
+}
+
 ast_node* parse_term(parser* par) {
     token* tok = parser_peek_token(par, 0);
     switch ((i32)tok->type) {
     case TokenTypeIdentifier: {
-        ++par->pointer;
-        return make_ast_node(AstNodeTypeTerm, tok, gen_command_null);
+        return parse_member(par);
     }
     case TokenTypeLiteralInt32: case TokenTypeLiteralString: case TokenTypeLiteralFloat32: {
         ++par->pointer;
@@ -260,8 +276,7 @@ ast_node* parse_vardecl(parser* par) {
 
     vardecl->rhs = parse_expr(par);
     if (!vardecl->rhs) {
-        ast_tree_free(vardecl->lhs);
-        FREE(vardecl);
+        ast_tree_free(vardecl);
         return NULL;
     }
     return vardecl;

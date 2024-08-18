@@ -1,4 +1,5 @@
 #include <string.h>
+#include <assert.h>
 #include "lexer.h"
 #include "container/memallocate.h"
 
@@ -21,7 +22,7 @@ int main(void) {
 
     // const char text[] = "1-(1-1-1-1-1)-1-3";
     // const char text[] = "var a = 1-1-1--3*3";
-    const char text[] = "var a=(2+4*(3/(.2*10))+3-1-1)*1.1+(0.5+.5) + (.5-0.3-0.2)\n"
+    const char text[] = "var a=(2+4*(3/(.2*10))+3-1-1)*1.1+(0.5+.5)+(.5-0.3-0.2)\n"
                         "var cat = 1-1.0-1--3*3";
     lexer lex = {text, sizeof(text) - 1, 1, 1, 0};
 
@@ -52,14 +53,12 @@ int main(void) {
     vector(ast_node*) ins = parser_parse(&par);
     if (ins) {
         for_vector(ins, i, 0) {
-            // print_ast_tree(ins[i]);
-            // putchar('\n');
             command* cmd = ins[i]->gen_command(ins[i]);
             if (cmd->exec(NULL, cmd)) {
                 printf("%s = %g\n", cmd->arg1->name, cmd->arg2->data->float32);
                 free_string(cmd->arg1->name);
             }
-            command_free(cmd);
+            free_command(cmd);
         }
         for_vector(ins, i, 0) {
             ast_tree_free(ins[i]);

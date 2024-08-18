@@ -2,6 +2,12 @@
 #define _PRIMITIVE_DATA_H_
 #include "container/util.h"
 
+typedef enum {
+    PrimitiveDataTypeInt32,
+    PrimitiveDataTypeFloat32,
+    PrimitiveDataTypeString,
+} PrimitiveDataType;
+
 typedef union {
     i32 int32;
     f32 float32;
