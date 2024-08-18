@@ -72,16 +72,6 @@ ast_node* expr_default_terminal(parser* par, ast_node* node) {
     return NULL;
 }
 
-ast_node* make_ast_node(AstNodeType type, token* tok, command*(*gen_command)(ast_node*)) {
-    ast_node* node = MALLOC(sizeof(ast_node));
-    node->type = type;
-    node->gen_command = gen_command;
-    node->tok = tok;
-    node->lhs = NULL;
-    node->rhs = NULL;
-    return node;
-}
-
 ast_node* parse_expr_with_brackets(parser* par) {
     token* tok = parser_peek_token(par, 0);
     if (tok->type != '(') {
@@ -323,14 +313,6 @@ vector(ast_node*) parser_parse(parser* par) {
         tok = parser_peek_token(par, 0);
     }
     return result;
-}
-
-void ast_tree_free(ast_node* node) {
-    if (node == NULL)
-        return;
-    ast_tree_free(node->lhs);
-    ast_tree_free(node->rhs);
-    FREE(node);
 }
 
 void parser_init(parser* par, vector(token) tokens) {

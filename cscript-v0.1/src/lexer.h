@@ -31,11 +31,13 @@ typedef enum {
 } TokenType;
 extern const char* TokenTypeString[TokenTypeEOF - 255];
 
-typedef struct {
+struct token {
     primitive_data val;
     i32 line, count;
     TokenType type;
-} token;
+};
+
+typedef struct token token;
 
 typedef struct {
     token* tok;

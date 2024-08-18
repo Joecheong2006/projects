@@ -1,35 +1,9 @@
 #ifndef _PARSER_H_
 #define _PARSER_H_
+#include "ast_node.h"
 #include "lexer.h"
 
-typedef enum {
-    AstNodeTypeEnd,
-    AstNodeTypeTerm,
-    AstNodeTypeNegate,
-
-    AstNodeTypeExpr,
-    AstNodeTypeExprAdd,
-    AstNodeTypeExprMinus,
-    AstNodeTypeExprMultiply,
-    AstNodeTypeExprDivide,
-
-    AstNodeTypeFuncDef,
-    AstNodeTypeAssign,
-    AstNodeTypeVarDecl,
-    AstNodeTypeIf,
-    AstNodeTypeWhile,
-} AstNodeType;
-
-struct command;
-typedef struct ast_node ast_node;
-struct ast_node {
-    ast_node *lhs, *rhs;
-    struct command*(*gen_command)(ast_node*);
-    token* tok;
-    AstNodeType type;
-};
-void ast_tree_free(ast_node* node);
-
+struct token;
 typedef struct {
     vector(token) tokens;
     vector(error_info) errors;
