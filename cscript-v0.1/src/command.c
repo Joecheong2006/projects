@@ -147,3 +147,4 @@ command* gen_command_vardecl(ast_node* node) {
     result->arg2 = node->rhs->gen_command(node->rhs);
     return result;
 }
+

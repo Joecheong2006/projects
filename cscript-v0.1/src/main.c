@@ -6,17 +6,26 @@
 #include "command.h"
 #include "parser.h"
 
-// TODO(Aug17): create scope and object struct 
+#include "object.h"
 
-void print_ast_tree(ast_node* node) {
-    if (node == NULL)
-        return;
-    print_ast_tree(node->lhs);
-    print_ast_tree(node->rhs);
-    printf("type %d ", node->type);
+// TODO(Aug17): create scope 
+
+typedef vector(object*) scope;
+
+void free_scope(scope sc) {
+    for_vector(sc, i, 0) {
+        free_object(sc[i]);
+    }
+    free_vector(sc);
 }
 
 int main(void) {
+    // {
+    //     scope sc = make_vector(object*);
+    //     free_scope(sc);
+    //     printf("leak count = %d\n", check_memory_leak());
+    // }
+    // return 0;
     // lexer lex = {NULL, -1, 1, 1, 0};
     // lexer_load_file_text(&lex, "test.cscript");
 

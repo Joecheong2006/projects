@@ -304,7 +304,10 @@ vector(ast_node*) parser_parse(parser* par) {
     vector(ast_node*) result = make_vector(ast_node*);
     while (tok) {
         switch ((i32)tok->type) {
-        case TokenTypeKeywordVar: vector_push(result, parse_vardecl(par)); break;
+        case TokenTypeKeywordVar: {
+            vector_push(result, parse_vardecl(par));
+            break;
+        }
         default: {
             parser_report_error(par, tok, "invalid token");
             clean_up_fatal(par, result);

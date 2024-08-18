@@ -16,50 +16,44 @@ typedef enum {
 typedef struct object object;
 struct object {
     ObjectType type;
-    const char* name;
+    cstring name;
     void(*destroy)(object*);
 };
 
-object* make_object(ObjectType type, const char* name, u64 type_size, void(*destroy)(object*));
+object* make_object(ObjectType type, cstring name, u64 type_size, void(*destroy)(object*));
 void free_object(object* obj);
-
 void* get_object_true_type(object* obj);
 
-typedef struct {
-    i64 val;
-} object_int;
+#define DEFINE_OBJECT_TYPE(type, body)\
+    typedef struct { body } object_##type;\
+    void object_##type_##destroy(object* obj);\
+    object* make_object_##type(cstring name);
 
-void object_int_destroy(object* obj);
-object* make_object_int(const char* name);
+DEFINE_OBJECT_TYPE(bool,
+        u8 val;
+)
 
-typedef struct {
-    f64 val;
-} object_float;
+DEFINE_OBJECT_TYPE(int,
+        i64 val;
+)
 
-void object_float_destroy(object* obj);
-object* make_object_float(const char* name);
+DEFINE_OBJECT_TYPE(float,
+        f64 val;
+)
 
-typedef struct {
-    f64 val;
-} object_string;
-
-void object_string_destroy(object* obj);
-object* make_object_string(const char* name);
+DEFINE_OBJECT_TYPE(string,
+        cstring val;
+)
 
 struct command;
-typedef struct {
-    vector(cstring) args;
-    vector(struct command*) body;
-} object_function;
+DEFINE_OBJECT_TYPE(function,
+        vector(cstring) args;
+        vector(struct command*) body;
+)
 
-void object_function_destroy(object* obj);
-object* make_object_function(const char* name);
+DEFINE_OBJECT_TYPE(user_type,
+        vector(object) members;
+)
 
-typedef struct {
-    vector(object) members;
-} object_user_type;
-
-void object_user_type_destroy(object* obj);
-object* make_object_user_type(const char* name);
 
 #endif

@@ -3,7 +3,7 @@
 #include "command.h"
 #include <assert.h>
 
-object* make_object(ObjectType type, const char* name, u64 type_size, void(*destroy)(object*)) {
+object* make_object(ObjectType type, cstring name, u64 type_size, void(*destroy)(object*)) {
     object* result = MALLOC(type_size + sizeof(object));
     result->type = type;
     result->name = name;
@@ -23,7 +23,7 @@ void object_int_destroy(object* obj) {
     assert(obj->type == ObjectTypeInt);
 }
 
-object* make_object_int(const char* name) {
+object* make_object_int(cstring name) {
     return make_object(ObjectTypeInt, name, sizeof(object_int), object_int_destroy);
 }
 
@@ -31,15 +31,17 @@ void object_float_destroy(object* obj) {
     assert(obj->type == ObjectTypeFloat);
 }
 
-object* make_object_float(const char* name) {
+object* make_object_float(cstring name) {
     return make_object(ObjectTypeInt, name, sizeof(object_float), object_int_destroy);
 }
 
 void object_string_destroy(object* obj) {
     assert(obj->type == ObjectTypeString);
+    object_string* str = get_object_true_type(obj);
+    free_string(str->val);
 }
 
-object* make_object_string(const char* name) {
+object* make_object_string(cstring name) {
     return make_object(ObjectTypeInt, name, sizeof(object_string), object_int_destroy);
 }
 
@@ -56,7 +58,7 @@ void object_function_destroy(object* obj) {
     free_vector(func->args);
 }
 
-object* make_object_function(const char* name) {
+object* make_object_function(cstring name) {
     return make_object(ObjectTypeFunction, name, sizeof(object_function), object_function_destroy);
 }
 
@@ -69,6 +71,7 @@ void object_user_type_destroy(object* obj) {
     free_vector(user_type->members);
 }
 
-object* make_object_user_type(const char* name) {
+object* make_object_user_type(cstring name) {
     return make_object(ObjectTypeUserType, name, sizeof(object_user_type), object_user_type_destroy);
 }
+

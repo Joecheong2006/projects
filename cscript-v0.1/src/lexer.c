@@ -13,7 +13,7 @@ const char* TokenTypeString[] = {
     [TokenTypeOperatorLessThan - 256] = "<=",
  
     [TokenTypeKeywordVar - 256] = "var",
-    [TokenTypeKeywordFun - 256] = "func",
+    [TokenTypeKeywordFun - 256] = "fun",
     [TokenTypeKeywordIf - 256] = "if",
     [TokenTypeKeywordElif - 256] = "elif",
     [TokenTypeKeywordElse - 256] = "else",
