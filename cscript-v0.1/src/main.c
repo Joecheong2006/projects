@@ -20,12 +20,12 @@ void free_scope(scope sc) {
 }
 
 int main(void) {
-    // {
-    //     scope sc = make_vector(object*);
-    //     free_scope(sc);
-    //     printf("leak count = %d\n", check_memory_leak());
-    // }
-    // return 0;
+    {
+        scope sc = make_vector(object*);
+        free_scope(sc);
+        printf("leak count = %d\n", check_memory_leak());
+    }
+    return 0;
     // lexer lex = {NULL, -1, 1, 1, 0};
     // lexer_load_file_text(&lex, "test.cscript");
 

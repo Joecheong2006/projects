@@ -202,13 +202,15 @@ static token generate_text_token(lexer* lex) {
     };
 }
 
-#define MATCH_ONE_AFTER(c1, c2, type)\
+#define MATCH_ONE_AFTER(c1, c2, tok_type)\
+    token tok = {.val.string = NULL, lex->line, lex->position, tok_type};\
     if (lex->ctx[lex->str_count + 1] == c2) {\
-        vector_push(result, .val.string = NULL, lex->line, lex->position, type);\
+        vector_push(result, tok);\
         lexer_consume_n(lex, 2);\
         break;\
     }\
-    vector_push(result, .val.string = NULL, lex->line, lex->position, c1);\
+    tok.type = c1;\
+    vector_push(result, tok);\
     lexer_consume(lex);\
     break;
 
@@ -222,31 +224,50 @@ vector(token) generate_tokens(lexer* lex) {
         case '{': case '}':
         case '+': case '*': case '-': case '/':
         case ';': case ':': case '\'': case '"': case '\\': case ',':
-        case '\t': { vector_push(result, .val.string = NULL, lex->line, lex->position, c); lexer_consume(lex); break; }
-        case '\n': { vector_push(result, .val.string = NULL, lex->line++, lex->position, '\n'); lexer_consume(lex); lex->position = 1; break; }
-        case '>': { MATCH_ONE_AFTER(c, '=', TokenTypeOperatorGreaterThan); }
-        case '<': { MATCH_ONE_AFTER(c, '=', TokenTypeOperatorLessThan); }
+        case '\t': { 
+            token tok = {.val.string = NULL, lex->line, lex->position, c};
+            vector_push(result, tok);
+            lexer_consume(lex);
+            break;
+        }
+        case '\n': { 
+            token tok = {.val.string = NULL, lex->line++, lex->position, c};
+            vector_push(result, tok);
+            lex->position = 1;
+            lexer_consume(lex);
+            break;
+        }
+        case '>': { MATCH_ONE_AFTER(c, '>', TokenTypeOperatorGreaterThan); }
+        case '<': { MATCH_ONE_AFTER(c, '<', TokenTypeOperatorLessThan); }
         case '=': { MATCH_ONE_AFTER(c, '=', TokenTypeOperatorEqual); }
-        case '!': { MATCH_ONE_AFTER(c, '=', TokenTypeOperatorNotEqual); }
+        case '!': { MATCH_ONE_AFTER(c, '!', TokenTypeOperatorNotEqual); }
         case ' ': { lexer_consume(lex); break; }
-        case 0: { vector_push(result, .val.string = NULL, lex->line, lex->position, TokenTypeEOF); return result; }
+        case 0: { 
+            token tok = {.val.string = NULL, lex->line, lex->position, TokenTypeEOF};
+            vector_push(result, tok);
+            lexer_consume(lex);
+            return result;
+        }
         case '.': {
             if (is_0_9(lex->ctx[lex->str_count + 1])) {
                 lexer_consume(lex);
                 token tok = generate_float_after_dot(lex);
-                vector_pushe(result, tok);
+                vector_push(result, tok);
                 continue;
             }
-            vector_push(result, .val.string = NULL, lex->line, lex->position, c); lexer_consume(lex); break; 
+            token tok = {.val.string = NULL, lex->line, lex->position, c};
+            vector_push(result, tok);
+            lexer_consume(lex);
+            break; 
         }
         default: {
             if (c >= '0' && c <= '9') {
                 token tok = generate_number_literal_token(lex);
-                vector_pushe(result, tok);
+                vector_push(result, tok);
             }
             else if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '_') {
                 token tok = generate_text_token(lex);
-                vector_pushe(result, tok);
+                vector_push(result, tok);
             }
             else {
                 printf("unkown symbol");

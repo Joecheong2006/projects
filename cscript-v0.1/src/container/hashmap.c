@@ -8,7 +8,8 @@ hashmap make_hashmap(u32 size, u32 (*hash_function)(void* data, u32 size)) {
     result.size = size;
     result.hash = hash_function;
     for (u32 i = 0; i < result.size; ++i) {
-        vector_push(result.data, make_vector(void*));
+        vector(void*) v = make_vector(void*);
+        vector_push(result.data, v);
     }
     return result;
 }

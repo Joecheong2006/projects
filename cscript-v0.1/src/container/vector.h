@@ -28,11 +28,6 @@ struct vector_data
 
 #define vector_push(vec, ...) {\
         vec = _vector_add(vec);\
-        _vector_new_value(vec, &(__typeof__(*(vec))){__VA_ARGS__});\
-    }
-
-#define vector_pushe(vec, ...) {\
-        vec = _vector_add(vec);\
         _vector_new_value(vec, &(__VA_ARGS__));\
     }
 

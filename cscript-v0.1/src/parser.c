@@ -305,7 +305,8 @@ vector(ast_node*) parser_parse(parser* par) {
     while (tok) {
         switch ((i32)tok->type) {
         case TokenTypeKeywordVar: {
-            vector_push(result, parse_vardecl(par));
+            ast_node* node = parse_vardecl(par);
+            vector_push(result, node);
             break;
         }
         default: {
@@ -344,7 +345,8 @@ void parser_free(parser* par) {
 }
 
 void parser_report_error(parser* par, token* tok, const char* msg) {
-    vector_push(par->errors, tok, msg);
+    error_info info = {tok, msg};
+    vector_push(par->errors, info);
 }
 
 token* parser_peek_token(parser* par, i32 n) {
