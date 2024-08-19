@@ -31,7 +31,8 @@ command* gen_command_minus(struct ast_node* node);
 command* gen_command_multiply(struct ast_node* node);
 command* gen_command_divide(struct ast_node* node);
 command* gen_command_negate(struct ast_node* node);
-command* gen_command_access_identifier(struct ast_node* node);
 command* gen_command_vardecl(struct ast_node* node);
+command* gen_command_access_identifier(struct ast_node* node);
+command* gen_command_access_member(struct ast_node* node);
 
 #endif

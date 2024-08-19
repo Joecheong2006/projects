@@ -3,8 +3,10 @@
 
 typedef enum {
     AstNodeTypeEnd,
-    AstNodeTypeTerm,
     AstNodeTypeNegate,
+    AstNodeTypeConstant,
+    AstNodeTypeIdentifier,
+    AstNodeTypeMember,
 
     AstNodeTypeExpr,
     AstNodeTypeExprAdd,

@@ -68,6 +68,11 @@ static i32 command_exec_access_identifier(interpreter* inter, command* cmd) {
     return 1;
 }
 
+static i32 command_exec_access_member(interpreter* inter, command* cmd) {
+    (void)inter, (void)cmd;
+    return 1;
+}
+
 static i32 command_exec_vardecl(interpreter* inter, command* cmd) {
     // TODO: create variable from cmd->arg1
     if (!cmd->arg2->exec(inter, cmd->arg2)) {
@@ -134,6 +139,13 @@ command* gen_command_negate(ast_node* node) {
     return result;
 }
 
+command* gen_command_vardecl(ast_node* node) {
+    command* result = make_command(command_exec_vardecl, &node->tok->val);
+    result->arg1 = node->lhs->gen_command(node->lhs);
+    result->arg2 = node->rhs->gen_command(node->rhs);
+    return result;
+}
+
 command* gen_command_access_identifier(ast_node* node) {
     command* result = make_command(command_exec_access_identifier, &node->tok->val);
     result->name = node->tok->val.string;
@@ -141,10 +153,10 @@ command* gen_command_access_identifier(ast_node* node) {
     return result;
 }
 
-command* gen_command_vardecl(ast_node* node) {
-    command* result = make_command(command_exec_vardecl, &node->tok->val);
-    result->arg1 = node->lhs->gen_command(node->lhs);
-    result->arg2 = node->rhs->gen_command(node->rhs);
+command* gen_command_access_member(ast_node* node) {
+    command* result = make_command(command_exec_access_member, &node->tok->val);
+    result->name = node->tok->val.string;
+    result->data->string = 0;
     return result;
 }
 

@@ -1,5 +1,4 @@
 #include "parser.h"
-#include "container/memallocate.h"
 #include "command.h"
 
 // <digit>      ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
@@ -122,7 +121,7 @@ ast_node* parse_identifier(parser* par) {
         return NULL;
     }
     ++par->pointer;
-    return make_ast_node(AstNodeTypeTerm, tok, gen_command_access_identifier);
+    return make_ast_node(AstNodeTypeIdentifier, tok, gen_command_access_identifier);
 }
 
 ast_node* parse_member(parser* par) {
@@ -131,6 +130,8 @@ ast_node* parse_member(parser* par) {
     while (1) {
         token* tok = parser_peek_token(par, 0);
         if (tok->type != '.') {
+            result->type = AstNodeTypeMember;
+            result->gen_command = gen_command_access_member;
             return result;
         }
         ast_node* af = parse_identifier(par);
@@ -147,7 +148,7 @@ ast_node* parse_term(parser* par) {
     }
     case TokenTypeLiteralInt32: case TokenTypeLiteralString: case TokenTypeLiteralFloat32: {
         ++par->pointer;
-        return make_ast_node(AstNodeTypeTerm, tok, gen_command_ret);
+        return make_ast_node(AstNodeTypeConstant, tok, gen_command_ret);
     }
     case '(':
         return parse_expr_with_brackets(par);
