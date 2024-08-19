@@ -49,7 +49,8 @@ void object_function_destroy(object* obj) {
     assert(obj->type == ObjectTypeFunction);
     object_function* func = get_object_true_type(obj);
     for_vector(func->body, i, 0) {
-        free_command(func->body[i]);
+        func->body[i]->destroy(func->body[i]);
+        // free_command(func->body[i]);
     }
     for_vector(func->args, i, 0) {
         free_string(func->args[i]);

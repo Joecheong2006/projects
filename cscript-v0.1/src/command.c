@@ -1,162 +1,153 @@
 #include "command.h"
 #include "container/memallocate.h"
 #include "parser.h"
+#include "container/string.h"
+#include "core/assert.h"
+#include "core/log.h"
 
-static i32 command_exec_null(interpreter* inter, command* cmd) {
-    (void)inter, (void)cmd;
-    return 1;
+static primitive_data command_binary_operation_cal(command* cmd) {
+    switch (cmd->type) {
+    case CommandTypeGetConstant: {
+        command_get_constant* cst = get_command_true_type(cmd);
+        if (cst->data.type[2] == PrimitiveDataTypeInt32) {
+            LOG_TRACE("\texec cmd:%p CommandTypeGetConstant i32 %d\n", cmd, cst->data.int32);
+        }
+        else if (cst->data.type[2] == PrimitiveDataTypeFloat32) {
+            LOG_TRACE("\texec CommandTypeGetConstant f32 %g\n", cst->data.float32);
+        }
+        return cst->data;
+    }
+    case CommandTypeNegateOperation: {
+        command_negate_operation* no = get_command_true_type(cmd);
+        primitive_data data = command_binary_operation_cal(no->data);
+        LOG_TRACE("\texec cmd:%p CommandTypeNegateOperation\n", cmd);
+        return primitive_data_negate(&data);
+    }
+    case CommandTypeBinaryOperation: {
+        command_binary_operation* bo = get_command_true_type(cmd);
+        return bo->cal(cmd);
+    }
+    default:
+        ASSERT_MSG(0, "undefine command type");
+        return (primitive_data){0};
+    }
 }
 
-static i32 command_exec_ret(interpreter* inter, command* cmd) {
-    (void)inter, (void)cmd;
-    return 1;
-}
+#define IMPL_COMMAND_BINARY_OPERATION(operation_name)\
+    static primitive_data command_binary_operation_##operation_name(command* cmd) {\
+        ASSERT(cmd->type == CommandTypeBinaryOperation);\
+        LOG_TRACE("\texec cmd:%p CommandTypeGetConstant " #operation_name "\n", cmd);\
+        command_binary_operation* bo = get_command_true_type(cmd);\
+        primitive_data lhs = command_binary_operation_cal(bo->lhs);\
+        primitive_data rhs = command_binary_operation_cal(bo->rhs);\
+        return primitive_data_##operation_name(&lhs, &rhs);\
+    }
 
-static i32 command_exec_add(interpreter* inter, command* cmd) {
-    if (!cmd->arg2->exec(inter, cmd->arg2)) {
-        return 0;
-    }
-    if (!cmd->arg1->exec(inter, cmd->arg1)) {
-        return 0;
-    }
-    *cmd->data = primitive_data_add(cmd->arg1->data, cmd->arg2->data);
-    return 1;
-}
+IMPL_COMMAND_BINARY_OPERATION(add)
+IMPL_COMMAND_BINARY_OPERATION(minus)
+IMPL_COMMAND_BINARY_OPERATION(multiply)
+IMPL_COMMAND_BINARY_OPERATION(divide)
 
-static i32 command_exec_minus(interpreter* inter, command* cmd) {
-    if (!cmd->arg2->exec(inter, cmd->arg2)) {
-        return 0;
+static void destroy_command_binary_operation(command* cmd) {
+    ASSERT(cmd->type == CommandTypeBinaryOperation);
+    command_binary_operation* bo = get_command_true_type(cmd);
+    if (bo->lhs) {
+        bo->lhs->destroy(bo->lhs);
     }
-    if (!cmd->arg1->exec(inter, cmd->arg1)) {
-        return 0;
+    if (bo->rhs) {
+        bo->rhs->destroy(bo->rhs);
     }
-    *cmd->data = primitive_data_minus(cmd->arg1->data, cmd->arg2->data);
-    return 1;
-}
-
-static i32 command_exec_multiply(interpreter* inter, command* cmd) {
-    if (!cmd->arg2->exec(inter, cmd->arg2)) {
-        return 0;
-    }
-    if (!cmd->arg1->exec(inter, cmd->arg1)) {
-        return 0;
-    }
-    *cmd->data = primitive_data_multiply(cmd->arg1->data, cmd->arg2->data);
-    return 1;
-}
-
-static i32 command_exec_divide(interpreter* inter, command* cmd) {
-    if (!cmd->arg2->exec(inter, cmd->arg2)) {
-        return 0;
-    }
-    if (!cmd->arg1->exec(inter, cmd->arg1)) {
-        return 0;
-    }
-    *cmd->data = primitive_data_divide(cmd->arg1->data, cmd->arg2->data);
-    return 1;
-}
-
-static i32 command_exec_negate(interpreter* inter, command* cmd) {
-    if (!cmd->arg1->exec(inter, cmd->arg1)) {
-    }
-    *cmd->data = primitive_data_negate(cmd->arg1->data);
-    return 1;
-}
-
-static i32 command_exec_access_identifier(interpreter* inter, command* cmd) {
-    (void)inter, (void)cmd;
-    return 1;
-}
-
-static i32 command_exec_access_member(interpreter* inter, command* cmd) {
-    (void)inter, (void)cmd;
-    return 1;
-}
-
-static i32 command_exec_vardecl(interpreter* inter, command* cmd) {
-    // TODO: create variable from cmd->arg1
-    if (!cmd->arg2->exec(inter, cmd->arg2)) {
-        return 0;
-    }
-    return 1;
-}
-
-void free_command(command* cmd) {
-    if (cmd == NULL)
-        return;
-    free_command(cmd->arg1);
-    free_command(cmd->arg2);
     FREE(cmd);
 }
 
-command* make_command(i32(*exec)(interpreter*,command*), primitive_data* data) {
-    command* cmd = MALLOC(sizeof(command));
-    cmd->arg1 = cmd->arg2 = NULL;
-    cmd->data = data;
-    cmd->exec = exec;
+static void destroy_command_negate_operation(command* cmd) {
+    ASSERT(cmd->type == CommandTypeNegateOperation);
+    command_negate_operation* no = get_command_true_type(cmd);
+    ASSERT(no->data);
+    no->data->destroy(no->data);
+    FREE(cmd);
+}
+
+static void destory_command_get_constant(command* cmd) {
+    ASSERT(cmd->type == CommandTypeGetConstant);
+    FREE(cmd);
+}
+
+static void destroy_command_vardecl(command* cmd) {
+    ASSERT(cmd->type == CommandTypeVarDecl);
+    command_vardecl* vardecl = get_command_true_type(cmd);
+    free_string(vardecl->variable_name);
+    vardecl->expr->destroy(vardecl->expr);
+    FREE(cmd);
+}
+
+static void* command_exec_vardecl(interpreter* inter, command* cmd) {
+    (void)inter;
+    ASSERT(cmd->type == CommandTypeVarDecl);
+    command_vardecl* vardecl = get_command_true_type(cmd);
+    LOG_TRACE("\texec cmd:%p CommandTypeVarDecl varname %s\n", cmd, vardecl->variable_name);
+
+    // TODO: create variable from cmd->arg1
+    primitive_data data = command_binary_operation_cal(vardecl->expr);
+    LOG_INFO("\tvar %s = %g\n", vardecl->variable_name, data.float32);
+
     return cmd;
 }
 
-command* gen_command_null(ast_node* node) {
-    return make_command(command_exec_null, &node->tok->val);
+command* make_command(CommandType type, u64 type_size, void*(*exec)(interpreter*,command*), void(*destroy)(command*)) {
+    command* cmd = MALLOC(type_size + sizeof(command));
+    cmd->exec = exec;
+    cmd->destroy = destroy;
+    cmd->type = type;
+    return cmd;
 }
 
-command* gen_command_ret(ast_node* node) {
-    return make_command(command_exec_ret, &node->tok->val);
-}
+__attribute__((always_inline)) inline
+void* get_command_true_type(command* cmd) { return cmd + 1; }
 
-command* gen_command_add(ast_node* node) {
-    command* result = make_command(command_exec_add, &node->tok->val);
-    result->arg1 = node->lhs->gen_command(node->lhs);
-    result->arg2 = node->rhs->gen_command(node->rhs);
+command* gen_command_get_constant(struct ast_node* node) {
+    command* result = make_command(CommandTypeGetConstant, sizeof(command_get_constant), NULL, destory_command_get_constant);
+    command_get_constant* cst = get_command_true_type(result);
+    cst->data = node->tok->val;
+    if (cst->data.type[2] == PrimitiveDataTypeInt32) {
+        LOG_TRACE("\tgen cmd:%p CommandTypeGetConstant i32 %d\n", result, cst->data.int32);
+    }
+    else if (cst->data.type[2] == PrimitiveDataTypeFloat32) {
+        LOG_TRACE("\tgen cmd:%p CommandTypeGetConstant f32 %g\n", result, cst->data.float32);
+    }
     return result;
 }
 
-command* gen_command_minus(ast_node* node) {
-    command* result = make_command(command_exec_minus, &node->tok->val);
-    result->arg1 = node->lhs->gen_command(node->lhs);
-    result->arg2 = node->rhs->gen_command(node->rhs);
-    return result;
-}
+#define IMPL_GEN_COMMAND_BINARY_OPERATION(operation_name)\
+    command* gen_command_##operation_name(ast_node* node) {\
+        command* result = make_command(CommandTypeBinaryOperation, sizeof(command_binary_operation), NULL, destroy_command_binary_operation);\
+        command_binary_operation* bo = get_command_true_type(result);\
+        bo->cal = command_binary_operation_##operation_name;\
+        bo->lhs = node->lhs->gen_command(node->lhs);\
+        bo->rhs = node->rhs->gen_command(node->rhs);\
+        LOG_TRACE("\tgen cmd:%p CommandTypeBinaryOperation " #operation_name "\n", result);\
+        return result;\
+    }
 
-command* gen_command_multiply(ast_node* node) {
-    command* result = make_command(command_exec_multiply, &node->tok->val);
-    result->arg1 = node->lhs->gen_command(node->lhs);
-    result->arg2 = node->rhs->gen_command(node->rhs);
-    return result;
-}
-
-command* gen_command_divide(ast_node* node) {
-    command* result = make_command(command_exec_divide, &node->tok->val);
-    result->arg1 = node->lhs->gen_command(node->lhs);
-    result->arg2 = node->rhs->gen_command(node->rhs);
-    return result;
-}
+IMPL_GEN_COMMAND_BINARY_OPERATION(add)
+IMPL_GEN_COMMAND_BINARY_OPERATION(minus)
+IMPL_GEN_COMMAND_BINARY_OPERATION(multiply)
+IMPL_GEN_COMMAND_BINARY_OPERATION(divide)
 
 command* gen_command_negate(ast_node* node) {
-    command* result = make_command(command_exec_negate, &node->tok->val);
-    result->arg1 = node->lhs->gen_command(node->lhs);
+    command* result = make_command(CommandTypeNegateOperation, sizeof(command_negate_operation), NULL, destroy_command_negate_operation);
+    command_negate_operation* no = get_command_true_type(result);
+    no->data = node->lhs->gen_command(node->lhs);
+    LOG_TRACE("\tgen cmd:%p CommandTypeNegateOperation\n", result);
     return result;
 }
 
 command* gen_command_vardecl(ast_node* node) {
-    command* result = make_command(command_exec_vardecl, &node->tok->val);
-    result->arg1 = node->lhs->gen_command(node->lhs);
-    result->arg2 = node->rhs->gen_command(node->rhs);
-    return result;
-}
-
-command* gen_command_access_identifier(ast_node* node) {
-    command* result = make_command(command_exec_access_identifier, &node->tok->val);
-    result->name = node->tok->val.string;
-    result->data->string = 0;
-    return result;
-}
-
-command* gen_command_access_member(ast_node* node) {
-    command* result = make_command(command_exec_access_member, &node->tok->val);
-    result->name = node->tok->val.string;
-    result->data->string = 0;
+    command* result = make_command(CommandTypeVarDecl, sizeof(command_vardecl), command_exec_vardecl, destroy_command_vardecl);
+    command_vardecl* vardecl = get_command_true_type(result);
+    vardecl->variable_name = node->lhs->tok->val.string;
+    vardecl->expr = node->rhs->gen_command(node->rhs);
+    LOG_TRACE("\tgen cmd:%p CommandTypeVarDecl varname %s\n", result, vardecl->variable_name);
     return result;
 }
 

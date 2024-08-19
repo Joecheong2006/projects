@@ -1,7 +1,8 @@
 #include "lexer.h"
+#include "core/assert.h"
+#include "container/string.h"
 #include <string.h>
 #include <stdio.h>
-#include <assert.h>
 
 const char* TokenTypeString[] = {
     [TokenTypeIdentifier - 256] = "",
@@ -43,7 +44,8 @@ static vector(char) load_file(const char* file_name, const char* mode) {
     vector(char) result = make_vector(char);
     vector_resize(result, size + 1);
     u32 readed = fread(result, 1, size, file);
-    assert(readed == size);
+    (void)readed;
+    ASSERT(readed == size);
     result[size] = EOF;
     fclose(file);
     return result;
@@ -270,8 +272,7 @@ vector(token) generate_tokens(lexer* lex) {
                 vector_push(result, tok);
             }
             else {
-                printf("unkown symbol");
-                // exit(1);
+                ASSERT_MSG(0, "unkown symbol");
             }
             if (c == 0)
                 return result;

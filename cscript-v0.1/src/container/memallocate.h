@@ -16,12 +16,6 @@ void freemem(void *_Memory);
 #define FREE(_Memory) free(_Memory)
 #endif
 
-#include <stdio.h>
 int check_memory_leak(void);
-#define CHECK_MEMORY_LEAK()\
-    int leak_count = check_memory_leak();\
-    if (leak_count) {\
-        printf("memory leak! count: %d\n", leak_count);\
-    }
 
 #endif

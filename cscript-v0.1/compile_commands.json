@@ -1,0 +1,17 @@
+[
+  {
+    "arguments": [
+      "gcc",
+      "-std=c99",
+      "-Wall",
+      "-Wextra",
+      "-Wpedantic",
+      "-Wstrict-aliasing",
+      "-Werror",
+      "-Isrc",
+      "-O2"
+    ],
+    "directory": "/home/joe/project/cscript-v1.0",
+    "file": "src/main.c"
+  }
+]

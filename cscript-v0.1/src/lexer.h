@@ -1,6 +1,6 @@
 #ifndef _LEXER_H_
 #define _LEXER_H_
-#include "container/string.h"
+#include "container/vector.h"
 #include "primitive_data.h"
 
 typedef enum {
