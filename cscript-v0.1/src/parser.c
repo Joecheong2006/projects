@@ -1,6 +1,7 @@
 #include "parser.h"
 #include "container/string.h"
 #include "command.h"
+#include "tracing.h"
 
 // <digit>      ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
 // <letter>     ::= "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T" | "U" | "V" | "W" | "X" | "Y" | "Z" | "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k" | "l" | "m" | "n" | "o" | "p" | "q" | "r" | "s" | "t" | "u" | "v" | "w" | "x" | "y" | "z"
@@ -123,7 +124,6 @@ ast_node* parse_identifier(parser* par) {
     }
     ++par->pointer;
     return make_ast_node(AstNodeTypeIdentifier, tok, NULL);
-    // return make_ast_node(AstNodeTypeIdentifier, tok, gen_command_access_identifier);
 }
 
 ast_node* parse_member(parser* par) {
@@ -133,7 +133,6 @@ ast_node* parse_member(parser* par) {
         token* tok = parser_peek_token(par, 0);
         if (tok->type != '.') {
             result->type = AstNodeTypeMember;
-            // result->gen_command = gen_command_access_member;
             return result;
         }
         ast_node* af = parse_identifier(par);
@@ -150,13 +149,13 @@ ast_node* parse_term(parser* par) {
     }
     case TokenTypeLiteralInt32: case TokenTypeLiteralString: case TokenTypeLiteralFloat32: {
         ++par->pointer;
-        return make_ast_node(AstNodeTypeConstant, tok, gen_command_get_constant);
+        return make_ast_node(AstNodeTypeConstant, tok, make_command_get_constant);
     }
     case '(':
         return parse_expr_with_brackets(par);
     case '-': {
         ++par->pointer;
-        ast_node* neg = make_ast_node(AstNodeTypeExpr, tok, gen_command_negate);
+        ast_node* neg = make_ast_node(AstNodeTypeExpr, tok, make_command_negate);
         neg->lhs = parse_term(par);
         return neg;
     }
@@ -175,19 +174,19 @@ ast_node* parse_operator(parser* par) {
     switch ((i32)tok->type) {
     case '+': {
         ++par->pointer;
-        return make_ast_node(AstNodeTypeExprAdd, tok, gen_command_add);
+        return make_ast_node(AstNodeTypeExprAdd, tok, make_command_add);
     }
     case '-': {
         ++par->pointer;
-        return make_ast_node(AstNodeTypeExprMinus, tok, gen_command_minus);
+        return make_ast_node(AstNodeTypeExprMinus, tok, make_command_minus);
     }
     case '*': {
         ++par->pointer;
-        return make_ast_node(AstNodeTypeExprMultiply, tok, gen_command_multiply);
+        return make_ast_node(AstNodeTypeExprMultiply, tok, make_command_multiply);
     }
     case '/': {
         ++par->pointer;
-        return make_ast_node(AstNodeTypeExprDivide, tok, gen_command_divide);
+        return make_ast_node(AstNodeTypeExprDivide, tok, make_command_divide);
     }
     default:
         return NULL;
@@ -252,7 +251,7 @@ ast_node* parse_vardecl(parser* par) {
     }
     ++par->pointer;
 
-    ast_node* vardecl = make_ast_node(AstNodeTypeVarDecl, tok, gen_command_vardecl);
+    ast_node* vardecl = make_ast_node(AstNodeTypeVarDecl, tok, make_command_vardecl);
     vardecl->lhs = parse_identifier(par);
     if (!vardecl->lhs) {
         ast_tree_free(vardecl);
@@ -296,6 +295,7 @@ vector(ast_node*) parser_parse(parser* par) {
     }
     vector(ast_node*) result = make_vector(ast_node*);
     while (tok) {
+        START_PROFILING();
         switch ((i32)tok->type) {
         case TokenTypeKeywordVar: {
             ast_node* node = parse_vardecl(par);
@@ -314,6 +314,7 @@ vector(ast_node*) parser_parse(parser* par) {
         }
         omit_separator(par);
         tok = parser_peek_token(par, 0);
+        END_PROFILING(__func__);
     }
     return result;
 }

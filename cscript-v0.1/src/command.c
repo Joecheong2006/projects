@@ -36,7 +36,7 @@ static primitive_data command_binary_operation_cal(command* cmd) {
 #define IMPL_COMMAND_BINARY_OPERATION(operation_name)\
     static primitive_data command_binary_operation_##operation_name(command* cmd) {\
         ASSERT(cmd->type == CommandTypeBinaryOperation);\
-        LOG_TRACE("\texec cmd:%p CommandTypeGetConstant " #operation_name "\n", cmd);\
+        LOG_TRACE("\texec cmd:%p CommandTypeBinaryOperation " #operation_name "\n", cmd);\
         command_binary_operation* bo = get_command_true_type(cmd);\
         primitive_data lhs = command_binary_operation_cal(bo->lhs);\
         primitive_data rhs = command_binary_operation_cal(bo->rhs);\
@@ -105,7 +105,7 @@ command* make_command(CommandType type, u64 type_size, void*(*exec)(interpreter*
 __attribute__((always_inline)) inline
 void* get_command_true_type(command* cmd) { return cmd + 1; }
 
-command* gen_command_get_constant(struct ast_node* node) {
+command* make_command_get_constant(struct ast_node* node) {
     command* result = make_command(CommandTypeGetConstant, sizeof(command_get_constant), NULL, destory_command_get_constant);
     command_get_constant* cst = get_command_true_type(result);
     cst->data = node->tok->val;
@@ -119,7 +119,7 @@ command* gen_command_get_constant(struct ast_node* node) {
 }
 
 #define IMPL_GEN_COMMAND_BINARY_OPERATION(operation_name)\
-    command* gen_command_##operation_name(ast_node* node) {\
+    command* make_command_##operation_name(ast_node* node) {\
         command* result = make_command(CommandTypeBinaryOperation, sizeof(command_binary_operation), NULL, destroy_command_binary_operation);\
         command_binary_operation* bo = get_command_true_type(result);\
         bo->cal = command_binary_operation_##operation_name;\
@@ -134,7 +134,7 @@ IMPL_GEN_COMMAND_BINARY_OPERATION(minus)
 IMPL_GEN_COMMAND_BINARY_OPERATION(multiply)
 IMPL_GEN_COMMAND_BINARY_OPERATION(divide)
 
-command* gen_command_negate(ast_node* node) {
+command* make_command_negate(ast_node* node) {
     command* result = make_command(CommandTypeNegateOperation, sizeof(command_negate_operation), NULL, destroy_command_negate_operation);
     command_negate_operation* no = get_command_true_type(result);
     no->data = node->lhs->gen_command(node->lhs);
@@ -142,7 +142,7 @@ command* gen_command_negate(ast_node* node) {
     return result;
 }
 
-command* gen_command_vardecl(ast_node* node) {
+command* make_command_vardecl(ast_node* node) {
     command* result = make_command(CommandTypeVarDecl, sizeof(command_vardecl), command_exec_vardecl, destroy_command_vardecl);
     command_vardecl* vardecl = get_command_true_type(result);
     vardecl->variable_name = node->lhs->tok->val.string;

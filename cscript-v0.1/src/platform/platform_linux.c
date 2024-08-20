@@ -1,17 +1,16 @@
 #include "platform/platform.h"
 
 #ifdef PLATFORM_LINUX
-#define _POSIX_C_SOURCE 200809L
 #include "core/assert.h"
 #include <stdio.h>
 #include <unistd.h>
 #include <time.h>
 
-static struct timespec begin;
+static clock_t begin_t;
 
 i32 setup_platform(platform_state* target) {
-	// timespec_get(&begin, TIME_UTC);
 	target->os = PlatformLinux;
+    begin_t = clock();
 	return 1;
 }
 
@@ -20,16 +19,13 @@ void shutdown_platform(platform_state* target) {
 }
 
 f64 platform_get_time(void) {
-	struct timespec end = {0};
-	// timespec_get(&end, TIME_UTC);
-	return end.tv_sec - begin.tv_sec + (end.tv_nsec - begin.tv_nsec) * 0.000000001;
+    return (f64)(clock() - begin_t) / CLOCKS_PER_SEC;
 }
 
 void platform_sleep(i32 ms) {
-	struct timespec ts;
-    ts.tv_sec = ms * 0.0001;
-	ts.tv_nsec = (ms % 1000) * 1000 * 1000;
-	nanosleep(&ts, 0);
+    f64 factor = 1000.0 / CLOCKS_PER_SEC;
+    f64 end = clock() * factor + ms;
+    while (clock() * factor < end);
 }
 
 static char* console_color_map[] = {

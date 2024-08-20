@@ -3,6 +3,7 @@
 #include "container/string.h"
 #include <string.h>
 #include <stdio.h>
+#include "tracing.h"
 
 const char* TokenTypeString[] = {
     [TokenTypeIdentifier - 256] = "",
@@ -52,10 +53,12 @@ static vector(char) load_file(const char* file_name, const char* mode) {
 }
 
 void lexer_load_file_text(lexer* lex, const char* file_name) {
+    START_PROFILING();
     vector(char) ctx = load_file(file_name, "r");
     lex->ctx_len = strlen(ctx);
     ctx[lex->ctx_len - 1] = 0;
     lex->ctx = ctx;
+    END_PROFILING(__func__);
 }
 
 static void lexer_consume(lexer* lex) {
@@ -218,6 +221,7 @@ static token generate_text_token(lexer* lex) {
 
 vector(token) generate_tokens(lexer* lex) {
     vector(token) result = make_vector(token);
+    START_PROFILING();
     while (1) {
         char c = lex->ctx[lex->str_count];
         switch (c) {
@@ -248,6 +252,7 @@ vector(token) generate_tokens(lexer* lex) {
             token tok = {.val.string = NULL, lex->line, lex->position, TokenTypeEOF};
             vector_push(result, tok);
             lexer_consume(lex);
+            END_PROFILING(__func__);
             return result;
         }
         case '.': {
@@ -274,13 +279,15 @@ vector(token) generate_tokens(lexer* lex) {
             else {
                 ASSERT_MSG(0, "unkown symbol");
             }
-            if (c == 0)
+            if (c == 0) {
+                END_PROFILING(__func__);
                 return result;
+            }
             break;
         }
-
         }
     }
+    END_PROFILING(__func__);
     return result;
 }
 

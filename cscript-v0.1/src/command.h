@@ -41,13 +41,18 @@ typedef struct {
     i32 atrribute;
 } command_vardecl;
 
+typedef struct {
+    const char* variable_name;
+    const char* access_name;
+} command_access;
+
 struct ast_node;
-command* gen_command_get_constant(struct ast_node* node);
-command* gen_command_add(struct ast_node* node);
-command* gen_command_minus(struct ast_node* node);
-command* gen_command_multiply(struct ast_node* node);
-command* gen_command_divide(struct ast_node* node);
-command* gen_command_negate(struct ast_node* node);
-command* gen_command_vardecl(struct ast_node* node);
+command* make_command_get_constant(struct ast_node* node);
+command* make_command_add(struct ast_node* node);
+command* make_command_minus(struct ast_node* node);
+command* make_command_multiply(struct ast_node* node);
+command* make_command_divide(struct ast_node* node);
+command* make_command_negate(struct ast_node* node);
+command* make_command_vardecl(struct ast_node* node);
 
 #endif
