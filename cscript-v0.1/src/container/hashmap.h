@@ -9,8 +9,8 @@ typedef struct {
 } hashmap;
 
 hashmap make_hashmap(u32 size, u32 (*hash_function)(void* data, u32 size));
-void hashmap_add(hashmap map, void* data);
-vector(void*) hashmap_access_vector(hashmap map, void* data);
+void hashmap_add(hashmap* map, void* data);
+vector(void*) hashmap_access_vector(hashmap* map, void* data);
 void hashmap_free_items(hashmap map, void(free_item)(void* data));
 void free_hashmap(hashmap* map);
 

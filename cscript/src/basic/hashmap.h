@@ -6,10 +6,10 @@
 typedef struct {
     size_t size;
     vector(vector(void*)) data;
-    size_t (*hash)(void* data, size_t size);
+    u64(*hash)(void* data, u64 size);
 } hashmap;
 
-hashmap make_hashmap(size_t size, size_t (*hash_function)(void* data, size_t size));
+hashmap make_hashmap(size_t size, u64(*hash_function)(void* data, u64 size));
 void hashmap_add(hashmap map, void* data);
 vector(void*) hashmap_access_vector(hashmap map, void* data);
 void hashmap_free_items(hashmap map, void(free_item)(void* data));

@@ -21,7 +21,6 @@ struct object {
 };
 
 object* make_object(ObjectType type, cstring name, u64 type_size, void(*destroy)(object*));
-void free_object(object* obj);
 void* get_object_true_type(object* obj);
 
 #define DEFINE_OBJECT_TYPE(type, body)\
@@ -42,7 +41,7 @@ DEFINE_OBJECT_TYPE(float,
 )
 
 DEFINE_OBJECT_TYPE(string,
-        cstring val;
+        string val;
 )
 
 struct command;
@@ -52,8 +51,9 @@ DEFINE_OBJECT_TYPE(function,
 )
 
 DEFINE_OBJECT_TYPE(user_type,
-        vector(object) members;
+        vector(object*) members;
 )
 
 
 #endif
+

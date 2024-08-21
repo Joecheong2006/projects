@@ -1,7 +1,6 @@
 #ifndef _COMMAND_H_
 #define _COMMAND_H_
 #include "primitive_data.h"
-#include "interpreter.h"
 
 typedef enum {
     CommandTypeBinaryOperation,
@@ -14,12 +13,13 @@ typedef enum {
 
 typedef struct command command;
 struct command {
-    void*(*exec)(interpreter*,command*);
+    void*(*exec)(command*);
     void(*destroy)(command*);
     CommandType type;
+    i32 line_on_exec;
 };
 
-command* make_command(CommandType type, u64 type_size, void*(*exec)(interpreter*,command*), void(*destroy)(command*));
+command* make_command(CommandType type, u64 type_size, i32 line, void*(*exec)(command*), void(*destroy)(command*));
 void* get_command_true_type(command* cmd);
 
 typedef struct {
@@ -52,6 +52,7 @@ command* make_command_add(struct ast_node* node);
 command* make_command_minus(struct ast_node* node);
 command* make_command_multiply(struct ast_node* node);
 command* make_command_divide(struct ast_node* node);
+command* make_command_modulus(struct ast_node* node);
 command* make_command_negate(struct ast_node* node);
 command* make_command_vardecl(struct ast_node* node);
 

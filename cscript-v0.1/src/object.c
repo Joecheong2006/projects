@@ -11,16 +11,20 @@ object* make_object(ObjectType type, cstring name, u64 type_size, void(*destroy)
     return result;
 }
 
-void free_object(object* obj) {
-    obj->destroy(obj);
-    free_string(obj->name);
+INLINE void* get_object_true_type(object* obj) { return obj + 1; }
+
+void object_bool_destroy(object* obj) {
+    assert(obj->type == ObjectTypeBool);
     FREE(obj);
 }
 
-void* get_object_true_type(object* obj) { return obj + sizeof(object); }
+object* make_object_bool(cstring name) {
+    return make_object(ObjectTypeBool, name, sizeof(object_bool), object_bool_destroy);
+}
 
 void object_int_destroy(object* obj) {
     assert(obj->type == ObjectTypeInt);
+    FREE(obj);
 }
 
 object* make_object_int(cstring name) {
@@ -29,20 +33,25 @@ object* make_object_int(cstring name) {
 
 void object_float_destroy(object* obj) {
     assert(obj->type == ObjectTypeFloat);
+    FREE(obj);
 }
 
 object* make_object_float(cstring name) {
-    return make_object(ObjectTypeInt, name, sizeof(object_float), object_int_destroy);
+    return make_object(ObjectTypeFloat, name, sizeof(object_float), object_float_destroy);
 }
 
 void object_string_destroy(object* obj) {
     assert(obj->type == ObjectTypeString);
     object_string* str = get_object_true_type(obj);
     free_string(str->val);
+    FREE(obj);
 }
 
 object* make_object_string(cstring name) {
-    return make_object(ObjectTypeInt, name, sizeof(object_string), object_int_destroy);
+    object* result = make_object(ObjectTypeString, name, sizeof(object_string), object_string_destroy);
+    object_string* string = get_object_true_type(result);
+    string->val = make_string("");
+    return result;
 }
 
 void object_function_destroy(object* obj) {
@@ -50,29 +59,37 @@ void object_function_destroy(object* obj) {
     object_function* func = get_object_true_type(obj);
     for_vector(func->body, i, 0) {
         func->body[i]->destroy(func->body[i]);
-        // free_command(func->body[i]);
     }
     for_vector(func->args, i, 0) {
         free_string(func->args[i]);
     }
     free_vector(func->body);
     free_vector(func->args);
+    FREE(obj);
 }
 
 object* make_object_function(cstring name) {
-    return make_object(ObjectTypeFunction, name, sizeof(object_function), object_function_destroy);
+    object* result = make_object(ObjectTypeFunction, name, sizeof(object_function), object_function_destroy);
+    object_function* func = get_object_true_type(result);
+    func->body = make_vector(command*);
+    func->args = make_vector(cstring);
+    return result;
 }
 
 void object_user_type_destroy(object* obj) {
     assert(obj->type == ObjectTypeUserType);
     object_user_type* user_type = get_object_true_type(obj);
     for_vector(user_type->members, i, 0) {
-        free_object(user_type->members + i);
+        user_type->members[i]->destroy(user_type->members[i]);
     }
     free_vector(user_type->members);
+    FREE(obj);
 }
 
 object* make_object_user_type(cstring name) {
-    return make_object(ObjectTypeUserType, name, sizeof(object_user_type), object_user_type_destroy);
+    object* result = make_object(ObjectTypeUserType, name, sizeof(object_user_type), object_user_type_destroy);
+    object_user_type* user_type = get_object_true_type(result);
+    user_type->members = make_vector(object*);
+    return result;
 }
 

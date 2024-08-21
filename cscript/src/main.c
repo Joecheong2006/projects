@@ -127,7 +127,7 @@ void command_line_mode(lexer* lexer);
 i32 main(i32 argc, char** argv) {
     // test(argv[1]);
     test("test_expression.cscript");
-    test("test_function.cscript");
+    // test("test_function.cscript");
     return 0;
 
     init_environment();

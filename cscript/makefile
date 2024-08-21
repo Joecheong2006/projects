@@ -8,7 +8,7 @@ DEP = $(OBJ:%.o=%.d)
 OUT = cscript.exe
 
 all: $(OBJ)
-	@$(CC) $(CFLAGS) $(OBJ) -o $(OUT)
+	@$(CC) $(CFLAGS) $(OBJ) -o $(OUT) -lm
 	@echo "Compilation completed"
 
 debug:

@@ -19,7 +19,7 @@
 // <literal>    ::= <int> | <float> | char | string
 // <term>       ::= <literal> | <member> | "(" <expr> ")" | <funcall> | "-" <term> | "+" <term>
 // <expr>       ::= <term> {<operator> <expr>}
-// <operator>   ::= "-" | "+" | "*" | "/"
+// <operator>   ::= "-" | "+" | "*" | "/" | "%"
 // <assignment> ::= <member> ("+=" | "-=" | "*=" | "/=") <expr>
 // <params>     ::= <identifier> {"," <identifier>}
 // <funcparams> ::= [<params>]
@@ -104,8 +104,7 @@ void omit_separator(parser* par) {
     while (1) {
         switch ((i32)tok->type) {
         case ';': 
-        case '\n':
-        case TokenTypeEOF: {
+        case '\n': {
             ++par->pointer;
             tok = parser_peek_token(par, 0);
             break;
@@ -188,6 +187,10 @@ ast_node* parse_operator(parser* par) {
         ++par->pointer;
         return make_ast_node(AstNodeTypeExprDivide, tok, make_command_divide);
     }
+    case '%': {
+        ++par->pointer;
+        return make_ast_node(AstNodeTypeExprModulus, tok, make_command_modulus);
+    }
     default:
         return NULL;
     }
@@ -195,8 +198,9 @@ ast_node* parse_operator(parser* par) {
 
 i32 bottom_up_need_to_reround(AstNodeType current, AstNodeType previous) {
     switch (current) {
-    case AstNodeTypeExprDivide: {
-    case AstNodeTypeExprMultiply:
+    case AstNodeTypeExprModulus:
+    case AstNodeTypeExprDivide:
+    case AstNodeTypeExprMultiply: {
         if (previous == AstNodeTypeExprAdd || previous == AstNodeTypeExprMinus) {
             return 1;
         }
@@ -314,6 +318,9 @@ vector(ast_node*) parser_parse(parser* par) {
         }
         omit_separator(par);
         tok = parser_peek_token(par, 0);
+        if (tok->type == TokenTypeEOF) {
+            return result;
+        }
         END_PROFILING(__func__);
     }
     return result;

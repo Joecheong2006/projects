@@ -16,6 +16,8 @@ typedef signed long long i64;
 typedef float f32;
 typedef double f64;
 
+#define INLINE __attribute__((always_inline)) inline
+
 // _Static_assert(sizeof(u8) == 1, "expected u8 to be 1 byte");
 // _Static_assert(sizeof(i8) == 1, "expected i8 to be 1 byte");
 // _Static_assert(sizeof(u16) == 2, "expected u16 to be 2 byte");

@@ -14,15 +14,16 @@ hashmap make_hashmap(u32 size, u32 (*hash_function)(void* data, u32 size)) {
     return result;
 }
 
-void hashmap_add(hashmap map, void* data) {
-    u32 key = map.hash(data, map.size);
-    assert(key < map.size);
-    vector_push(map.data[key], data);
+void hashmap_add(hashmap* map, void* data) {
+    u32 key = map->hash(data, map->size);
+    assert(key < map->size);
+    vector_push(map->data[key], data);
 }
 
-vector(void*) hashmap_access_vector(hashmap map, void* data) {
-    u32 index = map.hash(data, map.size);
-    return map.data[index];
+vector(void*) hashmap_access_vector(hashmap* map, void* data) {
+    u32 index = map->hash(data, map->size);
+    assert(index < map->size);
+    return map->data[index];
 }
 
 void hashmap_free_items(hashmap map, void(free_item)(void* data)) {

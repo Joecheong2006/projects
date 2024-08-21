@@ -54,6 +54,26 @@ IMPL_PRIMITIVE_ARITHMETIC(-, minus)
 IMPL_PRIMITIVE_ARITHMETIC(*, multiply)
 IMPL_PRIMITIVE_ARITHMETIC(/, divide)
 
+primitive_data primitive_data_modulus(primitive_data* a, primitive_data* b) {
+    i32 type = primitive_data_guess_type(a, b);
+    primitive_data result = {.type[2] = type};
+    primitive_data_cast_to(type, a);
+    if (a->type[2] < 0) return *a;
+    primitive_data_cast_to(type, b);
+    if (b->type[2] < 0) return *b;
+    switch (type) {
+    case PrimitiveDataTypeInt32: {
+        result.int32 = a->int32 % b->int32;
+        return result;
+    }
+    default: {
+        result.type[2] = -1;
+        result.string = "Invalid operands to binary expression";
+        return result;
+    }
+    }
+}
+
 primitive_data primitive_data_negate(primitive_data* a) {
     primitive_data result = {.type[2] = a->type[2]};
     switch (a->type[2]) {

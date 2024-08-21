@@ -4,8 +4,17 @@
 			"name":"generate_tokens",
 			"cat":"function",
 			"ph":"X",
-			"ts":492,
-			"pid":69204,
+			"ts":678,
+			"pid":118241,
+			"tid":0,
+			"dur":10
+		},
+		{
+			"name":"parser_parse",
+			"cat":"function",
+			"ph":"X",
+			"ts":715,
+			"pid":118241,
 			"tid":0,
 			"dur":5
 		},
@@ -13,17 +22,8 @@
 			"name":"parser_parse",
 			"cat":"function",
 			"ph":"X",
-			"ts":516,
-			"pid":69204,
-			"tid":0,
-			"dur":3
-		},
-		{
-			"name":"parser_parse",
-			"cat":"function",
-			"ph":"X",
-			"ts":529,
-			"pid":69204,
+			"ts":731,
+			"pid":118241,
 			"tid":0,
 			"dur":2
 		}	]

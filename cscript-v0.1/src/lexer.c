@@ -228,7 +228,7 @@ vector(token) generate_tokens(lexer* lex) {
         case '(': case ')':
         case '[': case ']':
         case '{': case '}':
-        case '+': case '*': case '-': case '/':
+        case '+': case '*': case '-': case '/': case '%':
         case ';': case ':': case '\'': case '"': case '\\': case ',':
         case '\t': { 
             token tok = {.val.string = NULL, lex->line, lex->position, c};

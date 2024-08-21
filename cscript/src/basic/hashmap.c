@@ -1,7 +1,7 @@
 #include "hashmap.h"
 #include <stdlib.h>
 
-hashmap make_hashmap(size_t size, size_t (*hash_function)(void* data, size_t size)) {
+hashmap make_hashmap(size_t size, u64(*hash_function)(void* data, u64 size)) {
     hashmap result;
     result.data = make_vector();
     result.size = size;

@@ -21,6 +21,7 @@ primitive_data primitive_data_add(primitive_data* a, primitive_data* b);
 primitive_data primitive_data_minus(primitive_data* a, primitive_data* b);
 primitive_data primitive_data_multiply(primitive_data* a, primitive_data* b);
 primitive_data primitive_data_divide(primitive_data* a, primitive_data* b);
+primitive_data primitive_data_modulus(primitive_data* a, primitive_data* b);
 primitive_data primitive_data_negate(primitive_data* a);
 
 #endif
