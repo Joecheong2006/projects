@@ -1,0 +1,56 @@
+{
+	"traceEvents":[
+		{
+			"name":"glfw init",
+			"cat":"function",
+			"ph":"X",
+			"ts":1698,
+			"pid":2480,
+			"tid":0,
+			"dur":169143
+		},
+		{
+			"name":"create window",
+			"cat":"function",
+			"ph":"X",
+			"ts":171043,
+			"pid":2480,
+			"tid":0,
+			"dur":285707
+		},
+		{
+			"name":"glfw make context",
+			"cat":"function",
+			"ph":"X",
+			"ts":456894,
+			"pid":2480,
+			"tid":0,
+			"dur":4681
+		},
+		{
+			"name":"enable gl stuffs",
+			"cat":"function",
+			"ph":"X",
+			"ts":461807,
+			"pid":2480,
+			"tid":0,
+			"dur":82
+		},
+		{
+			"name":"init audio",
+			"cat":"function",
+			"ph":"X",
+			"ts":461980,
+			"pid":2480,
+			"tid":0,
+			"dur":71514
+		},
+		{
+			"name":"setup game",
+			"cat":"function",
+			"ph":"X",
+			"ts":533621,
+			"pid":2480,
+			"tid":0,
+			"dur":42593
+		}

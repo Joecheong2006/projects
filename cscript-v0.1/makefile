@@ -3,15 +3,18 @@ CFLAGS = -std=c99 -Wall -Wextra -Wpedantic -Wstrict-aliasing -Werror -Isrc
 DEBUG_FLAGS = -g3 -DDEBUG
 RELEASE_FLAGS = -O2
 DEBUGGER = gdb
+WINLIB = -lWinmm
 
 SRC = $(wildcard src/*.c src/**/*.c)
 OBJ = $(SRC:%.c=%.o)
 DEP = $(OBJ:%.o=%.d)
 BIN = bin
+LIB = 
 PROGRAM = cscript
 
 ifeq ($(OS),Windows_NT)
 	OUT = $(PROGRAM).exe
+	LIB += $(WINLIB)
 else
 	OUT = $(PROGRAM)
 endif
@@ -29,7 +32,7 @@ bin:
 
 app: CFLAGS += $(DEBUG_FLAGS)
 app: $(OBJ)
-	@$(CC) $(CFLAGS) $(OBJ) -o $(BIN)/$(OUT)
+	@$(CC) $(CFLAGS) $(OBJ) -o $(BIN)/$(OUT) $(LIB)
 	@echo "Compilation completed"
 
 debug:
