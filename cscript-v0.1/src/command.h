@@ -3,23 +3,21 @@
 #include "primitive_data.h"
 
 typedef enum {
+    CommandTypeVarDecl,
+
     CommandTypeBinaryOperation,
     CommandTypeNegateOperation,
     CommandTypeAccessVariable,
     CommandTypeGetConstant,
-    CommandTypeVarDecl,
-    CommandTypeNone,
 } CommandType;
 
 typedef struct command command;
 struct command {
-    void*(*exec)(command*);
     void(*destroy)(command*);
     CommandType type;
-    i32 line_on_exec;
 };
 
-command* make_command(CommandType type, u64 type_size, i32 line, void*(*exec)(command*), void(*destroy)(command*));
+command* make_command(CommandType type, u64 type_size, void(*destroy)(command*));
 void* get_command_true_type(command* cmd);
 
 typedef struct {
@@ -35,11 +33,12 @@ typedef struct {
     command* data;
 } command_negate_operation;
 
-typedef struct {
+typedef struct command_vardecl command_vardecl;
+struct command_vardecl {
     const char* variable_name;
     command* expr;
-    i32 atrribute;
-} command_vardecl;
+    i32 atrribute, line_on_exec;
+};
 
 typedef struct {
     const char* variable_name;
@@ -55,5 +54,7 @@ command* make_command_divide(struct ast_node* node);
 command* make_command_modulus(struct ast_node* node);
 command* make_command_negate(struct ast_node* node);
 command* make_command_vardecl(struct ast_node* node);
+
+i32 exec_command(command* cmd);
 
 #endif

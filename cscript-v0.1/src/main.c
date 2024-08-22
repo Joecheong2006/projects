@@ -1,5 +1,4 @@
 #include <string.h>
-#include <assert.h>
 #include "core/log.h"
 #include "lexer.h"
 #include "container/memallocate.h"
@@ -175,7 +174,7 @@ int main(void) {
     if (ins) {
         for_vector(ins, i, 0) {
             command* cmd = ins[i]->gen_command(ins[i]);
-            assert(cmd->exec(cmd) == cmd);
+            ASSERT(exec_command(cmd));
             cmd->destroy(cmd);
         }
         for_vector(ins, i, 0) {

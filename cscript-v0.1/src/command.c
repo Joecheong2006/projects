@@ -84,35 +84,33 @@ static void destroy_command_vardecl(command* cmd) {
     FREE(cmd);
 }
 
-static void* command_exec_vardecl(command* cmd) {
-    ASSERT(cmd->type == CommandTypeVarDecl);
-    command_vardecl* vardecl = get_command_true_type(cmd);
-    LOG_TRACE("\texec cmd:%p CommandTypeVarDecl varname %s\n", cmd, vardecl->variable_name);
+static i32 command_exec_vardecl(command_vardecl* vardecl) {
+    // ASSERT(vardecl->type == CommandTypeVarDecl);
+    // command_vardecl* vardecl = get_command_true_type(cmd);
+    // LOG_TRACE("\texec cmd:%p CommandTypeVarDecl varname %s\n", vardecl->variable_name);
 
     // TODO: create variable from cmd->arg1
     primitive_data data = command_binary_operation_cal(vardecl->expr);
     if (data.type[2] < 0) {
-        LOG_ERROR("\t%s on line %d\n", data.string, cmd->line_on_exec);
-        return NULL;
+        LOG_ERROR("\t%s on line %d\n", data.string, vardecl->line_on_exec);
+        return 0;
     }
     LOG_INFO("\tvar %s = %g\n", vardecl->variable_name, data.float32);
 
-    return cmd;
+    return 1;
 }
 
-command* make_command(CommandType type, u64 type_size, i32 line, void*(*exec)(command*), void(*destroy)(command*)) {
+command* make_command(CommandType type, u64 type_size, void(*destroy)(command*)) {
     command* cmd = MALLOC(type_size + sizeof(command));
-    cmd->exec = exec;
     cmd->destroy = destroy;
     cmd->type = type;
-    cmd->line_on_exec = line;
     return cmd;
 }
 
 INLINE void* get_command_true_type(command* cmd) { return cmd + 1; }
 
 command* make_command_get_constant(struct ast_node* node) {
-    command* result = make_command(CommandTypeGetConstant, sizeof(command_get_constant), node->tok->line, NULL, destory_command_get_constant);
+    command* result = make_command(CommandTypeGetConstant, sizeof(command_get_constant), destory_command_get_constant);
     command_get_constant* cst = get_command_true_type(result);
     cst->data = node->tok->val;
     if (cst->data.type[2] == PrimitiveDataTypeInt32) {
@@ -126,7 +124,7 @@ command* make_command_get_constant(struct ast_node* node) {
 
 #define IMPL_GEN_COMMAND_BINARY_OPERATION(operation_name)\
     command* make_command_##operation_name(ast_node* node) {\
-        command* result = make_command(CommandTypeBinaryOperation, sizeof(command_binary_operation), node->tok->line, NULL, destroy_command_binary_operation);\
+        command* result = make_command(CommandTypeBinaryOperation, sizeof(command_binary_operation), destroy_command_binary_operation);\
         command_binary_operation* bo = get_command_true_type(result);\
         bo->cal = command_binary_operation_##operation_name;\
         bo->lhs = node->lhs->gen_command(node->lhs);\
@@ -142,7 +140,7 @@ IMPL_GEN_COMMAND_BINARY_OPERATION(divide)
 IMPL_GEN_COMMAND_BINARY_OPERATION(modulus)
 
 command* make_command_negate(ast_node* node) {
-    command* result = make_command(CommandTypeNegateOperation, sizeof(command_negate_operation), node->tok->line, NULL, destroy_command_negate_operation);
+    command* result = make_command(CommandTypeNegateOperation, sizeof(command_negate_operation), destroy_command_negate_operation);
     command_negate_operation* no = get_command_true_type(result);
     no->data = node->lhs->gen_command(node->lhs);
     LOG_TRACE("\tgen cmd:%p CommandTypeNegateOperation\n", result);
@@ -150,11 +148,23 @@ command* make_command_negate(ast_node* node) {
 }
 
 command* make_command_vardecl(ast_node* node) {
-    command* result = make_command(CommandTypeVarDecl, sizeof(command_vardecl), node->tok->line, command_exec_vardecl, destroy_command_vardecl);
+    command* result = make_command(CommandTypeVarDecl, sizeof(command_vardecl), destroy_command_vardecl);
     command_vardecl* vardecl = get_command_true_type(result);
     vardecl->variable_name = node->lhs->tok->val.string;
     vardecl->expr = node->rhs->gen_command(node->rhs);
     LOG_TRACE("\tgen cmd:%p CommandTypeVarDecl varname %s\n", result, vardecl->variable_name);
     return result;
+}
+
+i32 exec_command(command* cmd) {
+    switch (cmd->type) {
+    case CommandTypeVarDecl:  {
+        command_vardecl* vardecl = get_command_true_type(cmd);
+        return command_exec_vardecl(vardecl);
+    }
+    default: 
+        ASSERT_MSG(0, "invalid command for execution");
+        return 0;
+    }
 }
 
