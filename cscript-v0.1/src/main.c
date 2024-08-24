@@ -109,7 +109,7 @@ int main(void) {
         shutdown_global_env();
 
         for_vector(ins, i, 0) {
-            ast_tree_free(ins[i]);
+            ins[i]->destroy(ins[i]);
         }
         free_vector(ins);
     }

@@ -218,8 +218,9 @@ command* make_command_access(struct ast_node* node) {
     command_access* access = get_command_true_type(result);
     access->name = node->tok->val.string;
     access->access = NULL;
-    if (node->lhs) {
-        access->access = node->lhs->gen_command(node->lhs);
+    ast_identifier* iden = get_ast_true_type(node);
+    if (iden->next) {
+        access->access = iden->next->gen_command(iden->next);
     }
     return result;
 }
@@ -228,9 +229,10 @@ command* make_command_access(struct ast_node* node) {
     command* make_command_##operation_name(ast_node* node) {\
         command* result = make_command(CommandTypeBinaryOperation, sizeof(command_binary_operation), destroy_command_binary_operation);\
         command_binary_operation* bo = get_command_true_type(result);\
+        ast_binary_expression* expr = get_ast_true_type(node);\
         bo->cal = command_binary_operation_##operation_name;\
-        bo->lhs = node->lhs->gen_command(node->lhs);\
-        bo->rhs = node->rhs->gen_command(node->rhs);\
+        bo->lhs = expr->lhs->gen_command(expr->lhs);\
+        bo->rhs = expr->rhs->gen_command(expr->rhs);\
         LOG_TRACE("\tgen cmd:%p CommandTypeBinaryOperation " #operation_name "\n", result);\
         return result;\
     }
@@ -244,8 +246,9 @@ IMPL_GEN_COMMAND_BINARY_OPERATION(modulus)
 command* make_command_add_assign(struct ast_node* node) {
     command* result = make_command(CommandTypeAssignment, sizeof(command_assign), destroy_command_assign);
     command_assign* ca = get_command_true_type(result);
-    ca->mem = node->lhs->gen_command(node->lhs);
-    ca->expr = node->rhs->gen_command(node->rhs);
+    ast_assignment* assignment = get_ast_true_type(node);
+    ca->mem = assignment->variable_name->gen_command(assignment->variable_name);
+    ca->expr = assignment->expr->gen_command(assignment->expr);
     ca->exec = command_assign_add;
     ca->line_on_exec = node->tok->line;
     return result;
@@ -259,7 +262,8 @@ command* make_command_modulus_assign(struct ast_node* node);
 command* make_command_negate(ast_node* node) {
     command* result = make_command(CommandTypeNegateOperation, sizeof(command_negate_operation), destroy_command_negate_operation);
     command_negate_operation* no = get_command_true_type(result);
-    no->data = node->lhs->gen_command(node->lhs);
+    ast_negate* negate = get_ast_true_type(node);
+    no->data = negate->term->gen_command(negate->term);
     LOG_TRACE("\tgen cmd:%p CommandTypeNegateOperation\n", result);
     return result;
 }
@@ -267,8 +271,9 @@ command* make_command_negate(ast_node* node) {
 command* make_command_vardecl(ast_node* node) {
     command* result = make_command(CommandTypeVarDecl, sizeof(command_vardecl), destroy_command_vardecl);
     command_vardecl* vardecl = get_command_true_type(result);
-    vardecl->variable_name = node->lhs->tok->val.string;
-    vardecl->expr = node->rhs->gen_command(node->rhs);
+    ast_vardecl* vd = get_ast_true_type(node);
+    vardecl->variable_name = vd->variable_name->tok->val.string;
+    vardecl->expr = vd->expr->gen_command(vd->expr);
     LOG_TRACE("\tgen cmd:%p CommandTypeVarDecl varname %s\n", result, vardecl->variable_name);
     return result;
 }

@@ -52,20 +52,20 @@ ast_node* expr_brackets_terminal(parser* par, ast_node* node) {
     if (tok->type == ')') {
         return node;
     }
-    ast_tree_free(node);
+    node->destroy(node);
     parser_report_error(par, tok, "expected )");
     return NULL;
 }
 
 ast_node* expr_default_terminal(parser* par, ast_node* node) {
     token* tok = parser_peek_token(par, 0);
-    if (tok->type != ')' && (tok->type == ';' || tok->type == '\n' || tok->type == TokenTypeEOF)) {
+    if (tok->type != ')' && (tok->type == ';' || tok->type == '\n')) {
         if (tok->type != ')') {
             ++par->pointer;
         }
         return node;
     }
-    ast_tree_free(node);
+    node->destroy(node);
     if (tok->type == ')') {
         parser_report_error(par, tok, "missing operator ( before ;");
     }
@@ -89,7 +89,7 @@ ast_node* parse_expr_with_brackets(parser* par) {
 
     tok = parser_peek_token(par, 0);
     if (tok->type != ')') {
-        ast_tree_free(expr);
+        expr->destroy(expr);
         parser_report_error(par, tok, "missing )");
         return NULL;
     }
@@ -124,7 +124,7 @@ ast_node* parse_identifier(parser* par) {
         return NULL;
     }
     ++par->pointer;
-    return make_ast_node(AstNodeTypeIdentifier, tok, make_command_access);
+    return make_ast_identifier(tok);
 }
 
 ast_node* parse_member(parser* par) {
@@ -133,11 +133,12 @@ ast_node* parse_member(parser* par) {
     while (1) {
         token* tok = parser_peek_token(par, 0);
         if (tok->type != '.') {
-            result->type = AstNodeTypeMember;
             return result;
         }
         ast_node* af = parse_identifier(par);
-        id = id->lhs = af;
+        ast_identifier* iden = get_ast_true_type(id);
+        iden->next = af;
+        id = af;
     }
     return result;
 }
@@ -150,15 +151,16 @@ ast_node* parse_term(parser* par) {
     }
     case TokenTypeLiteralInt32: case TokenTypeLiteralString: case TokenTypeLiteralFloat32: {
         ++par->pointer;
-        return make_ast_node(AstNodeTypeConstant, tok, make_command_get_constant);
+        return make_ast_constant(tok);
     }
     case '(':
         return parse_expr_with_brackets(par);
     case '-': {
         ++par->pointer;
-        ast_node* neg = make_ast_node(AstNodeTypeExpr, tok, make_command_negate);
-        neg->lhs = parse_term(par);
-        return neg;
+        ast_node* node = make_ast_negate(tok);
+        ast_negate* neg = get_ast_true_type(node);
+        neg->term = parse_term(par);
+        return node;
     }
     case '+': {
         ++par->pointer;
@@ -175,23 +177,23 @@ ast_node* parse_operator(parser* par) {
     switch ((i32)tok->type) {
     case '+': {
         ++par->pointer;
-        return make_ast_node(AstNodeTypeExprAdd, tok, make_command_add);
+        return make_ast_binary_expression(AstNodeTypeExprAdd, tok, make_command_add);
     }
     case '-': {
         ++par->pointer;
-        return make_ast_node(AstNodeTypeExprMinus, tok, make_command_minus);
+        return make_ast_binary_expression(AstNodeTypeExprMinus, tok, make_command_minus);
     }
     case '*': {
         ++par->pointer;
-        return make_ast_node(AstNodeTypeExprMultiply, tok, make_command_multiply);
+        return make_ast_binary_expression(AstNodeTypeExprMultiply, tok, make_command_multiply);
     }
     case '/': {
         ++par->pointer;
-        return make_ast_node(AstNodeTypeExprDivide, tok, make_command_divide);
+        return make_ast_binary_expression(AstNodeTypeExprDivide, tok, make_command_divide);
     }
     case '%': {
         ++par->pointer;
-        return make_ast_node(AstNodeTypeExprModulus, tok, make_command_modulus);
+        return make_ast_binary_expression(AstNodeTypeExprModulus, tok, make_command_modulus);
     }
     default:
         return NULL;
@@ -227,20 +229,23 @@ ast_node* parse_expr_bottom_up(parser* par, ast_node*(*is_terminal)(parser*,ast_
         }
         ast_node* rhs = parse_term(par);
         if (!rhs) {
-            ast_tree_free(ope);
-            ast_tree_free(ret);
+            ope->destroy(ope);
+            ret->destroy(ret);
             return NULL;
         }
         
         if (bottom_up_need_to_reround(ope->type, lhs->type)) {
-            ope->rhs = rhs;
-            ope->lhs = lhs->rhs;
-            lhs->rhs = ope;
+            ast_binary_expression* expr_ope = get_ast_true_type(ope);
+            ast_binary_expression* expr_lhs = get_ast_true_type(lhs);
+            expr_ope->rhs = rhs;
+            expr_ope->lhs = expr_lhs->rhs;
+            expr_lhs->rhs = ope;
             continue;
         }
 
-        ope->lhs = lhs;
-        ope->rhs = rhs;
+        ast_binary_expression* expr_ope = get_ast_true_type(ope);
+        expr_ope->lhs = lhs;
+        expr_ope->rhs = rhs;
         ret = lhs = ope;
     }
 }
@@ -257,27 +262,28 @@ ast_node* parse_vardecl(parser* par) {
     }
     ++par->pointer;
 
-    ast_node* vardecl = make_ast_node(AstNodeTypeVarDecl, tok, make_command_vardecl);
-    vardecl->lhs = parse_identifier(par);
-    if (!vardecl->lhs) {
-        ast_tree_free(vardecl);
+    ast_node* node = make_ast_vardecl(tok);
+    ast_vardecl* vardecl = get_ast_true_type(node);
+    vardecl->variable_name = parse_identifier(par);
+    if (!vardecl->variable_name) {
+        node->destroy(node);
         return NULL;
     }
 
     tok = parser_peek_token(par, 0);
     if ((i32)tok->type != '=') {
         parser_report_error(par, tok, "missing equal sign");
-        ast_tree_free(vardecl);
+        node->destroy(node);
         return NULL;
     }
     ++par->pointer;
 
-    vardecl->rhs = parse_expr(par);
-    if (!vardecl->rhs) {
-        ast_tree_free(vardecl);
+    vardecl->expr = parse_expr(par);
+    if (!vardecl->expr) {
+        node->destroy(node);
         return NULL;
     }
-    return vardecl;
+    return node;
 }
 
 static ast_node* parse_assignment_operator(parser* par) {
@@ -285,23 +291,23 @@ static ast_node* parse_assignment_operator(parser* par) {
     switch (tok->type) {
     case TokenTypeAssignmentPlus: {
         ++par->pointer;
-        return make_ast_node(AstNodeTypeExprAddAssign, tok, make_command_add_assign);
+        return make_ast_assignment(AstNodeTypeExprAddAssign, tok, make_command_add_assign);
     }
     case TokenTypeAssignmentMinus: {
         ++par->pointer;
-        return make_ast_node(AstNodeTypeExprMinusAssign, tok, NULL);
+        return make_ast_assignment(AstNodeTypeExprMinusAssign, tok, NULL);
     }
     case TokenTypeAssignmentMultiply: {
         ++par->pointer;
-        return make_ast_node(AstNodeTypeExprMultiplyAssign, tok, NULL);
+        return make_ast_assignment(AstNodeTypeExprMultiplyAssign, tok, NULL);
     }
     case TokenTypeAssignmentDivide: {
         ++par->pointer;
-        return make_ast_node(AstNodeTypeExprDivideAssign, tok, NULL);
+        return make_ast_assignment(AstNodeTypeExprDivideAssign, tok, NULL);
     }
     case TokenTypeAssignmentModulus: {
         ++par->pointer;
-        return make_ast_node(AstNodeTypeExprModulusAssign, tok, NULL);
+        return make_ast_assignment(AstNodeTypeExprModulusAssign, tok, NULL);
     }
     default: {
         parser_report_error(par, tok, "expected assignment operator");
@@ -316,28 +322,27 @@ static ast_node* parse_identifier_statement(parser* par) {
         return NULL;
     }
 
-    ast_node* assignment = parse_assignment_operator(par);
-    if (!assignment) {
-        ast_tree_free(mem);
+    ast_node* node = parse_assignment_operator(par);
+    if (!node) {
         return NULL;
     }
 
-    ast_node* expr = parse_expr(par);
-    if (!expr) {
-        ast_tree_free(assignment);
+    ast_assignment* assignment = get_ast_true_type(node);
+
+    assignment->expr = parse_expr(par);
+    if (!assignment->expr) {
+        node->destroy(node);
         return NULL;
     }
-
-    assignment->lhs = mem;
-    assignment->rhs = expr;
-    return assignment;
+    assignment->variable_name = mem;
+    return node;
 }
 
 static void clean_up_fatal(parser* par, vector(ast_node*) node) {
     for_vector(node, i, 0) {
         if (!node[i])
             continue;
-        ast_tree_free(node[i]);
+        node[i]->destroy(node[i]);
     }
     free_vector(node);
     for_vector(par->tokens, i, 0) {
@@ -378,9 +383,9 @@ vector(ast_node*) parser_parse(parser* par) {
             END_PROFILING(__func__);
             return NULL;
         }
+        END_PROFILING(__func__);
         omit_separator(par);
         tok = parser_peek_token(par, 0);
-        END_PROFILING(__func__);
         if (tok->type == TokenTypeEOF) {
             return result;
         }
