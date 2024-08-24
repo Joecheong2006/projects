@@ -60,7 +60,7 @@ object* find_object(cstring name) {
     ASSERT_MSG(map.data, "uninitialize global env");
     object obj = { .name = name };
     vector(void*) result = hashmap_access_vector(&map, &obj);
-    for (i64 i = vector_size(result) - 1; i > -1; --i) {
+    for (i64 i = (i64)vector_size(result) - 1; i > -1; --i) {
         object* obj = result[i];
         if (strcmp(obj->name, name) == 0) {
             return obj;

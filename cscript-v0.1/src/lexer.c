@@ -16,6 +16,7 @@ const char* TokenTypeString[] = {
  
     [TokenTypeKeywordVar - 256] = "var",
     [TokenTypeKeywordFun - 256] = "fun",
+    [TokenTypeKeywordRet - 256] = "return",
     [TokenTypeKeywordIf - 256] = "if",
     [TokenTypeKeywordElif - 256] = "elif",
     [TokenTypeKeywordElse - 256] = "else",

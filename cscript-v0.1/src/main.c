@@ -99,11 +99,13 @@ int main(void) {
     vector(ast_node*) ins = parser_parse(&par);
     if (ins) {
         setup_global_env();
+        scopes_push();
         for_vector(ins, i, 0) {
             command* cmd = ins[i]->gen_command(ins[i]);
             ASSERT(exec_command(cmd));
             cmd->destroy(cmd);
         }
+        scopes_pop();
         shutdown_global_env();
 
         for_vector(ins, i, 0) {

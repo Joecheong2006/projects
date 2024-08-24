@@ -11,6 +11,7 @@ typedef enum {
     ObjectTypeFunction,
     ObjectTypeArray,
     ObjectTypeUserType,
+    ObjectErrorUndefine,
 } ObjectType;
 
 typedef struct object object;

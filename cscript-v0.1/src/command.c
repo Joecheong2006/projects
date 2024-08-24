@@ -4,6 +4,7 @@
 #include "container/string.h"
 #include "core/assert.h"
 #include "core/log.h"
+#include "global.h"
 
 static primitive_data command_binary_operation_cal(command* cmd) {
     switch (cmd->type) {
@@ -51,16 +52,56 @@ IMPL_COMMAND_BINARY_OPERATION(multiply)
 IMPL_COMMAND_BINARY_OPERATION(divide)
 IMPL_COMMAND_BINARY_OPERATION(modulus)
 
+static object* access_object(command* cmd) {
+    ASSERT(cmd->type == CommandTypeAccess);
+    command_access* access = get_command_true_type(cmd);
+    object* obj = find_object(access->name);
+    if (!obj) {
+        return make_object(ObjectErrorUndefine, access->name, 0, NULL);
+    }
+
+    for (command_access* ac = access; ac->access != NULL; ac = get_command_true_type(ac->access)) {
+        // TODO: access member variable or funcation call
+    }
+
+    return obj;
+}
+
 static i32 command_assign_add(command* cmd) {
     ASSERT(cmd->type == CommandTypeAssignment);
     command_assign* ca = get_command_true_type(cmd);
+
+    object* obj = access_object(ca->mem);
+    if (obj->type == ObjectErrorUndefine) {
+        LOG_ERROR("\tundefine variable '%s' on line %d\n", obj->name, ca->line_on_exec);
+        FREE(obj);
+        return 0;
+    }
+
+    if (!(obj->type == ObjectTypeInt || obj->type == ObjectTypeFloat)) {
+        LOG_ERROR("\tInvalid operands to binary expression on line %d\n", obj->name, ca->line_on_exec);
+        return 0;
+    }
+
     primitive_data data = command_binary_operation_cal(ca->expr);
     if (data.type[2] < 0) {
         LOG_ERROR("\t%s on line %d\n", data.string, ca->line_on_exec);
         return 0;
     }
-    command_access* mem = get_command_true_type(ca->mem);
-    log_level_msg(LogLevelDebug, "\t%s += %g\n", mem->name, data.float32);
+    log_level_msg(LogLevelDebug, "\t%s += %g\n", obj->name, data.float32);
+    switch (obj->type) {
+    case ObjectTypeInt: {
+        object_int* o = get_object_true_type(obj);
+        o->val += data.int32;
+        break;
+    }
+    case ObjectTypeFloat: {
+        object_float* o = get_object_true_type(obj);
+        o->val += data.float32;
+        break;
+    }
+    default: break;
+    }
     return 1;
 }
 
@@ -128,6 +169,24 @@ static i32 command_exec_vardecl(command_vardecl* vardecl) {
         return 0;
     }
     LOG_DEBUG("\tvar %s = %g\n", vardecl->variable_name, data.float32);
+
+    object* obj = NULL;
+    switch (data.type[2]) {
+    case PrimitiveDataTypeInt32: {
+        obj = make_object_int(vardecl->variable_name);
+        object_int* o = get_object_true_type(obj);
+        o->val = data.int32;
+        break;
+    }
+    case PrimitiveDataTypeFloat32: {
+        obj = make_object_float(vardecl->variable_name);
+        object_float* o = get_object_true_type(obj);
+        o->val = data.float32;
+        break;
+    }
+    default: ASSERT_MSG(0, "unkown type"); break;
+    }
+    push_object(obj);
 
     return 1;
 }

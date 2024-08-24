@@ -4,26 +4,26 @@
 			"name":"generate_tokens",
 			"cat":"function",
 			"ph":"X",
-			"ts":484,
-			"pid":87891,
+			"ts":2144,
+			"pid":167032,
 			"tid":0,
-			"dur":8
+			"dur":7
 		},
 		{
 			"name":"parser_parse",
 			"cat":"function",
 			"ph":"X",
-			"ts":515,
-			"pid":87891,
+			"ts":2178,
+			"pid":167032,
 			"tid":0,
-			"dur":3
+			"dur":4
 		},
 		{
 			"name":"parser_parse",
 			"cat":"function",
 			"ph":"X",
-			"ts":530,
-			"pid":87891,
+			"ts":2193,
+			"pid":167032,
 			"tid":0,
 			"dur":1
 		},
@@ -31,17 +31,17 @@
 			"name":"parser_parse",
 			"cat":"function",
 			"ph":"X",
-			"ts":541,
-			"pid":87891,
+			"ts":2205,
+			"pid":167032,
 			"tid":0,
-			"dur":0
+			"dur":1
 		},
 		{
 			"name":"parser_parse",
 			"cat":"function",
 			"ph":"X",
-			"ts":552,
-			"pid":87891,
+			"ts":2215,
+			"pid":167032,
 			"tid":0,
 			"dur":1
 		}	]
