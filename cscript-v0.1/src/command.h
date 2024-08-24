@@ -5,9 +5,10 @@
 typedef enum {
     CommandTypeVarDecl,
 
+    CommandTypeAssignment,
     CommandTypeBinaryOperation,
     CommandTypeNegateOperation,
-    CommandTypeAccessVariable,
+    CommandTypeAccess,
     CommandTypeGetConstant,
 } CommandType;
 
@@ -41,12 +42,20 @@ struct command_vardecl {
 };
 
 typedef struct {
-    const char* variable_name;
-    const char* access_name;
+    const char* name;
+    command* access;
 } command_access;
+
+typedef struct {
+    command* mem;
+    command* expr;
+    i32 line_on_exec;
+    i32(*exec)(command*);
+} command_assign;
 
 struct ast_node;
 command* make_command_get_constant(struct ast_node* node);
+command* make_command_access(struct ast_node* node);
 command* make_command_add(struct ast_node* node);
 command* make_command_minus(struct ast_node* node);
 command* make_command_multiply(struct ast_node* node);
@@ -54,6 +63,12 @@ command* make_command_divide(struct ast_node* node);
 command* make_command_modulus(struct ast_node* node);
 command* make_command_negate(struct ast_node* node);
 command* make_command_vardecl(struct ast_node* node);
+
+command* make_command_add_assign(struct ast_node* node);
+command* make_command_minus_assign(struct ast_node* node);
+command* make_command_multiply_assign(struct ast_node* node);
+command* make_command_divide_assign(struct ast_node* node);
+command* make_command_modulus_assign(struct ast_node* node);
 
 i32 exec_command(command* cmd);
 

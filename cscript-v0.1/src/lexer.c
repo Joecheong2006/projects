@@ -24,6 +24,12 @@ const char* TokenTypeString[] = {
     [TokenTypeKeywordWhile - 256] = "while",
     [TokenTypeKeywordDo - 256] = "do",
     [TokenTypeKeywordFor - 256] = "for",
+
+    [TokenTypeAssignmentPlus - 256] = "+=",
+    [TokenTypeAssignmentMinus - 256] = "-=",
+    [TokenTypeAssignmentMultiply - 256] = "*=",
+    [TokenTypeAssignmentDivide - 256] = "/=",
+    [TokenTypeAssignmentModulus - 256] = "%=",
  
     [TokenTypeLiteralString - 256] = "",
     [TokenTypeLiteralInt32 - 256] = "",
@@ -228,7 +234,6 @@ vector(token) generate_tokens(lexer* lex) {
         case '(': case ')':
         case '[': case ']':
         case '{': case '}':
-        case '+': case '*': case '-': case '/': case '%':
         case ';': case ':': case '\'': case '"': case '\\': case ',':
         case '\t': { 
             token tok = {.val.string = NULL, lex->line, lex->position, c};
@@ -247,6 +252,11 @@ vector(token) generate_tokens(lexer* lex) {
         case '<': { MATCH_ONE_AFTER(c, '<', TokenTypeOperatorLessThan); }
         case '=': { MATCH_ONE_AFTER(c, '=', TokenTypeOperatorEqual); }
         case '!': { MATCH_ONE_AFTER(c, '!', TokenTypeOperatorNotEqual); }
+        case '+': { MATCH_ONE_AFTER(c, '=', TokenTypeAssignmentPlus); } 
+        case '-': { MATCH_ONE_AFTER(c, '=', TokenTypeAssignmentMinus); } 
+        case '*': { MATCH_ONE_AFTER(c, '=', TokenTypeAssignmentMultiply); }
+        case '/': { MATCH_ONE_AFTER(c, '=', TokenTypeAssignmentDivide); } 
+        case '%': { MATCH_ONE_AFTER(c, '=', TokenTypeAssignmentModulus); }
         case ' ': { lexer_consume(lex); break; }
         case 0: { 
             token tok = {.val.string = NULL, lex->line, lex->position, TokenTypeEOF};
@@ -278,10 +288,6 @@ vector(token) generate_tokens(lexer* lex) {
             }
             else {
                 ASSERT_MSG(0, "unkown symbol");
-            }
-            if (c == 0) {
-                END_PROFILING(__func__);
-                return result;
             }
             break;
         }

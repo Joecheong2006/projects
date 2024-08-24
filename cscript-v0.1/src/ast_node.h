@@ -14,6 +14,11 @@ typedef enum {
     AstNodeTypeExprMultiply,
     AstNodeTypeExprDivide,
     AstNodeTypeExprModulus,
+    AstNodeTypeExprAddAssign,
+    AstNodeTypeExprMinusAssign,
+    AstNodeTypeExprMultiplyAssign,
+    AstNodeTypeExprDivideAssign,
+    AstNodeTypeExprModulusAssign,
 
     AstNodeTypeFuncDef,
     AstNodeTypeAssign,

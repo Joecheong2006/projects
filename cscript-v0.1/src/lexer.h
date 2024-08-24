@@ -23,6 +23,12 @@ typedef enum {
     TokenTypeKeywordDo,
     TokenTypeKeywordFor,
 
+    TokenTypeAssignmentPlus,
+    TokenTypeAssignmentMinus,
+    TokenTypeAssignmentMultiply,
+    TokenTypeAssignmentDivide,
+    TokenTypeAssignmentModulus,
+
     TokenTypeLiteralString,
     TokenTypeLiteralInt32,
     TokenTypeLiteralFloat32,

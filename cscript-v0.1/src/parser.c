@@ -20,7 +20,7 @@
 // <term>       ::= <literal> | <member> | "(" <expr> ")" | <funcall> | "-" <term> | "+" <term>
 // <expr>       ::= <term> {<operator> <expr>}
 // <operator>   ::= "-" | "+" | "*" | "/" | "%"
-// <assignment> ::= <member> ("+=" | "-=" | "*=" | "/=") <expr>
+// <assignment> ::= <member> ("=" | "+=" | "-=" | "*=" | "/=") <expr>
 // <params>     ::= <identifier> {"," <identifier>}
 // <funcparams> ::= [<params>]
 // <funcdef>    ::= "fun" <identifier> "(" <funcparams> ")" "end"
@@ -41,6 +41,8 @@ static ast_node* parse_operator(parser* par);
 static ast_node* parse_expr_bottom_up(parser* par, ast_node*(*is_terminal)(parser*,ast_node*));
 static ast_node* parse_expr(parser* par);
 static ast_node* parse_vardecl(parser* par);
+static ast_node* parse_assignment_operator(parser* par);
+static ast_node* parse_identifier_statement(parser* par);
 
 static ast_node* expr_brackets_terminal(parser* par, ast_node* node);
 static ast_node* expr_default_terminal(parser* par, ast_node* node);
@@ -122,7 +124,7 @@ ast_node* parse_identifier(parser* par) {
         return NULL;
     }
     ++par->pointer;
-    return make_ast_node(AstNodeTypeIdentifier, tok, NULL);
+    return make_ast_node(AstNodeTypeIdentifier, tok, make_command_access);
 }
 
 ast_node* parse_member(parser* par) {
@@ -278,6 +280,59 @@ ast_node* parse_vardecl(parser* par) {
     return vardecl;
 }
 
+static ast_node* parse_assignment_operator(parser* par) {
+    token* tok = parser_peek_token(par, 0);
+    switch (tok->type) {
+    case TokenTypeAssignmentPlus: {
+        ++par->pointer;
+        return make_ast_node(AstNodeTypeExprAddAssign, tok, make_command_add_assign);
+    }
+    case TokenTypeAssignmentMinus: {
+        ++par->pointer;
+        return make_ast_node(AstNodeTypeExprMinusAssign, tok, NULL);
+    }
+    case TokenTypeAssignmentMultiply: {
+        ++par->pointer;
+        return make_ast_node(AstNodeTypeExprMultiplyAssign, tok, NULL);
+    }
+    case TokenTypeAssignmentDivide: {
+        ++par->pointer;
+        return make_ast_node(AstNodeTypeExprDivideAssign, tok, NULL);
+    }
+    case TokenTypeAssignmentModulus: {
+        ++par->pointer;
+        return make_ast_node(AstNodeTypeExprModulusAssign, tok, NULL);
+    }
+    default: {
+        parser_report_error(par, tok, "expected assignment operator");
+        return NULL;
+    }
+    }
+}
+
+static ast_node* parse_identifier_statement(parser* par) { 
+    ast_node* mem = parse_member(par);
+    if (!mem) {
+        return NULL;
+    }
+
+    ast_node* assignment = parse_assignment_operator(par);
+    if (!assignment) {
+        ast_tree_free(mem);
+        return NULL;
+    }
+
+    ast_node* expr = parse_expr(par);
+    if (!expr) {
+        ast_tree_free(assignment);
+        return NULL;
+    }
+
+    assignment->lhs = mem;
+    assignment->rhs = expr;
+    return assignment;
+}
+
 static void clean_up_fatal(parser* par, vector(ast_node*) node) {
     for_vector(node, i, 0) {
         if (!node[i])
@@ -306,22 +361,29 @@ vector(ast_node*) parser_parse(parser* par) {
             vector_push(result, node);
             break;
         }
+        case TokenTypeIdentifier: {
+            ast_node* node = parse_identifier_statement(par);
+            vector_push(result, node);
+            break;
+        }
         default: {
             parser_report_error(par, tok, "invalid token");
             clean_up_fatal(par, result);
+            END_PROFILING(__func__);
             return NULL;
         }
         }
         if (vector_back(result) == NULL) {
             clean_up_fatal(par, result);
+            END_PROFILING(__func__);
             return NULL;
         }
         omit_separator(par);
         tok = parser_peek_token(par, 0);
+        END_PROFILING(__func__);
         if (tok->type == TokenTypeEOF) {
             return result;
         }
-        END_PROFILING(__func__);
     }
     return result;
 }

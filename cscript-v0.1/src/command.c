@@ -51,6 +51,19 @@ IMPL_COMMAND_BINARY_OPERATION(multiply)
 IMPL_COMMAND_BINARY_OPERATION(divide)
 IMPL_COMMAND_BINARY_OPERATION(modulus)
 
+static i32 command_assign_add(command* cmd) {
+    ASSERT(cmd->type == CommandTypeAssignment);
+    command_assign* ca = get_command_true_type(cmd);
+    primitive_data data = command_binary_operation_cal(ca->expr);
+    if (data.type[2] < 0) {
+        LOG_ERROR("\t%s on line %d\n", data.string, ca->line_on_exec);
+        return 0;
+    }
+    command_access* mem = get_command_true_type(ca->mem);
+    log_level_msg(LogLevelDebug, "\t%s += %g\n", mem->name, data.float32);
+    return 1;
+}
+
 static void destroy_command_binary_operation(command* cmd) {
     ASSERT(cmd->type == CommandTypeBinaryOperation);
     command_binary_operation* bo = get_command_true_type(cmd);
@@ -63,6 +76,14 @@ static void destroy_command_binary_operation(command* cmd) {
     FREE(cmd);
 }
 
+static void destroy_command_assign(command* cmd) {
+    ASSERT(cmd->type == CommandTypeAssignment);
+    command_assign* ca = get_command_true_type(cmd);
+    ca->mem->destroy(ca->mem);
+    ca->expr->destroy(ca->expr);
+    FREE(cmd);
+}
+
 static void destroy_command_negate_operation(command* cmd) {
     ASSERT(cmd->type == CommandTypeNegateOperation);
     command_negate_operation* no = get_command_true_type(cmd);
@@ -71,8 +92,19 @@ static void destroy_command_negate_operation(command* cmd) {
     FREE(cmd);
 }
 
-static void destory_command_get_constant(command* cmd) {
+static void destroy_command_get_constant(command* cmd) {
     ASSERT(cmd->type == CommandTypeGetConstant);
+    FREE(cmd);
+}
+
+static void destroy_command_access(command* cmd) {
+    if (!cmd) {
+        return;
+    }
+    ASSERT(cmd->type == CommandTypeAccess);
+    command_access* access = get_command_true_type(cmd);
+    free_string(access->name);
+    cmd->destroy(access->access);
     FREE(cmd);
 }
 
@@ -95,7 +127,7 @@ static i32 command_exec_vardecl(command_vardecl* vardecl) {
         LOG_ERROR("\t%s on line %d\n", data.string, vardecl->line_on_exec);
         return 0;
     }
-    LOG_INFO("\tvar %s = %g\n", vardecl->variable_name, data.float32);
+    LOG_DEBUG("\tvar %s = %g\n", vardecl->variable_name, data.float32);
 
     return 1;
 }
@@ -110,7 +142,7 @@ command* make_command(CommandType type, u64 type_size, void(*destroy)(command*))
 INLINE void* get_command_true_type(command* cmd) { return cmd + 1; }
 
 command* make_command_get_constant(struct ast_node* node) {
-    command* result = make_command(CommandTypeGetConstant, sizeof(command_get_constant), destory_command_get_constant);
+    command* result = make_command(CommandTypeGetConstant, sizeof(command_get_constant), destroy_command_get_constant);
     command_get_constant* cst = get_command_true_type(result);
     cst->data = node->tok->val;
     if (cst->data.type[2] == PrimitiveDataTypeInt32) {
@@ -118,6 +150,17 @@ command* make_command_get_constant(struct ast_node* node) {
     }
     else if (cst->data.type[2] == PrimitiveDataTypeFloat32) {
         LOG_TRACE("\tgen cmd:%p CommandTypeGetConstant f32 %g\n", result, cst->data.float32);
+    }
+    return result;
+}
+
+command* make_command_access(struct ast_node* node) {
+    command* result = make_command(CommandTypeAccess, sizeof(command_access), destroy_command_access);
+    command_access* access = get_command_true_type(result);
+    access->name = node->tok->val.string;
+    access->access = NULL;
+    if (node->lhs) {
+        access->access = node->lhs->gen_command(node->lhs);
     }
     return result;
 }
@@ -138,6 +181,21 @@ IMPL_GEN_COMMAND_BINARY_OPERATION(minus)
 IMPL_GEN_COMMAND_BINARY_OPERATION(multiply)
 IMPL_GEN_COMMAND_BINARY_OPERATION(divide)
 IMPL_GEN_COMMAND_BINARY_OPERATION(modulus)
+
+command* make_command_add_assign(struct ast_node* node) {
+    command* result = make_command(CommandTypeAssignment, sizeof(command_assign), destroy_command_assign);
+    command_assign* ca = get_command_true_type(result);
+    ca->mem = node->lhs->gen_command(node->lhs);
+    ca->expr = node->rhs->gen_command(node->rhs);
+    ca->exec = command_assign_add;
+    ca->line_on_exec = node->tok->line;
+    return result;
+}
+
+command* make_command_minus_assign(struct ast_node* node);
+command* make_command_multiply_assign(struct ast_node* node);
+command* make_command_divide_assign(struct ast_node* node);
+command* make_command_modulus_assign(struct ast_node* node);
 
 command* make_command_negate(ast_node* node) {
     command* result = make_command(CommandTypeNegateOperation, sizeof(command_negate_operation), destroy_command_negate_operation);
@@ -161,6 +219,10 @@ i32 exec_command(command* cmd) {
     case CommandTypeVarDecl:  {
         command_vardecl* vardecl = get_command_true_type(cmd);
         return command_exec_vardecl(vardecl);
+    }
+    case CommandTypeAssignment: {
+        command_assign* ca = get_command_true_type(cmd);
+        return ca->exec(cmd);
     }
     default: 
         ASSERT_MSG(0, "invalid command for execution");
