@@ -23,12 +23,12 @@ object* make_object_bool(cstring name) {
 }
 
 void object_primitive_data_destroy(object* obj) {
-    ASSERT(obj);
+    ASSERT(obj->type == ObjectTypePrimitiveData);
     FREE(obj);
 }
 
-object* make_object_primitive_data(ObjectType type, cstring name) {
-    return make_object(type, name, sizeof(object_primitive_data), object_primitive_data_destroy);
+object* make_object_primitive_data(cstring name) {
+    return make_object(ObjectTypePrimitiveData, name, sizeof(object_primitive_data), object_primitive_data_destroy);
 }
 
 void object_string_destroy(object* obj) {

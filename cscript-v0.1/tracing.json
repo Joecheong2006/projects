@@ -4,8 +4,8 @@
 			"name":"generate_tokens",
 			"cat":"function",
 			"ph":"X",
-			"ts":2204,
-			"pid":55299,
+			"ts":2171,
+			"pid":57758,
 			"tid":0,
 			"dur":7
 		},
@@ -13,17 +13,8 @@
 			"name":"parser_parse",
 			"cat":"function",
 			"ph":"X",
-			"ts":2234,
-			"pid":55299,
-			"tid":0,
-			"dur":4
-		},
-		{
-			"name":"parser_parse",
-			"cat":"function",
-			"ph":"X",
-			"ts":2247,
-			"pid":55299,
+			"ts":2201,
+			"pid":57758,
 			"tid":0,
 			"dur":2
 		},
@@ -31,8 +22,17 @@
 			"name":"parser_parse",
 			"cat":"function",
 			"ph":"X",
-			"ts":2258,
-			"pid":55299,
+			"ts":2214,
+			"pid":57758,
+			"tid":0,
+			"dur":2
+		},
+		{
+			"name":"parser_parse",
+			"cat":"function",
+			"ph":"X",
+			"ts":2225,
+			"pid":57758,
 			"tid":0,
 			"dur":1
 		},
@@ -40,8 +40,8 @@
 			"name":"parser_parse",
 			"cat":"function",
 			"ph":"X",
-			"ts":2270,
-			"pid":55299,
+			"ts":2237,
+			"pid":57758,
 			"tid":0,
 			"dur":1
 		}	]

@@ -9,8 +9,6 @@ typedef enum {
     PrimitiveDataTypeFloat64,
 } PrimitiveDataType;
 
-extern i32 primitive_type_map[];
-
 typedef union {
     i32 int32;
     f32 float32;

@@ -6,10 +6,11 @@
 typedef enum {
     ObjectTypeNone,
     ObjectTypeBool,
-    ObjectTypeInt32,
-    ObjectTypeInt64,
-    ObjectTypeFloat32,
-    ObjectTypeFloat64,
+    ObjectTypePrimitiveData,
+    // ObjectTypeInt32,
+    // ObjectTypeInt64,
+    // ObjectTypeFloat32,
+    // ObjectTypeFloat64,
     ObjectTypeString,
     ObjectTypeFunction,
     ObjectTypeArray,
@@ -36,11 +37,9 @@ DEFINE_OBJECT_TYPE(bool,
         u8 val;
 )
 
-typedef struct {
+DEFINE_OBJECT_TYPE(primitive_data, 
         primitive_data val;
-} object_primitive_data;
-void object_primitive_data_destroy(object* obj);
-object* make_object_primitive_data(ObjectType type, cstring name);
+)
 
 DEFINE_OBJECT_TYPE(string,
         string val;

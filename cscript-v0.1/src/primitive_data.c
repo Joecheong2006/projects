@@ -1,13 +1,5 @@
 #include "primitive_data.h"
-#include "object.h"
 #include "lexer.h"
-
-i32 primitive_type_map[] = {
-    ObjectTypeInt32,
-    ObjectTypeInt64,
-    ObjectTypeFloat32,
-    ObjectTypeFloat64,
-};
 
 INLINE i32 primitive_data_guess_type(primitive_data* a, primitive_data* b) {
     return a->type[2] > b->type[2] ? a->type[2] : b->type[2];

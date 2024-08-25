@@ -83,7 +83,8 @@ static i32 command_assign_add(command* cmd) {
         return 0;
     }
 
-    if (!(obj->type == ObjectTypeInt32 || obj->type == ObjectTypeFloat32 || obj->type == ObjectTypeInt64 || obj->type == ObjectTypeFloat64)) {
+    // if (!(obj->type == ObjectTypeInt32 || obj->type == ObjectTypeFloat32 || obj->type == ObjectTypeInt64 || obj->type == ObjectTypeFloat64)) {
+    if (obj->type != ObjectTypePrimitiveData) {
         LOG_ERROR("\tInvalid operands to binary expression on line %d\n", obj->name, ca->line_on_exec);
         return 0;
     }
@@ -167,7 +168,9 @@ static i32 command_exec_vardecl(command_vardecl* vardecl) {
     }
     LOG_DEBUG("\tvar %s = %g\n", vardecl->variable_name, data.float32);
 
-    object* obj = make_object_primitive_data(primitive_type_map[data.type[2]], vardecl->variable_name);
+    // NOTE: Check if the data is different from primitive in here.
+
+    object* obj = make_object_primitive_data(vardecl->variable_name);
     object_primitive_data* o = get_object_true_type(obj);
     o->val = data;
     push_object(obj);
