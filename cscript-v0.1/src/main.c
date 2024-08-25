@@ -15,7 +15,7 @@ int main(void) {
     // lexer_load_file_text(&lex, "test.cscript");
 
     // const char text[] = "1-(1-1-1-1-1)-1-3";
-    // const char text[] = "var a = 1-1-1--3*3.0+1";
+    // const char text[] = "var a = 1-1-1--3*3.0+1;";
     const char text[] = "var a=(2+4*(3/(.2*10))+3-1-1)*1.1+(0.5+.5)+(.5-0.3-0.2)\n"
                         "var cat = 1-1.0-1--3*3\n"
                         "var dog = 1.0 + 101 % 3 / 2\n"

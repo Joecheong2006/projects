@@ -46,10 +46,12 @@ struct token {
 
 typedef struct token token;
 
-typedef struct {
+struct error_info{
     token* tok;
     const char* msg;
-} error_info;
+};
+
+typedef struct error_info error_info;
 
 typedef struct {
     const char* ctx;

@@ -1,6 +1,7 @@
 #ifndef _COMMAND_H_
 #define _COMMAND_H_
 #include "primitive_data.h"
+#include "lexer.h"
 
 typedef enum {
     CommandTypeVarDecl,
@@ -23,7 +24,7 @@ void* get_command_true_type(command* cmd);
 
 typedef struct {
     command *lhs, *rhs;
-    primitive_data(*cal)(command*);
+    error_info(*cal)(primitive_data*, command*);
 } command_binary_operation;
 
 typedef struct {

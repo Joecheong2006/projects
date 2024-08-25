@@ -6,7 +6,7 @@
 #include "core/log.h"
 #include "global.h"
 
-static primitive_data command_binary_operation_cal(command* cmd) {
+static error_info command_binary_operation_cal(primitive_data* out, command* cmd) {
     switch (cmd->type) {
     case CommandTypeGetConstant: {
         command_get_constant* cst = get_command_true_type(cmd);
@@ -16,34 +16,39 @@ static primitive_data command_binary_operation_cal(command* cmd) {
         else if (cst->data.type[2] == PrimitiveDataTypeFloat32) {
             LOG_TRACE("\texec CommandTypeGetConstant f32 %g\n", cst->data.float32);
         }
-        return cst->data;
+        *out = cst->data;
+        break;
     }
     case CommandTypeNegateOperation: {
         command_negate_operation* no = get_command_true_type(cmd);
-        primitive_data data = command_binary_operation_cal(no->data);
+        primitive_data tmp;
+        command_binary_operation_cal(&tmp, no->data);
         LOG_TRACE("\texec cmd:%p CommandTypeNegateOperation\n", cmd);
-        return primitive_data_negate(&data);
+        return primitive_data_negate(out, &tmp);
     }
     case CommandTypeBinaryOperation: {
         command_binary_operation* bo = get_command_true_type(cmd);
-        return bo->cal(cmd);
+        return bo->cal(out, cmd);
     }
     default:
         ASSERT_MSG(0, "undefine command type");
-        return (primitive_data){0};
+        return (error_info){ .msg = "undefine command type" };
     }
+    return (error_info){ .msg = NULL };
 }
 
 #define IMPL_COMMAND_BINARY_OPERATION(operation_name)\
-    static primitive_data command_binary_operation_##operation_name(command* cmd) {\
+    static error_info command_binary_operation_##operation_name(primitive_data* out, command* cmd) {\
         ASSERT(cmd->type == CommandTypeBinaryOperation);\
         LOG_TRACE("\texec cmd:%p CommandTypeBinaryOperation " #operation_name "\n", cmd);\
         command_binary_operation* bo = get_command_true_type(cmd);\
-        primitive_data lhs = command_binary_operation_cal(bo->lhs);\
-        if (lhs.type[2] < 0) return lhs;\
-        primitive_data rhs = command_binary_operation_cal(bo->rhs);\
-        if (rhs.type[2] < 0) return rhs;\
-        return primitive_data_##operation_name(&lhs, &rhs);\
+        primitive_data lhs;\
+        error_info ei = command_binary_operation_cal(&lhs, bo->lhs);\
+        if (ei.msg) return ei;\
+        primitive_data rhs;\
+        ei = command_binary_operation_cal(&rhs, bo->rhs);\
+        if (ei.msg) return ei;\
+        return primitive_data_##operation_name(out, &lhs, &rhs);\
     }
 
 IMPL_COMMAND_BINARY_OPERATION(add)
@@ -83,35 +88,20 @@ static i32 command_assign_add(command* cmd) {
         return 0;
     }
 
-    primitive_data data = command_binary_operation_cal(ca->expr);
-    if (data.type[2] < 0) {
-        LOG_ERROR("\t%s on line %d\n", data.string, ca->line_on_exec);
+    primitive_data data;
+    error_info ei = command_binary_operation_cal(&data, ca->expr);
+    if (ei.msg) {
+        LOG_ERROR("\t%s on line %d\n", ei.msg, ca->line_on_exec);
         return 0;
     }
+
     log_level_msg(LogLevelDebug, "\t%s += %g\n", obj->name, data.float32);
-    // TODO: implement primitve_data assign function
-    switch (obj->type) {
-    case ObjectTypeInt32: {
-        object_primitive_data* o = get_object_true_type(obj);
-        o->val.int32 += data.int32;
-        break;
-    }
-    case ObjectTypeInt64: {
-        object_primitive_data* o = get_object_true_type(obj);
-        o->val.int64 += data.int64;
-        break;
-    }
-    case ObjectTypeFloat32: {
-        object_primitive_data* o = get_object_true_type(obj);
-        o->val.float32 += data.float32;
-        break;
-    }
-    case ObjectTypeFloat64: {
-        object_primitive_data* o = get_object_true_type(obj);
-        o->val.float64 += data.float64;
-        break;
-    }
-    default: break;
+
+    object_primitive_data* o = get_object_true_type(obj);
+    ei = primitive_data_add_assign(&o->val, &data);
+    if (ei.msg) {
+        LOG_ERROR("\t%s on line %d\n", ei.msg, ca->line_on_exec);
+        return 0;
     }
     return 1;
 }
@@ -169,16 +159,17 @@ static void destroy_command_vardecl(command* cmd) {
 }
 
 static i32 command_exec_vardecl(command_vardecl* vardecl) {
-    primitive_data data = command_binary_operation_cal(vardecl->expr);
-    if (data.type[2] < 0) {
-        LOG_ERROR("\t%s on line %d\n", data.string, vardecl->line_on_exec);
+    primitive_data data;
+    error_info ei = command_binary_operation_cal(&data, vardecl->expr);
+    if (ei.msg) {
+        LOG_ERROR("\t%s on line %d\n", ei.msg, vardecl->line_on_exec);
         return 0;
     }
     LOG_DEBUG("\tvar %s = %g\n", vardecl->variable_name, data.float32);
 
     object* obj = make_object_primitive_data(primitive_type_map[data.type[2]], vardecl->variable_name);
     object_primitive_data* o = get_object_true_type(obj);
-    o->val= data;
+    o->val = data;
     push_object(obj);
 
     return 1;
