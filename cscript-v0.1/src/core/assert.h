@@ -14,8 +14,8 @@
 	#define ASSERT_MSG(x, msg) if (!(x)) { LOG_FATAL(" %s:%d %s %s\n", __FILE__, __LINE__, #x, msg); DEBUG_BREAK(); }
 	#define ASSERT(x) ASSERT_MSG(x, "")
 #else
-	#define ASSERT(x)
-	#define ASSERT_MSG(x, msg)
+	#define ASSERT(x) (void)(x)
+	#define ASSERT_MSG(x, msg) (void)(x)
 #endif
 
 #endif

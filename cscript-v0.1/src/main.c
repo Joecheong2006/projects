@@ -5,6 +5,7 @@
 #include "command.h"
 #include "parser.h"
 #include "core/assert.h"
+#include "tracing.h"
 
 #include "global.h"
 
@@ -25,22 +26,33 @@ int main(void) {
     parser par;
     parser_init(&par, generate_tokens(&lex));
 
-    vector(ast_node*) ins = parser_parse(&par);
-    if (ins) {
+    vector(ast_node*) ast = parser_parse(&par);
+    if (ast) {
         setup_global_env();
         scopes_push();
-        for_vector(ins, i, 0) {
-            command* cmd = ins[i]->gen_command(ins[i]);
-            ASSERT(exec_command(cmd));
-            cmd->destroy(cmd);
+
+        vector(command*) ins = make_vector(command*);
+        for_vector(ast, i, 0) {
+            command* cmd = ast[i]->gen_command(ast[i]);
+            vector_push(ins, cmd);
         }
-        scopes_pop();
-        shutdown_global_env();
+
+        for_vector(ins, i, 0) {
+            ASSERT(exec_command(ins[i]));
+        }
 
         for_vector(ins, i, 0) {
             ins[i]->destroy(ins[i]);
         }
         free_vector(ins);
+
+        scopes_pop();
+        shutdown_global_env();
+
+        for_vector(ast, i, 0) {
+            ast[i]->destroy(ast[i]);
+        }
+        free_vector(ast);
     }
 
     for_vector(par.errors, i, 0) {

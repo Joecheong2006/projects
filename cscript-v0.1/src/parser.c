@@ -48,21 +48,26 @@ static ast_node* expr_brackets_terminal(parser* par, ast_node* node);
 static ast_node* expr_default_terminal(parser* par, ast_node* node);
 
 ast_node* expr_brackets_terminal(parser* par, ast_node* node) {
+    START_PROFILING();
     token* tok = parser_peek_token(par, 0);
     if (tok->type == ')') {
+        END_PROFILING(__func__);
         return node;
     }
     node->destroy(node);
     parser_report_error(par, tok, "expected )");
+    END_PROFILING(__func__);
     return NULL;
 }
 
 ast_node* expr_default_terminal(parser* par, ast_node* node) {
+    START_PROFILING();
     token* tok = parser_peek_token(par, 0);
     if (tok->type != ')' && (tok->type == ';' || tok->type == '\n')) {
         if (tok->type != ')') {
             ++par->pointer;
         }
+        END_PROFILING(__func__);
         return node;
     }
     node->destroy(node);
@@ -72,18 +77,22 @@ ast_node* expr_default_terminal(parser* par, ast_node* node) {
     else {
         parser_report_error(par, tok, "expected ; or \\n at end of expr");
     }
+    END_PROFILING(__func__);
     return NULL;
 }
 
 ast_node* parse_expr_with_brackets(parser* par) {
+    START_PROFILING();
     token* tok = parser_peek_token(par, 0);
     if (tok->type != '(') {
         parser_report_error(par, tok, "missing (");
+        END_PROFILING(__func__);
         return NULL;
     }
     ++par->pointer;
     ast_node* expr = parse_expr_bottom_up(par, expr_brackets_terminal);
     if (!expr) {
+        END_PROFILING(__func__);
         return NULL;
     }
 
@@ -91,18 +100,23 @@ ast_node* parse_expr_with_brackets(parser* par) {
     if (tok->type != ')') {
         expr->destroy(expr);
         parser_report_error(par, tok, "missing )");
+        END_PROFILING(__func__);
         return NULL;
     }
     ++par->pointer;
     // NOTE: create a new node type maybe cleaner but for now it's fine
     expr->type = AstNodeTypeExpr;
+    END_PROFILING(__func__);
     return expr;
 }
 
 void omit_separator(parser* par) {
+    START_PROFILING();
     token* tok = parser_peek_token(par, 0);
-    if (!tok)
+    if (!tok) {
+        END_PROFILING(__func__);
         return;
+    }
     while (1) {
         switch ((i32)tok->type) {
         case ';': 
@@ -112,27 +126,34 @@ void omit_separator(parser* par) {
             break;
         }
         default:
+            END_PROFILING(__func__);
             return;
         }
     }
+    END_PROFILING(__func__);
 }
 
 ast_node* parse_identifier(parser* par) {
+    START_PROFILING();
     token* tok = parser_peek_token(par, 0);
     if (tok->type != TokenTypeIdentifier) {
         parser_report_error(par, tok, "missing identifier");
+        END_PROFILING(__func__);
         return NULL;
     }
     ++par->pointer;
+    END_PROFILING(__func__);
     return make_ast_identifier(tok);
 }
 
 ast_node* parse_member(parser* par) {
+    START_PROFILING();
     ast_node* id = parse_identifier(par);
     ast_node* result = id;
     while (1) {
         token* tok = parser_peek_token(par, 0);
         if (tok->type != '.') {
+            END_PROFILING(__func__);
             return result;
         }
         ast_node* af = parse_identifier(par);
@@ -140,30 +161,37 @@ ast_node* parse_member(parser* par) {
         iden->next = af;
         id = af;
     }
+    END_PROFILING(__func__);
     return result;
 }
 
 ast_node* parse_term(parser* par) {
+    START_PROFILING();
     token* tok = parser_peek_token(par, 0);
     switch ((i32)tok->type) {
     case TokenTypeIdentifier: {
+        END_PROFILING(__func__);
         return parse_member(par);
     }
     case TokenTypeLiteralInt32: case TokenTypeLiteralString: case TokenTypeLiteralFloat32: {
         ++par->pointer;
+        END_PROFILING(__func__);
         return make_ast_constant(tok);
     }
     case '(':
+        END_PROFILING(__func__);
         return parse_expr_with_brackets(par);
     case '-': {
         ++par->pointer;
         ast_node* node = make_ast_negate(tok);
         ast_negate* neg = get_ast_true_type(node);
         neg->term = parse_term(par);
+        END_PROFILING(__func__);
         return node;
     }
     case '+': {
         ++par->pointer;
+        END_PROFILING(__func__);
         return parse_term(par);
     }
     default:
@@ -173,27 +201,38 @@ ast_node* parse_term(parser* par) {
 }
 
 ast_node* parse_operator(parser* par) {
+    START_PROFILING();
     token* tok = parser_peek_token(par, 0);
     switch ((i32)tok->type) {
     case '+': {
         ++par->pointer;
-        return make_ast_binary_expression(AstNodeTypeExprAdd, tok, make_command_add);
+        ast_node* node = make_ast_binary_expression(AstNodeTypeExprAdd, tok, make_command_add);
+        END_PROFILING(__func__);
+        return node;
     }
     case '-': {
         ++par->pointer;
-        return make_ast_binary_expression(AstNodeTypeExprMinus, tok, make_command_minus);
+        ast_node* node = make_ast_binary_expression(AstNodeTypeExprMinus, tok, make_command_minus);
+        END_PROFILING(__func__);
+        return node;
     }
     case '*': {
         ++par->pointer;
-        return make_ast_binary_expression(AstNodeTypeExprMultiply, tok, make_command_multiply);
+        ast_node* node = make_ast_binary_expression(AstNodeTypeExprMultiply, tok, make_command_multiply);
+        END_PROFILING(__func__);
+        return node;
     }
     case '/': {
         ++par->pointer;
-        return make_ast_binary_expression(AstNodeTypeExprDivide, tok, make_command_divide);
+        ast_node* node = make_ast_binary_expression(AstNodeTypeExprDivide, tok, make_command_divide);
+        END_PROFILING(__func__);
+        return node;
     }
     case '%': {
         ++par->pointer;
-        return make_ast_binary_expression(AstNodeTypeExprModulus, tok, make_command_modulus);
+        ast_node* node = make_ast_binary_expression(AstNodeTypeExprModulus, tok, make_command_modulus);
+        END_PROFILING(__func__);
+        return node;
     }
     default:
         return NULL;
@@ -201,21 +240,26 @@ ast_node* parse_operator(parser* par) {
 }
 
 i32 bottom_up_need_to_reround(AstNodeType current, AstNodeType previous) {
+    START_PROFILING();
     switch (current) {
     case AstNodeTypeExprModulus:
     case AstNodeTypeExprDivide:
     case AstNodeTypeExprMultiply: {
         if (previous == AstNodeTypeExprAdd || previous == AstNodeTypeExprMinus) {
+            END_PROFILING(__func__);
             return 1;
         }
+        END_PROFILING(__func__);
         return 0;
     }
     default:
+        END_PROFILING(__func__);
         return 0;
     }
 }
 
 ast_node* parse_expr_bottom_up(parser* par, ast_node*(*is_terminal)(parser*,ast_node*)) {
+    START_PROFILING();
     ast_node* lhs = parse_term(par);
     if (!lhs) {
         return NULL;
@@ -225,6 +269,7 @@ ast_node* parse_expr_bottom_up(parser* par, ast_node*(*is_terminal)(parser*,ast_
     while (1) {
         ast_node* ope = parse_operator(par);
         if (!ope) {
+            END_PROFILING(__func__);
             return is_terminal(par, ret);
         }
         ast_node* rhs = parse_term(par);
@@ -255,6 +300,7 @@ ast_node* parse_expr(parser* par) {
 }
 
 ast_node* parse_vardecl(parser* par) {
+    START_PROFILING();
     token* tok = parser_peek_token(par, 0);
     if (tok->type != TokenTypeKeywordVar) {
         parser_report_error(par, tok, "missing var");
@@ -283,31 +329,43 @@ ast_node* parse_vardecl(parser* par) {
         node->destroy(node);
         return NULL;
     }
+    END_PROFILING(__func__);
     return node;
 }
 
 static ast_node* parse_assignment_operator(parser* par) {
+    START_PROFILING();
     token* tok = parser_peek_token(par, 0);
     switch (tok->type) {
     case TokenTypeAssignmentPlus: {
         ++par->pointer;
-        return make_ast_assignment(AstNodeTypeExprAddAssign, tok, make_command_add_assign);
+        ast_node* node = make_ast_assignment(AstNodeTypeExprAddAssign, tok, make_command_add_assign);
+        END_PROFILING(__func__);
+        return node;
     }
     case TokenTypeAssignmentMinus: {
         ++par->pointer;
-        return make_ast_assignment(AstNodeTypeExprMinusAssign, tok, NULL);
+        ast_node* node = make_ast_assignment(AstNodeTypeExprMinusAssign, tok, make_command_minus_assign);
+        END_PROFILING(__func__);
+        return node;
     }
     case TokenTypeAssignmentMultiply: {
         ++par->pointer;
-        return make_ast_assignment(AstNodeTypeExprMultiplyAssign, tok, NULL);
+        ast_node* node = make_ast_assignment(AstNodeTypeExprMultiplyAssign, tok, make_command_multiply_assign);
+        END_PROFILING(__func__);
+        return node;
     }
     case TokenTypeAssignmentDivide: {
         ++par->pointer;
-        return make_ast_assignment(AstNodeTypeExprDivideAssign, tok, NULL);
+        ast_node* node = make_ast_assignment(AstNodeTypeExprDivideAssign, tok, make_command_divide_assign);
+        END_PROFILING(__func__);
+        return node;
     }
     case TokenTypeAssignmentModulus: {
         ++par->pointer;
-        return make_ast_assignment(AstNodeTypeExprModulusAssign, tok, NULL);
+        ast_node* node = make_ast_assignment(AstNodeTypeExprModulusAssign, tok, make_command_modulus_assign);
+        END_PROFILING(__func__);
+        return node;
     }
     default: {
         parser_report_error(par, tok, "expected assignment operator");
@@ -317,6 +375,7 @@ static ast_node* parse_assignment_operator(parser* par) {
 }
 
 static ast_node* parse_identifier_statement(parser* par) { 
+    START_PROFILING();
     ast_node* mem = parse_member(par);
     if (!mem) {
         return NULL;
@@ -335,6 +394,7 @@ static ast_node* parse_identifier_statement(parser* par) {
         return NULL;
     }
     assignment->variable_name = mem;
+    END_PROFILING(__func__);
     return node;
 }
 
@@ -353,13 +413,13 @@ static void clean_up_fatal(parser* par, vector(ast_node*) node) {
 }
 
 vector(ast_node*) parser_parse(parser* par) {
+    START_PROFILING();
     token* tok = parser_peek_token(par, 0);
     if (!tok) {
         return NULL;
     }
     vector(ast_node*) result = make_vector(ast_node*);
     while (tok) {
-        START_PROFILING();
         switch ((i32)tok->type) {
         case TokenTypeKeywordVar: {
             ast_node* node = parse_vardecl(par);
@@ -374,22 +434,21 @@ vector(ast_node*) parser_parse(parser* par) {
         default: {
             parser_report_error(par, tok, "invalid token");
             clean_up_fatal(par, result);
-            END_PROFILING(__func__);
             return NULL;
         }
         }
         if (vector_back(result) == NULL) {
             clean_up_fatal(par, result);
-            END_PROFILING(__func__);
             return NULL;
         }
-        END_PROFILING(__func__);
         omit_separator(par);
         tok = parser_peek_token(par, 0);
         if (tok->type == TokenTypeEOF) {
+            END_PROFILING(__func__);
             return result;
         }
     }
+    END_PROFILING(__func__);
     return result;
 }
 

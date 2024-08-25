@@ -1,5 +1,6 @@
 #include "global.h"
 #include "core/assert.h"
+#include "tracing.h"
 #include <string.h> // NOTE: for strcmp()
 
 static hashmap map;
@@ -28,20 +29,24 @@ static void free_global_scopes(void) {
     free_vector(global_scopes);
 }
 
-static u32 hash_object(void* data, u32 size) {
+INLINE static u32 hash_object(void* data, u32 size) {
     ASSERT(data);
     object* obj = data;
     return sdbm(obj->name) % size;
 }
 
 void setup_global_env(void) {
+    START_PROFILING();
     map = make_hashmap(1 << 10, hash_object);
     global_scopes = make_scopes();
+    END_PROFILING(__func__);
 }
 
 void shutdown_global_env(void) {
+    START_PROFILING();
     free_global_scopes();
     free_hashmap(&map);
+    END_PROFILING(__func__);
 }
 
 void scopes_push(void) {
@@ -52,11 +57,13 @@ void scopes_push(void) {
 
 void scopes_pop(void) {
     ASSERT_MSG(global_scopes, "uninitialize global env");
-    free_scope(vector_back(global_scopes));
+    scope sc = vector_back(global_scopes);
+    free_scope(sc);
     vector_pop(global_scopes);
 }
 
 object* find_object(cstring name) {
+    START_PROFILING();
     ASSERT_MSG(map.data, "uninitialize global env");
     object obj = { .name = name };
     vector(void*) result = hashmap_access_vector(&map, &obj);
@@ -66,6 +73,7 @@ object* find_object(cstring name) {
             return obj;
         }
     }
+    END_PROFILING(__func__);
     return NULL;
 }
 

@@ -105,6 +105,7 @@ static token generate_float_after_dot(lexer* lex) {
 }
 
 static token generate_number_literal_token(lexer* lex) {
+    START_PROFILING();
     i32 val = 0, count = 0, percision_count = 0;
     char c = lex->ctx[lex->str_count];
     if (c == '0' && !is_0_9(lex->ctx[lex->str_count + 1]) && lex->ctx[lex->str_count + 1] != '.') {
@@ -124,6 +125,7 @@ static token generate_number_literal_token(lexer* lex) {
                 .val.int32 = val, lex->line, lex->position - count - 2, TokenTypeLiteralInt32,
             };
             tok.val.type[2] = PrimitiveDataTypeInt32;
+            END_PROFILING(__func__);
             return tok;
         }
         case 'b': {
@@ -138,6 +140,7 @@ static token generate_number_literal_token(lexer* lex) {
                 .val.int32 = val, lex->line, lex->position - count - 2, TokenTypeLiteralInt32
             };
             tok.val.type[2] = PrimitiveDataTypeInt32;
+            END_PROFILING(__func__);
             return tok;
         }
         default:
@@ -176,16 +179,19 @@ static token generate_number_literal_token(lexer* lex) {
             .val.int32 = val, lex->line, lex->position - count, TokenTypeLiteralInt32
         };
         tok.val.type[2] = PrimitiveDataTypeInt32;
+        END_PROFILING(__func__);
         return tok;
     }
     token tok = {
         .val.float32 = (f32)val / percision_count, lex->line, lex->position - count, TokenTypeLiteralFloat32
     };
     tok.val.type[2] = PrimitiveDataTypeFloat32;
+    END_PROFILING(__func__);
     return tok;
 }
 
 static token generate_text_token(lexer* lex) {
+    START_PROFILING();
     i32 count = 0;
     char c = lex->ctx[lex->str_count];
     const char* name_begin = lex->ctx + lex->str_count;
@@ -204,17 +210,20 @@ static token generate_text_token(lexer* lex) {
 
     lex->position += count;
     if (tok_type != TokenTypeIdentifier) {
+        END_PROFILING(__func__);
         return (token) {
             .val.string = NULL, lex->line, lex->position - count, tok_type
         };
     }
 
+    END_PROFILING(__func__);
     return (token) {
         .val.string = make_stringn(name_begin, count), lex->line, lex->position - count, TokenTypeIdentifier
     };
 }
 
 #define MATCH_ONE_AFTER(c1, c2, tok_type)\
+    START_PROFILING();\
     token tok = {.val.string = NULL, lex->line, lex->position, tok_type};\
     if (lex->ctx[lex->str_count + 1] == c2) {\
         vector_push(result, tok);\
@@ -224,6 +233,7 @@ static token generate_text_token(lexer* lex) {
     tok.type = c1;\
     vector_push(result, tok);\
     lexer_consume(lex);\
+    END_PROFILING("gen token " #tok_type);\
     break;
 
 vector(token) generate_tokens(lexer* lex) {
@@ -237,18 +247,23 @@ vector(token) generate_tokens(lexer* lex) {
         case '{': case '}':
         case ';': case ':': case '\'': case '"': case '\\': case ',':
         case '\t': { 
+            START_PROFILING();
             token tok = {.val.string = NULL, lex->line, lex->position, c};
             vector_push(result, tok);
             lexer_consume(lex);
+            END_PROFILING("gen token");
             break;
         }
         case '\n': { 
+            START_PROFILING();
             token tok = {.val.string = NULL, lex->line++, lex->position, c};
             vector_push(result, tok);
             lex->position = 1;
             lexer_consume(lex);
+            END_PROFILING("gen token newline");
             break;
         }
+        case ' ': { lexer_consume(lex); break; }
         case '>': { MATCH_ONE_AFTER(c, '>', TokenTypeOperatorGreaterThan); }
         case '<': { MATCH_ONE_AFTER(c, '<', TokenTypeOperatorLessThan); }
         case '=': { MATCH_ONE_AFTER(c, '=', TokenTypeOperatorEqual); }
@@ -258,7 +273,6 @@ vector(token) generate_tokens(lexer* lex) {
         case '*': { MATCH_ONE_AFTER(c, '=', TokenTypeAssignmentMultiply); }
         case '/': { MATCH_ONE_AFTER(c, '=', TokenTypeAssignmentDivide); } 
         case '%': { MATCH_ONE_AFTER(c, '=', TokenTypeAssignmentModulus); }
-        case ' ': { lexer_consume(lex); break; }
         case 0: { 
             token tok = {.val.string = NULL, lex->line, lex->position, TokenTypeEOF};
             vector_push(result, tok);
@@ -267,6 +281,7 @@ vector(token) generate_tokens(lexer* lex) {
             return result;
         }
         case '.': {
+            START_PROFILING();
             if (is_0_9(lex->ctx[lex->str_count + 1])) {
                 lexer_consume(lex);
                 token tok = generate_float_after_dot(lex);
@@ -276,9 +291,11 @@ vector(token) generate_tokens(lexer* lex) {
             token tok = {.val.string = NULL, lex->line, lex->position, c};
             vector_push(result, tok);
             lexer_consume(lex);
+            END_PROFILING("gen token float literal");
             break; 
         }
         default: {
+            START_PROFILING();
             if (c >= '0' && c <= '9') {
                 token tok = generate_number_literal_token(lex);
                 vector_push(result, tok);
@@ -290,6 +307,7 @@ vector(token) generate_tokens(lexer* lex) {
             else {
                 ASSERT_MSG(0, "unkown symbol");
             }
+            END_PROFILING("gen word token");
             break;
         }
         }

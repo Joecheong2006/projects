@@ -31,6 +31,9 @@ void setup_trace_info(trace_info* info) {
 }
 
 void submit_tracing_info(trace_info* info, const char name[], char* cat, i32 ts, i32 pid, i32 tid, i32 dur) {
+    char buf[2560];
+    sprintf(buf, "\t\t{\n\t\t\t\"name\":\"%s\",\n\t\t\t\"cat\":\"%s\",\n\t\t\t\"ph\":\"X\",\n\t\t\t\"ts\":%d,\n\t\t\t\"pid\":%d,\n\t\t\t\"tid\":%d,\n\t\t\t\"dur\":%d\n\t\t}", name, cat, ts, pid, tid, dur);
+
     info->file = fopen(info->file_name, "a");
     if (!info->file) {
     	return;
@@ -38,14 +41,6 @@ void submit_tracing_info(trace_info* info, const char name[], char* cat, i32 ts,
 	if (info->count++ > 0) {
 	    fprintf(info->file, ",\n");
 	}
-    fprintf(info->file, "\t\t{\n");
-    fprintf(info->file, "\t\t\t\"name\":\"%s\",\n", name);
-    fprintf(info->file, "\t\t\t\"cat\":\"%s\",\n", cat);
-    fprintf(info->file, "\t\t\t\"ph\":\"%s\",\n", "X");
-    fprintf(info->file, "\t\t\t\"ts\":%d,\n", ts);
-    fprintf(info->file, "\t\t\t\"pid\":%d,\n", pid);
-    fprintf(info->file, "\t\t\t\"tid\":%d,\n", tid);
-    fprintf(info->file, "\t\t\t\"dur\":%d\n", dur);
-    fprintf(info->file, "\t\t}");
+    fprintf(info->file, "%s", buf);
     fclose(info->file);
 }

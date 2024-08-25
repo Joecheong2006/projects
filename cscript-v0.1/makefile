@@ -3,6 +3,9 @@ CFLAGS = -std=c99 -Wall -Wextra -Wpedantic -Wstrict-aliasing -Werror -Isrc
 DEBUG_FLAGS = -g3 -DDEBUG
 RELEASE_FLAGS = -O2
 DEBUGGER = gdb
+
+CONFIG=
+
 WINLIB = -lWinmm
 
 SRC = $(wildcard src/*.c src/**/*.c)
@@ -20,9 +23,10 @@ else
 endif
 
 
+CFLAGS += $(CONFIG)
 all: bin app 
 
-rel: CFLAGS += $(RELEASE_FLAGS)
+rel: CFLAGS += $(RELEASE_FLAGS) $(CONFIG)
 rel: bin $(OBJ)
 	@$(CC) $(CFLAGS) $(OBJ) -o $(BIN)/$(OUT)
 	@echo "Compilation completed"
