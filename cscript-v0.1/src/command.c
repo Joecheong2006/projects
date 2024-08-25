@@ -106,7 +106,7 @@ static object* access_object(command* cmd) {
             return 0;\
         }\
         LOG_DEBUG("\texec cmd:%p CommandTypeAssignment %s" "\n", cmd, #assign_name);\
-        LOG_TRACE("\t%s += %g -> %g\n", obj->name, data.float32, o->val.float32);\
+        LOG_TRACE("\t%s %s by %g -> %g\n", obj->name, #assign_name, data.float32, o->val.float32);\
         END_PROFILING(__func__);\
         return 1;\
     }
@@ -177,14 +177,19 @@ static i32 command_exec_vardecl(command_vardecl* vardecl) {
         LOG_ERROR("\t%s on line %d\n", ei.msg, vardecl->line_on_exec);
         return 0;
     }
-    LOG_TRACE("\tvar %s = %g\n", vardecl->variable_name, data.float32);
 
     // NOTE: Check if the data is different from primitive in here.
+
+    if (find_object(vardecl->variable_name) != NULL) {
+        LOG_ERROR("\tredeclare variable '%s' on line %d\n", vardecl->variable_name, vardecl->line_on_exec);
+        return 0;
+    }
 
     object* obj = make_object_primitive_data(vardecl->variable_name);
     object_primitive_data* o = get_object_true_type(obj);
     o->val = data;
     push_object(obj);
+    LOG_TRACE("\t%d: var %s = %g\n", vardecl->line_on_exec, vardecl->variable_name, data.float32);
     END_PROFILING(__func__);
     return 1;
 }
@@ -286,6 +291,7 @@ command* make_command_vardecl(ast_node* node) {
     ast_vardecl* vd = get_ast_true_type(node);
     vardecl->variable_name = vd->variable_name->tok->val.string;
     vardecl->expr = vd->expr->gen_command(vd->expr);
+    vardecl->line_on_exec = node->tok->line;
     LOG_DEBUG("\tgen cmd:%p CommandTypeVarDecl varname %s\n", result, vardecl->variable_name);
     END_PROFILING(__func__);
     return result;

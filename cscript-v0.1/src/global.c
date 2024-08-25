@@ -63,8 +63,8 @@ void scopes_pop(void) {
 }
 
 object* find_object(cstring name) {
-    START_PROFILING();
     ASSERT_MSG(map.data, "uninitialize global env");
+    START_PROFILING();
     object obj = { .name = name };
     vector(void*) result = hashmap_access_vector(&map, &obj);
     for (i64 i = (i64)vector_size(result) - 1; i > -1; --i) {
@@ -79,6 +79,7 @@ object* find_object(cstring name) {
 
 void pop_object(void) {
     ASSERT_MSG(map.data, "uninitialize global env");
+    START_PROFILING();
     object tmp = { .name = vector_back(vector_back(global_scopes))->name };
     vector(void*) result = hashmap_access_vector(&map, &tmp);
     for (i64 i = vector_size(result) - 1; i > -1; --i) {
@@ -93,10 +94,13 @@ void pop_object(void) {
         }
     }
     scopes_pop_obj();
+    END_PROFILING(__func__);
 }
 
 void push_object(object* obj) {
+    START_PROFILING();
     scopes_push_obj(obj);
     hashmap_add(&map, obj);
+    END_PROFILING(__func__);
 }
 

@@ -5,7 +5,6 @@
 #include "command.h"
 #include "parser.h"
 #include "core/assert.h"
-#include "tracing.h"
 
 #include "global.h"
 
@@ -20,7 +19,7 @@ int main(void) {
     const char text[] = "var a=(2+4*(3/(.2*10))+3-1-1)*1.1+(0.5+.5)+(.5-0.3-0.2)\n"
                         "var cat = 1-1.0-1--3*3\n"
                         "var dog = 1.0 + 101 % 3 / 2\n"
-                        "dog += 1.3\n";
+                        "dog += 3.1415\n";
     lexer lex = {text, sizeof(text) - 1, 1, 1, 0};
 
     parser par;
@@ -65,3 +64,4 @@ int main(void) {
     LOG_INFO("\tleak count = %d\n", check_memory_leak());
     return 0;
 }
+

@@ -170,6 +170,10 @@ error_info primitive_data_modulus_assign(primitive_data* a, primitive_data* b) {
     case PrimitiveDataTypeInt64:
         a->int64 %= b->int64;
         break;
+    case PrimitiveDataTypeFloat32:
+        return (error_info){ .msg = "invalid modulus operation for float32" };
+    case PrimitiveDataTypeFloat64:
+        return (error_info){ .msg = "invalid modulus operation for float64" };
     default: return (error_info){ .msg = "undefine primitive data type" };
     }
     END_PROFILING(__func__);

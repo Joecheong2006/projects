@@ -383,6 +383,7 @@ static ast_node* parse_identifier_statement(parser* par) {
 
     ast_node* node = parse_assignment_operator(par);
     if (!node) {
+        mem->destroy(mem);
         return NULL;
     }
 
