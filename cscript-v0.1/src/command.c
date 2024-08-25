@@ -83,7 +83,6 @@ static i32 command_assign_add(command* cmd) {
         return 0;
     }
 
-    // if (!(obj->type == ObjectTypeInt32 || obj->type == ObjectTypeFloat32 || obj->type == ObjectTypeInt64 || obj->type == ObjectTypeFloat64)) {
     if (obj->type != ObjectTypePrimitiveData) {
         LOG_ERROR("\tInvalid operands to binary expression on line %d\n", obj->name, ca->line_on_exec);
         return 0;
@@ -96,14 +95,14 @@ static i32 command_assign_add(command* cmd) {
         return 0;
     }
 
-    log_level_msg(LogLevelDebug, "\t%s += %g\n", obj->name, data.float32);
-
     object_primitive_data* o = get_object_true_type(obj);
     ei = primitive_data_add_assign(&o->val, &data);
     if (ei.msg) {
         LOG_ERROR("\t%s on line %d\n", ei.msg, ca->line_on_exec);
         return 0;
     }
+
+    log_level_msg(LogLevelDebug, "\t%s += %g -> %g\n", obj->name, data.float32, o->val.float32);
     return 1;
 }
 
