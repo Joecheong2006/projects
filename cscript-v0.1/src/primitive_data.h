@@ -4,13 +4,18 @@
 
 typedef enum {
     PrimitiveDataTypeInt32,
+    PrimitiveDataTypeInt64,
     PrimitiveDataTypeFloat32,
-    PrimitiveDataTypeString,
+    PrimitiveDataTypeFloat64,
 } PrimitiveDataType;
+
+extern i32 primitive_type_map[];
 
 typedef union {
     i32 int32;
     f32 float32;
+    i64 int64;
+    f64 float64;
     const char* string;
     i32 type[3];
 } primitive_data;

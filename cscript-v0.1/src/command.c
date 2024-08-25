@@ -78,7 +78,7 @@ static i32 command_assign_add(command* cmd) {
         return 0;
     }
 
-    if (!(obj->type == ObjectTypeInt || obj->type == ObjectTypeFloat)) {
+    if (!(obj->type == ObjectTypeInt32 || obj->type == ObjectTypeFloat32 || obj->type == ObjectTypeInt64 || obj->type == ObjectTypeFloat64)) {
         LOG_ERROR("\tInvalid operands to binary expression on line %d\n", obj->name, ca->line_on_exec);
         return 0;
     }
@@ -89,15 +89,26 @@ static i32 command_assign_add(command* cmd) {
         return 0;
     }
     log_level_msg(LogLevelDebug, "\t%s += %g\n", obj->name, data.float32);
+    // TODO: implement primitve_data assign function
     switch (obj->type) {
-    case ObjectTypeInt: {
-        object_int* o = get_object_true_type(obj);
-        o->val += data.int32;
+    case ObjectTypeInt32: {
+        object_primitive_data* o = get_object_true_type(obj);
+        o->val.int32 += data.int32;
         break;
     }
-    case ObjectTypeFloat: {
-        object_float* o = get_object_true_type(obj);
-        o->val += data.float32;
+    case ObjectTypeInt64: {
+        object_primitive_data* o = get_object_true_type(obj);
+        o->val.int64 += data.int64;
+        break;
+    }
+    case ObjectTypeFloat32: {
+        object_primitive_data* o = get_object_true_type(obj);
+        o->val.float32 += data.float32;
+        break;
+    }
+    case ObjectTypeFloat64: {
+        object_primitive_data* o = get_object_true_type(obj);
+        o->val.float64 += data.float64;
         break;
     }
     default: break;
@@ -158,11 +169,6 @@ static void destroy_command_vardecl(command* cmd) {
 }
 
 static i32 command_exec_vardecl(command_vardecl* vardecl) {
-    // ASSERT(vardecl->type == CommandTypeVarDecl);
-    // command_vardecl* vardecl = get_command_true_type(cmd);
-    // LOG_TRACE("\texec cmd:%p CommandTypeVarDecl varname %s\n", vardecl->variable_name);
-
-    // TODO: create variable from cmd->arg1
     primitive_data data = command_binary_operation_cal(vardecl->expr);
     if (data.type[2] < 0) {
         LOG_ERROR("\t%s on line %d\n", data.string, vardecl->line_on_exec);
@@ -170,22 +176,9 @@ static i32 command_exec_vardecl(command_vardecl* vardecl) {
     }
     LOG_DEBUG("\tvar %s = %g\n", vardecl->variable_name, data.float32);
 
-    object* obj = NULL;
-    switch (data.type[2]) {
-    case PrimitiveDataTypeInt32: {
-        obj = make_object_int(vardecl->variable_name);
-        object_int* o = get_object_true_type(obj);
-        o->val = data.int32;
-        break;
-    }
-    case PrimitiveDataTypeFloat32: {
-        obj = make_object_float(vardecl->variable_name);
-        object_float* o = get_object_true_type(obj);
-        o->val = data.float32;
-        break;
-    }
-    default: ASSERT_MSG(0, "unkown type"); break;
-    }
+    object* obj = make_object_primitive_data(primitive_type_map[data.type[2]], vardecl->variable_name);
+    object_primitive_data* o = get_object_true_type(obj);
+    o->val= data;
     push_object(obj);
 
     return 1;

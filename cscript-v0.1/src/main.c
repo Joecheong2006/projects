@@ -6,78 +6,7 @@
 #include "parser.h"
 #include "core/assert.h"
 
-#include "object.h"
 #include "global.h"
-
-void test(void) {
-    setup_global_env();
-    scopes_push();
-
-    {
-        object* obj = make_object_bool("bool");
-        object_bool* b = get_object_true_type(obj);
-        b->val = 1;
-        push_object(obj);
-    }
-
-    {
-        object* obj = make_object_int("int");
-        object_int* t = get_object_true_type(obj);
-        t->val = 81;
-        push_object(obj);
-    }
-
-    {
-        object* obj = make_object_float("float");
-        object_float* f = get_object_true_type(obj);
-        f->val = 3.1415;
-        push_object(obj);
-    }
-
-    {
-        object* obj = make_object_string("string");
-        object_string* str = get_object_true_type(obj);
-        string_push(str->val, "hello, world!");
-        push_object(obj);
-    }
-
-    {
-        object* obj = make_object_function("func");
-        push_object(obj);
-    }
-
-    {
-        object* obj = make_object_user_type("user_type");
-        push_object(obj);
-    }
-
-    object* obj = find_object("bool");
-    object_bool* b = get_object_true_type(obj);
-    LOG_INFO("\t%d val %d\n", obj->type, b->val);
-
-    obj = find_object("int");
-    object_int* i = get_object_true_type(obj);
-    LOG_INFO("\t%d val %d\n", obj->type, i->val);
-
-    obj = find_object("float");
-    object_float* f = get_object_true_type(obj);
-    LOG_INFO("\t%d val %g\n", obj->type, f->val);
-
-    obj = find_object("string");
-    object_string* str = get_object_true_type(obj);
-    LOG_INFO("\t%d val %s\n", obj->type, str->val);
-
-    obj = find_object("func");
-    LOG_INFO("\t%d\n", obj->type);
-
-    obj = find_object("user_type");
-    LOG_INFO("\t%d\n", obj->type);
-
-    scopes_pop();
-
-    shutdown_global_env();
-    LOG_INFO("\tleak count = %d\n", check_memory_leak());
-}
 
 int main(void) {
     // test();

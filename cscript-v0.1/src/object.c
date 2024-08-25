@@ -1,7 +1,7 @@
 #include "object.h"
 #include "container/memallocate.h"
 #include "command.h"
-#include <assert.h>
+#include "core/assert.h"
 
 object* make_object(ObjectType type, cstring name, u64 type_size, void(*destroy)(object*)) {
     object* result = MALLOC(type_size + sizeof(object));
@@ -14,7 +14,7 @@ object* make_object(ObjectType type, cstring name, u64 type_size, void(*destroy)
 INLINE void* get_object_true_type(object* obj) { return obj + 1; }
 
 void object_bool_destroy(object* obj) {
-    assert(obj->type == ObjectTypeBool);
+    ASSERT(obj->type == ObjectTypeBool);
     FREE(obj);
 }
 
@@ -22,26 +22,17 @@ object* make_object_bool(cstring name) {
     return make_object(ObjectTypeBool, name, sizeof(object_bool), object_bool_destroy);
 }
 
-void object_int_destroy(object* obj) {
-    assert(obj->type == ObjectTypeInt);
+void object_primitive_data_destroy(object* obj) {
+    ASSERT(obj);
     FREE(obj);
 }
 
-object* make_object_int(cstring name) {
-    return make_object(ObjectTypeInt, name, sizeof(object_int), object_int_destroy);
-}
-
-void object_float_destroy(object* obj) {
-    assert(obj->type == ObjectTypeFloat);
-    FREE(obj);
-}
-
-object* make_object_float(cstring name) {
-    return make_object(ObjectTypeFloat, name, sizeof(object_float), object_float_destroy);
+object* make_object_primitive_data(ObjectType type, cstring name) {
+    return make_object(type, name, sizeof(object_primitive_data), object_primitive_data_destroy);
 }
 
 void object_string_destroy(object* obj) {
-    assert(obj->type == ObjectTypeString);
+    ASSERT(obj->type == ObjectTypeString);
     object_string* str = get_object_true_type(obj);
     free_string(str->val);
     FREE(obj);
@@ -55,7 +46,7 @@ object* make_object_string(cstring name) {
 }
 
 void object_function_destroy(object* obj) {
-    assert(obj->type == ObjectTypeFunction);
+    ASSERT(obj->type == ObjectTypeFunction);
     object_function* func = get_object_true_type(obj);
     for_vector(func->body, i, 0) {
         func->body[i]->destroy(func->body[i]);
@@ -77,7 +68,7 @@ object* make_object_function(cstring name) {
 }
 
 void object_user_type_destroy(object* obj) {
-    assert(obj->type == ObjectTypeUserType);
+    ASSERT(obj->type == ObjectTypeUserType);
     object_user_type* user_type = get_object_true_type(obj);
     for_vector(user_type->members, i, 0) {
         user_type->members[i]->destroy(user_type->members[i]);

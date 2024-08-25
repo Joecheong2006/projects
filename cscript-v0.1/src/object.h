@@ -1,12 +1,15 @@
 #ifndef _OBJECT_H_
 #define _OBJECT_H_
 #include "container/string.h"
+#include "primitive_data.h"
 
 typedef enum {
     ObjectTypeNone,
     ObjectTypeBool,
-    ObjectTypeInt,
-    ObjectTypeFloat,
+    ObjectTypeInt32,
+    ObjectTypeInt64,
+    ObjectTypeFloat32,
+    ObjectTypeFloat64,
     ObjectTypeString,
     ObjectTypeFunction,
     ObjectTypeArray,
@@ -33,13 +36,11 @@ DEFINE_OBJECT_TYPE(bool,
         u8 val;
 )
 
-DEFINE_OBJECT_TYPE(int,
-        i64 val;
-)
-
-DEFINE_OBJECT_TYPE(float,
-        f64 val;
-)
+typedef struct {
+        primitive_data val;
+} object_primitive_data;
+void object_primitive_data_destroy(object* obj);
+object* make_object_primitive_data(ObjectType type, cstring name);
 
 DEFINE_OBJECT_TYPE(string,
         string val;

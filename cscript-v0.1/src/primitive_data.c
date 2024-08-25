@@ -1,27 +1,63 @@
 #include "primitive_data.h"
+#include "object.h"
+
+i32 primitive_type_map[] = {
+    ObjectTypeInt32,
+    ObjectTypeInt64,
+    ObjectTypeFloat32,
+    ObjectTypeFloat64,
+};
 
 i32 primitive_data_guess_type(primitive_data* a, primitive_data* b) {
     return a->type[2] > b->type[2] ? a->type[2] : b->type[2];
 }
 
+#define IMPL_PRIMITIVE_DATA_CAST(cast_type, error_msg)\
+    switch (pd->type[2]) {\
+    case PrimitiveDataTypeInt32:\
+        pd->cast_type = pd->int32;\
+        break;\
+    case PrimitiveDataTypeInt64:\
+        pd->cast_type = pd->int64;\
+        break;\
+    case PrimitiveDataTypeFloat32:\
+        pd->cast_type = pd->float32;\
+        break;\
+    case PrimitiveDataTypeFloat64:\
+        pd->cast_type = pd->float64;\
+        break;\
+    default: {\
+        pd->type[2] = -1;\
+        pd->string = error_msg;\
+        return;\
+    }\
+    }
+
 void primitive_data_cast_to(i32 type, primitive_data* pd) {
-    switch (type - pd->type[2]) {
-    case 0: break;
-    case PrimitiveDataTypeInt32 - PrimitiveDataTypeFloat32: {
-        pd->int32 = pd->float32;
-        pd->type[2] = type;
+    switch (type) {
+    case PrimitiveDataTypeInt32: {
+        IMPL_PRIMITIVE_DATA_CAST(int32, "invalid cast to int32");
         break;
     }
-    case PrimitiveDataTypeFloat32 - PrimitiveDataTypeInt32: {
-        pd->float32 = pd->int32;
-        pd->type[2] = type;
+    case PrimitiveDataTypeInt64: {
+        IMPL_PRIMITIVE_DATA_CAST(int64, "invalid cast to int64");
+        break;
+    }
+    case PrimitiveDataTypeFloat32: {
+        IMPL_PRIMITIVE_DATA_CAST(float32, "invalid cast to float32");
+        break;
+    }
+    case PrimitiveDataTypeFloat64: {
+        IMPL_PRIMITIVE_DATA_CAST(float64, "invalid cast to float64");
         break;
     }
     default: {
         pd->type[2] = -1;
-        pd->string = "invalid cast";
-    } break;
+        pd->string = "invalid type to cast";
+        return;
     }
+    }
+    pd->type[2] = type;
 }
 
 #define IMPL_PRIMITIVE_ARITHMETIC(oper, name)\
