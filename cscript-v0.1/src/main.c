@@ -7,11 +7,22 @@
 #include "core/assert.h"
 
 #include "global.h"
-
+#include "tracing.h"
 
 __attribute__((destructor(101)))
-static void leak_check(void) {
+static void check_leak(void) {
     LOG_INFO("\tleak count = %d\n", check_memory_leak());
+}
+
+vector(command*) gen_instructions(vector(ast_node*) ast) {
+    START_PROFILING();
+    vector(command*) ins = make_vector(const command*);
+    for_vector(ast, i, 0) {
+        command* cmd = ast[i]->gen_command(ast[i]);
+        vector_push(ins, cmd);
+    }
+    END_PROFILING(__func__);
+    return ins;
 }
 
 int main(void) {
@@ -31,14 +42,21 @@ int main(void) {
 
     vector(ast_node*) ast = parser_parse(&par);
     if (ast) {
+        vector(command*) ins = gen_instructions(ast);
+
+        for_vector(ast, i, 0) {
+            ast[i]->destroy(ast[i]);
+        }
+        free_vector(ast);
+
+        for_vector(par.errors, i, 0) {
+            LOG_ERROR("\t%d:%d %s\n", par.errors[i].tok->line, par.errors[i].tok->count, par.errors[i].msg);
+        }
+
+        parser_free(&par);
+
         setup_global_env();
         scopes_push();
-
-        vector(command*) ins = make_vector(command*);
-        for_vector(ast, i, 0) {
-            command* cmd = ast[i]->gen_command(ast[i]);
-            vector_push(ins, cmd);
-        }
 
         for_vector(ins, i, 0) {
             ASSERT(exec_command(ins[i]));
@@ -51,18 +69,7 @@ int main(void) {
 
         scopes_pop();
         shutdown_global_env();
-
-        for_vector(ast, i, 0) {
-            ast[i]->destroy(ast[i]);
-        }
-        free_vector(ast);
     }
-
-    for_vector(par.errors, i, 0) {
-        LOG_ERROR("\t%d:%d %s\n", par.errors[i].tok->line, par.errors[i].tok->count, par.errors[i].msg);
-    }
-
-    parser_free(&par);
     // free_vector(lex.ctx);
 
     return 0;

@@ -20,7 +20,7 @@ struct command {
 };
 
 command* make_command(CommandType type, u64 type_size, void(*destroy)(command*));
-void* get_command_true_type(command* cmd);
+void* get_command_true_type(const command* cmd);
 
 typedef struct {
     command *lhs, *rhs;
@@ -51,7 +51,7 @@ typedef struct {
     command* mem;
     command* expr;
     i32 line_on_exec;
-    i32(*exec)(command*);
+    i32(*exec)(const command*);
 } command_assign;
 
 struct ast_node;
@@ -71,6 +71,6 @@ command* make_command_multiply_assign(struct ast_node* node);
 command* make_command_divide_assign(struct ast_node* node);
 command* make_command_modulus_assign(struct ast_node* node);
 
-i32 exec_command(command* cmd);
+i32 exec_command(const command* cmd);
 
 #endif

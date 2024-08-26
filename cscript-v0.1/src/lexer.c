@@ -228,12 +228,13 @@ static token generate_text_token(lexer* lex) {
     if (lex->ctx[lex->str_count + 1] == c2) {\
         vector_push(result, tok);\
         lexer_consume_n(lex, 2);\
+        END_PROFILING("gen " #c2);\
         break;\
     }\
     tok.type = c1;\
     vector_push(result, tok);\
     lexer_consume(lex);\
-    END_PROFILING("gen token " #tok_type);\
+    END_PROFILING("gen " #tok_type);\
     break;
 
 vector(token) generate_tokens(lexer* lex) {
@@ -251,7 +252,7 @@ vector(token) generate_tokens(lexer* lex) {
             token tok = {.val.string = NULL, lex->line, lex->position, c};
             vector_push(result, tok);
             lexer_consume(lex);
-            END_PROFILING("gen token");
+            END_PROFILING("gen token separator");
             break;
         }
         case '\n': { 
@@ -264,10 +265,10 @@ vector(token) generate_tokens(lexer* lex) {
             break;
         }
         case ' ': { lexer_consume(lex); break; }
-        case '>': { MATCH_ONE_AFTER(c, '>', TokenTypeOperatorGreaterThan); }
-        case '<': { MATCH_ONE_AFTER(c, '<', TokenTypeOperatorLessThan); }
+        case '>': { MATCH_ONE_AFTER(c, '=', TokenTypeOperatorGreaterThan); }
+        case '<': { MATCH_ONE_AFTER(c, '=', TokenTypeOperatorLessThan); }
         case '=': { MATCH_ONE_AFTER(c, '=', TokenTypeOperatorEqual); }
-        case '!': { MATCH_ONE_AFTER(c, '!', TokenTypeOperatorNotEqual); }
+        case '!': { MATCH_ONE_AFTER(c, '=', TokenTypeOperatorNotEqual); }
         case '+': { MATCH_ONE_AFTER(c, '=', TokenTypeAssignmentPlus); } 
         case '-': { MATCH_ONE_AFTER(c, '=', TokenTypeAssignmentMinus); } 
         case '*': { MATCH_ONE_AFTER(c, '=', TokenTypeAssignmentMultiply); }
@@ -281,7 +282,6 @@ vector(token) generate_tokens(lexer* lex) {
             return result;
         }
         case '.': {
-            START_PROFILING();
             if (is_0_9(lex->ctx[lex->str_count + 1])) {
                 lexer_consume(lex);
                 token tok = generate_float_after_dot(lex);
@@ -291,11 +291,9 @@ vector(token) generate_tokens(lexer* lex) {
             token tok = {.val.string = NULL, lex->line, lex->position, c};
             vector_push(result, tok);
             lexer_consume(lex);
-            END_PROFILING("gen token float literal");
             break; 
         }
         default: {
-            START_PROFILING();
             if (c >= '0' && c <= '9') {
                 token tok = generate_number_literal_token(lex);
                 vector_push(result, tok);
@@ -307,7 +305,6 @@ vector(token) generate_tokens(lexer* lex) {
             else {
                 ASSERT_MSG(0, "unkown symbol");
             }
-            END_PROFILING("gen word token");
             break;
         }
         }

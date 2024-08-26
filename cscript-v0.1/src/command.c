@@ -46,13 +46,13 @@ static error_info command_binary_operation_cal(primitive_data* out, command* cmd
         ASSERT(cmd->type == CommandTypeBinaryOperation);\
         LOG_DEBUG("\texec cmd:%p CommandTypeBinaryOperation " #operation_name "\n", cmd);\
         command_binary_operation* bo = get_command_true_type(cmd);\
+        END_PROFILING(__func__);\
         primitive_data lhs;\
         error_info ei = command_binary_operation_cal(&lhs, bo->lhs);\
         if (ei.msg) return ei;\
         primitive_data rhs;\
         ei = command_binary_operation_cal(&rhs, bo->rhs);\
         if (ei.msg) return ei;\
-        END_PROFILING(__func__);\
         return primitive_data_##operation_name(out, &lhs, &rhs);\
     }
 
@@ -79,7 +79,7 @@ static object* access_object(command* cmd) {
 }
 
 #define IMPL_COMMAND_ASSIGNMENT(assign_name)\
-    static i32 command_assign_##assign_name(command* cmd) {\
+    static i32 command_assign_##assign_name(const command* cmd) {\
         START_PROFILING();\
         ASSERT(cmd->type == CommandTypeAssignment);\
         command_assign* ca = get_command_true_type(cmd);\
@@ -106,7 +106,7 @@ static object* access_object(command* cmd) {
             return 0;\
         }\
         LOG_DEBUG("\texec cmd:%p CommandTypeAssignment %s" "\n", cmd, #assign_name);\
-        LOG_TRACE("\t%s %s by %g -> %g\n", obj->name, #assign_name, data.float32, o->val.float32);\
+        LOG_DEBUG("\t%d: %s %s by %g -> %g\n", ca->line_on_exec, obj->name, #assign_name, data.float32, o->val.float32);\
         END_PROFILING(__func__);\
         return 1;\
     }
@@ -189,7 +189,7 @@ static i32 command_exec_vardecl(command_vardecl* vardecl) {
     object_primitive_data* o = get_object_true_type(obj);
     o->val = data;
     push_object(obj);
-    LOG_TRACE("\t%d: var %s = %g\n", vardecl->line_on_exec, vardecl->variable_name, data.float32);
+    LOG_DEBUG("\t%d: var %s = %g\n", vardecl->line_on_exec, vardecl->variable_name, data.float32);
     END_PROFILING(__func__);
     return 1;
 }
@@ -201,7 +201,7 @@ command* make_command(CommandType type, u64 type_size, void(*destroy)(command*))
     return cmd;
 }
 
-INLINE void* get_command_true_type(command* cmd) { return cmd + 1; }
+INLINE void* get_command_true_type(const command* cmd) { return (command*)cmd + 1; }
 
 command* make_command_get_constant(struct ast_node* node) {
     START_PROFILING();
@@ -239,10 +239,10 @@ command* make_command_access(struct ast_node* node) {
         command_binary_operation* bo = get_command_true_type(result);\
         ast_binary_expression* expr = get_ast_true_type(node);\
         bo->cal = command_binary_operation_##operation_name;\
+        END_PROFILING(__func__);\
         bo->lhs = expr->lhs->gen_command(expr->lhs);\
         bo->rhs = expr->rhs->gen_command(expr->rhs);\
         LOG_DEBUG("\tgen cmd:%p CommandTypeBinaryOperation " #operation_name "\n", result);\
-        END_PROFILING(__func__);\
         return result;\
     }
 
@@ -297,7 +297,7 @@ command* make_command_vardecl(ast_node* node) {
     return result;
 }
 
-i32 exec_command(command* cmd) {
+i32 exec_command(const command* cmd) {
     switch (cmd->type) {
     case CommandTypeVarDecl:  {
         command_vardecl* vardecl = get_command_true_type(cmd);

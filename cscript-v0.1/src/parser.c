@@ -82,17 +82,14 @@ ast_node* expr_default_terminal(parser* par, ast_node* node) {
 }
 
 ast_node* parse_expr_with_brackets(parser* par) {
-    START_PROFILING();
     token* tok = parser_peek_token(par, 0);
     if (tok->type != '(') {
         parser_report_error(par, tok, "missing (");
-        END_PROFILING(__func__);
         return NULL;
     }
     ++par->pointer;
     ast_node* expr = parse_expr_bottom_up(par, expr_brackets_terminal);
     if (!expr) {
-        END_PROFILING(__func__);
         return NULL;
     }
 
@@ -100,13 +97,11 @@ ast_node* parse_expr_with_brackets(parser* par) {
     if (tok->type != ')') {
         expr->destroy(expr);
         parser_report_error(par, tok, "missing )");
-        END_PROFILING(__func__);
         return NULL;
     }
     ++par->pointer;
     // NOTE: create a new node type maybe cleaner but for now it's fine
     expr->type = AstNodeTypeExpr;
-    END_PROFILING(__func__);
     return expr;
 }
 
@@ -445,8 +440,7 @@ vector(ast_node*) parser_parse(parser* par) {
         omit_separator(par);
         tok = parser_peek_token(par, 0);
         if (tok->type == TokenTypeEOF) {
-            END_PROFILING(__func__);
-            return result;
+            break;
         }
     }
     END_PROFILING(__func__);
