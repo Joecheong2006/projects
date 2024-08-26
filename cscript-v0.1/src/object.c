@@ -1,6 +1,6 @@
 #include "object.h"
 #include "container/memallocate.h"
-#include "command.h"
+#include "interpreter.h"
 #include "core/assert.h"
 #include "tracing.h"
 

@@ -1,6 +1,6 @@
 #include "parser.h"
 #include "container/string.h"
-#include "command.h"
+#include "interpreter.h"
 #include "tracing.h"
 
 // <digit>      ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"

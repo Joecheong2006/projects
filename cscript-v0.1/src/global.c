@@ -1,7 +1,7 @@
 #include "global.h"
 #include "core/assert.h"
 #include "tracing.h"
-#include <string.h> // NOTE: for strcmp()
+#include <string.h>
 
 static hashmap map;
 static scopes global_scopes;
@@ -29,10 +29,21 @@ static void free_global_scopes(void) {
     free_vector(global_scopes);
 }
 
+static u32 hash_string(const char* str) {
+    u32 hash = 2166136261u;
+    u32 length = strlen(str);
+    for (u32 i = 0; i < length; i++) {
+        hash ^= (u8)str[i];
+        hash *= 16777619;
+    }
+    return hash;
+}
+
 INLINE static u32 hash_object(void* data, u32 size) {
     ASSERT(data);
     object* obj = data;
-    return sdbm(obj->name) % size;
+    return hash_string(obj->name) % size;
+    // return sdbm(obj->name) % size;
 }
 
 void setup_global_env(void) {

@@ -41,7 +41,7 @@ static void fetch_trace_file(trace_info* info) {
 
 void submit_tracing_info(trace_info* info, const char name[], char* cat, i32 ts, i32 pid, i32 tid, i32 dur) {
     char buf[128];
-    sprintf(buf, "{\"name\":\"%s\",\"cat\":\"%s\",\"ph\":\"X\",\"ts\":%d,\"pid\":%d,\"tid\":%d,\"dur\":%d}", name, cat, ts, pid, tid, dur);
+    sprintf(buf, "{\"name\":\"%s\",\"cat\":\"%s\",\"ph\":\"X\",\"ts\":%d,\"pid\":%d,\"tid\":%d,\"dur\":%d}", name, cat, ts, pid, tid, dur == 0 ? 1 : dur);
     if (info->count++ > 0) {
         string_push(info->ctx, ",");
         info->ctx_size++;

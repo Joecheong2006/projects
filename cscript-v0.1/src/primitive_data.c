@@ -1,5 +1,5 @@
 #include "primitive_data.h"
-#include "lexer.h"
+#include "error_info.h"
 #include "tracing.h"
 
 INLINE i32 primitive_data_guess_type(primitive_data* a, primitive_data* b) {

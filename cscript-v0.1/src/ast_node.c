@@ -1,7 +1,7 @@
 #include "ast_node.h"
 #include "core/assert.h"
 #include "container/memallocate.h"
-#include "command.h"
+#include "interpreter.h"
 #include "tracing.h"
 
 INLINE ast_node* make_ast_node(AstNodeType type, u64 type_size, struct token* tok, void(*destroy)(ast_node*), struct command*(*gen_command)(ast_node*)) {

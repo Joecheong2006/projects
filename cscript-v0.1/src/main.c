@@ -2,7 +2,7 @@
 #include "lexer.h"
 #include "container/memallocate.h"
 
-#include "command.h"
+#include "interpreter.h"
 #include "parser.h"
 #include "core/assert.h"
 
@@ -47,7 +47,7 @@ int main(void) {
         LOG_ERROR("\t%d:%d %s\n", par.errors[i].line, par.errors[i].position, par.errors[i].msg);
     }
     if (ast) {
-        vector(command*) ins = gen_instructions(ast);
+        interpreter inter = { .ins = gen_instructions(ast), .pointer = 0 };
 
         for_vector(ast, i, 0) {
             ast[i]->destroy(ast[i]);
@@ -58,18 +58,18 @@ int main(void) {
         setup_global_env();
         scopes_push();
 
-        for_vector(ins, i, 0) {
-            error_info ei = exec_command(ins[i]);
+        for_vector(inter.ins, i, 0) {
+            error_info ei = interpret_command(&inter);
             if (ei.msg) {
                 LOG_ERROR("\t%s on line %d\n", ei.msg, ei.line);
                 ASSERT_MSG(0, "failed to exec command");
             }
         }
 
-        for_vector(ins, i, 0) {
-            ins[i]->destroy(ins[i]);
+        for_vector(inter.ins, i, 0) {
+            inter.ins[i]->destroy(inter.ins[i]);
         }
-        free_vector(ins);
+        free_vector(inter.ins);
 
         scopes_pop();
         shutdown_global_env();

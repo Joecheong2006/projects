@@ -2,6 +2,7 @@
 #define _PARSER_H_
 #include "ast_node.h"
 #include "lexer.h"
+#include "error_info.h"
 
 struct token;
 typedef struct {
