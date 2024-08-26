@@ -6,7 +6,7 @@
 #include "parser.h"
 #include "core/assert.h"
 
-#include "global.h"
+#include "environment.h"
 #include "tracing.h"
 
 __attribute__((destructor(101)))
@@ -31,7 +31,7 @@ int main(void) {
 
     // const char text[] = "1-(1-1-1-1-1)-1-3";
     // const char text[] = "var a = 1-1-1--3*3.0+1;";
-    const char text[] = "var a=(2+4*(3/(.2*10))+3-1-1)*1.1+(0.5+.5)+(.5-0.3-0.2)\n"
+    const char text[] = "var a= (2+4*(3/(.2*10))+3-1-1)*1.1+(0.5+.5)+(.5-0.3-0.2)\n"
                         "var cat = 1-1.0-1--3*3\n"
                         "var dog = 1.0 + 101 % 3 / 2\n"
                         "dog += 3.1415\n"
@@ -47,7 +47,8 @@ int main(void) {
         LOG_ERROR("\t%d:%d %s\n", par.errors[i].line, par.errors[i].position, par.errors[i].msg);
     }
     if (ast) {
-        interpreter inter = { .ins = gen_instructions(ast), .pointer = 0 };
+        interpreter inter;
+        init_interpreter(&inter, gen_instructions(ast));
 
         for_vector(ast, i, 0) {
             ast[i]->destroy(ast[i]);
@@ -55,9 +56,7 @@ int main(void) {
         free_vector(ast);
         parser_free(&par);
 
-        setup_global_env();
-        scopes_push();
-
+        env_scopes_push(&inter.env);
         for_vector(inter.ins, i, 0) {
             error_info ei = interpret_command(&inter);
             if (ei.msg) {
@@ -65,14 +64,9 @@ int main(void) {
                 ASSERT_MSG(0, "failed to exec command");
             }
         }
+        env_scopes_pop(&inter.env);
 
-        for_vector(inter.ins, i, 0) {
-            inter.ins[i]->destroy(inter.ins[i]);
-        }
-        free_vector(inter.ins);
-
-        scopes_pop();
-        shutdown_global_env();
+        free_interpreter(&inter);
     }
     else {
         parser_free(&par);

@@ -7,7 +7,7 @@
 static void start_tracing(trace_info* info) {
     info->file = fopen(info->file_name, "w");
     fclose(info->file);
-    vector_reserve(info->ctx, 1 << 13);
+    vector_reserve(info->ctx, 1 << 14);
     string_push(info->ctx, "{\"traceEvents\":[");
 }
 void end_tracing(trace_info* info) {
@@ -48,9 +48,10 @@ void submit_tracing_info(trace_info* info, const char name[], char* cat, i32 ts,
     }
     string_push(info->ctx, buf);
     info->ctx_size += (u32)strlen(buf) - 1;
-    if (info->ctx_size >= 1 << 13) {
+    if (info->ctx_size >= 1 << 14) {
         fetch_trace_file(info);
         vector_status(info->ctx).size = 0;
         info->ctx_size = 0;
     }
 }
+

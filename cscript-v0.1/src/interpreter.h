@@ -1,8 +1,9 @@
-#ifndef _COMMAND_H_
-#define _COMMAND_H_
+#ifndef _INTERPRETER_H_
+#define _INTERPRETER_H_
 #include "container/vector.h"
 #include "primitive_data.h"
 #include "error_info.h"
+#include "environment.h"
 
 typedef enum {
     CommandTypeVarDecl,
@@ -25,9 +26,12 @@ void* get_command_true_type(const command* cmd);
 
 typedef struct {
     i32 pointer;
+    environment env;
     vector(command*) ins;
 } interpreter;
 
+void init_interpreter(interpreter* inter, vector(command*) ins);
+void free_interpreter(interpreter* inter);
 error_info interpret_command(interpreter* inter);
 
 typedef struct {

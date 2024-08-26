@@ -85,7 +85,44 @@ error_info primitive_data_##name(primitive_data* out, primitive_data* a, primiti
 IMPL_PRIMITIVE_ARITHMETIC(+, add)
 IMPL_PRIMITIVE_ARITHMETIC(-, minus)
 IMPL_PRIMITIVE_ARITHMETIC(*, multiply)
-IMPL_PRIMITIVE_ARITHMETIC(/, divide)
+
+error_info primitive_data_divide(primitive_data* out, primitive_data* a, primitive_data* b) {
+    START_PROFILING();
+    i32 type = primitive_data_guess_type(a, b);
+    error_info ei = primitive_data_cast_to(type, a);
+    if (ei.msg)
+        return ei;
+    ei = primitive_data_cast_to(type, b);
+    if (ei.msg)
+        return ei;
+    out->type[2] = type;
+    switch (type) {
+    case PrimitiveDataTypeInt32: {
+        if (b->int32 == 0) return (error_info){ .msg = "Division by zero is undefined" };
+        out->int32 = a->int32 / b->int32;
+        break;
+    }
+    case PrimitiveDataTypeFloat32: {
+        if (b->float32 == 0) return (error_info){ .msg = "Division by zero is undefined" };
+        out->float32 = a->float32 / b->float32;
+        break;
+    }
+    case PrimitiveDataTypeInt64: {
+        if (b->int64 == 0) return (error_info){ .msg = "Division by zero is undefined" };
+        out->int64 = a->int64 / b->int64;
+        break;
+    }
+    case PrimitiveDataTypeFloat64: {
+        if (b->float64 == 0) return (error_info){ .msg = "Division by zero is undefined" };
+        out->float64 = a->float64 / b->float64;
+        break;
+    }
+    default:
+        return (error_info){ .msg = "unkown primitive_data" };
+    }
+    END_PROFILING(__func__);
+    return (error_info){ .msg = NULL };
+}
 
 error_info primitive_data_modulus(primitive_data* out, primitive_data* a, primitive_data* b) {
     START_PROFILING();
@@ -166,7 +203,38 @@ error_info primitive_data_negate(primitive_data* out, primitive_data* a) {
 IMPL_PRIMITIVE_ASSIGN_ARITHMETIC(+=, add)
 IMPL_PRIMITIVE_ASSIGN_ARITHMETIC(-=, minus)
 IMPL_PRIMITIVE_ASSIGN_ARITHMETIC(*=, multiply)
-IMPL_PRIMITIVE_ASSIGN_ARITHMETIC(/=, divide)
+
+error_info primitive_data_divide_assign(primitive_data* a, primitive_data* b) {
+    START_PROFILING();
+    error_info ei = primitive_data_cast_to(a->type[2], b);
+    if (ei.msg)
+        return ei;
+    switch (a->type[2]) {
+    case PrimitiveDataTypeInt32: {
+        if (b->int32 == 0) return (error_info){ .msg = "Division by zero is undefined" };
+        a->int32 /= b->int32;
+        break;
+    }
+    case PrimitiveDataTypeInt64: {
+        if (b->int64 == 0) return (error_info){ .msg = "Division by zero is undefined" };
+        a->int64 /= b->int64;
+        break;
+    }
+    case PrimitiveDataTypeFloat32: {
+        if (b->float32 == 0) return (error_info){ .msg = "Division by zero is undefined" };
+        a->float32 /= b->float32;
+        break;
+    }
+    case PrimitiveDataTypeFloat64: {
+        if (b->float64 == 0) return (error_info){ .msg = "Division by zero is undefined" };
+        a->float64 /= b->float64;
+        break;
+    }
+    default: return (error_info){ .msg = "undefine primitive data type" };
+    }
+    END_PROFILING(__func__);
+    return (error_info){ .msg = NULL };
+}
 
 error_info primitive_data_modulus_assign(primitive_data* a, primitive_data* b) {
     START_PROFILING();

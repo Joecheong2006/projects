@@ -1,17 +1,14 @@
-#include "global.h"
+#include "environment.h"
 #include "core/assert.h"
 #include "tracing.h"
 #include <string.h>
 
-static hashmap map;
-static scopes global_scopes;
-
-INLINE static void scopes_push_obj(object* obj) {
-    vector_push(vector_back(global_scopes), obj);
+INLINE static void scopes_push_obj(scopes s, object* obj) {
+    vector_push(vector_back(s), obj);
 }
 
-INLINE static void scopes_pop_obj(void) {
-    vector_pop(vector_back(global_scopes));
+INLINE static void scopes_pop_obj(scopes s) {
+    vector_pop(vector_back(s));
 }
 
 static void free_scope(scope sc) {
@@ -21,12 +18,12 @@ static void free_scope(scope sc) {
     free_vector(sc);
 }
 
-static void free_global_scopes(void) {
-    for_vector(global_scopes, i, 0) {
-        free_scope(global_scopes[i]);
-        global_scopes[i] = NULL;
+static void free_global_scopes(scopes s) {
+    for_vector(s, i, 0) {
+        free_scope(s[i]);
+        s[i] = NULL;
     }
-    free_vector(global_scopes);
+    free_vector(s);
 }
 
 static u32 hash_string(const char* str) {
@@ -46,38 +43,21 @@ INLINE static u32 hash_object(void* data, u32 size) {
     // return sdbm(obj->name) % size;
 }
 
-void setup_global_env(void) {
-    START_PROFILING();
-    map = make_hashmap(1 << 9, hash_object);
-    global_scopes = make_scopes();
-    END_PROFILING(__func__);
-}
-
-void shutdown_global_env(void) {
-    START_PROFILING();
-    free_global_scopes();
-    free_hashmap(&map);
-    END_PROFILING(__func__);
-}
-
-void scopes_push(void) {
-    ASSERT_MSG(global_scopes, "uninitialize global env");
+void env_scopes_push(environment* env) {
     scope sc = make_scope();
-    vector_push(global_scopes, sc);
+    vector_push(env->global, sc);
 }
 
-void scopes_pop(void) {
-    ASSERT_MSG(global_scopes, "uninitialize global env");
-    scope sc = vector_back(global_scopes);
+void env_scopes_pop(environment* env) {
+    scope sc = vector_back(env->global);
     free_scope(sc);
-    vector_pop(global_scopes);
+    vector_pop(env->global);
 }
 
-object* find_object(cstring name) {
-    ASSERT_MSG(map.data, "uninitialize global env");
+object* env_find_object(environment* env, cstring name) {
     START_PROFILING();
     object obj = { .name = name };
-    vector(void*) result = hashmap_access_vector(&map, &obj);
+    vector(void*) result = hashmap_access_vector(&env->map, &obj);
     for (i64 i = (i64)vector_size(result) - 1; i > -1; --i) {
         object* obj = result[i];
         if (strcmp(obj->name, name) == 0) {
@@ -88,11 +68,17 @@ object* find_object(cstring name) {
     return NULL;
 }
 
-void pop_object(void) {
-    ASSERT_MSG(map.data, "uninitialize global env");
+void env_push_object(environment* env, object* obj) {
     START_PROFILING();
-    object tmp = { .name = vector_back(vector_back(global_scopes))->name };
-    vector(void*) result = hashmap_access_vector(&map, &tmp);
+    scopes_push_obj(env->global, obj);
+    hashmap_add(&env->map, obj);
+    END_PROFILING(__func__);
+}
+
+void env_pop_object(environment* env) {
+    START_PROFILING();
+    object tmp = { .name = vector_back(vector_back(env->global))->name };
+    vector(void*) result = hashmap_access_vector(&env->map, &tmp);
     object* obj = vector_back(result);
     obj->destroy(obj);
     vector_pop(result);
@@ -107,14 +93,21 @@ void pop_object(void) {
     //         break;
     //     }
     // }
-    scopes_pop_obj();
+    scopes_pop_obj(env->global);
     END_PROFILING(__func__);
 }
 
-void push_object(object* obj) {
+void init_environment(environment* env) {
     START_PROFILING();
-    scopes_push_obj(obj);
-    hashmap_add(&map, obj);
+    env->map = make_hashmap(1 << 9, hash_object);
+    env->global = make_scopes();
+    END_PROFILING(__func__);
+}
+
+void free_environment(environment* env) {
+    START_PROFILING();
+    free_hashmap(&env->map);
+    free_global_scopes(env->global);
     END_PROFILING(__func__);
 }
 

@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -std=c99 -Wall -Wextra -Wpedantic -Wstrict-aliasing -Werror -Isrc
-DEBUG_FLAGS = -ggdb3 -DDEBUG
+DEBUG_FLAGS = -g3 -DDEBUG
 RELEASE_FLAGS = -O2
 DEBUGGER = gdb
 

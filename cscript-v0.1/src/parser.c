@@ -38,8 +38,8 @@ static ast_node* parse_member(parser* par);
 static ast_node* parse_term(parser* par);
 static ast_node* parse_expr_with_brackets(parser* par);
 static ast_node* parse_operator(parser* par);
-static ast_node* parse_expr_bottom_up(parser* par, ast_node*(*is_terminal)(parser*,ast_node*));
-static ast_node* parse_expr(parser* par);
+static ast_node* parse_expr(parser* par, ast_node*(*is_terminal)(parser*,ast_node*));
+static ast_node* parse_exprln(parser* par);
 static ast_node* parse_vardecl(parser* par);
 static ast_node* parse_assignment_operator(parser* par);
 static ast_node* parse_identifier_statement(parser* par);
@@ -88,7 +88,7 @@ ast_node* parse_expr_with_brackets(parser* par) {
         return NULL;
     }
     ++par->pointer;
-    ast_node* expr = parse_expr_bottom_up(par, expr_brackets_terminal);
+    ast_node* expr = parse_expr(par, expr_brackets_terminal);
     if (!expr) {
         return NULL;
     }
@@ -242,7 +242,7 @@ i32 bottom_up_need_to_reround(AstNodeType current, AstNodeType previous) {
     }
 }
 
-ast_node* parse_expr_bottom_up(parser* par, ast_node*(*is_terminal)(parser*,ast_node*)) {
+ast_node* parse_expr(parser* par, ast_node*(*is_terminal)(parser*,ast_node*)) {
     START_PROFILING();
     ast_node* lhs = parse_term(par);
     if (!lhs) {
@@ -279,8 +279,8 @@ ast_node* parse_expr_bottom_up(parser* par, ast_node*(*is_terminal)(parser*,ast_
     }
 }
 
-ast_node* parse_expr(parser* par) {
-    return parse_expr_bottom_up(par, expr_default_terminal);
+ast_node* parse_exprln(parser* par) {
+    return parse_expr(par, expr_default_terminal);
 }
 
 ast_node* parse_vardecl(parser* par) {
@@ -308,7 +308,7 @@ ast_node* parse_vardecl(parser* par) {
     }
     ++par->pointer;
 
-    vardecl->expr = parse_expr(par);
+    vardecl->expr = parse_exprln(par);
     if (!vardecl->expr) {
         node->destroy(node);
         return NULL;
@@ -356,7 +356,7 @@ static ast_node* parse_identifier_statement(parser* par) {
 
     ast_assignment* assignment = get_ast_true_type(node);
 
-    assignment->expr = parse_expr(par);
+    assignment->expr = parse_exprln(par);
     if (!assignment->expr) {
         node->destroy(node);
         return NULL;
@@ -420,14 +420,18 @@ vector(ast_node*) parser_parse(parser* par) {
 }
 
 void parser_init(parser* par, vector(token) tokens) {
+    START_PROFILING();
     par->tokens = tokens;
     par->errors = make_vector(error_info);
     par->pointer = 0;
+    END_PROFILING(__func__);
 }
 
 void parser_free(parser* par) {
+    START_PROFILING();
     free_vector(par->tokens);
     free_vector(par->errors);
+    END_PROFILING(__func__);
 }
 
 void parser_report_error(parser* par, token* tok, const char* msg) {
