@@ -4,7 +4,7 @@
 #include "command.h"
 #include "tracing.h"
 
-ast_node* make_ast_node(AstNodeType type, u64 type_size, struct token* tok, void(*destroy)(ast_node*), struct command*(*gen_command)(ast_node*)) {
+INLINE ast_node* make_ast_node(AstNodeType type, u64 type_size, struct token* tok, void(*destroy)(ast_node*), struct command*(*gen_command)(ast_node*)) {
     START_PROFILING();
     ast_node* node = CALLOC(1, type_size + sizeof(ast_node));
     node->type = type;

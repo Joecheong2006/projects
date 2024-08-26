@@ -6,9 +6,10 @@
 typedef struct {
     char* file_name;
     string ctx;
+    u32 ctx_size;
     void* file;
     i32 pid, tid;
-    u64 count;
+    u32 count;
 } trace_info;
 
 void setup_trace_info(trace_info* info);

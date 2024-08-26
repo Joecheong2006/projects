@@ -51,7 +51,7 @@ typedef struct {
     command* mem;
     command* expr;
     i32 line_on_exec;
-    i32(*exec)(const command*);
+    error_info(*exec)(const command*);
 } command_assign;
 
 struct ast_node;
@@ -71,6 +71,6 @@ command* make_command_multiply_assign(struct ast_node* node);
 command* make_command_divide_assign(struct ast_node* node);
 command* make_command_modulus_assign(struct ast_node* node);
 
-i32 exec_command(const command* cmd);
+error_info exec_command(const command* cmd);
 
 #endif

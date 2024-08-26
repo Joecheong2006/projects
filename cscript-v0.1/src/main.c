@@ -34,13 +34,18 @@ int main(void) {
     const char text[] = "var a=(2+4*(3/(.2*10))+3-1-1)*1.1+(0.5+.5)+(.5-0.3-0.2)\n"
                         "var cat = 1-1.0-1--3*3\n"
                         "var dog = 1.0 + 101 % 3 / 2\n"
-                        "dog += 3.1415\n";
+                        "dog += 3.1415\n"
+                        "var v = dog + cat\n"
+                        "v -= dog\n";
     lexer lex = {text, sizeof(text) - 1, 1, 1, 0};
 
     parser par;
     parser_init(&par, generate_tokens(&lex));
 
     vector(ast_node*) ast = parser_parse(&par);
+    for_vector(par.errors, i, 0) {
+        LOG_ERROR("\t%d:%d %s\n", par.errors[i].line, par.errors[i].position, par.errors[i].msg);
+    }
     if (ast) {
         vector(command*) ins = gen_instructions(ast);
 
@@ -48,18 +53,17 @@ int main(void) {
             ast[i]->destroy(ast[i]);
         }
         free_vector(ast);
-
-        for_vector(par.errors, i, 0) {
-            LOG_ERROR("\t%d:%d %s\n", par.errors[i].tok->line, par.errors[i].tok->count, par.errors[i].msg);
-        }
-
         parser_free(&par);
 
         setup_global_env();
         scopes_push();
 
         for_vector(ins, i, 0) {
-            ASSERT(exec_command(ins[i]));
+            error_info ei = exec_command(ins[i]);
+            if (ei.msg) {
+                LOG_ERROR("\t%s on line %d\n", ei.msg, ei.line);
+                ASSERT_MSG(0, "failed to exec command");
+            }
         }
 
         for_vector(ins, i, 0) {
@@ -69,6 +73,9 @@ int main(void) {
 
         scopes_pop();
         shutdown_global_env();
+    }
+    else {
+        parser_free(&par);
     }
     // free_vector(lex.ctx);
 

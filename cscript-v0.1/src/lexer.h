@@ -46,8 +46,8 @@ struct token {
 
 typedef struct token token;
 
-struct error_info{
-    token* tok;
+struct error_info {
+    i32 line, position;
     const char* msg;
 };
 

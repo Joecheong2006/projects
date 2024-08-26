@@ -37,7 +37,7 @@ INLINE static u32 hash_object(void* data, u32 size) {
 
 void setup_global_env(void) {
     START_PROFILING();
-    map = make_hashmap(1 << 10, hash_object);
+    map = make_hashmap(1 << 9, hash_object);
     global_scopes = make_scopes();
     END_PROFILING(__func__);
 }

@@ -1,8 +1,11 @@
-def func():
-    ar = [1, 2, 3]
-    return ar
+f = __import__('func', None, None, [], 0)
+print(f.FUNC)
 
-a = func()
+a = f.func()
 a[2] = 0;
-a = func()
+a = f.func()
 print(a)
+
+l = locals()
+ret = l.get("a")
+print(ret)

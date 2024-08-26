@@ -7,8 +7,22 @@
 #include "tracing.h"
 #include "global.h"
 
+static object* access_object(command* cmd);
+
 static error_info command_binary_operation_cal(primitive_data* out, command* cmd) {
     switch (cmd->type) {
+    case CommandTypeAccess: {
+        object* obj = access_object(cmd);
+        if (obj == NULL) {
+            return (error_info){ .msg = "use of undeclared identifer '%s'" };
+        }
+        else if (obj->type != ObjectTypePrimitiveData) {
+            return (error_info){ .msg = "Invalid operands to binary expression" };
+        }
+        object_primitive_data* o = get_object_true_type(obj);
+        *out = o->val;
+        break;
+    }
     case CommandTypeGetConstant: {
         START_PROFILING();
         command_get_constant* cst = get_command_true_type(cmd);
@@ -58,8 +72,8 @@ IMPL_COMMAND_BINARY_OPERATION(divide)
 IMPL_COMMAND_BINARY_OPERATION(modulus)
 
 static object* access_object(command* cmd) {
-    START_PROFILING();
     ASSERT(cmd->type == CommandTypeAccess);
+    START_PROFILING();
     command_access* access = get_command_true_type(cmd);
     object* obj = find_object(access->name);
     if (!obj) {
@@ -74,36 +88,34 @@ static object* access_object(command* cmd) {
 }
 
 #define IMPL_COMMAND_ASSIGNMENT(assign_name)\
-    static i32 command_assign_##assign_name(const command* cmd) {\
+    static error_info command_assign_##assign_name(const command* cmd) {\
         START_PROFILING();\
         ASSERT(cmd->type == CommandTypeAssignment);\
         command_assign* ca = get_command_true_type(cmd);\
         object* obj = access_object(ca->mem);\
         if (obj->type == ObjectErrorUndefine) {\
-            LOG_ERROR("\tundefine variable '%s' on line %d\n", obj->name, ca->line_on_exec);\
             FREE(obj);\
-            return 0;\
+            return (error_info){ .msg = "\tundefine variable '%s' on line %d\n", .line = ca->line_on_exec };\
         }\
         if (obj->type != ObjectTypePrimitiveData) {\
-            LOG_ERROR("\tInvalid operands to binary expression on line %d\n", obj->name, ca->line_on_exec);\
-            return 0;\
+            return (error_info){ .msg = "\tInvalid operands to binary expression on line %d\n", .line = ca->line_on_exec };\
         }\
         primitive_data data;\
         error_info ei = command_binary_operation_cal(&data, ca->expr);\
         if (ei.msg) {\
-            LOG_ERROR("\t%s on line %d\n", ei.msg, ca->line_on_exec);\
-            return 0;\
+            ei.line = ca->line_on_exec;\
+            return ei;\
         }\
         object_primitive_data* o = get_object_true_type(obj);\
         ei = primitive_data_##assign_name##_assign(&o->val, &data);\
         if (ei.msg) {\
-            LOG_ERROR("\t%s on line %d\n", ei.msg, ca->line_on_exec);\
-            return 0;\
+            ei.line = ca->line_on_exec;\
+            return ei;\
         }\
         LOG_DEBUG("\texec cmd:%p CommandTypeAssignment %s" "\n", cmd, #assign_name);\
         LOG_DEBUG("\t%d: %s %s by %g -> %g\n", ca->line_on_exec, obj->name, #assign_name, data.float32, o->val.float32);\
         END_PROFILING(__func__);\
-        return 1;\
+        return (error_info){ .msg = NULL };\
     }
 
 IMPL_COMMAND_ASSIGNMENT(add)
@@ -164,21 +176,21 @@ static void destroy_command_vardecl(command* cmd) {
     FREE(cmd);
 }
 
-static i32 command_exec_vardecl(command_vardecl* vardecl) {
+static error_info command_exec_vardecl(command_vardecl* vardecl) {
     START_PROFILING();
     object* obj = NULL;
     // NOTE: Check if the data is different from primitive in here.
 
     if (find_object(vardecl->variable_name) != NULL) {
-        LOG_ERROR("\tredeclare variable '%s' on line %d\n", vardecl->variable_name, vardecl->line_on_exec);
-        return 0;
+        // LOG_ERROR("\tredeclare variable '%s' on line %d\n", vardecl->variable_name, vardecl->line_on_exec);
+        return (error_info){ .msg = "\tredeclare variable '%s' on line %d\n", .line = vardecl->line_on_exec };
     }
 
     primitive_data data;
     error_info ei = command_binary_operation_cal(&data, vardecl->expr);
     if (ei.msg) {
-        LOG_ERROR("\t%s on line %d\n", ei.msg, vardecl->line_on_exec);
-        return 0;
+        ei.line = vardecl->line_on_exec ;
+        return ei;
     }
 
     obj = make_object_primitive_data(vardecl->variable_name);
@@ -188,7 +200,7 @@ static i32 command_exec_vardecl(command_vardecl* vardecl) {
     push_object(obj);
     LOG_DEBUG("\t%d: var %s = %g\n", vardecl->line_on_exec, vardecl->variable_name, data.float32);
     END_PROFILING(__func__);
-    return 1;
+    return (error_info){ .msg = NULL };
 }
 
 command* make_command(CommandType type, u64 type_size, void(*destroy)(command*)) {
@@ -294,7 +306,7 @@ command* make_command_vardecl(ast_node* node) {
     return result;
 }
 
-i32 exec_command(const command* cmd) {
+error_info exec_command(const command* cmd) {
     switch (cmd->type) {
     case CommandTypeVarDecl:  {
         command_vardecl* vardecl = get_command_true_type(cmd);
@@ -306,7 +318,7 @@ i32 exec_command(const command* cmd) {
     }
     default: 
         ASSERT_MSG(0, "invalid command for execution");
-        return 0;
+        return (error_info){ .msg = "invalid command for execution" };
     }
 }
 

@@ -196,38 +196,27 @@ ast_node* parse_term(parser* par) {
 }
 
 ast_node* parse_operator(parser* par) {
-    START_PROFILING();
     token* tok = parser_peek_token(par, 0);
     switch ((i32)tok->type) {
     case '+': {
         ++par->pointer;
-        ast_node* node = make_ast_binary_expression(AstNodeTypeExprAdd, tok, make_command_add);
-        END_PROFILING(__func__);
-        return node;
+        return make_ast_binary_expression(AstNodeTypeExprAdd, tok, make_command_add);
     }
     case '-': {
         ++par->pointer;
-        ast_node* node = make_ast_binary_expression(AstNodeTypeExprMinus, tok, make_command_minus);
-        END_PROFILING(__func__);
-        return node;
+        return make_ast_binary_expression(AstNodeTypeExprMinus, tok, make_command_minus);
     }
     case '*': {
         ++par->pointer;
-        ast_node* node = make_ast_binary_expression(AstNodeTypeExprMultiply, tok, make_command_multiply);
-        END_PROFILING(__func__);
-        return node;
+        return make_ast_binary_expression(AstNodeTypeExprMultiply, tok, make_command_multiply);
     }
     case '/': {
         ++par->pointer;
-        ast_node* node = make_ast_binary_expression(AstNodeTypeExprDivide, tok, make_command_divide);
-        END_PROFILING(__func__);
-        return node;
+        return make_ast_binary_expression(AstNodeTypeExprDivide, tok, make_command_divide);
     }
     case '%': {
         ++par->pointer;
-        ast_node* node = make_ast_binary_expression(AstNodeTypeExprModulus, tok, make_command_modulus);
-        END_PROFILING(__func__);
-        return node;
+        return make_ast_binary_expression(AstNodeTypeExprModulus, tok, make_command_modulus);
     }
     default:
         return NULL;
@@ -329,43 +318,26 @@ ast_node* parse_vardecl(parser* par) {
 }
 
 static ast_node* parse_assignment_operator(parser* par) {
-    START_PROFILING();
     token* tok = parser_peek_token(par, 0);
     switch (tok->type) {
-    case TokenTypeAssignmentPlus: {
+    case TokenTypeAssignmentPlus:
         ++par->pointer;
-        ast_node* node = make_ast_assignment(AstNodeTypeExprAddAssign, tok, make_command_add_assign);
-        END_PROFILING(__func__);
-        return node;
-    }
-    case TokenTypeAssignmentMinus: {
+        return make_ast_assignment(AstNodeTypeExprAddAssign, tok, make_command_add_assign);
+    case TokenTypeAssignmentMinus:
         ++par->pointer;
-        ast_node* node = make_ast_assignment(AstNodeTypeExprMinusAssign, tok, make_command_minus_assign);
-        END_PROFILING(__func__);
-        return node;
-    }
-    case TokenTypeAssignmentMultiply: {
+        return make_ast_assignment(AstNodeTypeExprMinusAssign, tok, make_command_minus_assign);
+    case TokenTypeAssignmentMultiply:
         ++par->pointer;
-        ast_node* node = make_ast_assignment(AstNodeTypeExprMultiplyAssign, tok, make_command_multiply_assign);
-        END_PROFILING(__func__);
-        return node;
-    }
-    case TokenTypeAssignmentDivide: {
+        return make_ast_assignment(AstNodeTypeExprMultiplyAssign, tok, make_command_multiply_assign);
+    case TokenTypeAssignmentDivide:
         ++par->pointer;
-        ast_node* node = make_ast_assignment(AstNodeTypeExprDivideAssign, tok, make_command_divide_assign);
-        END_PROFILING(__func__);
-        return node;
-    }
-    case TokenTypeAssignmentModulus: {
+        return make_ast_assignment(AstNodeTypeExprDivideAssign, tok, make_command_divide_assign);
+    case TokenTypeAssignmentModulus:
         ++par->pointer;
-        ast_node* node = make_ast_assignment(AstNodeTypeExprModulusAssign, tok, make_command_modulus_assign);
-        END_PROFILING(__func__);
-        return node;
-    }
-    default: {
+        return make_ast_assignment(AstNodeTypeExprModulusAssign, tok, make_command_modulus_assign);
+    default:
         parser_report_error(par, tok, "expected assignment operator");
         return NULL;
-    }
     }
 }
 
@@ -459,7 +431,7 @@ void parser_free(parser* par) {
 }
 
 void parser_report_error(parser* par, token* tok, const char* msg) {
-    error_info info = {tok, msg};
+    error_info info = {tok->line, tok->count, msg};
     vector_push(par->errors, info);
 }
 

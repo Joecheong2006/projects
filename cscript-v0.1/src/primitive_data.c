@@ -69,6 +69,12 @@ error_info primitive_data_##name(primitive_data* out, primitive_data* a, primiti
     case PrimitiveDataTypeFloat32:\
         out->float32 = a->float32 oper b->float32;\
         break;\
+    case PrimitiveDataTypeInt64:\
+        out->int64 = a->int64 oper b->int64;\
+        break;\
+    case PrimitiveDataTypeFloat64:\
+        out->float64 = a->float64 oper b->float64;\
+        break;\
     default:\
         return (error_info){ .msg = "unkown primitive_data" };\
     }\
@@ -98,8 +104,12 @@ error_info primitive_data_modulus(primitive_data* out, primitive_data* a, primit
     case PrimitiveDataTypeInt64:
         out->int64 = a->int64 % b->int64;
         break;
+    case PrimitiveDataTypeFloat32:
+        return (error_info){ .msg = "Invalid modulus operation for float32" };
+    case PrimitiveDataTypeFloat64:
+        return (error_info){ .msg = "Invalid modulus operation for float64" };
     default:
-        return (error_info){ .msg = "Invalid operands to binary expression" };
+        return (error_info){ .msg = "undefine primitive data type" };
     }
     END_PROFILING(__func__);
     return (error_info){ .msg = NULL };

@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -std=c99 -Wall -Wextra -Wpedantic -Wstrict-aliasing -Werror -Isrc
-DEBUG_FLAGS = -g3 -DDEBUG -DPROFILING
+DEBUG_FLAGS = -ggdb3 -DDEBUG
 RELEASE_FLAGS = -O2
 DEBUGGER = gdb
 
@@ -40,6 +40,9 @@ app: $(OBJ)
 
 debug:
 	@$(DEBUGGER) -q $(BIN)/$(OUT) --eval-command=run --eval-command=exit
+
+check:
+	@valgrind --leak-check=yes $(BIN)/$(OUT)
 
 run:
 	@./$(BIN)/$(OUT) 
