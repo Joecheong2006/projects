@@ -12,12 +12,7 @@ static error_info command_binary_operation_cal(primitive_data* out, command* cmd
     case CommandTypeGetConstant: {
         START_PROFILING();
         command_get_constant* cst = get_command_true_type(cmd);
-        if (cst->data.type[2] == PrimitiveDataTypeInt32) {
-            LOG_DEBUG("\texec cmd:%p CommandTypeGetConstant i32 %d\n", cmd, cst->data.int32);
-        }
-        else if (cst->data.type[2] == PrimitiveDataTypeFloat32) {
-            LOG_DEBUG("\texec cmd:%p CommandTypeGetConstant f32 %g\n", cmd, cst->data.float32);
-        }
+        LOG_DEBUG("\texec cmd:%p CommandTypeGetConstant %s %g\n", cmd, cst->data.type[2] == PrimitiveDataTypeInt32 ? "i32" : "f32", cst->data.type[2] == PrimitiveDataTypeInt32 ? cst->data.int32 : cst->data.float32);
         *out = cst->data;
         END_PROFILING("CommandTypeGetConstant");
         break;
@@ -42,11 +37,11 @@ static error_info command_binary_operation_cal(primitive_data* out, command* cmd
 
 #define IMPL_COMMAND_BINARY_OPERATION(operation_name)\
     static error_info command_binary_operation_##operation_name(primitive_data* out, command* cmd) {\
-        START_PROFILING();\
+        START_PROFILING()\
         ASSERT(cmd->type == CommandTypeBinaryOperation);\
         LOG_DEBUG("\texec cmd:%p CommandTypeBinaryOperation " #operation_name "\n", cmd);\
         command_binary_operation* bo = get_command_true_type(cmd);\
-        END_PROFILING(__func__);\
+        END_PROFILING(__func__)\
         primitive_data lhs;\
         error_info ei = command_binary_operation_cal(&lhs, bo->lhs);\
         if (ei.msg) return ei;\
@@ -171,13 +166,7 @@ static void destroy_command_vardecl(command* cmd) {
 
 static i32 command_exec_vardecl(command_vardecl* vardecl) {
     START_PROFILING();
-    primitive_data data;
-    error_info ei = command_binary_operation_cal(&data, vardecl->expr);
-    if (ei.msg) {
-        LOG_ERROR("\t%s on line %d\n", ei.msg, vardecl->line_on_exec);
-        return 0;
-    }
-
+    object* obj = NULL;
     // NOTE: Check if the data is different from primitive in here.
 
     if (find_object(vardecl->variable_name) != NULL) {
@@ -185,9 +174,17 @@ static i32 command_exec_vardecl(command_vardecl* vardecl) {
         return 0;
     }
 
-    object* obj = make_object_primitive_data(vardecl->variable_name);
+    primitive_data data;
+    error_info ei = command_binary_operation_cal(&data, vardecl->expr);
+    if (ei.msg) {
+        LOG_ERROR("\t%s on line %d\n", ei.msg, vardecl->line_on_exec);
+        return 0;
+    }
+
+    obj = make_object_primitive_data(vardecl->variable_name);
     object_primitive_data* o = get_object_true_type(obj);
     o->val = data;
+
     push_object(obj);
     LOG_DEBUG("\t%d: var %s = %g\n", vardecl->line_on_exec, vardecl->variable_name, data.float32);
     END_PROFILING(__func__);
