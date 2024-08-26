@@ -5,21 +5,20 @@
 
 static void start_tracing(trace_info* info) {
     info->file = fopen(info->file_name, "w");
-    if (!info->file) {
-    	return;
-    }
-    fprintf(info->file, "{\n\t\"traceEvents\":[\n");
-
     fclose(info->file);
+    string_push(info->ctx, "{\"traceEvents\":[");
 }
 void end_tracing(trace_info* info) {
     info->file = fopen(info->file_name, "a");
 
     if (!info->file) {
+        free_string(info->ctx);
     	return;
     }
-    fprintf(info->file, "\t]\n}\n");
+    string_push(info->ctx, "]}");
+    fprintf(info->file, "%s", info->ctx);
     fclose(info->file);
+    free_string(info->ctx);
 }
 
 void setup_trace_info(trace_info* info) {
@@ -27,20 +26,15 @@ void setup_trace_info(trace_info* info) {
 	// info->tid = gettid();
 	info->tid = 0;
 	info->count = 0;
+    info->ctx = make_string("");
 	start_tracing(info);
 }
 
 void submit_tracing_info(trace_info* info, const char name[], char* cat, i32 ts, i32 pid, i32 tid, i32 dur) {
-    char buf[2560];
-    sprintf(buf, "\t\t{\n\t\t\t\"name\":\"%s\",\n\t\t\t\"cat\":\"%s\",\n\t\t\t\"ph\":\"X\",\n\t\t\t\"ts\":%d,\n\t\t\t\"pid\":%d,\n\t\t\t\"tid\":%d,\n\t\t\t\"dur\":%d\n\t\t}", name, cat, ts, pid, tid, dur);
-
-    info->file = fopen(info->file_name, "a");
-    if (!info->file) {
-    	return;
+    char buf[128];
+    sprintf(buf, "{\"name\":\"%s\",\"cat\":\"%s\",\"ph\":\"X\",\"ts\":%d,\"pid\":%d,\"tid\":%d,\"dur\":%d}", name, cat, ts, pid, tid, dur);
+    if (info->count++ > 0) {
+        string_push(info->ctx, ",");
     }
-	if (info->count++ > 0) {
-	    fprintf(info->file, ",\n");
-	}
-    fprintf(info->file, "%s", buf);
-    fclose(info->file);
+    string_push(info->ctx, buf);
 }

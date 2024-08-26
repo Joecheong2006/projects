@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -std=c99 -Wall -Wextra -Wpedantic -Wstrict-aliasing -Werror -Isrc
-DEBUG_FLAGS = -g3 -DDEBUG
+DEBUG_FLAGS = -g3 -DDEBUG -DPROFILING
 RELEASE_FLAGS = -O2
 DEBUGGER = gdb
 
@@ -23,7 +23,6 @@ else
 endif
 
 
-CFLAGS += $(CONFIG)
 all: bin app 
 
 rel: CFLAGS += $(RELEASE_FLAGS) $(CONFIG)
@@ -34,7 +33,7 @@ rel: bin $(OBJ)
 bin:
 	@mkdir -p $(BIN)
 
-app: CFLAGS += $(DEBUG_FLAGS)
+app: CFLAGS += $(DEBUG_FLAGS) $(CONFIG)
 app: $(OBJ)
 	@$(CC) $(CFLAGS) $(OBJ) -o $(BIN)/$(OUT) $(LIB)
 	@echo "Compilation completed"

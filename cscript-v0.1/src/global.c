@@ -82,17 +82,20 @@ void pop_object(void) {
     START_PROFILING();
     object tmp = { .name = vector_back(vector_back(global_scopes))->name };
     vector(void*) result = hashmap_access_vector(&map, &tmp);
-    for (i64 i = vector_size(result) - 1; i > -1; --i) {
-        object* obj = result[i];
-        if (strcmp(obj->name, tmp.name) == 0) {
-            obj->destroy(obj);
-            for (i64 j = i; j < vector_size(result) - 1; --j) {
-                result[j] = result[j + 1];
-            }
-            vector_pop(result);
-            break;
-        }
-    }
+    object* obj = vector_back(result);
+    obj->destroy(obj);
+    vector_pop(result);
+    // for (i64 i = vector_size(result) - 1; i > -1; --i) {
+    //     object* obj = result[i];
+    //     if (strcmp(obj->name, tmp.name) == 0) {
+    //         obj->destroy(obj);
+    //         for (i64 j = i; j < vector_size(result) - 1; --j) {
+    //             result[j] = result[j + 1];
+    //         }
+    //         vector_pop(result);
+    //         break;
+    //     }
+    // }
     scopes_pop_obj();
     END_PROFILING(__func__);
 }

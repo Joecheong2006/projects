@@ -1,9 +1,11 @@
 #ifndef _TRACE_INFO_H_
 #define _TRACE_INFO_H_
 #include "core/defines.h"
+#include "container/string.h"
 
 typedef struct {
     char* file_name;
+    string ctx;
     void* file;
     i32 pid, tid;
     u64 count;
@@ -14,6 +16,7 @@ void submit_tracing_info(trace_info* info, const char name[], char* cat, i32 ts,
 void end_tracing(trace_info* info);
 
 #if defined(PROFILING)
+#include "timer.h"
 #define BEGIN_SCOPE_PROFILING()\
     timer __timer;\
     start_timer(&__timer);

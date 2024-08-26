@@ -8,9 +8,13 @@
 
 #include "global.h"
 
+
+__attribute__((destructor(101)))
+static void leak_check(void) {
+    LOG_INFO("\tleak count = %d\n", check_memory_leak());
+}
+
 int main(void) {
-    // test();
-    // return 0;
     // lexer lex = {NULL, -1, 1, 1, 0};
     // lexer_load_file_text(&lex, "test.cscript");
 
@@ -61,7 +65,6 @@ int main(void) {
     parser_free(&par);
     // free_vector(lex.ctx);
 
-    LOG_INFO("\tleak count = %d\n", check_memory_leak());
     return 0;
 }
 
