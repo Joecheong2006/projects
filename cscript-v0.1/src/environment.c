@@ -43,12 +43,12 @@ INLINE static u32 hash_object(void* data, u32 size) {
     // return sdbm(obj->name) % size;
 }
 
-void env_scopes_push(environment* env) {
+void env_push_scope(environment* env) {
     scope sc = make_scope();
     vector_push(env->global, sc);
 }
 
-void env_scopes_pop(environment* env) {
+void env_pop_scope(environment* env) {
     scope sc = vector_back(env->global);
     free_scope(sc);
     vector_pop(env->global);

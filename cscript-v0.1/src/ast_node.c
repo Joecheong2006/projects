@@ -98,3 +98,30 @@ ast_node* make_ast_vardecl(struct token* tok) {
     return make_ast_node(AstNodeTypeVarDecl, sizeof(ast_vardecl), tok, destroy_ast_vardecl, make_command_vardecl);
 }
 
+static void destroy_ast_args(ast_node* node) {
+    ASSERT(node->type == AstNodeTypeArgs);
+    ast_args* args = get_ast_true_type(node);
+    if (args->expr) {
+        args->expr->destroy(args->expr);
+    }
+    if (args->next_param) {
+        args->next_param->destroy(args->next_param);
+    }
+    FREE(node);
+}
+
+ast_node* make_ast_param(struct token* tok) {
+    return make_ast_node(AstNodeTypeArgs, sizeof(ast_args), tok, destroy_ast_args, NULL);
+}
+
+static void destroy_ast_funcall(ast_node* node) {
+    ASSERT(node->type == AstNodeTypeFuncall);
+    ast_funcall* funcall = get_ast_true_type(node);
+    funcall->args->destroy(funcall->args);
+    FREE(node);
+}
+
+ast_node* make_ast_funcall(struct token* tok) {
+    return make_ast_node(AstNodeTypeFuncall, sizeof(ast_funcall), tok, destroy_ast_funcall, NULL);
+}
+

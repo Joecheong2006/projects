@@ -18,8 +18,8 @@ typedef struct {
 void init_environment(environment* env);
 void free_environment(environment* env);
 
-void env_scopes_push(environment* env);
-void env_scopes_pop(environment* env);
+void env_push_scope(environment* env);
+void env_pop_scope(environment* env);
 
 object* env_find_object(environment* env, cstring name);
 void env_push_object(environment* env, object* obj);

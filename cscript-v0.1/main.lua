@@ -1,2 +1,6 @@
-local a = {1, 2, 3}
-print(a["HI"])
+local function func()
+    local b = 10
+end
+
+func()
+print(b)

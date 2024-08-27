@@ -76,6 +76,7 @@ command* make_command_divide(struct ast_node* node);
 command* make_command_modulus(struct ast_node* node);
 command* make_command_negate(struct ast_node* node);
 command* make_command_vardecl(struct ast_node* node);
+command* make_command_assignment(struct ast_node* node);
 command* make_command_add_assign(struct ast_node* node);
 command* make_command_minus_assign(struct ast_node* node);
 command* make_command_multiply_assign(struct ast_node* node);

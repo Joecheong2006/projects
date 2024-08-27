@@ -11,11 +11,12 @@ typedef struct {
     i32 pointer;
 } parser;
 
-void parser_init(parser* par, vector(token) tokens);
-void parser_free(parser* par);
+void init_parser(parser* par, vector(token) tokens);
+void free_parser(parser* par);
 token* parser_peek_token(parser* par, i32 n);
 void parser_report_error(parser* par, token* tok, const char* msg);
 
 vector(ast_node*) parser_parse(parser* par);
+void free_ast(vector(ast_node*) ast);
 
 #endif

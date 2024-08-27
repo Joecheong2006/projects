@@ -7,6 +7,20 @@
 #include "tracing.h"
 
 static object* access_object(interpreter* inter, command* cmd);
+static error_info command_binary_operation_cal(interpreter* inter, primitive_data* out, command* cmd);
+
+static error_info command_binary_operation_add(interpreter* inter, primitive_data* out, command* cmd);
+static error_info command_binary_operation_minus(interpreter* inter, primitive_data* out, command* cmd);
+static error_info command_binary_operation_multiply(interpreter* inter, primitive_data* out, command* cmd);
+static error_info command_binary_operation_divide(interpreter* inter, primitive_data* out, command* cmd);
+static error_info command_binary_operation_modulus(interpreter* inter, primitive_data* out, command* cmd);
+
+static error_info command_assignment(interpreter* inter, const command* cmd);
+static error_info command_assign_add(interpreter* inter, const command* cmd);
+static error_info command_assign_minus(interpreter* inter, const command* cmd);
+static error_info command_assign_multiply(interpreter* inter, const command* cmd);
+static error_info command_assign_divide(interpreter* inter, const command* cmd);
+static error_info command_assign_modulus(interpreter* inter, const command* cmd);
 
 static error_info command_binary_operation_cal(interpreter* inter, primitive_data* out, command* cmd) {
     switch (cmd->type) {
@@ -123,6 +137,18 @@ IMPL_COMMAND_ASSIGNMENT(multiply)
 IMPL_COMMAND_ASSIGNMENT(divide)
 IMPL_COMMAND_ASSIGNMENT(modulus)
 
+static error_info command_assignment(interpreter* inter, const command* cmd) {
+    START_PROFILING();
+    command_assign* ca = get_command_true_type(cmd);
+    object* obj = access_object(inter, ca->mem);
+    if (obj->type == ObjectErrorUndefine) {
+        FREE(obj);
+        return (error_info){ .msg = "\tundefine variable '%s' on line %d\n", .line = ca->line_on_exec };
+    }
+    END_PROFILING(__func__);
+    return (error_info){ .msg = NULL };
+}
+
 static error_info command_exec_vardecl(interpreter* inter, command_vardecl* vardecl) {
     START_PROFILING()
     object* obj = NULL;
@@ -237,6 +263,7 @@ static void destroy_command_vardecl(command* cmd) {
     vardecl->expr->destroy(vardecl->expr);
     FREE(cmd);
 }
+
 command* make_command(CommandType type, u64 type_size, void(*destroy)(command*)) {
     command* cmd = MALLOC(type_size + sizeof(command));
     cmd->destroy = destroy;
@@ -315,6 +342,20 @@ IMPL_GEN_COMMAND_ASSIGNMENT(minus)
 IMPL_GEN_COMMAND_ASSIGNMENT(multiply)
 IMPL_GEN_COMMAND_ASSIGNMENT(divide)
 IMPL_GEN_COMMAND_ASSIGNMENT(modulus)
+
+command* make_command_assignment(struct ast_node* node) {
+    START_PROFILING()
+    command* result = make_command(CommandTypeAssignment, sizeof(command_assign), destroy_command_assign);
+    command_assign* ca = get_command_true_type(result);
+    ast_assignment* assignment = get_ast_true_type(node);
+    ca->exec = command_assignment;
+    ca->line_on_exec = node->tok->line;
+    ca->mem = assignment->variable_name->gen_command(assignment->variable_name);
+    ca->expr = assignment->expr->gen_command(assignment->expr);
+    LOG_DEBUG("\tgen cmd:%p CommandTypeAssignment %s\n", result, "assignment");
+    END_PROFILING(__func__)
+    return result;
+}
 
 command* make_command_negate(ast_node* node) {
     START_PROFILING()

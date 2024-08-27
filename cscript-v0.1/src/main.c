@@ -40,23 +40,20 @@ int main(void) {
     lexer lex = {text, sizeof(text) - 1, 1, 1, 0};
 
     parser par;
-    parser_init(&par, generate_tokens(&lex));
+    init_parser(&par, generate_tokens(&lex));
 
     vector(ast_node*) ast = parser_parse(&par);
     for_vector(par.errors, i, 0) {
         LOG_ERROR("\t%d:%d %s\n", par.errors[i].line, par.errors[i].position, par.errors[i].msg);
     }
+
     if (ast) {
         interpreter inter;
         init_interpreter(&inter, gen_instructions(ast));
+        free_ast(ast);
+        free_parser(&par);
 
-        for_vector(ast, i, 0) {
-            ast[i]->destroy(ast[i]);
-        }
-        free_vector(ast);
-        parser_free(&par);
-
-        env_scopes_push(&inter.env);
+        env_push_scope(&inter.env);
         for_vector(inter.ins, i, 0) {
             error_info ei = interpret_command(&inter);
             if (ei.msg) {
@@ -64,12 +61,12 @@ int main(void) {
                 ASSERT_MSG(0, "failed to exec command");
             }
         }
-        env_scopes_pop(&inter.env);
+        env_pop_scope(&inter.env);
 
         free_interpreter(&inter);
     }
     else {
-        parser_free(&par);
+        free_parser(&par);
     }
     // free_vector(lex.ctx);
 

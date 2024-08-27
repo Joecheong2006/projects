@@ -1,11 +1,9 @@
-f = __import__('func', None, None, [], 0)
-print(f.FUNC)
+class Vec:
+    x = 0
+    y = 0
 
-a = f.func()
-a[2] = 0;
-a = f.func()
-print(a)
+v = Vec()
+def func():
+    return v
 
-l = locals()
-ret = l.get("a")
-print(ret)
+func() += 1

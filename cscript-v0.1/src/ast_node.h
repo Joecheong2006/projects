@@ -7,6 +7,7 @@ typedef enum {
     AstNodeTypeNegate,
     AstNodeTypeConstant,
     AstNodeTypeIdentifier,
+    AstNodeTypeArgs,
 
     AstNodeTypeExpr,
     AstNodeTypeExprAdd,
@@ -14,17 +15,19 @@ typedef enum {
     AstNodeTypeExprMultiply,
     AstNodeTypeExprDivide,
     AstNodeTypeExprModulus,
-    AstNodeTypeExprAddAssign,
-    AstNodeTypeExprMinusAssign,
-    AstNodeTypeExprMultiplyAssign,
-    AstNodeTypeExprDivideAssign,
-    AstNodeTypeExprModulusAssign,
+    AstNodeTypeAssignment,
+    AstNodeTypeAddAssign,
+    AstNodeTypeMinusAssign,
+    AstNodeTypeMultiplyAssign,
+    AstNodeTypeDivideAssign,
+    AstNodeTypeModulusAssign,
 
     AstNodeTypeFuncDef,
     AstNodeTypeAssign,
     AstNodeTypeVarDecl,
     AstNodeTypeIf,
     AstNodeTypeWhile,
+    AstNodeTypeFuncall,
 } AstNodeType;
 
 struct command;
@@ -59,6 +62,15 @@ typedef struct {
     ast_node* expr;
 } ast_vardecl;
 
+typedef struct {
+    ast_node* expr;
+    ast_node* next_param;
+} ast_args;
+
+typedef struct {
+    ast_node* args;
+} ast_funcall;
+
 ast_node* make_ast_node(AstNodeType type, u64 type_size, struct token* tok, void(*destroy)(ast_node*), struct command*(*gen_command)(ast_node*));
 void* get_ast_true_type(ast_node* node);
 
@@ -68,5 +80,7 @@ ast_node* make_ast_negate(struct token* tok);
 ast_node* make_ast_constant(struct token* tok);
 ast_node* make_ast_identifier(struct token* tok);
 ast_node* make_ast_vardecl(struct token* tok);
+ast_node* make_ast_param(struct token* tok);
+ast_node* make_ast_funcall(struct token* tok);
 
 #endif

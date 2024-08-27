@@ -9,22 +9,21 @@
 // <binary>     ::= "0" | "1"
 // <intpart>    ::= <digit> {<digit>}
 // <base2>      ::= "0b" <binary> {<binary>}
-// <base16      ::= "0x" <hex> {<hex>}
-// <int>        ::= ["+" | "-"] <intpart> | <base2>
+// <base16>     ::= "0x" <hex> {<hex>}
+// <int>        ::= ["+" | "-"] <intpart> | <base2> | <base16>
 // <float>      ::= ["+" | "-"] <intpart> | "" "." <intpart>
 // <end>        ::= "\n" | ";"
-// <name>       ::= <letter> | "_" {(<letter> | <digit> | "_")}
-// <identifer>  ::= <name> {"." <name>}
-// <member>     ::= <identifier> {"." <identifier>}
+// <identifier> ::= <letter> | "_" {(<letter> | <digit> | "_")}
+// <rvalue>     ::= (<identifier> | <funcall>)
+// <reference>  ::= <rvalue> {"." <rvalue>}
 // <literal>    ::= <int> | <float> | char | string
-// <term>       ::= <literal> | <member> | "(" <expr> ")" | <funcall> | "-" <term> | "+" <term>
+// <term>       ::= <literal> | <reference> | "(" <expr> ")" | <funcall> | "-" <term> | "+" <term>
 // <expr>       ::= <term> {<operator> <expr>}
 // <operator>   ::= "-" | "+" | "*" | "/" | "%"
-// <assignment> ::= <member> ("=" | "+=" | "-=" | "*=" | "/=") <expr>
-// <params>     ::= <identifier> {"," <identifier>}
-// <funcparams> ::= [<params>]
-// <funcdef>    ::= "fun" <identifier> "(" <funcparams> ")" "end"
-// <funcall>    ::= <member> "(" <funcparams> ")"
+// <assignment> ::= <reference> ("=" | "+=" | "-=" | "*=" | "/=") <expr>
+// <params>     ::= [<expr> {"," <expr>}]
+// <funcdef>    ::= "fun" <identifier> "(" [<identifier> {"," <identifier>}] ")" "end"
+// <funcall>    ::= <reference> "(" <funcparams> ")"
 // <vardecl>    ::= "var" <identifier> "=" <expr>
 // <statement>  ::= <vardecl> | <funcall> | <assignment> <end>
 // <if>         ::= "if" <expr> do {<statement>} ["end"]
@@ -34,7 +33,9 @@
 
 static void omit_separator(parser* par);
 static ast_node* parse_identifier(parser* par);
-static ast_node* parse_member(parser* par);
+static ast_node* parse_rvalue(parser* par);
+static ast_node* parse_args(parser* par);
+static ast_node* parse_reference(parser* par);
 static ast_node* parse_term(parser* par);
 static ast_node* parse_expr_with_brackets(parser* par);
 static ast_node* parse_operator(parser* par);
@@ -45,6 +46,7 @@ static ast_node* parse_assignment_operator(parser* par);
 static ast_node* parse_identifier_statement(parser* par);
 
 static ast_node* expr_brackets_terminal(parser* par, ast_node* node);
+static ast_node* expr_params_terminal(parser* par, ast_node* node);
 static ast_node* expr_default_terminal(parser* par, ast_node* node);
 
 ast_node* expr_brackets_terminal(parser* par, ast_node* node) {
@@ -56,6 +58,19 @@ ast_node* expr_brackets_terminal(parser* par, ast_node* node) {
     }
     node->destroy(node);
     parser_report_error(par, tok, "expected )");
+    END_PROFILING(__func__);
+    return NULL;
+}
+
+ast_node* expr_params_terminal(parser* par, ast_node* node) {
+    START_PROFILING();
+    token* tok = parser_peek_token(par, 0);
+    if (tok->type == ',' || tok->type == ')') {
+        END_PROFILING(__func__);
+        return node;
+    }
+    node->destroy(node);
+    parser_report_error(par, tok, "expected ,");
     END_PROFILING(__func__);
     return NULL;
 }
@@ -105,7 +120,7 @@ ast_node* parse_expr_with_brackets(parser* par) {
     return expr;
 }
 
-void omit_separator(parser* par) {
+INLINE void omit_separator(parser* par) {
     START_PROFILING();
     token* tok = parser_peek_token(par, 0);
     if (!tok) {
@@ -128,7 +143,7 @@ void omit_separator(parser* par) {
     END_PROFILING(__func__);
 }
 
-ast_node* parse_identifier(parser* par) {
+INLINE ast_node* parse_identifier(parser* par) {
     START_PROFILING();
     token* tok = parser_peek_token(par, 0);
     if (tok->type != TokenTypeIdentifier) {
@@ -141,20 +156,87 @@ ast_node* parse_identifier(parser* par) {
     return make_ast_identifier(tok);
 }
 
-ast_node* parse_member(parser* par) {
+ast_node* parse_rvalue(parser* par) {
+    token* tok = parser_peek_token(par, 0);
+    if (tok->type != TokenTypeIdentifier) {
+        return NULL;
+    }
+    ++par->pointer;
+
+    token* tok_param = parser_peek_token(par, 0);
+    if (tok_param->type == '(') {
+        ast_node* args = parse_args(par);
+        if (args) {
+            ast_node* funcall_node = make_ast_funcall(tok);
+            ast_funcall* funcall = get_ast_true_type(funcall_node);
+            funcall->args = args;
+            return funcall_node;
+        }
+    }
+    return make_ast_identifier(tok);
+}
+
+ast_node* parse_args(parser* par) {
+    token* tok = parser_peek_token(par, 0);
+    if (tok->type != '(') {
+        return NULL;
+    }
+    ++par->pointer;
+
+    ast_node* param_node = make_ast_param(tok);
+    ast_node* ret = param_node;
+    while (1) {
+        ast_args* param = get_ast_true_type(param_node);
+        param->expr = parse_expr(par, expr_params_terminal);
+        if (param->expr) {
+            ret->destroy(ret);
+            return NULL;
+        }
+        tok = parser_peek_token(par, 0);
+        if (tok->type == ')') {
+            ++par->pointer;
+            return ret;
+        }
+        else if (tok->type == ',') {
+            ++par->pointer;
+            param->next_param = make_ast_param(tok);
+            param_node = param->next_param;
+        }
+        else {
+            parser_report_error(par, tok, "expected ) or ,");
+            return NULL;
+        }
+    }
+}
+
+ast_node* parse_reference(parser* par) {
     START_PROFILING();
-    ast_node* id = parse_identifier(par);
+    ast_node* id = parse_rvalue(par);
     ast_node* result = id;
     while (1) {
         token* tok = parser_peek_token(par, 0);
-        if (tok->type != '.') {
+        if (tok->type == '.') {
+            ++par->pointer;
+            ast_node* af = parse_rvalue(par);
+            ast_identifier* iden = get_ast_true_type(id);
+            iden->next = af;
+            id = af;
+        }
+        else if (tok->type == '(') {
+            ++par->pointer;
+            ast_node* args = parse_args(par);
+            if (!args) {
+                result->destroy(result);
+                return NULL;
+            }
+            ast_node* funcall_node = make_ast_funcall(tok);
+            ast_funcall* funcall = get_ast_true_type(funcall_node);
+            funcall->args = args;
+        }
+        else {
             END_PROFILING(__func__);
             return result;
         }
-        ast_node* af = parse_identifier(par);
-        ast_identifier* iden = get_ast_true_type(id);
-        iden->next = af;
-        id = af;
     }
     END_PROFILING(__func__);
     return result;
@@ -164,10 +246,9 @@ ast_node* parse_term(parser* par) {
     START_PROFILING();
     token* tok = parser_peek_token(par, 0);
     switch ((i32)tok->type) {
-    case TokenTypeIdentifier: {
+    case TokenTypeIdentifier:
         END_PROFILING(__func__);
-        return parse_member(par);
-    }
+        return parse_rvalue(par);
     case TokenTypeLiteralInt32: case TokenTypeLiteralString: case TokenTypeLiteralFloat32: {
         ++par->pointer;
         END_PROFILING(__func__);
@@ -195,35 +276,30 @@ ast_node* parse_term(parser* par) {
     }
 }
 
-ast_node* parse_operator(parser* par) {
+INLINE ast_node* parse_operator(parser* par) {
     token* tok = parser_peek_token(par, 0);
     switch ((i32)tok->type) {
-    case '+': {
+    case '+':
         ++par->pointer;
         return make_ast_binary_expression(AstNodeTypeExprAdd, tok, make_command_add);
-    }
-    case '-': {
+    case '-':
         ++par->pointer;
         return make_ast_binary_expression(AstNodeTypeExprMinus, tok, make_command_minus);
-    }
-    case '*': {
+    case '*':
         ++par->pointer;
         return make_ast_binary_expression(AstNodeTypeExprMultiply, tok, make_command_multiply);
-    }
-    case '/': {
+    case '/':
         ++par->pointer;
         return make_ast_binary_expression(AstNodeTypeExprDivide, tok, make_command_divide);
-    }
-    case '%': {
+    case '%':
         ++par->pointer;
         return make_ast_binary_expression(AstNodeTypeExprModulus, tok, make_command_modulus);
-    }
     default:
         return NULL;
     }
 }
 
-i32 bottom_up_need_to_reround(AstNodeType current, AstNodeType previous) {
+INLINE i32 bottom_up_need_to_reround(AstNodeType current, AstNodeType previous) {
     START_PROFILING();
     switch (current) {
     case AstNodeTypeExprModulus:
@@ -279,7 +355,7 @@ ast_node* parse_expr(parser* par, ast_node*(*is_terminal)(parser*,ast_node*)) {
     }
 }
 
-ast_node* parse_exprln(parser* par) {
+INLINE ast_node* parse_exprln(parser* par) {
     return parse_expr(par, expr_default_terminal);
 }
 
@@ -317,24 +393,27 @@ ast_node* parse_vardecl(parser* par) {
     return node;
 }
 
-static ast_node* parse_assignment_operator(parser* par) {
+INLINE static ast_node* parse_assignment_operator(parser* par) {
     token* tok = parser_peek_token(par, 0);
-    switch (tok->type) {
+    switch ((int)tok->type) {
     case TokenTypeAssignmentPlus:
         ++par->pointer;
-        return make_ast_assignment(AstNodeTypeExprAddAssign, tok, make_command_add_assign);
+        return make_ast_assignment(AstNodeTypeAddAssign, tok, make_command_add_assign);
     case TokenTypeAssignmentMinus:
         ++par->pointer;
-        return make_ast_assignment(AstNodeTypeExprMinusAssign, tok, make_command_minus_assign);
+        return make_ast_assignment(AstNodeTypeMinusAssign, tok, make_command_minus_assign);
     case TokenTypeAssignmentMultiply:
         ++par->pointer;
-        return make_ast_assignment(AstNodeTypeExprMultiplyAssign, tok, make_command_multiply_assign);
+        return make_ast_assignment(AstNodeTypeMultiplyAssign, tok, make_command_multiply_assign);
     case TokenTypeAssignmentDivide:
         ++par->pointer;
-        return make_ast_assignment(AstNodeTypeExprDivideAssign, tok, make_command_divide_assign);
+        return make_ast_assignment(AstNodeTypeDivideAssign, tok, make_command_divide_assign);
     case TokenTypeAssignmentModulus:
         ++par->pointer;
-        return make_ast_assignment(AstNodeTypeExprModulusAssign, tok, make_command_modulus_assign);
+        return make_ast_assignment(AstNodeTypeModulusAssign, tok, make_command_modulus_assign);
+    case '=':
+        ++par->pointer;
+        return make_ast_assignment(AstNodeTypeAssignment, tok, make_command_assignment);
     default:
         parser_report_error(par, tok, "expected assignment operator");
         return NULL;
@@ -343,14 +422,14 @@ static ast_node* parse_assignment_operator(parser* par) {
 
 static ast_node* parse_identifier_statement(parser* par) { 
     START_PROFILING();
-    ast_node* mem = parse_member(par);
-    if (!mem) {
+    ast_node* refs = parse_reference(par);
+    if (!refs) {
         return NULL;
     }
 
     ast_node* node = parse_assignment_operator(par);
     if (!node) {
-        mem->destroy(mem);
+        refs->destroy(refs);
         return NULL;
     }
 
@@ -361,7 +440,7 @@ static ast_node* parse_identifier_statement(parser* par) {
         node->destroy(node);
         return NULL;
     }
-    assignment->variable_name = mem;
+    assignment->variable_name = refs;
     END_PROFILING(__func__);
     return node;
 }
@@ -419,7 +498,7 @@ vector(ast_node*) parser_parse(parser* par) {
     return result;
 }
 
-void parser_init(parser* par, vector(token) tokens) {
+void init_parser(parser* par, vector(token) tokens) {
     START_PROFILING();
     par->tokens = tokens;
     par->errors = make_vector(error_info);
@@ -427,21 +506,29 @@ void parser_init(parser* par, vector(token) tokens) {
     END_PROFILING(__func__);
 }
 
-void parser_free(parser* par) {
+void free_parser(parser* par) {
     START_PROFILING();
     free_vector(par->tokens);
     free_vector(par->errors);
     END_PROFILING(__func__);
 }
 
-void parser_report_error(parser* par, token* tok, const char* msg) {
+INLINE void parser_report_error(parser* par, token* tok, const char* msg) {
     error_info info = {tok->line, tok->count, msg};
     vector_push(par->errors, info);
 }
 
-token* parser_peek_token(parser* par, i32 n) {
+INLINE token* parser_peek_token(parser* par, i32 n) {
     if (par->pointer + n < (i32)vector_size(par->tokens)) {
         return par->tokens + par->pointer + n;
     }
     return NULL;
 }
+
+INLINE void free_ast(vector(ast_node*) ast) {
+    for_vector(ast, i, 0) {
+        ast[i]->destroy(ast[i]);
+    }
+    free_vector(ast);
+}
+
