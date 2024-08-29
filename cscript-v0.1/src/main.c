@@ -1,3 +1,4 @@
+#include "platform/platform.h"
 #include "core/log.h"
 #include "lexer.h"
 #include "container/memallocate.h"
@@ -26,6 +27,8 @@ vector(command*) gen_instructions(vector(ast_node*) ast) {
 }
 
 int main(void) {
+    platform_state state;
+    setup_platform(&state);
     // lexer lex = {NULL, -1, 1, 1, 0};
     // lexer_load_file_text(&lex, "test.cscript");
 
@@ -69,6 +72,7 @@ int main(void) {
         free_parser(&par);
     }
     // free_vector(lex.ctx);
+    shutdown_platform(&state);
 
     return 0;
 }
