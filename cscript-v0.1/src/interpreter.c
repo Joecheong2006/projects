@@ -5,15 +5,16 @@
 #include "core/assert.h"
 #include "core/log.h"
 #include "tracing.h"
+#include "ast_node.h"
 
-static object* access_object(interpreter* inter, command* cmd);
-static error_info command_binary_operation_cal(interpreter* inter, primitive_data* out, command* cmd);
+static error_info access_object(interpreter* inter, command* cmd, object** obj);
+static error_info command_binary_operation_cal(interpreter* inter, command* cmd, primitive_data* out);
 
-static error_info command_binary_operation_add(interpreter* inter, primitive_data* out, command* cmd);
-static error_info command_binary_operation_minus(interpreter* inter, primitive_data* out, command* cmd);
-static error_info command_binary_operation_multiply(interpreter* inter, primitive_data* out, command* cmd);
-static error_info command_binary_operation_divide(interpreter* inter, primitive_data* out, command* cmd);
-static error_info command_binary_operation_modulus(interpreter* inter, primitive_data* out, command* cmd);
+static error_info command_binary_operation_add(interpreter* inter, command* cmd, primitive_data* out);
+static error_info command_binary_operation_minus(interpreter* inter, command* cmd, primitive_data* out);
+static error_info command_binary_operation_multiply(interpreter* inter, command* cmd, primitive_data* out);
+static error_info command_binary_operation_divide(interpreter* inter, command* cmd, primitive_data* out);
+static error_info command_binary_operation_modulus(interpreter* inter, command* cmd, primitive_data* out);
 
 static error_info command_assignment(interpreter* inter, const command* cmd);
 static error_info command_assign_add(interpreter* inter, const command* cmd);
@@ -22,12 +23,16 @@ static error_info command_assign_multiply(interpreter* inter, const command* cmd
 static error_info command_assign_divide(interpreter* inter, const command* cmd);
 static error_info command_assign_modulus(interpreter* inter, const command* cmd);
 
-static error_info command_binary_operation_cal(interpreter* inter, primitive_data* out, command* cmd) {
+static error_info access_funcall(interpreter* inter, command* cmd, object** obj);
+static error_info access_identifier(interpreter* inter, command* cmd, object** obj);
+
+static error_info command_binary_operation_cal(interpreter* inter, command* cmd, primitive_data* out) {
     switch (cmd->type) {
     case CommandTypeAccess: {
-        object* obj = access_object(inter, cmd);
-        if (obj == NULL) {
-            return (error_info){ .msg = "use of undeclared identifer '%s'" };
+        object* obj = NULL;
+        error_info ei = access_object(inter, cmd, &obj);
+        if (ei.msg) {
+            return ei;
         }
         else if (obj->type != ObjectTypePrimitiveData) {
             return (error_info){ .msg = "Invalid operands to binary expression" };
@@ -39,7 +44,6 @@ static error_info command_binary_operation_cal(interpreter* inter, primitive_dat
     case CommandTypeGetConstant: {
         START_PROFILING()
         command_get_constant* cst = get_command_true_type(cmd);
-        LOG_DEBUG("\texec cmd:%p CommandTypeGetConstant %s %g\n", cmd, cst->data.type[2] == PrimitiveDataTypeInt32 ? "i32" : "f32", cst->data.type[2] == PrimitiveDataTypeInt32 ? cst->data.int32 : cst->data.float32);
         *out = cst->data;
         END_PROFILING("CommandTypeGetConstant")
         break;
@@ -47,13 +51,12 @@ static error_info command_binary_operation_cal(interpreter* inter, primitive_dat
     case CommandTypeNegateOperation: {
         command_negate_operation* no = get_command_true_type(cmd);
         primitive_data tmp;
-        command_binary_operation_cal(inter, &tmp, no->data);
-        LOG_DEBUG("\texec cmd:%p CommandTypeNegateOperation\n", cmd);
+        command_binary_operation_cal(inter, no->data, &tmp);
         return primitive_data_negate(out, &tmp);
     }
     case CommandTypeBinaryOperation: {
         command_binary_operation* bo = get_command_true_type(cmd);
-        return bo->cal(inter, out, cmd);
+        return bo->cal(inter, cmd, out);
     }
     default:
         ASSERT_MSG(0, "undefine command type");
@@ -63,17 +66,16 @@ static error_info command_binary_operation_cal(interpreter* inter, primitive_dat
 }
 
 #define IMPL_COMMAND_BINARY_OPERATION(operation_name)\
-    static error_info command_binary_operation_##operation_name(interpreter* inter, primitive_data* out, command* cmd) {\
+    static error_info command_binary_operation_##operation_name(interpreter* inter, command* cmd, primitive_data* out) {\
         START_PROFILING()\
         ASSERT(cmd->type == CommandTypeBinaryOperation);\
-        LOG_DEBUG("\texec cmd:%p CommandTypeBinaryOperation " #operation_name "\n", cmd);\
         command_binary_operation* bo = get_command_true_type(cmd);\
         END_PROFILING(__func__)\
         primitive_data lhs;\
-        error_info ei = command_binary_operation_cal(inter, &lhs, bo->lhs);\
+        error_info ei = command_binary_operation_cal(inter, bo->lhs, &lhs);\
         if (ei.msg) return ei;\
         primitive_data rhs;\
-        ei = command_binary_operation_cal(inter, &rhs, bo->rhs);\
+        ei = command_binary_operation_cal(inter, bo->rhs, &rhs);\
         if (ei.msg) return ei;\
         return primitive_data_##operation_name(out, &lhs, &rhs);\
     }
@@ -84,20 +86,35 @@ IMPL_COMMAND_BINARY_OPERATION(multiply)
 IMPL_COMMAND_BINARY_OPERATION(divide)
 IMPL_COMMAND_BINARY_OPERATION(modulus)
 
-static object* access_object(interpreter* inter, command* cmd) {
+static error_info access_funcall(interpreter* inter, command* cmd, object** obj) {
+    ASSERT(cmd->type == CommandTypeFuncall);
+    command_funcall* funcall = get_command_true_type(cmd);
+    (void)inter, (void)funcall;
+    *obj = NULL;
+    return (error_info){ .msg = NULL };
+}
+
+static error_info access_identifier(interpreter* inter, command* cmd, object** obj) {
+    ASSERT(cmd->type == CommandTypeAccessIdentifier);
+    command_access_identifier* access = get_command_true_type(cmd);
+    *obj = env_find_object(&inter->env, access->name);
+    return (error_info){ .msg = NULL };
+}
+
+static error_info access_object(interpreter* inter, command* cmd, object** obj) {
     ASSERT(cmd->type == CommandTypeAccess);
     START_PROFILING()
-    command_access* access = get_command_true_type(cmd);
-    object* obj = env_find_object(&inter->env, access->name);
-    if (!obj) {
-        return make_object(ObjectErrorUndefine, access->name, 0, NULL);
+    command_reference* access = get_command_true_type(cmd);
+    error_info ei = access->reference(inter, access->id, obj);
+    if (ei.msg) {
+        return ei;
     }
 
-    for (command_access* ac = access; ac->access != NULL; ac = get_command_true_type(ac->access)) {
+    for (command_reference* ac = access; ac->next_access != NULL; ac = get_command_true_type(ac->next_access)) {
         // TODO: access member variable or funcation call
     }
     END_PROFILING(__func__)
-    return obj;
+    return (error_info){ .msg = NULL };
 }
 
 #define IMPL_COMMAND_ASSIGNMENT(assign_name)\
@@ -105,16 +122,16 @@ static object* access_object(interpreter* inter, command* cmd) {
         START_PROFILING()\
         ASSERT(cmd->type == CommandTypeAssignment);\
         command_assign* ca = get_command_true_type(cmd);\
-        object* obj = access_object(inter, ca->mem);\
-        if (obj->type == ObjectErrorUndefine) {\
-            FREE(obj);\
-            return (error_info){ .msg = "\tundefine variable '%s' on line %d\n", .line = ca->line_on_exec };\
+        object* obj = NULL;\
+        error_info ei = access_object(inter, ca->mem, &obj);\
+        if (ei.msg) {\
+            ei.line = ca->line_on_exec;\
+            return ei;\
         }\
-        if (obj->type != ObjectTypePrimitiveData) {\
-            return (error_info){ .msg = "\tInvalid operands to binary expression on line %d\n", .line = ca->line_on_exec };\
-        }\
+        if (obj->type != ObjectTypePrimitiveData)\
+            return (error_info){ .msg = "Invalid operands to binary expression", .line = ca->line_on_exec };\
         primitive_data data;\
-        error_info ei = command_binary_operation_cal(inter, &data, ca->expr);\
+        ei = command_binary_operation_cal(inter, ca->expr, &data);\
         if (ei.msg) {\
             ei.line = ca->line_on_exec;\
             return ei;\
@@ -125,7 +142,6 @@ static object* access_object(interpreter* inter, command* cmd) {
             ei.line = ca->line_on_exec;\
             return ei;\
         }\
-        LOG_DEBUG("\texec cmd:%p CommandTypeAssignment %s" "\n", cmd, #assign_name);\
         LOG_DEBUG("\t%d: %s %s by %g -> %g\n", ca->line_on_exec, obj->name, #assign_name, data.float32, o->val.float32);\
         END_PROFILING(__func__)\
         return (error_info){ .msg = NULL };\
@@ -140,10 +156,11 @@ IMPL_COMMAND_ASSIGNMENT(modulus)
 static error_info command_assignment(interpreter* inter, const command* cmd) {
     START_PROFILING();
     command_assign* ca = get_command_true_type(cmd);
-    object* obj = access_object(inter, ca->mem);
-    if (obj->type == ObjectErrorUndefine) {
-        FREE(obj);
-        return (error_info){ .msg = "\tundefine variable '%s' on line %d\n", .line = ca->line_on_exec };
+    object* obj = NULL;
+    error_info ei = access_object(inter, ca->mem, &obj);
+    if (ei.msg) {
+        ei.line = ca->line_on_exec;
+        return ei;
     }
     END_PROFILING(__func__);
     return (error_info){ .msg = NULL };
@@ -152,17 +169,17 @@ static error_info command_assignment(interpreter* inter, const command* cmd) {
 static error_info command_exec_vardecl(interpreter* inter, command_vardecl* vardecl) {
     START_PROFILING()
     object* obj = NULL;
-    // NOTE: Check if the data is different from primitive in here.
+    // NOTE: Check if the data is different from primitive.
 
     if (env_find_object(&inter->env, vardecl->variable_name) != NULL) {
         // LOG_ERROR("\tredeclare variable '%s' on line %d\n", vardecl->variable_name, vardecl->line_on_exec);
-        return (error_info){ .msg = "\tredeclare variable '%s' on line %d\n", .line = vardecl->line_on_exec };
+        return (error_info){ .msg = "redeclare variable '%s'", .line = vardecl->line_on_exec };
     }
 
     primitive_data data;
-    error_info ei = command_binary_operation_cal(inter, &data, vardecl->expr);
+    error_info ei = command_binary_operation_cal(inter, vardecl->expr, &data);
     if (ei.msg) {
-        ei.line = vardecl->line_on_exec ;
+        ei.line = vardecl->line_on_exec;
         return ei;
     }
 
@@ -250,9 +267,38 @@ static void destroy_command_access(command* cmd) {
         return;
     }
     ASSERT(cmd->type == CommandTypeAccess);
-    command_access* access = get_command_true_type(cmd);
+    command_reference* access = get_command_true_type(cmd);
+    access->id->destroy(access->id);
+    if (access->next_access) {
+        access->next_access->destroy(access->next_access);
+    }
+    FREE(cmd);
+}
+
+static void destroy_command_arguments(command* cmd) {
+    ASSERT(cmd->type == CommandTypeArgument);
+    command_argument* argument = get_command_true_type(cmd);
+    if (argument->expr) {
+        argument->expr->destroy(argument->expr);
+    }
+    if (argument->next_arg) {
+        argument->next_arg->destroy(argument->next_arg);
+    }
+    FREE(cmd);
+}
+
+static void destroy_command_access_identifier(command* cmd) {
+    ASSERT(cmd->type == CommandTypeAccessIdentifier);
+    command_access_identifier* access = get_command_true_type(cmd);
     free_string(access->name);
-    cmd->destroy(access->access);
+    FREE(cmd);
+}
+
+static void destroy_command_funcall(command* cmd) {
+    ASSERT(cmd->type == CommandTypeFuncall);
+    command_funcall* funcall = get_command_true_type(cmd);
+    funcall->args->destroy(funcall->args);
+    free_string(funcall->name);
     FREE(cmd);
 }
 
@@ -264,7 +310,7 @@ static void destroy_command_vardecl(command* cmd) {
     FREE(cmd);
 }
 
-command* make_command(CommandType type, u64 type_size, void(*destroy)(command*)) {
+INLINE command* make_command(CommandType type, u64 type_size, void(*destroy)(command*)) {
     command* cmd = MALLOC(type_size + sizeof(command));
     cmd->destroy = destroy;
     cmd->type = type;
@@ -278,26 +324,62 @@ command* make_command_get_constant(struct ast_node* node) {
     command* result = make_command(CommandTypeGetConstant, sizeof(command_get_constant), destroy_command_get_constant);
     command_get_constant* cst = get_command_true_type(result);
     cst->data = node->tok->val;
-    if (cst->data.type[2] == PrimitiveDataTypeInt32) {
-        LOG_DEBUG("\tgen cmd:%p CommandTypeGetConstant i32 %d\n", result, cst->data.int32);
-    }
-    else if (cst->data.type[2] == PrimitiveDataTypeFloat32) {
-        LOG_DEBUG("\tgen cmd:%p CommandTypeGetConstant f32 %g\n", result, cst->data.float32);
+    END_PROFILING(__func__)
+    return result;
+}
+
+command* make_command_argument(struct ast_node* node) {
+    START_PROFILING()
+    command* result = make_command(CommandTypeArgument, sizeof(command_argument), destroy_command_arguments);
+    command_argument* argument = get_command_true_type(result);
+    ast_arg* arg = get_ast_true_type(node);
+    argument->expr = arg->expr->gen_command(arg->expr);
+    if (arg->next_param) {
+        argument->next_arg = arg->next_param->gen_command(arg->next_param);
     }
     END_PROFILING(__func__)
     return result;
 }
 
-command* make_command_access(struct ast_node* node) {
+command* make_command_funcall(struct ast_node* node) {
     START_PROFILING()
-    command* result = make_command(CommandTypeAccess, sizeof(command_access), destroy_command_access);
-    command_access* access = get_command_true_type(result);
-    access->name = node->tok->val.string;
-    access->access = NULL;
-    ast_identifier* iden = get_ast_true_type(node);
+    command* result = make_command(CommandTypeFuncall, sizeof(command_funcall), destroy_command_funcall);
+    command_funcall* funcall = get_command_true_type(result);
+    ast_funcall* f = get_ast_true_type(node);
+    funcall->name = node->tok->val.string;
+    funcall->args = f->args->gen_command(f->args);
+    END_PROFILING(__func__)
+    return result;
+}
+
+INLINE static command* make_command_reference(struct ast_node* node, error_info(*reference)(interpreter*, command*, object**)) {
+    START_PROFILING()
+    command* result = make_command(CommandTypeAccess, sizeof(command_reference), destroy_command_access);
+    command_reference* access = get_command_true_type(result);
+    ast_reference* iden = get_ast_true_type(node);
+    access->next_access = NULL;
+    access->reference = reference;
+    access->id = iden->id->gen_command(iden->id);
     if (iden->next) {
-        access->access = iden->next->gen_command(iden->next);
+        access->next_access = iden->next->gen_command(iden->next);
     }
+    END_PROFILING(__func__)
+    return result;
+}
+
+command* make_command_reference_identifier(struct ast_node* node) {
+    return make_command_reference(node, access_identifier);
+}
+
+command* make_command_reference_funcall(struct ast_node* node) {
+    return make_command_reference(node, access_funcall);
+}
+
+command* make_command_access_identifier(struct ast_node* node) {
+    START_PROFILING()
+    command* result = make_command(CommandTypeAccessIdentifier, sizeof(command_access_identifier), destroy_command_access_identifier);
+    command_access_identifier* iden = get_command_true_type(result);
+    iden->name = node->tok->val.string;
     END_PROFILING(__func__)
     return result;
 }
@@ -312,7 +394,6 @@ command* make_command_access(struct ast_node* node) {
         END_PROFILING(__func__)\
         bo->lhs = expr->lhs->gen_command(expr->lhs);\
         bo->rhs = expr->rhs->gen_command(expr->rhs);\
-        LOG_DEBUG("\tgen cmd:%p CommandTypeBinaryOperation " #operation_name "\n", result);\
         return result;\
     }
 
@@ -332,7 +413,6 @@ IMPL_GEN_COMMAND_BINARY_OPERATION(modulus)
         ca->line_on_exec = node->tok->line;\
         ca->mem = assignment->variable_name->gen_command(assignment->variable_name);\
         ca->expr = assignment->expr->gen_command(assignment->expr);\
-        LOG_DEBUG("\tgen cmd:%p CommandTypeAssignment %s\n", result, #assign_name);\
         END_PROFILING(__func__)\
         return result;\
     }
@@ -352,7 +432,6 @@ command* make_command_assignment(struct ast_node* node) {
     ca->line_on_exec = node->tok->line;
     ca->mem = assignment->variable_name->gen_command(assignment->variable_name);
     ca->expr = assignment->expr->gen_command(assignment->expr);
-    LOG_DEBUG("\tgen cmd:%p CommandTypeAssignment %s\n", result, "assignment");
     END_PROFILING(__func__)
     return result;
 }
@@ -363,7 +442,6 @@ command* make_command_negate(ast_node* node) {
     command_negate_operation* no = get_command_true_type(result);
     ast_negate* negate = get_ast_true_type(node);
     no->data = negate->term->gen_command(negate->term);
-    LOG_DEBUG("\tgen cmd:%p CommandTypeNegateOperation\n", result);
     END_PROFILING(__func__)
     return result;
 }
@@ -376,7 +454,6 @@ command* make_command_vardecl(ast_node* node) {
     vardecl->variable_name = vd->variable_name->tok->val.string;
     vardecl->expr = vd->expr->gen_command(vd->expr);
     vardecl->line_on_exec = node->tok->line;
-    LOG_DEBUG("\tgen cmd:%p CommandTypeVarDecl varname %s\n", result, vardecl->variable_name);
     END_PROFILING(__func__)
     return result;
 }

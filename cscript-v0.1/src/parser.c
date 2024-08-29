@@ -153,7 +153,7 @@ INLINE ast_node* parse_identifier(parser* par) {
     }
     ++par->pointer;
     END_PROFILING(__func__);
-    return make_ast_identifier(tok);
+    return make_ast_reference_identifier(tok);
 }
 
 ast_node* parse_rvalue(parser* par) {
@@ -167,13 +167,16 @@ ast_node* parse_rvalue(parser* par) {
     if (tok_param->type == '(') {
         ast_node* args = parse_args(par);
         if (args) {
-            ast_node* funcall_node = make_ast_funcall(tok);
-            ast_funcall* funcall = get_ast_true_type(funcall_node);
+            ast_node* ref_funcall = make_ast_reference_funcall(tok);
+            ast_reference* access = get_ast_true_type(ref_funcall);
+            access->id = make_ast_funcall(tok);
+
+            ast_funcall* funcall = get_ast_true_type(access->id);
             funcall->args = args;
-            return funcall_node;
+            return ref_funcall;
         }
     }
-    return make_ast_identifier(tok);
+    return make_ast_reference_identifier(tok);
 }
 
 ast_node* parse_args(parser* par) {
@@ -185,8 +188,13 @@ ast_node* parse_args(parser* par) {
 
     ast_node* param_node = make_ast_param(tok);
     ast_node* ret = param_node;
+
+    if (parser_peek_token(par, 0)->type == ')') {
+        return ret;
+    }
+
     while (1) {
-        ast_args* param = get_ast_true_type(param_node);
+        ast_arg* param = get_ast_true_type(param_node);
         param->expr = parse_expr(par, expr_params_terminal);
         if (param->expr) {
             ret->destroy(ret);
@@ -218,7 +226,7 @@ ast_node* parse_reference(parser* par) {
         if (tok->type == '.') {
             ++par->pointer;
             ast_node* af = parse_rvalue(par);
-            ast_identifier* iden = get_ast_true_type(id);
+            ast_reference* iden = get_ast_true_type(id);
             iden->next = af;
             id = af;
         }

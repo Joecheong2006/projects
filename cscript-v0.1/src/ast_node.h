@@ -55,7 +55,8 @@ typedef struct {
 
 typedef struct {
     ast_node* next;
-} ast_identifier;
+    ast_node* id;
+} ast_reference;
 
 typedef struct {
     ast_node* variable_name;
@@ -65,7 +66,7 @@ typedef struct {
 typedef struct {
     ast_node* expr;
     ast_node* next_param;
-} ast_args;
+} ast_arg;
 
 typedef struct {
     ast_node* args;
@@ -78,7 +79,8 @@ ast_node* make_ast_binary_expression(AstNodeType type, struct token* tok, struct
 ast_node* make_ast_assignment(AstNodeType type, struct token* tok, struct command*(*gen_command)(ast_node*));
 ast_node* make_ast_negate(struct token* tok);
 ast_node* make_ast_constant(struct token* tok);
-ast_node* make_ast_identifier(struct token* tok);
+ast_node* make_ast_reference_funcall(struct token* tok);
+ast_node* make_ast_reference_identifier(struct token* tok);
 ast_node* make_ast_vardecl(struct token* tok);
 ast_node* make_ast_param(struct token* tok);
 ast_node* make_ast_funcall(struct token* tok);

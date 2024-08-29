@@ -7,11 +7,13 @@
 
 typedef enum {
     CommandTypeVarDecl,
-
     CommandTypeAssignment,
     CommandTypeBinaryOperation,
     CommandTypeNegateOperation,
+    CommandTypeArgument,
     CommandTypeAccess,
+    CommandTypeAccessIdentifier,
+    CommandTypeFuncall,
     CommandTypeGetConstant,
 } CommandType;
 
@@ -36,7 +38,7 @@ error_info interpret_command(interpreter* inter);
 
 typedef struct {
     command *lhs, *rhs;
-    error_info(*cal)(interpreter*, primitive_data*, command*);
+    error_info(*cal)(interpreter*, command*, primitive_data*);
 } command_binary_operation;
 
 typedef struct {
@@ -56,8 +58,23 @@ struct command_vardecl {
 
 typedef struct {
     const char* name;
-    command* access;
-} command_access;
+} command_access_identifier;
+
+typedef struct {
+    command* expr;
+    command* next_arg;
+} command_argument;
+
+typedef struct {
+    const char* name;
+    command* args;
+} command_funcall;
+
+typedef struct {
+    command* id;
+    command* next_access;
+    error_info(*reference)(interpreter*, command*, object**);
+} command_reference;
 
 typedef struct {
     command* mem;
@@ -68,7 +85,11 @@ typedef struct {
 
 struct ast_node;
 command* make_command_get_constant(struct ast_node* node);
-command* make_command_access(struct ast_node* node);
+command* make_command_argument(struct ast_node* node);
+command* make_command_funcall(struct ast_node* node);
+command* make_command_reference_identifier(struct ast_node* node);
+command* make_command_reference_funcall(struct ast_node* node);
+command* make_command_access_identifier(struct ast_node* node);
 command* make_command_add(struct ast_node* node);
 command* make_command_minus(struct ast_node* node);
 command* make_command_multiply(struct ast_node* node);
