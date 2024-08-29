@@ -27,7 +27,7 @@ all: bin app
 
 rel: CFLAGS += $(RELEASE_FLAGS) $(CONFIG)
 rel: bin $(OBJ)
-	@$(CC) $(CFLAGS) $(OBJ) -o $(BIN)/$(OUT)
+	@$(CC) $(CFLAGS) $(OBJ) -o $(BIN)/$(OUT) $(LIB)
 	@echo "Compilation completed"
 
 bin:
