@@ -1,12 +1,11 @@
 #include "object.h"
 #include "container/memallocate.h"
-#include "interpreter.h"
 #include "core/assert.h"
 #include "tracing.h"
 
 object* make_object(ObjectType type, cstring name, u64 type_size, void(*destroy)(object*)) {
     START_PROFILING();
-    object* result = MALLOC(type_size + sizeof(object));
+    object* result = CALLOC(1, type_size + sizeof(object));
     result->type = type;
     result->name = name;
     result->destroy = destroy;
@@ -52,24 +51,12 @@ object* make_object_string(cstring name) {
 
 void object_function_def_destroy(object* obj) {
     ASSERT(obj->type == ObjectTypeFunctionDef);
-    object_function_def* func = get_object_true_type(obj);
-    for_vector(func->body, i, 0) {
-        func->body[i]->destroy(func->body[i]);
-    }
-    for_vector(func->args, i, 0) {
-        free_string(func->args[i]);
-    }
-    free_vector(func->body);
-    free_vector(func->args);
     FREE(obj);
 }
 
 object* make_object_function_def(cstring name) {
     START_PROFILING();
     object* result = make_object(ObjectTypeFunctionDef, name, sizeof(object_function_def), object_function_def_destroy);
-    object_function_def* func = get_object_true_type(result);
-    func->body = make_vector(command*);
-    func->args = make_vector(cstring);
     END_PROFILING(__func__);
     return result;
 }

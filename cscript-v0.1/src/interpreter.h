@@ -36,6 +36,7 @@ typedef struct {
 
 void init_interpreter(interpreter* inter, vector(command*) ins);
 void free_interpreter(interpreter* inter);
+error_info exec_command(interpreter* inter, command* cmd);
 error_info interpret_command(interpreter* inter);
 
 typedef struct {
@@ -63,13 +64,11 @@ typedef struct {
 } command_access_identifier;
 
 typedef struct {
-    command* expr;
-    command* next_arg;
+    vector(command*) args;
 } command_argument;
 
 typedef struct {
-    const char* identifier;
-    command* next_param;
+    vector(const char*) params;
 } command_funcparam;
 
 typedef struct {
@@ -81,6 +80,7 @@ typedef struct {
 typedef struct {
     const char* name;
     command* args;
+    i32 line_on_exec;
 } command_funcall;
 
 typedef struct {

@@ -89,23 +89,47 @@ static error_info access_funcall(interpreter* inter, command* cmd, object** obj)
     ASSERT(cmd->type == CommandTypeFuncall);
     START_PROFILING();
     command_funcall* funcall = get_command_true_type(cmd);
-    (void)inter, (void)funcall;
+    command_argument* args = get_command_true_type(funcall->args);
     *obj = NULL;
     LOG_DEBUG("\t%s ", funcall->name);
-    for (command* arg_cmd = funcall->args; arg_cmd != NULL;) {
-        command_argument* arg = get_command_true_type(arg_cmd);
-        if (arg->expr) {
-            primitive_data data;
-            error_info ei = command_binary_operation_cal(inter, arg->expr, &data);
-            if (ei.msg) {
-                return ei;
-            }
-            log_msg(LogLevelDebug, "%g ", data.float32);
+    for_vector(args->args, i, 0) {
+        primitive_data data;
+        error_info ei = command_binary_operation_cal(inter, args->args[i], &data);
+        if (ei.msg) {
+            return ei;
         }
-        arg_cmd = arg->next_arg;
+        log_msg(LogLevelDebug, "%g ", data.float32);
     }
+
     log_msg(LogLevelDebug, "\n");
+    object* func = env_find_object(&inter->env, funcall->name);
+    if (!func) {
+        return (error_info){ .msg = "undeclared function", .line = funcall->line_on_exec };
+    }
+    else if (func->type != ObjectTypeFunctionDef) {
+        return (error_info){ .msg = "called object type is not a function", .line = funcall->line_on_exec };
+    }
+
+    object_function_def* def = get_object_true_type(func);
+    if (vector_size(args->args) > vector_size(def->args)) {
+        return (error_info){ .msg = "too many arguments", .line = funcall->line_on_exec };
+    }
+    else if (vector_size(args->args) < vector_size(def->args)) {
+        return (error_info){ .msg = "missing arguments", .line = funcall->line_on_exec };
+    }
+
+    env_push_scope(&inter->env);
+    for_vector(def->body, i, 0) {
+        error_info ei = exec_command(inter, def->body[i]);
+        if (ei.msg) {
+            ei.line = funcall->line_on_exec;
+            return ei;
+        }
+    }
+    env_pop_scope(&inter->env);
+
     END_PROFILING(__func__);
+    
     // ASSERT_MSG(0, "not implement funcall yet");
     return (error_info){ .msg = NULL };
 }
@@ -194,7 +218,6 @@ static error_info command_exec_vardecl(interpreter* inter, command_vardecl* vard
     // NOTE: Check if the data is different from primitive.
 
     if (env_find_object(&inter->env, vardecl->variable_name) != NULL) {
-        // LOG_ERROR("\tredeclare variable '%s' on line %d\n", vardecl->variable_name, vardecl->line_on_exec);
         return (error_info){ .msg = "redeclare variable '%s'", .line = vardecl->line_on_exec };
     }
 
@@ -216,16 +239,22 @@ static error_info command_exec_vardecl(interpreter* inter, command_vardecl* vard
 }
 
 static error_info exec_command_funcdef(interpreter* inter, command* cmd) {
+    START_PROFILING()
     ASSERT(cmd->type == CommandTypeFuncDef);
-    (void)inter;
     command_funcdef* def = get_command_true_type(cmd);
     LOG_DEBUG("\t%s ", def->identifier);
-    for (command* param = def->params; param != NULL;) {
-        command_funcparam* p = get_command_true_type(param);
-        log_msg(LogLevelDebug, "%s ", p->identifier);
-        param = p->next_param;
+    command_funcparam* p = get_command_true_type(def->params);
+    for_vector(p->params, i, 0) {
+        log_msg(LogLevelDebug, "%s ", p->params[i]);
     }
+
     log_msg(LogLevelDebug, "\n");
+    object* obj = make_object_function_def(def->identifier);
+    object_function_def* def_obj = get_object_true_type(obj);
+    def_obj->body = def->ins;
+    def_obj->args = p->params;
+    env_push_object(&inter->env, obj);
+    END_PROFILING(__func__)
     return (error_info){ .msg = NULL };
 }
 
@@ -244,8 +273,7 @@ INLINE void free_interpreter(interpreter* inter) {
     inter->pointer = -1;
 }
 
-error_info interpret_command(interpreter* inter) {
-    command* cmd = inter->ins[inter->pointer++];
+error_info exec_command(interpreter* inter, command* cmd) {
     switch (cmd->type) {
     case CommandTypeVarDecl:  {
         command_vardecl* vardecl = get_command_true_type(cmd);
@@ -266,6 +294,11 @@ error_info interpret_command(interpreter* inter) {
         ASSERT_MSG(0, "invalid command for execution");
         return (error_info){ .msg = "invalid command for execution" };
     }
+}
+
+error_info interpret_command(interpreter* inter) {
+    command* cmd = inter->ins[inter->pointer++];
+    return exec_command(inter, cmd);
 }
 
 static void destroy_command_binary_operation(command* cmd) {
@@ -314,12 +347,10 @@ static void destroy_command_reference(command* cmd) {
 static void destroy_command_arguments(command* cmd) {
     ASSERT(cmd->type == CommandTypeArgument);
     command_argument* argument = get_command_true_type(cmd);
-    if (argument->expr) {
-        argument->expr->destroy(argument->expr);
+    for_vector(argument->args, i, 0) {
+        argument->args[i]->destroy(argument->args[i]);
     }
-    if (argument->next_arg) {
-        argument->next_arg->destroy(argument->next_arg);
-    }
+    free_vector(argument->args);
     FREE(cmd);
 }
 
@@ -333,12 +364,10 @@ static void destroy_command_access_identifier(command* cmd) {
 static void destroy_command_funcparam(command* cmd) {
     ASSERT(cmd->type == CommandTypeFuncParam);
     command_funcparam* param = get_command_true_type(cmd);
-    if (param->identifier) {
-        free_string(param->identifier);
+    for_vector(param->params, i, 0) {
+        free_string(param->params[i]);
     }
-    if (param->next_param) {
-        param->next_param->destroy(param->next_param);
-    }
+    free_vector(param->params);
     FREE(cmd);
 }
 
@@ -394,33 +423,36 @@ command* make_command_argument(struct ast_node* node) {
     START_PROFILING()
     command* result = make_command(CommandTypeArgument, sizeof(command_argument), destroy_command_arguments);
     command_argument* argument = get_command_true_type(result);
-    ast_arg* arg = get_ast_true_type(node);
-    if (arg->expr) {
-        argument->expr = arg->expr->gen_command(arg->expr);
-    }
-    if (arg->next_arg) {
-        argument->next_arg = arg->next_arg->gen_command(arg->next_arg);
+    argument->args = make_vector(command*);
+    for (ast_node* n = node; n != NULL;) {
+        ast_arg* arg = get_ast_true_type(n);
+        if (arg->expr) {
+            command* cmd = arg->expr->gen_command(arg->expr);
+            vector_push(argument->args, cmd);
+        }
+        n = arg->next_arg;
     }
     END_PROFILING(__func__)
     return result;
 }
 
 command* make_command_funcparam(struct ast_node* node) {
+    START_PROFILING()
     command* result = make_command(CommandTypeFuncParam, sizeof(command_funcparam), destroy_command_funcparam);
     command_funcparam* funcparam = get_command_true_type(result);
-    ast_funcparam* param = get_ast_true_type(node);
 
-    funcparam->identifier = NULL;
-    funcparam->next_param = NULL;
-
-    funcparam->identifier = node->tok->val.string;
-    if (param->next_param) {
-        funcparam->next_param = param->next_param->gen_command(param->next_param);
+    funcparam->params = make_vector(const char*);
+    for (ast_node* n = node; n != NULL;) {
+        vector_push(funcparam->params, n->tok->val.string);
+        ast_funcparam* param = get_ast_true_type(n);
+        n = param->next_param;
     }
+    END_PROFILING(__func__)
     return result;
 }
 
 command* make_command_funcdef(struct ast_node* node) {
+    START_PROFILING()
     command* result = make_command(CommandTypeFuncDef, sizeof(command_funcdef), destroy_command_funcdef);
     command_funcdef* funcdef = get_command_true_type(result);
     ast_funcdef* def = get_ast_true_type(node);
@@ -434,6 +466,7 @@ command* make_command_funcdef(struct ast_node* node) {
         command* ins = def->body[i]->gen_command(def->body[i]);
         vector_push(funcdef->ins, ins);
     }
+    END_PROFILING(__func__)
     return result;
 }
 
@@ -441,8 +474,9 @@ command* make_command_funcall(struct ast_node* node) {
     START_PROFILING()
     command* result = make_command(CommandTypeFuncall, sizeof(command_funcall), destroy_command_funcall);
     command_funcall* funcall = get_command_true_type(result);
-    ast_funcall* f = get_ast_true_type(node);
     funcall->name = node->tok->val.string;
+    funcall->line_on_exec = node->tok->line;
+    ast_funcall* f = get_ast_true_type(node);
     funcall->args = f->args->gen_command(f->args);
     END_PROFILING(__func__)
     return result;
@@ -456,10 +490,10 @@ INLINE static command* make_command_reference(struct ast_node* node, error_info(
     access->reference = reference;
     access->id = iden->id->gen_command(iden->id);
     access->next_ref = NULL;
-    END_PROFILING(__func__)
     if (iden->next) {
         access->next_ref = iden->next->gen_command(iden->next);
     }
+    END_PROFILING(__func__)
     return result;
 }
 
