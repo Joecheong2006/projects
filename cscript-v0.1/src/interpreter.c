@@ -25,6 +25,7 @@ static error_info command_assign_modulus(interpreter* inter, const command* cmd)
 static error_info access_object(interpreter* inter, command* cmd, object** obj);
 static error_info access_funcall(interpreter* inter, command* cmd, object** obj);
 static error_info access_identifier(interpreter* inter, command* cmd, object** obj);
+static error_info exec_command_funcdef(interpreter* inter, command* cmd);
 
 static error_info command_binary_operation_cal(interpreter* inter, command* cmd, primitive_data* out) {
     switch (cmd->type) {
@@ -214,6 +215,20 @@ static error_info command_exec_vardecl(interpreter* inter, command_vardecl* vard
     return (error_info){ .msg = NULL };
 }
 
+static error_info exec_command_funcdef(interpreter* inter, command* cmd) {
+    ASSERT(cmd->type == CommandTypeFuncDef);
+    (void)inter;
+    command_funcdef* def = get_command_true_type(cmd);
+    LOG_DEBUG("\t%s ", def->identifier);
+    for (command* param = def->params; param != NULL;) {
+        command_funcparam* p = get_command_true_type(param);
+        log_msg(LogLevelDebug, "%s ", p->identifier);
+        param = p->next_param;
+    }
+    log_msg(LogLevelDebug, "\n");
+    return (error_info){ .msg = NULL };
+}
+
 INLINE void init_interpreter(interpreter* inter, vector(command*) ins) {
     inter->ins = ins;
     inter->pointer = 0;
@@ -243,6 +258,9 @@ error_info interpret_command(interpreter* inter) {
     case CommandTypeReference: {
         object* obj = NULL;
         return access_object(inter, cmd, &obj);
+    }
+    case CommandTypeFuncDef: {
+        return exec_command_funcdef(inter, cmd);
     }
     default: 
         ASSERT_MSG(0, "invalid command for execution");
@@ -312,6 +330,32 @@ static void destroy_command_access_identifier(command* cmd) {
     FREE(cmd);
 }
 
+static void destroy_command_funcparam(command* cmd) {
+    ASSERT(cmd->type == CommandTypeFuncParam);
+    command_funcparam* param = get_command_true_type(cmd);
+    if (param->identifier) {
+        free_string(param->identifier);
+    }
+    if (param->next_param) {
+        param->next_param->destroy(param->next_param);
+    }
+    FREE(cmd);
+}
+
+static void destroy_command_funcdef(command* cmd) {
+    ASSERT(cmd->type == CommandTypeFuncDef);
+    command_funcdef* def = get_command_true_type(cmd);
+    for_vector(def->ins, i, 0) {
+        def->ins[i]->destroy(def->ins[i]);
+    }
+    free_vector(def->ins);
+    if (def->params) {
+        def->params->destroy(def->params);
+    }
+    free_string(def->identifier);
+    FREE(cmd);
+}
+
 static void destroy_command_funcall(command* cmd) {
     ASSERT(cmd->type == CommandTypeFuncall);
     command_funcall* funcall = get_command_true_type(cmd);
@@ -358,6 +402,38 @@ command* make_command_argument(struct ast_node* node) {
         argument->next_arg = arg->next_arg->gen_command(arg->next_arg);
     }
     END_PROFILING(__func__)
+    return result;
+}
+
+command* make_command_funcparam(struct ast_node* node) {
+    command* result = make_command(CommandTypeFuncParam, sizeof(command_funcparam), destroy_command_funcparam);
+    command_funcparam* funcparam = get_command_true_type(result);
+    ast_funcparam* param = get_ast_true_type(node);
+
+    funcparam->identifier = NULL;
+    funcparam->next_param = NULL;
+
+    funcparam->identifier = node->tok->val.string;
+    if (param->next_param) {
+        funcparam->next_param = param->next_param->gen_command(param->next_param);
+    }
+    return result;
+}
+
+command* make_command_funcdef(struct ast_node* node) {
+    command* result = make_command(CommandTypeFuncDef, sizeof(command_funcdef), destroy_command_funcdef);
+    command_funcdef* funcdef = get_command_true_type(result);
+    ast_funcdef* def = get_ast_true_type(node);
+    funcdef->identifier = node->tok->val.string;
+
+    ast_funcparam* param = get_ast_true_type(def->param);
+    funcdef->params = def->param->gen_command(param->next_param);
+
+    funcdef->ins = make_vector(command*);
+    for_vector(def->body, i, 0) {
+        command* ins = def->body[i]->gen_command(def->body[i]);
+        vector_push(funcdef->ins, ins);
+    }
     return result;
 }
 

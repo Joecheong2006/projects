@@ -24,6 +24,7 @@ const char* TokenTypeString[] = {
     [TokenTypeKeywordAnd - 256] = "and",
     [TokenTypeKeywordWhile - 256] = "while",
     [TokenTypeKeywordDo - 256] = "do",
+    [TokenTypeKeywordEnd - 256] = "end",
     [TokenTypeKeywordFor - 256] = "for",
 
     [TokenTypeAssignmentPlus - 256] = "+=",

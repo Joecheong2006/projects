@@ -3,7 +3,7 @@
 #include "container/memallocate.h"
 #include "interpreter.h"
 
-ast_node* make_ast_node(AstNodeType type, u64 type_size, struct token* tok, void(*destroy)(ast_node*), struct command*(*gen_command)(ast_node*)) {
+INLINE ast_node* make_ast_node(AstNodeType type, u64 type_size, struct token* tok, void(*destroy)(ast_node*), struct command*(*gen_command)(ast_node*)) {
     ast_node* node = CALLOC(1, type_size + sizeof(ast_node));
     node->type = type;
     node->gen_command = gen_command;
@@ -128,5 +128,35 @@ static void destroy_ast_funcall(ast_node* node) {
 
 ast_node* make_ast_funcall(struct token* tok) {
     return make_ast_node(AstNodeTypeFuncall, sizeof(ast_funcall), tok, destroy_ast_funcall, make_command_funcall);
+}
+
+static void destroy_ast_funcparam(ast_node* node) {
+    ASSERT(node->type == AstNodeTypeFuncParam);
+    ast_funcparam* param = get_ast_true_type(node);
+    if (param->next_param) {
+        param->next_param->destroy(param->next_param);
+    }
+    FREE(node);
+}
+
+ast_node* make_ast_funcparam(struct token* tok) {
+    return make_ast_node(AstNodeTypeFuncParam, sizeof(ast_funcparam), tok, destroy_ast_funcparam, make_command_funcparam);
+}
+
+static void destroy_ast_funcdef(ast_node* node) {
+    ASSERT(node->type == AstNodeTypeFuncDef);
+    ast_funcdef* def = get_ast_true_type(node);
+    if (def->param) {
+        def->param->destroy(def->param);
+    }
+    for_vector(def->body, i, 0) {
+        def->body[i]->destroy(def->body[i]);
+    }
+    free_vector(def->body);
+    FREE(node);
+}
+
+ast_node* make_ast_funcdef(struct token* tok) {
+    return make_ast_node(AstNodeTypeFuncDef, sizeof(ast_funcdef), tok, destroy_ast_funcdef, make_command_funcdef);
 }
 

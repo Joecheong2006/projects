@@ -22,6 +22,7 @@ typedef enum {
     TokenTypeKeywordAnd,
     TokenTypeKeywordWhile,
     TokenTypeKeywordDo,
+    TokenTypeKeywordEnd,
     TokenTypeKeywordFor,
 
     TokenTypeAssignmentPlus,
