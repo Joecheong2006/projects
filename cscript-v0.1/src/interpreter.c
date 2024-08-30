@@ -241,7 +241,8 @@ static error_info initialize_object(interpreter* inter, command* cmd, const char
 static error_info command_exec_vardecl(interpreter* inter, command_vardecl* vardecl) {
     START_PROFILING()
 
-    if (env_find_object(&inter->env, vardecl->variable_name) != NULL) {
+    object* obj = env_find_object(&inter->env, vardecl->variable_name);
+    if (obj != NULL && obj->level == get_env_level(&inter->env)) {
         return (error_info){ .msg = "redeclare variable '%s'", .line = vardecl->line_on_exec };
     }
 

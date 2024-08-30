@@ -19,6 +19,7 @@ typedef struct object object;
 struct object {
     ObjectType type;
     cstring name;
+    i32 level;
     void(*destroy)(object*);
 };
 

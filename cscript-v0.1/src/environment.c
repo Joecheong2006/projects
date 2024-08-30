@@ -73,6 +73,7 @@ object* env_find_object(environment* env, cstring name) {
 
 void env_push_object(environment* env, object* obj) {
     START_PROFILING();
+    obj->level = vector_size(env->global);
     scopes_push_obj(env->global, obj);
     hashmap_add(&env->map, obj);
     END_PROFILING(__func__);
@@ -83,6 +84,10 @@ void init_environment(environment* env) {
     env->map = make_hashmap(1 << 9, hash_object);
     env->global = make_scopes();
     END_PROFILING(__func__);
+}
+
+INLINE i32 get_env_level(environment* env) {
+    return vector_size(env->global);
 }
 
 void free_environment(environment* env) {
