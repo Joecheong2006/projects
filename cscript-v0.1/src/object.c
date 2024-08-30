@@ -50,9 +50,9 @@ object* make_object_string(cstring name) {
     return result;
 }
 
-void object_function_destroy(object* obj) {
-    ASSERT(obj->type == ObjectTypeFunction);
-    object_function* func = get_object_true_type(obj);
+void object_function_def_destroy(object* obj) {
+    ASSERT(obj->type == ObjectTypeFunctionDef);
+    object_function_def* func = get_object_true_type(obj);
     for_vector(func->body, i, 0) {
         func->body[i]->destroy(func->body[i]);
     }
@@ -64,10 +64,10 @@ void object_function_destroy(object* obj) {
     FREE(obj);
 }
 
-object* make_object_function(cstring name) {
+object* make_object_function_def(cstring name) {
     START_PROFILING();
-    object* result = make_object(ObjectTypeFunction, name, sizeof(object_function), object_function_destroy);
-    object_function* func = get_object_true_type(result);
+    object* result = make_object(ObjectTypeFunctionDef, name, sizeof(object_function_def), object_function_def_destroy);
+    object_function_def* func = get_object_true_type(result);
     func->body = make_vector(command*);
     func->args = make_vector(cstring);
     END_PROFILING(__func__);

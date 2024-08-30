@@ -2,22 +2,19 @@
 #include "core/assert.h"
 #include "container/memallocate.h"
 #include "interpreter.h"
-#include "tracing.h"
 
-INLINE ast_node* make_ast_node(AstNodeType type, u64 type_size, struct token* tok, void(*destroy)(ast_node*), struct command*(*gen_command)(ast_node*)) {
-    START_PROFILING();
+ast_node* make_ast_node(AstNodeType type, u64 type_size, struct token* tok, void(*destroy)(ast_node*), struct command*(*gen_command)(ast_node*)) {
     ast_node* node = CALLOC(1, type_size + sizeof(ast_node));
     node->type = type;
     node->gen_command = gen_command;
     node->destroy = destroy;
     node->tok = tok;
-    END_PROFILING(__func__);
     return node;
 }
 
 INLINE void* get_ast_true_type(ast_node* node) { return node + 1; }
 
-INLINE static void destroy_default(ast_node* node) {
+static void destroy_default(ast_node* node) {
     ASSERT(node);
     FREE(node);
 }
@@ -70,7 +67,7 @@ ast_node* make_ast_constant(struct token* tok) {
 }
 
 static void destroy_ast_access(ast_node* node) {
-    ASSERT(node->type == AstNodeTypeIdentifier);
+    ASSERT(node->type == AstNodeTypeReference);
     ast_reference* iden = get_ast_true_type(node);
     if (iden->next) {
         iden->next->destroy(iden->next);
@@ -80,11 +77,11 @@ static void destroy_ast_access(ast_node* node) {
 }
 
 ast_node* make_ast_reference_funcall(struct token* tok) {
-    return make_ast_node(AstNodeTypeIdentifier, sizeof(ast_reference), tok, destroy_ast_access, make_command_reference_funcall);
+    return make_ast_node(AstNodeTypeReference, sizeof(ast_reference), tok, destroy_ast_access, make_command_reference_funcall);
 }
 
 ast_node* make_ast_reference_identifier(struct token* tok) {
-    ast_node* result =  make_ast_node(AstNodeTypeIdentifier, sizeof(ast_reference), tok, destroy_ast_access, make_command_reference_identifier);
+    ast_node* result =  make_ast_node(AstNodeTypeReference, sizeof(ast_reference), tok, destroy_ast_access, make_command_reference_identifier);
     ast_reference* access = get_ast_true_type(result);
     access->id = make_ast_node(AstNodeTypeIdentifier, 0, tok, destroy_default, make_command_access_identifier);
     return result;
@@ -112,8 +109,8 @@ static void destroy_ast_args(ast_node* node) {
     if (args->expr) {
         args->expr->destroy(args->expr);
     }
-    if (args->next_param) {
-        args->next_param->destroy(args->next_param);
+    if (args->next_arg) {
+        args->next_arg->destroy(args->next_arg);
     }
     FREE(node);
 }

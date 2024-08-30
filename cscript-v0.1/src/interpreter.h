@@ -11,8 +11,8 @@ typedef enum {
     CommandTypeBinaryOperation,
     CommandTypeNegateOperation,
     CommandTypeArgument,
-    CommandTypeAccess,
-    CommandTypeAccessIdentifier,
+    CommandTypeReference,
+    CommandTypeReferenceIdentifier,
     CommandTypeFuncall,
     CommandTypeGetConstant,
 } CommandType;
@@ -72,7 +72,7 @@ typedef struct {
 
 typedef struct {
     command* id;
-    command* next_access;
+    command* next_ref;
     error_info(*reference)(interpreter*, command*, object**);
 } command_reference;
 

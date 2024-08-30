@@ -22,6 +22,7 @@ typedef enum {
     AstNodeTypeDivideAssign,
     AstNodeTypeModulusAssign,
 
+    AstNodeTypeReference,
     AstNodeTypeFuncDef,
     AstNodeTypeAssign,
     AstNodeTypeVarDecl,
@@ -65,7 +66,7 @@ typedef struct {
 
 typedef struct {
     ast_node* expr;
-    ast_node* next_param;
+    ast_node* next_arg;
 } ast_arg;
 
 typedef struct {

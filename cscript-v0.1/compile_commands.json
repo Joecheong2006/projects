@@ -9,6 +9,8 @@
       "-Wstrict-aliasing",
       "-Werror",
       "-Isrc",
+      "-DDEBUG",
+      "-DPROFILING",
       "-O2"
     ],
     "directory": "/home/joe/project/cscript-v1.0",

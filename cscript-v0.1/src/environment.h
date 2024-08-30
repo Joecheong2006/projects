@@ -1,5 +1,5 @@
-#ifndef _GLOBAL_H_
-#define _GLOBAL_H_
+#ifndef _ENVIRONMENT_H_
+#define _ENVIRONMENT_H_
 
 #include "container/hashmap.h"
 #include "object.h"

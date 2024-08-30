@@ -8,7 +8,8 @@ typedef enum {
     ObjectTypeBool,
     ObjectTypePrimitiveData,
     ObjectTypeString,
-    ObjectTypeFunction,
+    ObjectTypeFunctionDef,
+    ObjectTypeFunctionPointer,
     ObjectTypeArray,
     ObjectTypeUserType,
     ObjectErrorUndefine,
@@ -42,7 +43,7 @@ DEFINE_OBJECT_TYPE(string,
 )
 
 struct command;
-DEFINE_OBJECT_TYPE(function,
+DEFINE_OBJECT_TYPE(function_def,
         vector(cstring) args;
         vector(struct command*) body;
 )

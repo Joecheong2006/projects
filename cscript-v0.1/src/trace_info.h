@@ -1,19 +1,15 @@
 #ifndef _TRACE_INFO_H_
 #define _TRACE_INFO_H_
 #include "core/defines.h"
-#include "container/string.h"
 
 typedef struct {
     char* file_name;
-    string ctx;
-    u32 ctx_size;
-    void* file;
     i32 pid, tid;
     u32 count;
 } trace_info;
 
 void setup_trace_info(trace_info* info);
-void submit_tracing_info(trace_info* info, const char name[], char* cat, i32 ts, i32 pid, i32 tid, i32 dur);
+void submit_tracing_info(trace_info* info, const char* name, char* cat, i32 ts, i32 pid, i32 tid, i32 dur);
 void end_tracing(trace_info* info);
 
 #if defined(PROFILING)

@@ -12,7 +12,7 @@ INLINE static void scopes_pop_obj(scopes s) {
 }
 
 static void free_scope(scope sc) {
-    for (i64 i = vector_size(sc) - 1; i > -1; --i) {
+    for (i64 i = (i64)vector_size(sc) - 1; i > -1; --i) {
         sc[i]->destroy(sc[i]);
     }
     free_vector(sc);

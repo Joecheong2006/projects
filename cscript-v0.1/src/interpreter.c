@@ -7,7 +7,6 @@
 #include "tracing.h"
 #include "ast_node.h"
 
-static error_info access_object(interpreter* inter, command* cmd, object** obj);
 static error_info command_binary_operation_cal(interpreter* inter, command* cmd, primitive_data* out);
 
 static error_info command_binary_operation_add(interpreter* inter, command* cmd, primitive_data* out);
@@ -23,12 +22,13 @@ static error_info command_assign_multiply(interpreter* inter, const command* cmd
 static error_info command_assign_divide(interpreter* inter, const command* cmd);
 static error_info command_assign_modulus(interpreter* inter, const command* cmd);
 
+static error_info access_object(interpreter* inter, command* cmd, object** obj);
 static error_info access_funcall(interpreter* inter, command* cmd, object** obj);
 static error_info access_identifier(interpreter* inter, command* cmd, object** obj);
 
 static error_info command_binary_operation_cal(interpreter* inter, command* cmd, primitive_data* out) {
     switch (cmd->type) {
-    case CommandTypeAccess: {
+    case CommandTypeReference: {
         object* obj = NULL;
         error_info ei = access_object(inter, cmd, &obj);
         if (ei.msg) {
@@ -42,10 +42,8 @@ static error_info command_binary_operation_cal(interpreter* inter, command* cmd,
         break;
     }
     case CommandTypeGetConstant: {
-        START_PROFILING()
         command_get_constant* cst = get_command_true_type(cmd);
         *out = cst->data;
-        END_PROFILING("CommandTypeGetConstant")
         break;
     }
     case CommandTypeNegateOperation: {
@@ -67,16 +65,16 @@ static error_info command_binary_operation_cal(interpreter* inter, command* cmd,
 
 #define IMPL_COMMAND_BINARY_OPERATION(operation_name)\
     static error_info command_binary_operation_##operation_name(interpreter* inter, command* cmd, primitive_data* out) {\
-        START_PROFILING()\
         ASSERT(cmd->type == CommandTypeBinaryOperation);\
+        START_PROFILING()\
         command_binary_operation* bo = get_command_true_type(cmd);\
-        END_PROFILING(__func__)\
         primitive_data lhs;\
         error_info ei = command_binary_operation_cal(inter, bo->lhs, &lhs);\
         if (ei.msg) return ei;\
         primitive_data rhs;\
         ei = command_binary_operation_cal(inter, bo->rhs, &rhs);\
         if (ei.msg) return ei;\
+        END_PROFILING(__func__)\
         return primitive_data_##operation_name(out, &lhs, &rhs);\
     }
 
@@ -88,29 +86,52 @@ IMPL_COMMAND_BINARY_OPERATION(modulus)
 
 static error_info access_funcall(interpreter* inter, command* cmd, object** obj) {
     ASSERT(cmd->type == CommandTypeFuncall);
+    START_PROFILING();
     command_funcall* funcall = get_command_true_type(cmd);
     (void)inter, (void)funcall;
     *obj = NULL;
+    LOG_DEBUG("\t%s ", funcall->name);
+    for (command* arg_cmd = funcall->args; arg_cmd != NULL;) {
+        command_argument* arg = get_command_true_type(arg_cmd);
+        if (arg->expr) {
+            primitive_data data;
+            error_info ei = command_binary_operation_cal(inter, arg->expr, &data);
+            if (ei.msg) {
+                return ei;
+            }
+            log_msg(LogLevelDebug, "%g ", data.float32);
+        }
+        arg_cmd = arg->next_arg;
+    }
+    log_msg(LogLevelDebug, "\n");
+    END_PROFILING(__func__);
+    // ASSERT_MSG(0, "not implement funcall yet");
     return (error_info){ .msg = NULL };
 }
 
 static error_info access_identifier(interpreter* inter, command* cmd, object** obj) {
-    ASSERT(cmd->type == CommandTypeAccessIdentifier);
+    START_PROFILING()
+    ASSERT(cmd->type == CommandTypeReferenceIdentifier);
     command_access_identifier* access = get_command_true_type(cmd);
     *obj = env_find_object(&inter->env, access->name);
+    END_PROFILING(__func__)
     return (error_info){ .msg = NULL };
 }
 
 static error_info access_object(interpreter* inter, command* cmd, object** obj) {
-    ASSERT(cmd->type == CommandTypeAccess);
     START_PROFILING()
+    ASSERT(cmd->type == CommandTypeReference);
     command_reference* access = get_command_true_type(cmd);
     error_info ei = access->reference(inter, access->id, obj);
     if (ei.msg) {
         return ei;
     }
 
-    for (command_reference* ac = access; ac->next_access != NULL; ac = get_command_true_type(ac->next_access)) {
+    if (access->next_ref) {
+        ei = access_object(inter, access->next_ref, obj);
+    }
+
+    for (command_reference* ac = access; ac->next_ref != NULL; ac = get_command_true_type(ac->next_ref)) {
         // TODO: access member variable or funcation call
     }
     END_PROFILING(__func__)
@@ -154,7 +175,7 @@ IMPL_COMMAND_ASSIGNMENT(divide)
 IMPL_COMMAND_ASSIGNMENT(modulus)
 
 static error_info command_assignment(interpreter* inter, const command* cmd) {
-    START_PROFILING();
+    START_PROFILING()
     command_assign* ca = get_command_true_type(cmd);
     object* obj = NULL;
     error_info ei = access_object(inter, ca->mem, &obj);
@@ -162,7 +183,7 @@ static error_info command_assignment(interpreter* inter, const command* cmd) {
         ei.line = ca->line_on_exec;
         return ei;
     }
-    END_PROFILING(__func__);
+    END_PROFILING(__func__)
     return (error_info){ .msg = NULL };
 }
 
@@ -194,22 +215,18 @@ static error_info command_exec_vardecl(interpreter* inter, command_vardecl* vard
 }
 
 INLINE void init_interpreter(interpreter* inter, vector(command*) ins) {
-    START_PROFILING();
     inter->ins = ins;
     inter->pointer = 0;
     init_environment(&inter->env);
-    END_PROFILING(__func__);
 }
 
 INLINE void free_interpreter(interpreter* inter) {
-    START_PROFILING();
     for_vector(inter->ins, i, 0) {
         inter->ins[i]->destroy(inter->ins[i]);
     }
     free_vector(inter->ins);
     free_environment(&inter->env);
     inter->pointer = -1;
-    END_PROFILING(__func__);
 }
 
 error_info interpret_command(interpreter* inter) {
@@ -222,6 +239,10 @@ error_info interpret_command(interpreter* inter) {
     case CommandTypeAssignment: {
         command_assign* ca = get_command_true_type(cmd);
         return ca->exec(inter, cmd);
+    }
+    case CommandTypeReference: {
+        object* obj = NULL;
+        return access_object(inter, cmd, &obj);
     }
     default: 
         ASSERT_MSG(0, "invalid command for execution");
@@ -262,15 +283,12 @@ static void destroy_command_get_constant(command* cmd) {
     FREE(cmd);
 }
 
-static void destroy_command_access(command* cmd) {
-    if (!cmd) {
-        return;
-    }
-    ASSERT(cmd->type == CommandTypeAccess);
+static void destroy_command_reference(command* cmd) {
+    ASSERT(cmd->type == CommandTypeReference);
     command_reference* access = get_command_true_type(cmd);
     access->id->destroy(access->id);
-    if (access->next_access) {
-        access->next_access->destroy(access->next_access);
+    if (access->next_ref) {
+        access->next_ref->destroy(access->next_ref);
     }
     FREE(cmd);
 }
@@ -288,7 +306,7 @@ static void destroy_command_arguments(command* cmd) {
 }
 
 static void destroy_command_access_identifier(command* cmd) {
-    ASSERT(cmd->type == CommandTypeAccessIdentifier);
+    ASSERT(cmd->type == CommandTypeReferenceIdentifier);
     command_access_identifier* access = get_command_true_type(cmd);
     free_string(access->name);
     FREE(cmd);
@@ -298,7 +316,9 @@ static void destroy_command_funcall(command* cmd) {
     ASSERT(cmd->type == CommandTypeFuncall);
     command_funcall* funcall = get_command_true_type(cmd);
     funcall->args->destroy(funcall->args);
-    free_string(funcall->name);
+    if (funcall->name[0] != '.') {
+        free_string(funcall->name);
+    }
     FREE(cmd);
 }
 
@@ -320,11 +340,9 @@ INLINE command* make_command(CommandType type, u64 type_size, void(*destroy)(com
 INLINE void* get_command_true_type(const command* cmd) { return (command*)cmd + 1; }
 
 command* make_command_get_constant(struct ast_node* node) {
-    START_PROFILING()
     command* result = make_command(CommandTypeGetConstant, sizeof(command_get_constant), destroy_command_get_constant);
     command_get_constant* cst = get_command_true_type(result);
     cst->data = node->tok->val;
-    END_PROFILING(__func__)
     return result;
 }
 
@@ -333,9 +351,11 @@ command* make_command_argument(struct ast_node* node) {
     command* result = make_command(CommandTypeArgument, sizeof(command_argument), destroy_command_arguments);
     command_argument* argument = get_command_true_type(result);
     ast_arg* arg = get_ast_true_type(node);
-    argument->expr = arg->expr->gen_command(arg->expr);
-    if (arg->next_param) {
-        argument->next_arg = arg->next_param->gen_command(arg->next_param);
+    if (arg->expr) {
+        argument->expr = arg->expr->gen_command(arg->expr);
+    }
+    if (arg->next_arg) {
+        argument->next_arg = arg->next_arg->gen_command(arg->next_arg);
     }
     END_PROFILING(__func__)
     return result;
@@ -354,16 +374,16 @@ command* make_command_funcall(struct ast_node* node) {
 
 INLINE static command* make_command_reference(struct ast_node* node, error_info(*reference)(interpreter*, command*, object**)) {
     START_PROFILING()
-    command* result = make_command(CommandTypeAccess, sizeof(command_reference), destroy_command_access);
+    command* result = make_command(CommandTypeReference, sizeof(command_reference), destroy_command_reference);
     command_reference* access = get_command_true_type(result);
     ast_reference* iden = get_ast_true_type(node);
-    access->next_access = NULL;
     access->reference = reference;
     access->id = iden->id->gen_command(iden->id);
-    if (iden->next) {
-        access->next_access = iden->next->gen_command(iden->next);
-    }
+    access->next_ref = NULL;
     END_PROFILING(__func__)
+    if (iden->next) {
+        access->next_ref = iden->next->gen_command(iden->next);
+    }
     return result;
 }
 
@@ -377,7 +397,7 @@ command* make_command_reference_funcall(struct ast_node* node) {
 
 command* make_command_access_identifier(struct ast_node* node) {
     START_PROFILING()
-    command* result = make_command(CommandTypeAccessIdentifier, sizeof(command_access_identifier), destroy_command_access_identifier);
+    command* result = make_command(CommandTypeReferenceIdentifier, sizeof(command_access_identifier), destroy_command_access_identifier);
     command_access_identifier* iden = get_command_true_type(result);
     iden->name = node->tok->val.string;
     END_PROFILING(__func__)
