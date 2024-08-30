@@ -11,16 +11,20 @@ INLINE static void scopes_pop_obj(scopes s) {
     vector_pop(vector_back(s));
 }
 
-static void free_scope(scope sc) {
+static void free_scope(environment* env, scope sc) {
     for (i64 i = (i64)vector_size(sc) - 1; i > -1; --i) {
+        vector(void*) result = hashmap_access_vector(&env->map, sc[i]);
+        vector_pop(result);
+
         sc[i]->destroy(sc[i]);
     }
     free_vector(sc);
 }
 
-static void free_global_scopes(scopes s) {
+static void free_global_scopes(environment* env) {
+    scopes s = env->global;
     for_vector(s, i, 0) {
-        free_scope(s[i]);
+        free_scope(env, s[i]);
         s[i] = NULL;
     }
     free_vector(s);
@@ -49,8 +53,7 @@ void env_push_scope(environment* env) {
 }
 
 void env_pop_scope(environment* env) {
-    scope sc = vector_back(env->global);
-    free_scope(sc);
+    free_scope(env, vector_back(env->global));
     vector_pop(env->global);
 }
 
@@ -107,7 +110,7 @@ void init_environment(environment* env) {
 void free_environment(environment* env) {
     START_PROFILING();
     free_hashmap(&env->map);
-    free_global_scopes(env->global);
+    free_global_scopes(env);
     END_PROFILING(__func__);
 }
 

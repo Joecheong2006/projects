@@ -22,6 +22,7 @@ static error_info command_assign_multiply(interpreter* inter, const command* cmd
 static error_info command_assign_divide(interpreter* inter, const command* cmd);
 static error_info command_assign_modulus(interpreter* inter, const command* cmd);
 
+static error_info initialize_object(interpreter* inter, command* cmd, const char* name);
 static error_info access_object(interpreter* inter, command* cmd, object** obj);
 static error_info access_funcall(interpreter* inter, command* cmd, object** obj);
 static error_info access_identifier(interpreter* inter, command* cmd, object** obj);
@@ -98,10 +99,10 @@ static error_info access_funcall(interpreter* inter, command* cmd, object** obj)
         if (ei.msg) {
             return ei;
         }
-        log_msg(LogLevelDebug, "%g ", data.float32);
+        LOG_DEBUG_MSG("%g ", data.float32);
     }
 
-    log_msg(LogLevelDebug, "\n");
+    LOG_DEBUG_MSG("\n");
     object* func = env_find_object(&inter->env, funcall->name);
     if (!func) {
         return (error_info){ .msg = "undeclared function", .line = funcall->line_on_exec };
@@ -119,6 +120,13 @@ static error_info access_funcall(interpreter* inter, command* cmd, object** obj)
     }
 
     env_push_scope(&inter->env);
+    for_vector(def->args, i, 0) {
+        error_info ei = initialize_object(inter, args->args[i], def->args[i]);
+        if (ei.msg) {
+            ei.line = funcall->line_on_exec;
+            return ei;
+        }
+    }
     for_vector(def->body, i, 0) {
         error_info ei = exec_command(inter, def->body[i]);
         if (ei.msg) {
@@ -130,7 +138,6 @@ static error_info access_funcall(interpreter* inter, command* cmd, object** obj)
 
     END_PROFILING(__func__);
     
-    // ASSERT_MSG(0, "not implement funcall yet");
     return (error_info){ .msg = NULL };
 }
 
@@ -139,6 +146,9 @@ static error_info access_identifier(interpreter* inter, command* cmd, object** o
     ASSERT(cmd->type == CommandTypeReferenceIdentifier);
     command_access_identifier* access = get_command_true_type(cmd);
     *obj = env_find_object(&inter->env, access->name);
+    if (!*obj) {
+        return (error_info){ .msg = "undeclared variable"};
+    }
     END_PROFILING(__func__)
     return (error_info){ .msg = NULL };
 }
@@ -212,30 +222,34 @@ static error_info command_assignment(interpreter* inter, const command* cmd) {
     return (error_info){ .msg = NULL };
 }
 
+static error_info initialize_object(interpreter* inter, command* cmd, const char* name) {
+    primitive_data data;
+    error_info ei = command_binary_operation_cal(inter, cmd, &data);
+    if (ei.msg) {
+        return ei;
+    }
+
+    object* obj = make_object_primitive_data(name);
+    object_primitive_data* o = get_object_true_type(obj);
+    o->val = data;
+
+    env_push_object(&inter->env, obj);
+    LOG_DEBUG("\tvar %s = %g\n", name, data.float32);
+    return (error_info){ .msg = NULL };
+}
+
 static error_info command_exec_vardecl(interpreter* inter, command_vardecl* vardecl) {
     START_PROFILING()
-    object* obj = NULL;
-    // NOTE: Check if the data is different from primitive.
 
     if (env_find_object(&inter->env, vardecl->variable_name) != NULL) {
         return (error_info){ .msg = "redeclare variable '%s'", .line = vardecl->line_on_exec };
     }
 
-    primitive_data data;
-    error_info ei = command_binary_operation_cal(inter, vardecl->expr, &data);
-    if (ei.msg) {
-        ei.line = vardecl->line_on_exec;
-        return ei;
-    }
-
-    obj = make_object_primitive_data(vardecl->variable_name);
-    object_primitive_data* o = get_object_true_type(obj);
-    o->val = data;
-
-    env_push_object(&inter->env, obj);
-    LOG_DEBUG("\t%d: var %s = %g\n", vardecl->line_on_exec, vardecl->variable_name, data.float32);
+    // NOTE: Check if the data is different from primitive.
+    error_info ei = initialize_object(inter, vardecl->expr, vardecl->variable_name);
+    ei.line = vardecl->line_on_exec;
     END_PROFILING(__func__)
-    return (error_info){ .msg = NULL };
+    return ei;
 }
 
 static error_info exec_command_funcdef(interpreter* inter, command* cmd) {
@@ -245,10 +259,10 @@ static error_info exec_command_funcdef(interpreter* inter, command* cmd) {
     LOG_DEBUG("\t%s ", def->identifier);
     command_funcparam* p = get_command_true_type(def->params);
     for_vector(p->params, i, 0) {
-        log_msg(LogLevelDebug, "%s ", p->params[i]);
+        LOG_DEBUG_MSG("%s ", p->params[i]);
     }
 
-    log_msg(LogLevelDebug, "\n");
+    LOG_DEBUG_MSG("\n");
     object* obj = make_object_function_def(def->identifier);
     object_function_def* def_obj = get_object_true_type(obj);
     def_obj->body = def->ins;
