@@ -23,6 +23,5 @@ void env_pop_scope(environment* env);
 
 object* env_find_object(environment* env, cstring name);
 void env_push_object(environment* env, object* obj);
-void env_pop_object(environment* env);
 
 #endif

@@ -4,6 +4,7 @@
 
 typedef struct {
     char* file_name;
+    char* ctx;
     i32 pid, tid;
     u32 count;
 } trace_info;
