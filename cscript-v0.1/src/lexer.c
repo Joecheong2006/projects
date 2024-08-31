@@ -15,7 +15,7 @@ const char* TokenTypeString[] = {
     [TokenTypeOperatorLessThan - 256] = "<=",
  
     [TokenTypeKeywordVar - 256] = "var",
-    [TokenTypeKeywordFun - 256] = "fun",
+    [TokenTypeKeywordFun - 256] = "func",
     [TokenTypeKeywordRet - 256] = "return",
     [TokenTypeKeywordIf - 256] = "if",
     [TokenTypeKeywordElif - 256] = "elif",
@@ -184,7 +184,7 @@ static token generate_number_literal_token(lexer* lex) {
         return tok;
     }
     token tok = {
-        .val.float32 = (f32)val / percision_count, lex->line, lex->position - count, TokenTypeLiteralFloat32
+        .val.float32 = (f32)val / percision_count, lex->line, lex->position - count - 1, TokenTypeLiteralFloat32
     };
     tok.val.type[2] = PrimitiveDataTypeFloat32;
     END_PROFILING(__func__);

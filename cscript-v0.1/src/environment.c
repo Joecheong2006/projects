@@ -7,10 +7,6 @@ INLINE static void scopes_push_obj(scopes s, object* obj) {
     vector_push(vector_back(s), obj);
 }
 
-INLINE static void scopes_pop_obj(scopes s) {
-    vector_pop(vector_back(s));
-}
-
 static void free_scope(environment* env, scope sc) {
     for (i64 i = (i64)vector_size(sc) - 1; i > -1; --i) {
         vector(void*) result = hashmap_access_vector(&env->map, sc[i]);
@@ -48,13 +44,17 @@ INLINE static u32 hash_object(void* data, u32 size) {
 }
 
 void env_push_scope(environment* env) {
+    START_PROFILING();
     scope sc = make_scope();
     vector_push(env->global, sc);
+    END_PROFILING(__func__);
 }
 
 void env_pop_scope(environment* env) {
+    START_PROFILING();
     free_scope(env, vector_back(env->global));
     vector_pop(env->global);
+    END_PROFILING(__func__);
 }
 
 object* env_find_object(environment* env, cstring name) {

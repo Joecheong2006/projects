@@ -14,8 +14,9 @@ typedef enum {
     CommandTypeReference,
     CommandTypeReferenceIdentifier,
     CommandTypeFuncParam,
-    CommandTypeFuncall,
     CommandTypeFuncDef,
+    CommandTypeFuncall,
+    CommandTypeReturn,
     CommandTypeGetConstant,
 } CommandType;
 
@@ -26,7 +27,7 @@ struct command {
 };
 
 command* make_command(CommandType type, u64 type_size, void(*destroy)(command*));
-void* get_command_true_type(const command* cmd);
+const void* get_command_true_type(const command* cmd);
 
 typedef struct {
     i32 pointer;
@@ -84,6 +85,10 @@ typedef struct {
 } command_funcall;
 
 typedef struct {
+    command* expr;
+} command_return;
+
+typedef struct {
     command* id;
     command* next_ref;
     error_info(*reference)(interpreter*, command*, object**);
@@ -102,6 +107,7 @@ command* make_command_argument(struct ast_node* node);
 command* make_command_funcparam(struct ast_node* node);
 command* make_command_funcdef(struct ast_node* node);
 command* make_command_funcall(struct ast_node* node);
+command* make_command_return(struct ast_node* node);
 command* make_command_reference_identifier(struct ast_node* node);
 command* make_command_reference_funcall(struct ast_node* node);
 command* make_command_access_identifier(struct ast_node* node);

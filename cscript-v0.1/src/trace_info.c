@@ -17,7 +17,7 @@ static void start_tracing(trace_info* info) {
 }
 void end_tracing(trace_info* info) {
     FILE* file = fopen(info->file_name, "a");
-    fprintf(file, "]}");
+    fprintf(file, "%s]}", info->ctx);
     fclose(file);
     free_string(info->ctx);
 }

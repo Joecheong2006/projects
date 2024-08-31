@@ -30,6 +30,7 @@ typedef enum {
     AstNodeTypeIf,
     AstNodeTypeWhile,
     AstNodeTypeFuncall,
+    AstNodeTypeReturn,
 } AstNodeType;
 
 struct command;
@@ -71,10 +72,6 @@ typedef struct {
 } ast_arg;
 
 typedef struct {
-    ast_node* args;
-} ast_funcall;
-
-typedef struct {
     ast_node* next_param;
 } ast_funcparam;
 
@@ -82,6 +79,14 @@ typedef struct {
     ast_node* param;
     vector(ast_node*) body;
 } ast_funcdef;
+
+typedef struct {
+    ast_node* args;
+} ast_funcall;
+
+typedef struct {
+    ast_node* expr;
+} ast_return;
 
 ast_node* make_ast_node(AstNodeType type, u64 type_size, struct token* tok, void(*destroy)(ast_node*), struct command*(*gen_command)(ast_node*));
 void* get_ast_true_type(ast_node* node);
@@ -94,8 +99,9 @@ ast_node* make_ast_reference_funcall(struct token* tok);
 ast_node* make_ast_reference_identifier(struct token* tok);
 ast_node* make_ast_vardecl(struct token* tok);
 ast_node* make_ast_param(struct token* tok);
-ast_node* make_ast_funcall(struct token* tok);
 ast_node* make_ast_funcparam(struct token* tok);
 ast_node* make_ast_funcdef(struct token* tok);
+ast_node* make_ast_funcall(struct token* tok);
+ast_node* make_ast_return(struct token* tok);
 
 #endif

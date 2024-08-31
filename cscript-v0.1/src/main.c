@@ -34,8 +34,13 @@ int main(void) {
 
     // const char text[] = "1-(1-1-1-1-1)-1-3";
     // const char text[] = "var a = 1-1-1--3*3.0+1;";
-    const char text[] = "fun add(a, b)\n"
+    const char text[] = "func add(a, b)\n"
                         "\tvar c=a+b\n"
+                        "\tfunc minus(a, b)\n"
+                        "\t\tvar c=a-b\n"
+                        "\tend\n"
+                        "\tminus(a, b)\n"
+                        "\treturn\n"
                         "end\n"
                         "add(1-1-1--3*3.0+1, 1.0 + 101 % 3 / 2.0)\n"
                         ;
