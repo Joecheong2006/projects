@@ -35,14 +35,16 @@ int main(void) {
     // const char text[] = "1-(1-1-1-1-1)-1-3";
     // const char text[] = "var a = 1-1-1--3*3.0+1;";
     const char text[] = "func add(a, b)\n"
+                        "\treturn a+b\n"
                         "\tvar c=a+b\n"
                         "\tfunc minus(a, b)\n"
                         "\t\tvar c=a-b\n"
                         "\tend\n"
                         "\tminus(a, b)\n"
-                        "\treturn\n"
+                        "\treturn c\n"
                         "end\n"
-                        "add(1-1-1--3*3.0+1, 1.0 + 101 % 3 / 2.0)\n"
+                        "var result = add(1-1-1--3*3.0+1, 1.0 + 101 % 3 / 2.0)\n"
+                        "result += 0\n"
                         ;
     // const char text[] = "func(1-1-1--3*3.0+1, 1.0 + 101 % 3 / 2.0)()(1.)(1.,2.)(1.,2.,3.)(1.,2.,3.,4.)(1.,2.,3.,4.,5.)(1.,2.,3.,4.,5.,6.)(1.,2.,3.,4.,5.,6.,7.)\n";
     // const char text[] = "var a= (2+4*(3/(.2*10))+3-1-1)*1.1+(0.5+.5)+(.5-0.3-0.2)\n"

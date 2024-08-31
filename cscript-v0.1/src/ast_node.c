@@ -2,13 +2,16 @@
 #include "core/assert.h"
 #include "container/memallocate.h"
 #include "interpreter.h"
+#include "tracing.h"
 
 INLINE ast_node* make_ast_node(AstNodeType type, u64 type_size, struct token* tok, void(*destroy)(ast_node*), struct command*(*gen_command)(ast_node*)) {
+    START_PROFILING();
     ast_node* node = CALLOC(1, type_size + sizeof(ast_node));
     node->type = type;
     node->gen_command = gen_command;
     node->destroy = destroy;
     node->tok = tok;
+    END_PROFILING(__func__);
     return node;
 }
 

@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#define CTX_SIZE 1 << 13
+#define CTX_SIZE 1 << 12
 
 static void start_tracing(trace_info* info) {
     FILE* file = fopen(info->file_name, "w");

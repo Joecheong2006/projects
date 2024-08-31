@@ -36,11 +36,16 @@ static error_info command_binary_operation_cal(interpreter* inter, command* cmd,
         if (ei.msg) {
             return ei;
         }
-        else if (obj->type != ObjectTypePrimitiveData) {
+        ASSERT(obj != NULL);
+        if (obj->type != ObjectTypePrimitiveData) {
             return (error_info){ .msg = "Invalid operands to binary expression" };
         }
         object_primitive_data* o = get_object_true_type(obj);
         *out = o->val;
+        obj = env_find_object(&inter->env, ".ret");
+        if (obj) {
+            obj->destroy(obj);
+        }
         break;
     }
     case CommandTypeGetConstant: {
@@ -106,7 +111,7 @@ static error_info access_funcall(interpreter* inter, command* cmd, object** obj)
     if (!func) {
         return (error_info){ .msg = "undeclared function", .line = funcall->line_on_exec };
     }
-    else if (func->type != ObjectTypeFunctionDef) {
+    if (func->type != ObjectTypeFunctionDef) {
         return (error_info){ .msg = "called object type is not a function", .line = funcall->line_on_exec };
     }
 
@@ -114,11 +119,10 @@ static error_info access_funcall(interpreter* inter, command* cmd, object** obj)
     if (vector_size(args->args) > vector_size(def->args)) {
         return (error_info){ .msg = "too many arguments", .line = funcall->line_on_exec };
     }
-    else if (vector_size(args->args) < vector_size(def->args)) {
+    if (vector_size(args->args) < vector_size(def->args)) {
         return (error_info){ .msg = "missing arguments", .line = funcall->line_on_exec };
     }
 
-    *obj = NULL;
     env_push_scope(&inter->env);
     for_vector(def->args, i, 0) {
         error_info ei = initialize_object(inter, args->args[i], def->args[i]);
@@ -136,6 +140,8 @@ static error_info access_funcall(interpreter* inter, command* cmd, object** obj)
                     env_pop_scope(&inter->env);
                     return ei;
                 }
+                vector_pop(vector_back(inter->env.global));
+                *obj = env_find_object(&inter->env, ".ret");
             }
             break;
         }
@@ -235,6 +241,21 @@ static error_info command_assignment(interpreter* inter, const command* cmd) {
 
 static error_info initialize_object(interpreter* inter, command* cmd, const char* name) {
     // NOTE: Check if the data is different from primitive.
+    if (cmd->type == CommandTypeReference) {
+        const command_reference* ref = get_command_true_type(cmd);
+        if (ref->id->type == CommandTypeFuncall) {
+            object* ret = NULL;
+            error_info ei = access_object(inter, cmd, &ret);
+            if (ei.msg) {
+                return ei;
+            }
+            ret->name = name;
+            env_push_object(&inter->env, ret);
+            LOG_DEBUG("\tvar %s = .ret\n", name);
+            return (error_info){ .msg = NULL };
+        }
+    }
+
     primitive_data data;
     error_info ei = command_binary_operation_cal(inter, cmd, &data);
     if (ei.msg) {

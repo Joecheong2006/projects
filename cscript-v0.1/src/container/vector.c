@@ -14,6 +14,9 @@ void* _make_vector(u64 type_size)
 
 void* _vector_reserve(void* vec, u64 size)
 {
+    if (vector_capacity(vec) > size) {
+        return vec;
+    }
     char* result = (char*)realloc(&vector_status(vec), size + sizeof(struct vector_data));
     assert(result != NULL);
     result += sizeof(struct vector_data);
