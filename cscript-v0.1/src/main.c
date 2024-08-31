@@ -35,11 +35,11 @@ int main(void) {
     // const char text[] = "1-(1-1-1-1-1)-1-3";
     // const char text[] = "var a = 1-1-1--3*3.0+1;";
     const char text[] = "func add(a, b)\n"
-                        "\treturn a+b\n"
                         "\tvar c=a+b\n"
                         "\tfunc minus(a, b)\n"
                         "\t\tvar c=a-b\n"
                         "\tend\n"
+                        "\treturn a+b\n"
                         "\tminus(a, b)\n"
                         "\treturn c\n"
                         "end\n"
@@ -47,6 +47,10 @@ int main(void) {
                         "result += 0\n"
                         "var a = add\n"
                         "var b = a\n"
+                        "b=a\n"
+                        "a=add\n"
+                        "b=1.0\n"
+                        "b=add\n"
                         "var a_plus_b = b(0.0001, 3.1414) + a(3.2, 0.2) - 0.4\n"
                         ;
     // const char text[] = "func(1-1-1--3*3.0+1, 1.0 + 101 % 3 / 2.0)()(1.)(1.,2.)(1.,2.,3.)(1.,2.,3.,4.)(1.,2.,3.,4.,5.)(1.,2.,3.,4.,5.,6.)(1.,2.,3.,4.,5.,6.,7.)\n";

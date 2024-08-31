@@ -3,23 +3,15 @@
 #include "tracing.h"
 #include <string.h>
 
-INLINE static void scopes_push_obj(scopes s, object* obj) {
+INLINE static void scopes_push_obj(scopes s, object** obj) {
     vector_push(vector_back(s), obj);
 }
 
 static void free_scope(environment* env, scope sc) {
     for (i64 i = (i64)vector_size(sc) - 1; i > -1; --i) {
-        vector(void*) result = hashmap_access_vector(&env->map, sc[i]);
+        vector(void*) result = hashmap_access_vector(&env->map, *sc[i]);
         vector_pop(result);
-
-        if (sc[i]->ref_count == 0) {
-            if (sc[i]->type == ObjectTypeRef) {
-                object_ref* ref = get_object_true_type(sc[i]);
-                object* ref_obj = env_find_object(env, ref->ref_name);
-                ref_obj->ref_count--;
-            }
-            sc[i]->destroy(sc[i]);
-        }
+        (*sc[i])->destroy(*sc[i], env);
     }
     free_vector(sc);
 }
@@ -64,14 +56,14 @@ void env_pop_scope(environment* env) {
     END_PROFILING(__func__);
 }
 
-object* env_find_object(environment* env, cstring name) {
+object** env_find_object(environment* env, cstring name) {
     START_PROFILING();
     object obj = { .name = name };
     vector(void*) result = hashmap_access_vector(&env->map, &obj);
     for (i64 i = (i64)vector_size(result) - 1; i > -1; --i) {
         object* obj = result[i];
         if (strcmp(obj->name, name) == 0) {
-            return obj;
+            return (object**)(result + i);
         }
     }
     END_PROFILING(__func__);
@@ -81,8 +73,8 @@ object* env_find_object(environment* env, cstring name) {
 void env_push_object(environment* env, object* obj) {
     START_PROFILING();
     obj->level = vector_size(env->global);
-    scopes_push_obj(env->global, obj);
     hashmap_add(&env->map, obj);
+    scopes_push_obj(env->global, env_find_object(env, obj->name));
     END_PROFILING(__func__);
 }
 

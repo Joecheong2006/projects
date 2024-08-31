@@ -7,6 +7,7 @@
 #include "core/log.h"
 #include "tracing.h"
 #include "ast_node.h"
+#include <string.h>
 
 static error_info command_binary_operation_cal(interpreter* inter, command* cmd, primitive_data* out);
 
@@ -24,27 +25,27 @@ static error_info command_assign_divide(interpreter* inter, const command* cmd);
 static error_info command_assign_modulus(interpreter* inter, const command* cmd);
 
 static error_info initialize_object(interpreter* inter, command* cmd, const char* name);
-static error_info access_object(interpreter* inter, command* cmd, object** obj);
-static error_info access_funcall(interpreter* inter, command* cmd, object** obj);
-static error_info access_identifier(interpreter* inter, command* cmd, object** obj);
+static error_info access_object(interpreter* inter, command* cmd, object*** obj);
+static error_info access_funcall(interpreter* inter, command* cmd, object*** obj);
+static error_info access_identifier(interpreter* inter, command* cmd, object*** obj);
 static error_info exec_command_funcdef(interpreter* inter, command* cmd);
 
 static error_info command_binary_operation_cal(interpreter* inter, command* cmd, primitive_data* out) {
     switch (cmd->type) {
     case CommandTypeReference: {
-        object* obj = NULL;
+        object** obj = NULL;
         error_info ei = access_object(inter, cmd, &obj);
         if (ei.msg) {
             return ei;
         }
         ASSERT(obj != NULL);
-        if (obj->type != ObjectTypePrimitiveData) {
+        if ((*obj)->type != ObjectTypePrimitiveData) {
             return (error_info){ .msg = "Invalid operands to binary expression" };
         }
-        object_primitive_data* o = get_object_true_type(obj);
+        object_primitive_data* o = get_object_true_type(*obj);
         *out = o->val;
-        if (obj->name[0] == '.') {
-            obj->destroy(obj);
+        if ((*obj)->name[0] == '.') {
+            (*obj)->destroy(*obj, &inter->env);
         }
         break;
     }
@@ -91,7 +92,7 @@ IMPL_COMMAND_BINARY_OPERATION(multiply)
 IMPL_COMMAND_BINARY_OPERATION(divide)
 IMPL_COMMAND_BINARY_OPERATION(modulus)
 
-static error_info access_funcall(interpreter* inter, command* cmd, object** obj) {
+static error_info access_funcall(interpreter* inter, command* cmd, object*** obj) {
     ASSERT(cmd->type == CommandTypeFuncall);
     START_PROFILING();
     const command_funcall* funcall = get_command_true_type(cmd);
@@ -107,22 +108,22 @@ static error_info access_funcall(interpreter* inter, command* cmd, object** obj)
     }
 
     LOG_DEBUG_MSG("\n");
-    object* func = env_find_object(&inter->env, funcall->name);
+    object** func = env_find_object(&inter->env, funcall->name);
     if (!func) {
         return (error_info){ .msg = "undeclared function", .line = funcall->line_on_exec };
     }
-    if (func->type == ObjectTypeRef) {
-        object_ref* ref = get_object_true_type(func);
+    if ((*func)->type == ObjectTypeRef) {
+        object_ref* ref = get_object_true_type(*func);
         func = env_find_object(&inter->env, ref->ref_name);
     }
-    if (!func) {
+    if (!(*func)) {
         return (error_info){ .msg = "undeclared function", .line = funcall->line_on_exec };
     }
-    if (func->type != ObjectTypeFunctionDef) {
+    if ((*func)->type != ObjectTypeFunctionDef) {
         return (error_info){ .msg = "called object type is not a function", .line = funcall->line_on_exec };
     }
 
-    object_function_def* def = get_object_true_type(func);
+    object_function_def* def = get_object_true_type(*func);
     if (vector_size(args->args) > vector_size(def->args)) {
         return (error_info){ .msg = "too many arguments", .line = funcall->line_on_exec };
     }
@@ -151,8 +152,8 @@ static error_info access_funcall(interpreter* inter, command* cmd, object** obj)
                 *obj = env_find_object(&inter->env, ".ret");
                 break;
             }
-            *obj = make_object_none(".ret");
-            env_push_object(&inter->env, *obj);
+            (**obj) = make_object_none(".ret");
+            env_push_object(&inter->env, **obj);
             vector_pop(vector_back(inter->env.global));
             break;
         }
@@ -169,7 +170,7 @@ static error_info access_funcall(interpreter* inter, command* cmd, object** obj)
     return (error_info){ .msg = NULL };
 }
 
-static error_info access_identifier(interpreter* inter, command* cmd, object** obj) {
+static error_info access_identifier(interpreter* inter, command* cmd, object*** obj) {
     START_PROFILING()
     ASSERT(cmd->type == CommandTypeReferenceIdentifier);
     const command_access_identifier* access = get_command_true_type(cmd);
@@ -181,7 +182,7 @@ static error_info access_identifier(interpreter* inter, command* cmd, object** o
     return (error_info){ .msg = NULL };
 }
 
-static error_info access_object(interpreter* inter, command* cmd, object** obj) {
+static error_info access_object(interpreter* inter, command* cmd, object*** obj) {
     ASSERT(cmd->type == CommandTypeReference);
     START_PROFILING()
     const command_reference* access = get_command_true_type(cmd);
@@ -206,13 +207,13 @@ static error_info access_object(interpreter* inter, command* cmd, object** obj) 
         START_PROFILING()\
         ASSERT(cmd->type == CommandTypeAssignment);\
         const command_assign* ca = get_command_true_type(cmd);\
-        object* obj = NULL;\
+        object** obj = NULL;\
         error_info ei = access_object(inter, ca->mem, &obj);\
         if (ei.msg) {\
             ei.line = ca->line_on_exec;\
             return ei;\
         }\
-        if (obj->type != ObjectTypePrimitiveData)\
+        if ((*obj)->type != ObjectTypePrimitiveData)\
             return (error_info){ .msg = "Invalid operands to binary expression", .line = ca->line_on_exec };\
         primitive_data data;\
         ei = command_binary_operation_cal(inter, ca->expr, &data);\
@@ -220,13 +221,13 @@ static error_info access_object(interpreter* inter, command* cmd, object** obj) 
             ei.line = ca->line_on_exec;\
             return ei;\
         }\
-        object_primitive_data* o = get_object_true_type(obj);\
+        object_primitive_data* o = get_object_true_type(*obj);\
         ei = primitive_data_##assign_name##_assign(&o->val, &data);\
         if (ei.msg) {\
             ei.line = ca->line_on_exec;\
             return ei;\
         }\
-        LOG_DEBUG("\t%d: %s %s by %g -> %g\n", ca->line_on_exec, obj->name, #assign_name, data.float32, o->val.float32);\
+        LOG_DEBUG("\t%d: %s %s by %g -> %g\n", ca->line_on_exec, (*obj)->name, #assign_name, data.float32, o->val.float32);\
         END_PROFILING(__func__)\
         return (error_info){ .msg = NULL };\
     }
@@ -240,12 +241,88 @@ IMPL_COMMAND_ASSIGNMENT(modulus)
 static error_info command_assignment(interpreter* inter, const command* cmd) {
     START_PROFILING()
     const command_assign* ca = get_command_true_type(cmd);
-    object* obj = NULL;
+    object** obj = NULL;
     error_info ei = access_object(inter, ca->mem, &obj);
     if (ei.msg) {
         ei.line = ca->line_on_exec;
         return ei;
     }
+
+    if (ca->expr->type == CommandTypeReference) {
+        const command_reference* ref_cmd = get_command_true_type(ca->expr);
+        object** rvalue = NULL;
+        error_info ei = access_object(inter, ca->expr, &rvalue);
+        if (ei.msg) {
+            return ei;
+        }
+        if (ref_cmd->id->type == CommandTypeFuncall) {
+            if ((*obj)->type != ObjectTypeRef) {
+                (*obj)->destroy(*obj, &inter->env);
+                (*obj) = make_object_ref((*obj)->name);
+            }
+            (*rvalue)->name = (*obj)->name;
+            // TODO: assign the result of function
+            // env_push_object(&inter->env, rvalue);
+            ASSERT(0);
+            LOG_DEBUG("\tvar %s = .ret\n", (*obj)->name);
+            return (error_info){ .msg = NULL };
+        }
+        if (ref_cmd->id->type == CommandTypeReferenceIdentifier) {
+            if ((*rvalue)->type == ObjectTypeRef) {
+                if ((*obj)->type != ObjectTypeRef) {
+                    cstring name = (*obj)->name;
+                    (*obj)->destroy(*obj, &inter->env);
+                    (*obj) = make_object_ref(name);
+                    object_ref* ref = get_object_true_type(*obj);
+                    ref->ref_name = "";
+                }
+                object_ref* ref_rvalue = get_object_true_type(*rvalue);
+                object_ref* ref = get_object_true_type(*obj);
+                object** target = env_find_object(&inter->env, ref_rvalue->ref_name);
+                if (strcmp(ref->ref_name, ref_rvalue->ref_name)) {
+                    (*target)->ref_count++;
+                }
+                ref->ref_name = ref_rvalue->ref_name;
+                LOG_DEBUG("\tvar %s -> func %s\n", (*obj)->name, ref->ref_name);
+                return (error_info){ .msg = NULL };
+            }
+            if ((*rvalue)->type != ObjectTypePrimitiveData) {
+                if ((*obj)->type == ObjectTypePrimitiveData) {
+                    cstring name = (*obj)->name;
+                    (*obj)->destroy((*obj), &inter->env);
+                    (*obj) = make_object_ref(name);
+                    object_ref* ref = get_object_true_type(*obj);
+                    ref->ref_name = "";
+                }
+                object_ref* ref = get_object_true_type(*obj);
+                if (strcmp(ref->ref_name, (*rvalue)->name)) {
+                    (*rvalue)->ref_count++;
+                }
+                ref->ref_name = (*rvalue)->name;
+                LOG_DEBUG("\tvar %s -> func %s\n", (*obj)->name, ref->ref_name);
+                return (error_info){ .msg = NULL };
+            }
+        }
+        else {
+            ASSERT_MSG(0, "undefine command reference type");
+        }
+    }
+
+    primitive_data data;
+    ei = command_binary_operation_cal(inter, ca->expr, &data);
+    if (ei.msg) {
+        return ei;
+    }
+
+    if ((*obj)->type != ObjectTypePrimitiveData) {
+        cstring name = (*obj)->name;
+        (*obj)->destroy(*obj, &inter->env);
+        (*obj) = make_object_primitive_data(name);
+    }
+    object_primitive_data* o = get_object_true_type(*obj);
+    o->val = data;
+
+    LOG_DEBUG("\tvar %s = %g\n", (*obj)->name, data.float32);
     END_PROFILING(__func__)
     return (error_info){ .msg = NULL };
 }
@@ -254,34 +331,34 @@ static error_info initialize_object(interpreter* inter, command* cmd, const char
     // NOTE: Check if the data is different from primitive.
     if (cmd->type == CommandTypeReference) {
         const command_reference* ref_cmd = get_command_true_type(cmd);
-        object* obj = NULL;
+        object** obj = NULL;
         error_info ei = access_object(inter, cmd, &obj);
         if (ei.msg) {
             return ei;
         }
         if (ref_cmd->id->type == CommandTypeFuncall) {
-            obj->name = name;
-            env_push_object(&inter->env, obj);
+            (*obj)->name = name;
+            env_push_object(&inter->env, *obj);
             LOG_DEBUG("\tvar %s = .ret\n", name);
             return (error_info){ .msg = NULL };
         }
         if (ref_cmd->id->type == CommandTypeReferenceIdentifier) {
-            if (obj->type == ObjectTypeRef) {
-                object_ref* lvalue = get_object_true_type(obj);
+            if ((*obj)->type == ObjectTypeRef) {
+                object_ref* lvalue = get_object_true_type(*obj);
                 object* o = make_object_ref(name);
                 object_ref* ref = get_object_true_type(o);
                 ref->ref_name = lvalue->ref_name;
-                object* target = env_find_object(&inter->env, ref->ref_name);
-                target->ref_count++;
+                object** target = env_find_object(&inter->env, ref->ref_name);
+                (*target)->ref_count++;
                 env_push_object(&inter->env, o);
                 LOG_DEBUG("\tvar %s -> func %s\n", name, ref->ref_name);
                 return (error_info){ .msg = NULL };
             }
-            if (obj->type != ObjectTypePrimitiveData) {
+            if ((*obj)->type != ObjectTypePrimitiveData) {
                 object* o = make_object_ref(name);
                 object_ref* ref = get_object_true_type(o);
-                ref->ref_name = obj->name;
-                obj->ref_count++;
+                ref->ref_name = (*obj)->name;
+                (*obj)->ref_count++;
                 env_push_object(&inter->env, o);
                 LOG_DEBUG("\tvar %s -> func %s\n", name, ref->ref_name);
                 return (error_info){ .msg = NULL };
@@ -310,8 +387,8 @@ static error_info initialize_object(interpreter* inter, command* cmd, const char
 static error_info command_exec_vardecl(interpreter* inter, const command_vardecl* vardecl) {
     START_PROFILING()
 
-    object* obj = env_find_object(&inter->env, vardecl->variable_name);
-    if (obj != NULL && obj->level == get_env_level(&inter->env)) {
+    object** obj = env_find_object(&inter->env, vardecl->variable_name);
+    if (obj != NULL && (*obj)->level == get_env_level(&inter->env)) {
         return (error_info){ .msg = "redeclare variable '%s'", .line = vardecl->line_on_exec };
     }
 
@@ -371,11 +448,11 @@ error_info exec_command(interpreter* inter, command* cmd) {
         return ca->exec(inter, cmd);
     }
     case CommandTypeReference: {
-        object* obj = NULL;
+        object** obj = NULL;
         error_info ei = access_object(inter, cmd, &obj);
         obj = env_find_object(&inter->env, ".ret");
-        if (obj) {
-            obj->destroy(obj);
+        if ((*obj)) {
+            (*obj)->destroy(*obj, &inter->env);
         }
         return ei;
     }
@@ -597,7 +674,7 @@ command* make_command_return(struct ast_node* node) {
     return result;
 }
 
-INLINE static command* make_command_reference(struct ast_node* node, error_info(*reference)(interpreter*, command*, object**)) {
+INLINE static command* make_command_reference(struct ast_node* node, error_info(*reference)(interpreter*, command*, object***)) {
     START_PROFILING()
     command* result = make_command(CommandTypeReference, sizeof(command_reference), destroy_command_reference);
     command_reference* access = (command_reference*)(result + 1);

@@ -2,8 +2,10 @@
 #include "container/memallocate.h"
 #include "core/assert.h"
 #include "tracing.h"
+#include "core/log.h"
+#include "environment.h"
 
-object* make_object(ObjectType type, cstring name, u64 type_size, void(*destroy)(object*)) {
+object* make_object(ObjectType type, cstring name, u64 type_size, void(*destroy)(object*, struct environment* inter)) {
     object* result = CALLOC(1, type_size + sizeof(object));
     result->type = type;
     result->name = name;
@@ -13,7 +15,8 @@ object* make_object(ObjectType type, cstring name, u64 type_size, void(*destroy)
 
 INLINE void* get_object_true_type(object* obj) { return obj + 1; }
 
-void object_none_destroy(object* obj) {
+void object_none_destroy(object* obj, struct environment* inter) {
+    (void)inter;
     ASSERT(obj->type == ObjectTypeNone);
     FREE(obj);
 }
@@ -22,7 +25,8 @@ INLINE object* make_object_none(cstring name) {
     return make_object(ObjectTypeNone, name, 0, object_none_destroy);
 }
 
-void object_bool_destroy(object* obj) {
+void object_bool_destroy(object* obj, struct environment* inter) {
+    (void)inter;
     ASSERT(obj->type == ObjectTypeBool);
     FREE(obj);
 }
@@ -31,7 +35,8 @@ INLINE object* make_object_bool(cstring name) {
     return make_object(ObjectTypeBool, name, sizeof(object_bool), object_bool_destroy);
 }
 
-void object_primitive_data_destroy(object* obj) {
+void object_primitive_data_destroy(object* obj, struct environment* inter) {
+    (void)inter;
     ASSERT(obj->type == ObjectTypePrimitiveData);
     FREE(obj);
 }
@@ -40,7 +45,8 @@ INLINE object* make_object_primitive_data(cstring name) {
     return make_object(ObjectTypePrimitiveData, name, sizeof(object_primitive_data), object_primitive_data_destroy);
 }
 
-void object_string_destroy(object* obj) {
+void object_string_destroy(object* obj, struct environment* inter) {
+    (void)inter;
     ASSERT(obj->type == ObjectTypeString);
     object_string* str = get_object_true_type(obj);
     free_string(str->val);
@@ -56,7 +62,8 @@ object* make_object_string(cstring name) {
     return result;
 }
 
-void object_function_def_destroy(object* obj) {
+void object_function_def_destroy(object* obj, struct environment* inter) {
+    (void)inter;
     ASSERT(obj->type == ObjectTypeFunctionDef);
     FREE(obj);
 }
@@ -68,8 +75,12 @@ object* make_object_function_def(cstring name) {
     return result;
 }
 
-void object_ref_destroy(object* obj) {
+void object_ref_destroy(object* obj, struct environment* inter) {
     ASSERT(obj->type == ObjectTypeRef);
+    object_ref* ref = get_object_true_type(obj);
+    object** ref_obj = env_find_object(inter, ref->ref_name);
+    (*ref_obj)->ref_count--;
+    LOG_DEBUG("\t%s drop %s ref to %d\n", obj->name, (*ref_obj)->name, (*ref_obj)->ref_count);
     FREE(obj);
 }
 
@@ -80,11 +91,11 @@ object* make_object_ref(cstring name) {
     return result;
 }
 
-void object_user_type_destroy(object* obj) {
+void object_user_type_destroy(object* obj, struct environment* inter) {
     ASSERT(obj->type == ObjectTypeUserType);
     object_user_type* user_type = get_object_true_type(obj);
     for_vector(user_type->members, i, 0) {
-        user_type->members[i]->destroy(user_type->members[i]);
+        user_type->members[i]->destroy(user_type->members[i], inter);
     }
     free_vector(user_type->members);
     FREE(obj);
