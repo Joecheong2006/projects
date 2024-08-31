@@ -9,8 +9,8 @@ typedef enum {
     ObjectTypePrimitiveData,
     ObjectTypeString,
     ObjectTypeFunctionDef,
-    ObjectTypeFunctionPointer,
     ObjectTypeArray,
+    ObjectTypeRef,
     ObjectTypeUserType,
     ObjectErrorUndefine,
 } ObjectType;
@@ -19,7 +19,7 @@ typedef struct object object;
 struct object {
     ObjectType type;
     cstring name;
-    i32 level;
+    i32 level, ref_count;
     void(*destroy)(object*);
 };
 
@@ -30,6 +30,9 @@ void* get_object_true_type(object* obj);
     typedef struct { body } object_##type;\
     void object_##type_##destroy(object* obj);\
     object* make_object_##type(cstring name);
+
+void object_none_destroy(object* obj);
+object* make_object_none(cstring name);
 
 DEFINE_OBJECT_TYPE(bool,
         u8 val;
@@ -47,6 +50,10 @@ struct command;
 DEFINE_OBJECT_TYPE(function_def,
         vector(cstring) args;
         vector(struct command*) body;
+)
+
+DEFINE_OBJECT_TYPE(ref,
+        cstring ref_name;
 )
 
 DEFINE_OBJECT_TYPE(user_type,

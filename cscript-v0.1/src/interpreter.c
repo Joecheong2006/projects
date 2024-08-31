@@ -1,5 +1,6 @@
 #include "interpreter.h"
 #include "container/memallocate.h"
+#include "environment.h"
 #include "parser.h"
 #include "container/string.h"
 #include "core/assert.h"
@@ -42,8 +43,7 @@ static error_info command_binary_operation_cal(interpreter* inter, command* cmd,
         }
         object_primitive_data* o = get_object_true_type(obj);
         *out = o->val;
-        obj = env_find_object(&inter->env, ".ret");
-        if (obj) {
+        if (obj->name[0] == '.') {
             obj->destroy(obj);
         }
         break;
@@ -111,6 +111,13 @@ static error_info access_funcall(interpreter* inter, command* cmd, object** obj)
     if (!func) {
         return (error_info){ .msg = "undeclared function", .line = funcall->line_on_exec };
     }
+    if (func->type == ObjectTypeRef) {
+        object_ref* ref = get_object_true_type(func);
+        func = env_find_object(&inter->env, ref->ref_name);
+    }
+    if (!func) {
+        return (error_info){ .msg = "undeclared function", .line = funcall->line_on_exec };
+    }
     if (func->type != ObjectTypeFunctionDef) {
         return (error_info){ .msg = "called object type is not a function", .line = funcall->line_on_exec };
     }
@@ -142,7 +149,11 @@ static error_info access_funcall(interpreter* inter, command* cmd, object** obj)
                 }
                 vector_pop(vector_back(inter->env.global));
                 *obj = env_find_object(&inter->env, ".ret");
+                break;
             }
+            *obj = make_object_none(".ret");
+            env_push_object(&inter->env, *obj);
+            vector_pop(vector_back(inter->env.global));
             break;
         }
         error_info ei = exec_command(inter, def->body[i]);
@@ -242,17 +253,42 @@ static error_info command_assignment(interpreter* inter, const command* cmd) {
 static error_info initialize_object(interpreter* inter, command* cmd, const char* name) {
     // NOTE: Check if the data is different from primitive.
     if (cmd->type == CommandTypeReference) {
-        const command_reference* ref = get_command_true_type(cmd);
-        if (ref->id->type == CommandTypeFuncall) {
-            object* ret = NULL;
-            error_info ei = access_object(inter, cmd, &ret);
-            if (ei.msg) {
-                return ei;
-            }
-            ret->name = name;
-            env_push_object(&inter->env, ret);
+        const command_reference* ref_cmd = get_command_true_type(cmd);
+        object* obj = NULL;
+        error_info ei = access_object(inter, cmd, &obj);
+        if (ei.msg) {
+            return ei;
+        }
+        if (ref_cmd->id->type == CommandTypeFuncall) {
+            obj->name = name;
+            env_push_object(&inter->env, obj);
             LOG_DEBUG("\tvar %s = .ret\n", name);
             return (error_info){ .msg = NULL };
+        }
+        if (ref_cmd->id->type == CommandTypeReferenceIdentifier) {
+            if (obj->type == ObjectTypeRef) {
+                object_ref* lvalue = get_object_true_type(obj);
+                object* o = make_object_ref(name);
+                object_ref* ref = get_object_true_type(o);
+                ref->ref_name = lvalue->ref_name;
+                object* target = env_find_object(&inter->env, ref->ref_name);
+                target->ref_count++;
+                env_push_object(&inter->env, o);
+                LOG_DEBUG("\tvar %s -> func %s\n", name, ref->ref_name);
+                return (error_info){ .msg = NULL };
+            }
+            if (obj->type != ObjectTypePrimitiveData) {
+                object* o = make_object_ref(name);
+                object_ref* ref = get_object_true_type(o);
+                ref->ref_name = obj->name;
+                obj->ref_count++;
+                env_push_object(&inter->env, o);
+                LOG_DEBUG("\tvar %s -> func %s\n", name, ref->ref_name);
+                return (error_info){ .msg = NULL };
+            }
+        }
+        else {
+            ASSERT_MSG(0, "undefine command reference type");
         }
     }
 
@@ -336,7 +372,12 @@ error_info exec_command(interpreter* inter, command* cmd) {
     }
     case CommandTypeReference: {
         object* obj = NULL;
-        return access_object(inter, cmd, &obj);
+        error_info ei = access_object(inter, cmd, &obj);
+        obj = env_find_object(&inter->env, ".ret");
+        if (obj) {
+            obj->destroy(obj);
+        }
+        return ei;
     }
     case CommandTypeFuncDef: {
         return exec_command_funcdef(inter, cmd);

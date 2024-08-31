@@ -12,7 +12,14 @@ static void free_scope(environment* env, scope sc) {
         vector(void*) result = hashmap_access_vector(&env->map, sc[i]);
         vector_pop(result);
 
-        sc[i]->destroy(sc[i]);
+        if (sc[i]->ref_count == 0) {
+            if (sc[i]->type == ObjectTypeRef) {
+                object_ref* ref = get_object_true_type(sc[i]);
+                object* ref_obj = env_find_object(env, ref->ref_name);
+                ref_obj->ref_count--;
+            }
+            sc[i]->destroy(sc[i]);
+        }
     }
     free_vector(sc);
 }

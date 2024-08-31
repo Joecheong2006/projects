@@ -4,16 +4,23 @@
 #include "tracing.h"
 
 object* make_object(ObjectType type, cstring name, u64 type_size, void(*destroy)(object*)) {
-    START_PROFILING();
     object* result = CALLOC(1, type_size + sizeof(object));
     result->type = type;
     result->name = name;
     result->destroy = destroy;
-    END_PROFILING(__func__);
     return result;
 }
 
 INLINE void* get_object_true_type(object* obj) { return obj + 1; }
+
+void object_none_destroy(object* obj) {
+    ASSERT(obj->type == ObjectTypeNone);
+    FREE(obj);
+}
+
+INLINE object* make_object_none(cstring name) {
+    return make_object(ObjectTypeNone, name, 0, object_none_destroy);
+}
 
 void object_bool_destroy(object* obj) {
     ASSERT(obj->type == ObjectTypeBool);
@@ -57,6 +64,18 @@ void object_function_def_destroy(object* obj) {
 object* make_object_function_def(cstring name) {
     START_PROFILING();
     object* result = make_object(ObjectTypeFunctionDef, name, sizeof(object_function_def), object_function_def_destroy);
+    END_PROFILING(__func__);
+    return result;
+}
+
+void object_ref_destroy(object* obj) {
+    ASSERT(obj->type == ObjectTypeRef);
+    FREE(obj);
+}
+
+object* make_object_ref(cstring name) {
+    START_PROFILING();
+    object* result = make_object(ObjectTypeRef, name, sizeof(object_ref), object_ref_destroy);
     END_PROFILING(__func__);
     return result;
 }
