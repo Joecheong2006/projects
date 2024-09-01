@@ -78,9 +78,9 @@ object* make_object_function_def(cstring name) {
 void object_ref_destroy(object* obj, struct environment* inter) {
     ASSERT(obj->type == ObjectTypeRef);
     object_ref* ref = get_object_true_type(obj);
-    object** ref_obj = env_find_object(inter, ref->ref_name);
-    (*ref_obj)->ref_count--;
-    LOG_DEBUG("\t%s drop %s ref to %d\n", obj->name, (*ref_obj)->name, (*ref_obj)->ref_count);
+    object* ref_obj = env_find_object(inter, ref->ref_name);
+    ref_obj->ref_count--;
+    LOG_DEBUG("\t%s drop %s ref to %d\n", obj->name, ref_obj->name, ref_obj->ref_count);
     FREE(obj);
 }
 
