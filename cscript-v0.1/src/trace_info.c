@@ -5,8 +5,9 @@
 #include <sys/types.h>
 #include <stdio.h>
 #include <string.h>
+#include "tracing.h"
 
-#define CTX_SIZE 1 << 12
+#define CTX_SIZE 1 << 14
 
 static void start_tracing(trace_info* info) {
     FILE* file = fopen(info->file_name, "w");
@@ -34,10 +35,12 @@ void submit_tracing_info(trace_info* info, const char* name, char* cat, i32 ts, 
     char buf[128];
     sprintf(buf, "{\"name\":\"%s\",\"cat\":\"%s\",\"ph\":\"X\",\"ts\":%d,\"pid\":%d,\"tid\":%d,\"dur\":%d}", name, cat, ts, pid, tid, dur == 0 ? 1 : dur);
     if (vector_size(info->ctx) + strlen(buf) >= CTX_SIZE) {
+        START_PROFILING();
         FILE* file = fopen(info->file_name, "a");
         fprintf(file, "%s", info->ctx);
         fclose(file);
         vector_size(info->ctx) = 0;
+        END_PROFILING("fetching trace data");
     }
     if (info->count++ > 0) {
         string_push(info->ctx, ",");

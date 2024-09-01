@@ -91,7 +91,7 @@ typedef struct {
 typedef struct {
     command* id;
     command* next_ref;
-    error_info(*reference)(interpreter*, command*, object**);
+    error_info(*reference)(interpreter*, command*, object_carrier**);
 } command_reference;
 
 typedef struct {

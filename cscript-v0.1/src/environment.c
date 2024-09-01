@@ -1,17 +1,25 @@
 #include "environment.h"
 #include "core/assert.h"
+#include "container/memallocate.h"
 #include "tracing.h"
 #include <string.h>
 
-INLINE static void scopes_push_obj(scopes s, object* obj) {
+INLINE static void scopes_push_obj(scopes s, object_carrier* obj) {
     vector_push(vector_back(s), obj);
+}
+
+object_carrier* make_object_carrier(object* obj) {
+    object_carrier* carrier = MALLOC(sizeof(object_carrier));
+    carrier->obj = obj;
+    return carrier;
 }
 
 static void free_scope(environment* env, scope sc) {
     for (i64 i = (i64)vector_size(sc) - 1; i > -1; --i) {
         vector(void*) result = hashmap_access_vector(&env->map, sc[i]);
         vector_pop(result);
-        sc[i]->destroy(sc[i], env);
+        sc[i]->obj->destroy(sc[i]->obj, env);
+        FREE(sc[i]);
     }
     free_vector(sc);
 }
@@ -37,9 +45,8 @@ static u32 hash_string(const char* str) {
 
 INLINE static u32 hash_object(void* data, u32 size) {
     ASSERT(data);
-    object* obj = data;
-    return hash_string(obj->name) % size;
-    // return sdbm(obj->name) % size;
+    object_carrier* carrier = (object_carrier*)data;
+    return hash_string(carrier->obj->name) % size;
 }
 
 void env_push_scope(environment* env) {
@@ -56,25 +63,24 @@ void env_pop_scope(environment* env) {
     END_PROFILING(__func__);
 }
 
-object* env_find_object(environment* env, cstring name) {
+object_carrier* env_find_object(environment* env, cstring name) {
     START_PROFILING();
-    object obj = { .name = name };
-    vector(void*) result = hashmap_access_vector(&env->map, &obj);
+    vector(void*) result = env->map.data[hash_string(name) % env->map.size];
     for (i64 i = (i64)vector_size(result) - 1; i > -1; --i) {
-        object* obj = result[i];
-        if (strcmp(obj->name, name) == 0) {
-            return obj;
+        object_carrier* carrier = result[i];
+        if (strcmp(carrier->obj->name, name) == 0) {
+            return carrier;
         }
     }
     END_PROFILING(__func__);
     return NULL;
 }
 
-void env_push_object(environment* env, object* obj) {
+void env_push_object(environment* env, object_carrier* carrier) {
     START_PROFILING();
-    obj->level = vector_size(env->global);
-    scopes_push_obj(env->global, obj);
-    hashmap_add(&env->map, obj);
+    carrier->obj->level = vector_size(env->global);
+    hashmap_add(&env->map, carrier);
+    scopes_push_obj(env->global, carrier);
     END_PROFILING(__func__);
 }
 
