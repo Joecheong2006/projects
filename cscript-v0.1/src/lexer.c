@@ -34,8 +34,8 @@ const char* TokenTypeString[] = {
     [TokenTypeAssignmentModulus - 256] = "%=",
  
     [TokenTypeLiteralString - 256] = "",
-    [TokenTypeLiteralInt32 - 256] = "",
-    [TokenTypeLiteralFloat32 - 256] = "",
+    [TokenTypeLiteralInt - 256] = "",
+    [TokenTypeLiteralFloat - 256] = "",
  
     [TokenTypeEOF - 256] = "EOF",
 };
@@ -99,7 +99,7 @@ static token generate_float_after_dot(lexer* lex) {
     }
     lex->position += count;
     token tok = {
-        .val.float32 = (f32)val / percision_count, lex->line, lex->position - count, TokenTypeLiteralFloat32
+        .val.float32 = (f32)val / percision_count, lex->line, lex->position - count, TokenTypeLiteralFloat
     };
     tok.val.type[2] = PrimitiveDataTypeFloat32;
     return tok;
@@ -107,7 +107,7 @@ static token generate_float_after_dot(lexer* lex) {
 
 static token generate_number_literal_token(lexer* lex) {
     START_PROFILING();
-    i32 val = 0, count = 0, percision_count = 0;
+    i64 val = 0, count = 0, percision_count = 0;
     char c = lex->ctx[lex->str_count];
     if (c == '0' && !is_0_9(lex->ctx[lex->str_count + 1]) && lex->ctx[lex->str_count + 1] != '.') {
         c = lexer_get_consumed(lex);
@@ -123,9 +123,9 @@ static token generate_number_literal_token(lexer* lex) {
             }
             lex->position += count;
             token tok = {
-                .val.int32 = val, lex->line, lex->position - count - 2, TokenTypeLiteralInt32,
+                .val.int64 = val, lex->line, lex->position - count - 2, TokenTypeLiteralInt,
             };
-            tok.val.type[2] = PrimitiveDataTypeInt32;
+            tok.val.type[2] = PrimitiveDataTypeInt64;
             END_PROFILING(__func__);
             return tok;
         }
@@ -138,9 +138,9 @@ static token generate_number_literal_token(lexer* lex) {
             }
             lex->position += count;
             token tok = {
-                .val.int32 = val, lex->line, lex->position - count - 2, TokenTypeLiteralInt32
+                .val.int64 = val, lex->line, lex->position - count - 2, TokenTypeLiteralInt
             };
-            tok.val.type[2] = PrimitiveDataTypeInt32;
+            tok.val.type[2] = PrimitiveDataTypeInt64;
             END_PROFILING(__func__);
             return tok;
         }
@@ -177,16 +177,16 @@ static token generate_number_literal_token(lexer* lex) {
     lex->position += count;
     if (percision_count == 0) {
         token tok = {
-            .val.int32 = val, lex->line, lex->position - count, TokenTypeLiteralInt32
+            .val.int64 = val, lex->line, lex->position - count, TokenTypeLiteralInt
         };
-        tok.val.type[2] = PrimitiveDataTypeInt32;
+        tok.val.type[2] = PrimitiveDataTypeInt64;
         END_PROFILING(__func__);
         return tok;
     }
     token tok = {
-        .val.float32 = (f32)val / percision_count, lex->line, lex->position - count - 1, TokenTypeLiteralFloat32
+        .val.float64 = (f64)val / (f64)percision_count, lex->line, lex->position - count - 1, TokenTypeLiteralFloat
     };
-    tok.val.type[2] = PrimitiveDataTypeFloat32;
+    tok.val.type[2] = PrimitiveDataTypeFloat64;
     END_PROFILING(__func__);
     return tok;
 }

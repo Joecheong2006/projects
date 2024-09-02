@@ -21,6 +21,12 @@ typedef enum {
     AstNodeTypeMultiplyAssign,
     AstNodeTypeDivideAssign,
     AstNodeTypeModulusAssign,
+    AstNodeTypeExprEqual,
+    AstNodeTypeExprNotEqual,
+    AstNodeTypeExprGreaterThan,
+    AstNodeTypeExprLessThan,
+    AstNodeTypeExprGreaterThanEqual,
+    AstNodeTypeExprLessThanEqual,
 
     AstNodeTypeReference,
     AstNodeTypeFuncParam,

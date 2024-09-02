@@ -29,30 +29,8 @@ vector(command*) gen_instructions(vector(ast_node*) ast) {
 int main(void) {
     platform_state state;
     setup_platform(&state);
-    // lexer lex = {NULL, -1, 1, 1, 0};
-    // lexer_load_file_text(&lex, "test.cscript");
 
     // const char text[] = "1-(1-1-1-1-1)-1-3";
-    // const char text[] = "var a = 1-1-1--3*3.0+1;";
-    const char text[] = "func add(a, b)\n"
-                        "\tvar c=a+b\n"
-                        "\tfunc minus(a, b)\n"
-                        "\t\tvar c=a-b\n"
-                        "\tend\n"
-                        "\treturn a+b\n"
-                        "\tminus(a, b)\n"
-                        "\treturn c\n"
-                        "end\n"
-                        "var result = add(1-1-1--3*3.0+1, 1.0 + 101 % 3 / 2.0)\n"
-                        "result += 0\n"
-                        "var a = add\n"
-                        "var b = a\n"
-                        "b=a\n"
-                        "a=add\n"
-                        "b=1.0\n"
-                        "b=add\n"
-                        "var a_plus_b = b(0.0001, 3.1414) + a(3.2, 0.2) - 0.4\n"
-                        ;
     // const char text[] = "func(1-1-1--3*3.0+1, 1.0 + 101 % 3 / 2.0)()(1.)(1.,2.)(1.,2.,3.)(1.,2.,3.,4.)(1.,2.,3.,4.,5.)(1.,2.,3.,4.,5.,6.)(1.,2.,3.,4.,5.,6.,7.)\n";
     // const char text[] = "var a= (2+4*(3/(.2*10))+3-1-1)*1.1+(0.5+.5)+(.5-0.3-0.2)\n"
     //                     "var cat = 1-1.0-1--3*3\n"
@@ -60,7 +38,10 @@ int main(void) {
     //                     "dog += 3.1415\n"
     //                     "var v = dog + cat\n"
     //                     "v -= dog\n";
-    lexer lex = {text, sizeof(text) - 1, 1, 1, 0};
+
+    lexer lex = {NULL, -1, 1, 1, 0};
+    lexer_load_file_text(&lex, "test.cscript");
+    // lexer lex = {text, sizeof(text) - 1, 1, 1, 0};
 
     parser par;
     init_parser(&par, generate_tokens(&lex));
@@ -91,7 +72,7 @@ int main(void) {
     else {
         free_parser(&par);
     }
-    // free_vector(lex.ctx);
+    free_vector(lex.ctx);
     shutdown_platform(&state);
 
     return 0;

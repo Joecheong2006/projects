@@ -32,8 +32,8 @@ typedef enum {
     TokenTypeAssignmentModulus,
 
     TokenTypeLiteralString,
-    TokenTypeLiteralInt32,
-    TokenTypeLiteralFloat32,
+    TokenTypeLiteralInt,
+    TokenTypeLiteralFloat,
 
     TokenTypeEOF,
 } TokenType;

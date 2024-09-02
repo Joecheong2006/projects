@@ -24,9 +24,10 @@ typedef struct command command;
 struct command {
     void(*destroy)(command*);
     CommandType type;
+    i32 line_on_exec;
 };
 
-command* make_command(CommandType type, u64 type_size, void(*destroy)(command*));
+command* make_command(CommandType type, u32 line_on_exec, u64 type_size, void(*destroy)(command*));
 const void* get_command_true_type(const command* cmd);
 
 typedef struct {
@@ -42,7 +43,7 @@ error_info interpret_command(interpreter* inter);
 
 typedef struct {
     command *lhs, *rhs;
-    error_info(*cal)(interpreter*, command*, primitive_data*);
+    error_info(*cal)(interpreter*, const command*, primitive_data*);
 } command_binary_operation;
 
 typedef struct {
@@ -57,7 +58,7 @@ typedef struct command_vardecl command_vardecl;
 struct command_vardecl {
     const char* variable_name;
     command* expr;
-    i32 atrribute, line_on_exec;
+    i32 atrribute;
 };
 
 typedef struct {
@@ -81,7 +82,6 @@ typedef struct {
 typedef struct {
     const char* name;
     command* args;
-    i32 line_on_exec;
 } command_funcall;
 
 typedef struct {
@@ -97,7 +97,6 @@ typedef struct {
 typedef struct {
     command* mem;
     command* expr;
-    i32 line_on_exec;
     error_info(*exec)(interpreter*, const command*);
 } command_assign;
 
@@ -111,12 +110,14 @@ command* make_command_return(struct ast_node* node);
 command* make_command_reference_identifier(struct ast_node* node);
 command* make_command_reference_funcall(struct ast_node* node);
 command* make_command_access_identifier(struct ast_node* node);
+
 command* make_command_add(struct ast_node* node);
 command* make_command_minus(struct ast_node* node);
 command* make_command_multiply(struct ast_node* node);
 command* make_command_divide(struct ast_node* node);
 command* make_command_modulus(struct ast_node* node);
 command* make_command_negate(struct ast_node* node);
+
 command* make_command_vardecl(struct ast_node* node);
 command* make_command_assignment(struct ast_node* node);
 command* make_command_add_assign(struct ast_node* node);
@@ -124,5 +125,12 @@ command* make_command_minus_assign(struct ast_node* node);
 command* make_command_multiply_assign(struct ast_node* node);
 command* make_command_divide_assign(struct ast_node* node);
 command* make_command_modulus_assign(struct ast_node* node);
+
+command* make_command_cmp_equal(struct ast_node* node);
+command* make_command_cmp_not_equal(struct ast_node* node);
+command* make_command_cmp_greater_than(struct ast_node* node);
+command* make_command_cmp_less_than(struct ast_node* node);
+command* make_command_cmp_greater_than_equal(struct ast_node* node);
+command* make_command_cmp_less_than_equal(struct ast_node* node);
 
 #endif

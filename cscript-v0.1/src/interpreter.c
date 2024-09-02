@@ -9,14 +9,22 @@
 #include "ast_node.h"
 #include <string.h>
 
-static error_info command_binary_operation_cal(interpreter* inter, command* cmd, primitive_data* out);
+static error_info command_operation_cal(interpreter* inter, command* cmd, primitive_data* out);
 
-static error_info command_binary_operation_add(interpreter* inter, command* cmd, primitive_data* out);
-static error_info command_binary_operation_minus(interpreter* inter, command* cmd, primitive_data* out);
-static error_info command_binary_operation_multiply(interpreter* inter, command* cmd, primitive_data* out);
-static error_info command_binary_operation_divide(interpreter* inter, command* cmd, primitive_data* out);
-static error_info command_binary_operation_modulus(interpreter* inter, command* cmd, primitive_data* out);
+static error_info command_operation_add_callback(interpreter* inter, const command* cmd, primitive_data* out);
+static error_info command_operation_minus_callback(interpreter* inter, const command* cmd, primitive_data* out);
+static error_info command_operation_multiply_callback(interpreter* inter, const command* cmd, primitive_data* out);
+static error_info command_operation_divide_callback(interpreter* inter, const command* cmd, primitive_data* out);
+static error_info command_operation_modulus_callback(interpreter* inter, const command* cmd, primitive_data* out);
 
+static error_info command_operation_cmp_equal_callback(interpreter* inter, const command* cmd, primitive_data* out);
+static error_info command_operation_cmp_not_equal_callback(interpreter* inter, const command* cmd, primitive_data* out);
+static error_info command_operation_cmp_greater_than_callback(interpreter* inter, const command* cmd, primitive_data* out);
+static error_info command_operation_cmp_less_than_callback(interpreter* inter, const command* cmd, primitive_data* out);
+static error_info command_operation_cmp_greater_than_equal_callback(interpreter* inter, const command* cmd, primitive_data* out);
+static error_info command_operation_cmp_less_than_equal_callback(interpreter* inter, const command* cmd, primitive_data* out);
+
+static error_info command_exec_vardecl(interpreter* inter, const command* cmd);
 static error_info command_assignment(interpreter* inter, const command* cmd);
 static error_info command_assign_add(interpreter* inter, const command* cmd);
 static error_info command_assign_minus(interpreter* inter, const command* cmd);
@@ -30,7 +38,7 @@ static error_info access_funcall(interpreter* inter, command* cmd, object_carrie
 static error_info access_identifier(interpreter* inter, command* cmd, object_carrier** obj);
 static error_info exec_command_funcdef(interpreter* inter, command* cmd);
 
-static error_info command_binary_operation_cal(interpreter* inter, command* cmd, primitive_data* out) {
+static error_info command_operation_cal(interpreter* inter, command* cmd, primitive_data* out) {
     switch (cmd->type) {
     case CommandTypeReference: {
         object_carrier* carrier = NULL;
@@ -40,7 +48,7 @@ static error_info command_binary_operation_cal(interpreter* inter, command* cmd,
         }
         ASSERT(carrier->obj != NULL);
         if (carrier->obj->type != ObjectTypePrimitiveData) {
-            return (error_info){ .msg = "Invalid operands to binary expression" };
+            return (error_info){ .msg = "Invalid operands to binary expression", .line = cmd->line_on_exec };
         }
         object_primitive_data* o = get_object_true_type(carrier->obj);
         *out = o->val;
@@ -58,7 +66,7 @@ static error_info command_binary_operation_cal(interpreter* inter, command* cmd,
     case CommandTypeNegateOperation: {
         const command_negate_operation* no = get_command_true_type(cmd);
         primitive_data tmp;
-        command_binary_operation_cal(inter, no->data, &tmp);
+        command_operation_cal(inter, no->data, &tmp);
         return primitive_data_negate(out, &tmp);
     }
     case CommandTypeBinaryOperation: {
@@ -67,24 +75,26 @@ static error_info command_binary_operation_cal(interpreter* inter, command* cmd,
     }
     default:
         ASSERT_MSG(0, "undefine command type");
-        return (error_info){ .msg = "undefine command type" };
+        return (error_info){ .msg = "undefine command type", .line = cmd->line_on_exec };
     }
     return (error_info){ .msg = NULL };
 }
 
 #define IMPL_COMMAND_BINARY_OPERATION(operation_name)\
-    static error_info command_binary_operation_##operation_name(interpreter* inter, command* cmd, primitive_data* out) {\
+    static error_info command_operation_##operation_name##_callback(interpreter* inter, const command* cmd, primitive_data* out) {\
         ASSERT(cmd->type == CommandTypeBinaryOperation);\
         START_PROFILING()\
         const command_binary_operation* bo = get_command_true_type(cmd);\
         primitive_data lhs;\
-        error_info ei = command_binary_operation_cal(inter, bo->lhs, &lhs);\
+        error_info ei = command_operation_cal(inter, bo->lhs, &lhs);\
         if (ei.msg) return ei;\
         primitive_data rhs;\
-        ei = command_binary_operation_cal(inter, bo->rhs, &rhs);\
+        ei = command_operation_cal(inter, bo->rhs, &rhs);\
         if (ei.msg) return ei;\
         END_PROFILING(__func__)\
-        return primitive_data_##operation_name(out, &lhs, &rhs);\
+        ei = primitive_data_##operation_name(out, &lhs, &rhs);\
+        ei.line = cmd->line_on_exec;\
+        return ei;\
     }
 
 IMPL_COMMAND_BINARY_OPERATION(add)
@@ -92,6 +102,13 @@ IMPL_COMMAND_BINARY_OPERATION(minus)
 IMPL_COMMAND_BINARY_OPERATION(multiply)
 IMPL_COMMAND_BINARY_OPERATION(divide)
 IMPL_COMMAND_BINARY_OPERATION(modulus)
+
+IMPL_COMMAND_BINARY_OPERATION(cmp_equal)
+IMPL_COMMAND_BINARY_OPERATION(cmp_not_equal)
+IMPL_COMMAND_BINARY_OPERATION(cmp_greater_than)
+IMPL_COMMAND_BINARY_OPERATION(cmp_less_than)
+IMPL_COMMAND_BINARY_OPERATION(cmp_greater_than_equal)
+IMPL_COMMAND_BINARY_OPERATION(cmp_less_than_equal)
 
 static error_info access_funcall(interpreter* inter, command* cmd, object_carrier** carrier) {
     ASSERT(cmd->type == CommandTypeFuncall);
@@ -101,42 +118,41 @@ static error_info access_funcall(interpreter* inter, command* cmd, object_carrie
     LOG_DEBUG("\tcall %s ", funcall->name);
     for_vector(args->args, i, 0) {
         primitive_data data;
-        error_info ei = command_binary_operation_cal(inter, args->args[i], &data);
+        error_info ei = command_operation_cal(inter, args->args[i], &data);
         if (ei.msg) {
             return ei;
         }
-        LOG_DEBUG_MSG("%g ", data.float32);
+        LOG_DEBUG_MSG("%g ", data.float64);
     }
 
     LOG_DEBUG_MSG("\n");
     object_carrier* func = env_find_object(&inter->env, funcall->name);
     if (!func) {
-        return (error_info){ .msg = "undeclared function", .line = funcall->line_on_exec };
+        return (error_info){ .msg = "undeclared function", .line = cmd->line_on_exec };
     }
     if (func->obj->type == ObjectTypeRef) {
         object_ref* ref = get_object_true_type(func->obj);
         func = env_find_object(&inter->env, ref->ref_name);
-    }
-    if (!func) {
-        return (error_info){ .msg = "undeclared function", .line = funcall->line_on_exec };
+        if (!func) {
+            return (error_info){ .msg = "undeclared function", .line = cmd->line_on_exec };
+        }
     }
     if (func->obj->type != ObjectTypeFunctionDef) {
-        return (error_info){ .msg = "called object type is not a function", .line = funcall->line_on_exec };
+        return (error_info){ .msg = "called object type is not a function", .line = cmd->line_on_exec };
     }
 
     object_function_def* def = get_object_true_type(func->obj);
     if (vector_size(args->args) > vector_size(def->args)) {
-        return (error_info){ .msg = "too many arguments", .line = funcall->line_on_exec };
+        return (error_info){ .msg = "too many arguments", .line = cmd->line_on_exec };
     }
     if (vector_size(args->args) < vector_size(def->args)) {
-        return (error_info){ .msg = "missing arguments", .line = funcall->line_on_exec };
+        return (error_info){ .msg = "missing arguments", .line = cmd->line_on_exec };
     }
 
     env_push_scope(&inter->env);
     for_vector(def->args, i, 0) {
         error_info ei = initialize_object(inter, args->args[i], def->args[i]);
         if (ei.msg) {
-            ei.line = funcall->line_on_exec;
             return ei;
         }
     }
@@ -164,7 +180,6 @@ static error_info access_funcall(interpreter* inter, command* cmd, object_carrie
         }
         error_info ei = exec_command(inter, def->body[i]);
         if (ei.msg) {
-            ei.line = funcall->line_on_exec;
             return ei;
         }
     }
@@ -181,7 +196,7 @@ static error_info access_identifier(interpreter* inter, command* cmd, object_car
     const command_access_identifier* access = get_command_true_type(cmd);
     *carrier = env_find_object(&inter->env, access->name);
     if (!*carrier) {
-        return (error_info){ .msg = "undeclared variable"};
+        return (error_info){ .msg = "undeclared variable", .line = cmd->line_on_exec };
     }
     END_PROFILING(__func__)
     return (error_info){ .msg = NULL };
@@ -215,24 +230,21 @@ static error_info access_object(interpreter* inter, command* cmd, object_carrier
         object_carrier* carrier = NULL;\
         error_info ei = access_object(inter, ca->mem, &carrier);\
         if (ei.msg) {\
-            ei.line = ca->line_on_exec;\
             return ei;\
         }\
         if (carrier->obj->type != ObjectTypePrimitiveData)\
-            return (error_info){ .msg = "Invalid operands to binary expression", .line = ca->line_on_exec };\
+            return (error_info){ .msg = "Invalid operands to binary expression", .line = cmd->line_on_exec };\
         primitive_data data;\
-        ei = command_binary_operation_cal(inter, ca->expr, &data);\
+        ei = command_operation_cal(inter, ca->expr, &data);\
         if (ei.msg) {\
-            ei.line = ca->line_on_exec;\
             return ei;\
         }\
         object_primitive_data* o = get_object_true_type(carrier->obj);\
         ei = primitive_data_##assign_name##_assign(&o->val, &data);\
         if (ei.msg) {\
-            ei.line = ca->line_on_exec;\
             return ei;\
         }\
-        LOG_DEBUG("\t%d: %s %s by %g -> %g\n", ca->line_on_exec, carrier->obj->name, #assign_name, data.float32, o->val.float32);\
+        LOG_DEBUG("\t%d: %s %s by %g -> %g\n", cmd->line_on_exec, carrier->obj->name, #assign_name, data.float64, o->val.float32);\
         END_PROFILING(__func__)\
         return (error_info){ .msg = NULL };\
     }
@@ -249,7 +261,6 @@ static error_info command_assignment(interpreter* inter, const command* cmd) {
     object_carrier* carrier = NULL;
     error_info ei = access_object(inter, ca->mem, &carrier);
     if (ei.msg) {
-        ei.line = ca->line_on_exec;
         return ei;
     }
 
@@ -282,13 +293,13 @@ static error_info command_assignment(interpreter* inter, const command* cmd) {
                     ref->ref_name = "";
                 }
                 object_ref* ref_rvalue = get_object_true_type(rvalue->obj);
+                LOG_DEBUG("\tvar %s -> func %s\n", carrier->obj->name, ref_rvalue->ref_name);
                 object_ref* ref = get_object_true_type(carrier->obj);
                 object_carrier* target = env_find_object(&inter->env, ref_rvalue->ref_name);
                 if (strcmp(ref->ref_name, ref_rvalue->ref_name)) {
                     target->obj->ref_count++;
                 }
                 ref->ref_name = ref_rvalue->ref_name;
-                LOG_DEBUG("\tvar %s -> func %s\n", carrier->obj->name, ref->ref_name);
                 return (error_info){ .msg = NULL };
             }
             if (rvalue->obj->type != ObjectTypePrimitiveData) {
@@ -299,12 +310,12 @@ static error_info command_assignment(interpreter* inter, const command* cmd) {
                     object_ref* ref = get_object_true_type(carrier->obj);
                     ref->ref_name = "";
                 }
+                LOG_DEBUG("\tvar %s -> func %s\n", carrier->obj->name, rvalue->obj->name);
                 object_ref* ref = get_object_true_type(carrier->obj);
                 if (strcmp(ref->ref_name, rvalue->obj->name)) {
                     rvalue->obj->ref_count++;
                 }
                 ref->ref_name = rvalue->obj->name;
-                LOG_DEBUG("\tvar %s -> func %s\n", carrier->obj->name, ref->ref_name);
                 return (error_info){ .msg = NULL };
             }
         }
@@ -314,7 +325,7 @@ static error_info command_assignment(interpreter* inter, const command* cmd) {
     }
 
     primitive_data data;
-    ei = command_binary_operation_cal(inter, ca->expr, &data);
+    ei = command_operation_cal(inter, ca->expr, &data);
     if (ei.msg) {
         return ei;
     }
@@ -324,10 +335,17 @@ static error_info command_assignment(interpreter* inter, const command* cmd) {
         carrier->obj->destroy(carrier->obj, &inter->env);
         carrier->obj = make_object_primitive_data(name);
     }
+
+    if (data.type[2] != PrimitiveDataTypeBoolean) {
+        LOG_DEBUG("\tvar %s = %.20g\n", carrier->obj->name, data.float64);
+    }
+    else {
+        LOG_DEBUG("\tvar %s = %s\n", carrier->obj->name, data.boolean ? "true" : "false");
+    }
+
     object_primitive_data* o = get_object_true_type(carrier->obj);
     o->val = data;
 
-    LOG_DEBUG("\tvar %s = %g\n", carrier->obj->name, data.float32);
     END_PROFILING(__func__)
     return (error_info){ .msg = NULL };
 }
@@ -350,22 +368,22 @@ static error_info initialize_object(interpreter* inter, command* cmd, const char
         if (ref_cmd->id->type == CommandTypeReferenceIdentifier) {
             if (carrier->obj->type == ObjectTypeRef) {
                 object_ref* lvalue = get_object_true_type(carrier->obj);
+                LOG_DEBUG("\tvar %s -> func %s\n", name, lvalue->ref_name);
                 object* o = make_object_ref(name);
                 object_ref* ref = get_object_true_type(o);
                 ref->ref_name = lvalue->ref_name;
                 object_carrier* target = env_find_object(&inter->env, ref->ref_name);
                 target->obj->ref_count++;
                 env_push_object(&inter->env, make_object_carrier(o));
-                LOG_DEBUG("\tvar %s -> func %s\n", name, ref->ref_name);
                 return (error_info){ .msg = NULL };
             }
             if (carrier->obj->type != ObjectTypePrimitiveData) {
+                LOG_DEBUG("\tvar %s -> func %s\n", name, carrier->obj->name);
                 object* o = make_object_ref(name);
                 object_ref* ref = get_object_true_type(o);
                 ref->ref_name = carrier->obj->name;
                 carrier->obj->ref_count++;
                 env_push_object(&inter->env, make_object_carrier(o));
-                LOG_DEBUG("\tvar %s -> func %s\n", name, ref->ref_name);
                 return (error_info){ .msg = NULL };
             }
         }
@@ -375,9 +393,16 @@ static error_info initialize_object(interpreter* inter, command* cmd, const char
     }
 
     primitive_data data;
-    error_info ei = command_binary_operation_cal(inter, cmd, &data);
+    error_info ei = command_operation_cal(inter, cmd, &data);
     if (ei.msg) {
         return ei;
+    }
+
+    if (data.type[2] != PrimitiveDataTypeBoolean) {
+        LOG_DEBUG("\tvar %s = %.20g\n", name, data.float64);
+    }
+    else {
+        LOG_DEBUG("\tvar %s = %s\n", name, data.boolean ? "true" : "false");
     }
 
     object* obj = make_object_primitive_data(name);
@@ -385,20 +410,21 @@ static error_info initialize_object(interpreter* inter, command* cmd, const char
     o->val = data;
 
     env_push_object(&inter->env, make_object_carrier(obj));
-    LOG_DEBUG("\tvar %s = %g\n", name, data.float32);
     return (error_info){ .msg = NULL };
 }
 
-static error_info command_exec_vardecl(interpreter* inter, const command_vardecl* vardecl) {
+static error_info command_exec_vardecl(interpreter* inter, const command* cmd) {
+    ASSERT(cmd->type == CommandTypeVarDecl);
+    const command_vardecl* vardecl = get_command_true_type(cmd);
     START_PROFILING()
 
     object_carrier* carrier = env_find_object(&inter->env, vardecl->variable_name);
     if (carrier != NULL && carrier->obj->level == get_env_level(&inter->env)) {
-        return (error_info){ .msg = "redeclare variable '%s'", .line = vardecl->line_on_exec };
+        return (error_info){ .msg = "redeclare variable '%s'", .line = cmd->line_on_exec };
     }
 
     error_info ei = initialize_object(inter, vardecl->expr, vardecl->variable_name);
-    ei.line = vardecl->line_on_exec;
+    ei.line = cmd->line_on_exec;
     END_PROFILING(__func__)
     return ei;
 }
@@ -445,8 +471,7 @@ INLINE void free_interpreter(interpreter* inter) {
 error_info exec_command(interpreter* inter, command* cmd) {
     switch (cmd->type) {
     case CommandTypeVarDecl:  {
-        const command_vardecl* vardecl = get_command_true_type(cmd);
-        return command_exec_vardecl(inter, vardecl);
+        return command_exec_vardecl(inter, cmd);
     }
     case CommandTypeAssignment: {
         const command_assign* ca = get_command_true_type(cmd);
@@ -586,10 +611,11 @@ static void destroy_command_vardecl(command* cmd) {
     FREE(cmd);
 }
 
-INLINE command* make_command(CommandType type, u64 type_size, void(*destroy)(command*)) {
+INLINE command* make_command(CommandType type, u32 line_on_exec, u64 type_size, void(*destroy)(command*)) {
     command* cmd = MALLOC(type_size + sizeof(command));
     cmd->destroy = destroy;
     cmd->type = type;
+    cmd->line_on_exec = line_on_exec;
     return cmd;
 }
 
@@ -597,7 +623,7 @@ INLINE command* make_command(CommandType type, u64 type_size, void(*destroy)(com
 INLINE const void* get_command_true_type(const command* cmd) { return cmd + 1; }
 
 command* make_command_get_constant(struct ast_node* node) {
-    command* result = make_command(CommandTypeGetConstant, sizeof(command_get_constant), destroy_command_get_constant);
+    command* result = make_command(CommandTypeGetConstant, node->tok->line, sizeof(command_get_constant), destroy_command_get_constant);
     command_get_constant* cst = (command_get_constant*)(result + 1);
     cst->data = node->tok->val;
     return result;
@@ -605,7 +631,7 @@ command* make_command_get_constant(struct ast_node* node) {
 
 command* make_command_argument(struct ast_node* node) {
     START_PROFILING()
-    command* result = make_command(CommandTypeArgument, sizeof(command_argument), destroy_command_arguments);
+    command* result = make_command(CommandTypeArgument, node->tok->line, sizeof(command_argument), destroy_command_arguments);
     command_argument* argument = (command_argument*)(result + 1);
     argument->args = make_vector(command*);
     for (ast_node* n = node; n != NULL;) {
@@ -622,7 +648,7 @@ command* make_command_argument(struct ast_node* node) {
 
 command* make_command_funcparam(struct ast_node* node) {
     START_PROFILING()
-    command* result = make_command(CommandTypeFuncParam, sizeof(command_funcparam), destroy_command_funcparam);
+    command* result = make_command(CommandTypeFuncParam, 0, sizeof(command_funcparam), destroy_command_funcparam);
     command_funcparam* funcparam = (command_funcparam*)(result + 1);
 
     funcparam->params = make_vector(const char*);
@@ -637,7 +663,10 @@ command* make_command_funcparam(struct ast_node* node) {
 
 command* make_command_funcdef(struct ast_node* node) {
     START_PROFILING()
-    command* result = make_command(CommandTypeFuncDef, sizeof(command_funcdef), destroy_command_funcdef);
+    if (!node) {
+        return NULL;
+    }
+    command* result = make_command(CommandTypeFuncDef, node->tok->line, sizeof(command_funcdef), destroy_command_funcdef);
     command_funcdef* funcdef = (command_funcdef*)(result + 1);
     ast_funcdef* def = get_ast_true_type(node);
     funcdef->identifier = node->tok->val.string;
@@ -656,10 +685,9 @@ command* make_command_funcdef(struct ast_node* node) {
 
 command* make_command_funcall(struct ast_node* node) {
     START_PROFILING()
-    command* result = make_command(CommandTypeFuncall, sizeof(command_funcall), destroy_command_funcall);
+    command* result = make_command(CommandTypeFuncall, node->tok->line, sizeof(command_funcall), destroy_command_funcall);
     command_funcall* funcall = (command_funcall*)(result + 1);
     funcall->name = node->tok->val.string;
-    funcall->line_on_exec = node->tok->line;
     ast_funcall* f = get_ast_true_type(node);
     funcall->args = f->args->gen_command(f->args);
     END_PROFILING(__func__)
@@ -668,7 +696,7 @@ command* make_command_funcall(struct ast_node* node) {
 
 command* make_command_return(struct ast_node* node) {
     START_PROFILING()
-    command* result = make_command(CommandTypeReturn, sizeof(command_return), destroy_command_return);
+    command* result = make_command(CommandTypeReturn, node->tok->line, sizeof(command_return), destroy_command_return);
     command_return* ret = (command_return*)(result + 1);
     ast_return* ret_node = get_ast_true_type(node);
     ret->expr = NULL;
@@ -681,7 +709,7 @@ command* make_command_return(struct ast_node* node) {
 
 INLINE static command* make_command_reference(struct ast_node* node, error_info(*reference)(interpreter*, command*, object_carrier**)) {
     START_PROFILING()
-    command* result = make_command(CommandTypeReference, sizeof(command_reference), destroy_command_reference);
+    command* result = make_command(CommandTypeReference, node->tok->line, sizeof(command_reference), destroy_command_reference);
     command_reference* access = (command_reference*)(result + 1);
     ast_reference* iden = get_ast_true_type(node);
     access->reference = reference;
@@ -704,7 +732,7 @@ command* make_command_reference_funcall(struct ast_node* node) {
 
 command* make_command_access_identifier(struct ast_node* node) {
     START_PROFILING()
-    command* result = make_command(CommandTypeReferenceIdentifier, sizeof(command_access_identifier), destroy_command_access_identifier);
+    command* result = make_command(CommandTypeReferenceIdentifier, node->tok->line, sizeof(command_access_identifier), destroy_command_access_identifier);
     command_access_identifier* iden = (command_access_identifier*)(result + 1);
     iden->name = node->tok->val.string;
     END_PROFILING(__func__)
@@ -714,10 +742,10 @@ command* make_command_access_identifier(struct ast_node* node) {
 #define IMPL_GEN_COMMAND_BINARY_OPERATION(operation_name)\
     command* make_command_##operation_name(ast_node* node) {\
         START_PROFILING()\
-        command* result = make_command(CommandTypeBinaryOperation, sizeof(command_binary_operation), destroy_command_binary_operation);\
+        command* result = make_command(CommandTypeBinaryOperation, node->tok->line, sizeof(command_binary_operation), destroy_command_binary_operation);\
         command_binary_operation* bo = (command_binary_operation*)(result + 1);\
         ast_binary_expression* expr = get_ast_true_type(node);\
-        bo->cal = command_binary_operation_##operation_name;\
+        bo->cal = command_operation_##operation_name##_callback;\
         END_PROFILING(__func__)\
         bo->lhs = expr->lhs->gen_command(expr->lhs);\
         bo->rhs = expr->rhs->gen_command(expr->rhs);\
@@ -730,14 +758,20 @@ IMPL_GEN_COMMAND_BINARY_OPERATION(multiply)
 IMPL_GEN_COMMAND_BINARY_OPERATION(divide)
 IMPL_GEN_COMMAND_BINARY_OPERATION(modulus)
 
+IMPL_GEN_COMMAND_BINARY_OPERATION(cmp_equal)
+IMPL_GEN_COMMAND_BINARY_OPERATION(cmp_not_equal)
+IMPL_GEN_COMMAND_BINARY_OPERATION(cmp_greater_than)
+IMPL_GEN_COMMAND_BINARY_OPERATION(cmp_less_than)
+IMPL_GEN_COMMAND_BINARY_OPERATION(cmp_greater_than_equal)
+IMPL_GEN_COMMAND_BINARY_OPERATION(cmp_less_than_equal)
+
 #define IMPL_GEN_COMMAND_ASSIGNMENT(assign_name)\
     command* make_command_##assign_name##_assign(struct ast_node* node) {\
         START_PROFILING()\
-        command* result = make_command(CommandTypeAssignment, sizeof(command_assign), destroy_command_assign);\
+        command* result = make_command(CommandTypeAssignment, node->tok->line, sizeof(command_assign), destroy_command_assign);\
         command_assign* ca = (command_assign*)(result + 1);\
         ast_assignment* assignment = get_ast_true_type(node);\
         ca->exec = command_assign_##assign_name;\
-        ca->line_on_exec = node->tok->line;\
         ca->mem = assignment->variable_name->gen_command(assignment->variable_name);\
         ca->expr = assignment->expr->gen_command(assignment->expr);\
         END_PROFILING(__func__)\
@@ -752,11 +786,10 @@ IMPL_GEN_COMMAND_ASSIGNMENT(modulus)
 
 command* make_command_assignment(struct ast_node* node) {
     START_PROFILING()
-    command* result = make_command(CommandTypeAssignment, sizeof(command_assign), destroy_command_assign);
+    command* result = make_command(CommandTypeAssignment, node->tok->line, sizeof(command_assign), destroy_command_assign);
     command_assign* ca = (command_assign*)(result + 1);
     ast_assignment* assignment = get_ast_true_type(node);
     ca->exec = command_assignment;
-    ca->line_on_exec = node->tok->line;
     ca->mem = assignment->variable_name->gen_command(assignment->variable_name);
     ca->expr = assignment->expr->gen_command(assignment->expr);
     END_PROFILING(__func__)
@@ -765,7 +798,7 @@ command* make_command_assignment(struct ast_node* node) {
 
 command* make_command_negate(ast_node* node) {
     START_PROFILING()
-    command* result = make_command(CommandTypeNegateOperation, sizeof(command_negate_operation), destroy_command_negate_operation);
+    command* result = make_command(CommandTypeNegateOperation, node->tok->line, sizeof(command_negate_operation), destroy_command_negate_operation);
     command_negate_operation* no = (command_negate_operation*)(result + 1);
     ast_negate* negate = get_ast_true_type(node);
     no->data = negate->term->gen_command(negate->term);
@@ -775,13 +808,25 @@ command* make_command_negate(ast_node* node) {
 
 command* make_command_vardecl(ast_node* node) {
     START_PROFILING()
-    command* result = make_command(CommandTypeVarDecl, sizeof(command_vardecl), destroy_command_vardecl);
+    command* result = make_command(CommandTypeVarDecl, node->tok->line, sizeof(command_vardecl), destroy_command_vardecl);
     command_vardecl* vardecl = (command_vardecl*)(result + 1);
     ast_vardecl* vd = get_ast_true_type(node);
     vardecl->variable_name = vd->variable_name->tok->val.string;
     vardecl->expr = vd->expr->gen_command(vd->expr);
-    vardecl->line_on_exec = node->tok->line;
     END_PROFILING(__func__)
     return result;
 }
+
+#define IMPL_GEN_COMMAND_BOOLEAN_OPERATION(operation_name)\
+    command* make_command_##operation_name(ast_node* node) {\
+        START_PROFILING()\
+        command* result = make_command(CommandTypeBinaryOperation, sizeof(command_binary_operation), destroy_command_binary_operation);\
+        command_binary_operation* bo = (command_binary_operation*)(result + 1);\
+        ast_binary_expression* expr = get_ast_true_type(node);\
+        bo->cal = command_binary_operation_##operation_name;\
+        END_PROFILING(__func__)\
+        bo->lhs = expr->lhs->gen_command(expr->lhs);\
+        bo->rhs = expr->rhs->gen_command(expr->rhs);\
+        return result;\
+    }
 

@@ -17,10 +17,10 @@
 // <identifier> ::= <letter> | "_" {(<letter> | <digit> | "_")}
 // <rvalue>     ::= (<identifier> | <funcall>)
 // <reference>  ::= <rvalue> {"." <rvalue>}
-// <literal>    ::= <int> | <float> | char | string
+// <literal>    ::= <int> | <float> | char | string | "true" | "false"
+// <operator>   ::= "-" | "+" | "*" | "/" | "%" | "<" | ">" | "<=" | ">=" | "==" | "!="
 // <term>       ::= <literal> | <reference> | "(" <expr> ")" | <funcall> | "-" <term> | "+" <term>
 // <expr>       ::= <term> {<operator> <expr>}
-// <operator>   ::= "-" | "+" | "*" | "/" | "%"
 // <assignment> ::= <reference> ("=" | "+=" | "-=" | "*=" | "/=") <expr>
 // <argument>   ::= [<expr> {"," <expr>}]
 // <return>     ::= "return" [<expr>]
@@ -232,7 +232,7 @@ static ast_node* parse_funcall(parser* par) {
     if (!args) {
         return NULL;
     }
-    ast_node* node = make_ast_funcall(NULL);
+    ast_node* node = make_ast_funcall(parser_peek_token(par, 0));
     ast_funcall* funcall = get_ast_true_type(node);
     funcall->args = args;
     return node;
@@ -280,7 +280,7 @@ ast_node* parse_term(parser* par) {
         END_PROFILING(__func__)
         return parse_rvalue(par);
     }
-    case TokenTypeLiteralInt32: case TokenTypeLiteralString: case TokenTypeLiteralFloat32: {
+    case TokenTypeLiteralInt: case TokenTypeLiteralString: case TokenTypeLiteralFloat: {
         ++par->pointer;
         END_PROFILING(__func__)
         return make_ast_constant(tok);
@@ -324,6 +324,24 @@ ast_node* parse_operator(parser* par) {
     case '%':
         ++par->pointer;
         return make_ast_binary_expression(AstNodeTypeExprModulus, tok, make_command_modulus);
+    case TokenTypeOperatorEqual:
+        ++par->pointer;
+        return make_ast_binary_expression(AstNodeTypeExprEqual, tok, make_command_cmp_equal);
+    case TokenTypeOperatorNotEqual:
+        ++par->pointer;
+        return make_ast_binary_expression(AstNodeTypeExprNotEqual, tok, make_command_cmp_not_equal);
+    case '>':
+        ++par->pointer;
+        return make_ast_binary_expression(AstNodeTypeExprGreaterThan, tok, make_command_cmp_greater_than);
+    case '<':
+        ++par->pointer;
+        return make_ast_binary_expression(AstNodeTypeExprLessThan, tok, make_command_cmp_less_than);
+    case TokenTypeOperatorGreaterThan:
+        ++par->pointer;
+        return make_ast_binary_expression(AstNodeTypeExprGreaterThanEqual, tok, make_command_cmp_greater_than_equal);
+    case TokenTypeOperatorLessThan:
+        ++par->pointer;
+        return make_ast_binary_expression(AstNodeTypeExprLessThanEqual, tok, make_command_cmp_less_than_equal);
     default:
         return NULL;
     }
@@ -359,10 +377,24 @@ ast_node* parse_expr(parser* par, ast_node*(*is_terminal)(parser*,ast_node*)) {
             END_PROFILING(__func__);
             return is_terminal(par, ret);
         }
+        if (ope->type >= AstNodeTypeExprEqual && ope->type <= AstNodeTypeExprLessThanEqual) {
+            ast_node* boolean_rhs = parse_expr(par, is_terminal);
+            if (!boolean_rhs) {
+                lhs->destroy(lhs);
+                ope->destroy(ope);
+                return NULL;
+            }
+            ast_binary_expression* expr_ope = get_ast_true_type(ope);
+            expr_ope->rhs = boolean_rhs;
+            expr_ope->lhs = lhs;
+            return ope;
+            ret = lhs = ope;
+            continue;
+        }
         ast_node* rhs = parse_term(par);
         if (!rhs) {
             ope->destroy(ope);
-            ret->destroy(ret);
+            lhs->destroy(lhs);
             return NULL;
         }
         
@@ -482,9 +514,9 @@ static vector(ast_node*) parse_funcbody(parser* par) {
 
 static ast_node* parse_return(parser* par) {
     ++par->pointer;
-    ast_node* node = make_ast_return(NULL);
-    ast_return* ret = get_ast_true_type(node);
     token* tok = parser_peek_token(par, 0);
+    ast_node* node = make_ast_return(tok);
+    ast_return* ret = get_ast_true_type(node);
     ret->expr = NULL;
     if (tok->type != '\n' && tok->type != ';') {
         ret->expr = parse_exprln(par);
@@ -564,6 +596,7 @@ static ast_node* parse_identifier_statement(parser* par) {
     assignment->expr = parse_exprln(par);
     if (!assignment->expr) {
         node->destroy(node);
+        refs->destroy(refs);
         return NULL;
     }
     assignment->variable_name = refs;
@@ -603,6 +636,10 @@ static ast_node* parser_parse_body_ins(parser* par) {
     token* tok = parser_peek_token(par, 0);
     if (tok->type == TokenTypeKeywordRet) {
         return parse_return(par);
+    }
+    if (tok->type == TokenTypeEOF) {
+        parser_report_error(par, tok, "function declaration missing end");
+        return NULL;
     }
     return parser_parse_ins(par);
 }
