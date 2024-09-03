@@ -1,4 +1,5 @@
 #include "lexer.h"
+#include "core/log.h"
 #include "core/assert.h"
 #include "container/string.h"
 #include <string.h>
@@ -51,18 +52,16 @@ static vector(char) load_file(const char* file_name, const char* mode) {
     fseek(file, 0, SEEK_SET);
 
     vector(char) result = make_vector(char);
-    vector_resize(result, size + 1);
-    u32 readed = fread(result, 1, size, file);
-    (void)readed;
-    ASSERT(readed == size);
-    result[size] = EOF;
+    vector_resize(result, size);
+    fread(result, 1, size, file);
+    result[size - 1] = 0;
     fclose(file);
     return result;
 }
 
 void lexer_load_file_text(lexer* lex, const char* file_name) {
     START_PROFILING();
-    vector(char) ctx = load_file(file_name, "r");
+    vector(char) ctx = load_file(file_name, "rb");
     lex->ctx_len = strlen(ctx);
     ctx[lex->ctx_len - 1] = 0;
     lex->ctx = ctx;
@@ -265,7 +264,7 @@ vector(token) generate_tokens(lexer* lex) {
             END_PROFILING("gen token newline");
             break;
         }
-        case ' ': { lexer_consume(lex); break; }
+        case ' ': case '\r': { lexer_consume(lex); break; }
         case '>': { MATCH_ONE_AFTER(c, '=', TokenTypeOperatorGreaterThan); }
         case '<': { MATCH_ONE_AFTER(c, '=', TokenTypeOperatorLessThan); }
         case '=': { MATCH_ONE_AFTER(c, '=', TokenTypeOperatorEqual); }
@@ -304,6 +303,7 @@ vector(token) generate_tokens(lexer* lex) {
                 vector_push(result, tok);
             }
             else {
+                LOG_ERROR("unkwon ascci %d\n", (u8)c);
                 ASSERT_MSG(0, "unkown symbol");
             }
             break;

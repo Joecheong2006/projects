@@ -41,6 +41,15 @@ int main(void) {
 
     lexer lex = {NULL, -1, 1, 1, 0};
     lexer_load_file_text(&lex, "test.cscript");
+
+    LOG_TRACE("%s", "\t1: ");
+    for (i32 i = -1, c = 1; lex.ctx[++i] != 0;) {
+        LOG_TRACE_MSG("%c", lex.ctx[i]);
+        if (lex.ctx[i] == '\n') {
+            LOG_TRACE("\t%d: ", ++c);
+        }
+    }
+    LOG_TRACE_MSG("\n");
     // lexer lex = {text, sizeof(text) - 1, 1, 1, 0};
 
     parser par;
