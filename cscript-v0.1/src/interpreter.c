@@ -271,6 +271,10 @@ static error_info command_assignment(interpreter* inter, const command* cmd) {
         const command_reference* ref_cmd = get_command_true_type(ca->expr);
         object_carrier* rvalue = NULL;
         error_info ei = access_object(inter, ca->expr, &rvalue);
+        if (carrier == rvalue) {
+            LOG_DEBUG("\tvar %s assignment is ignored\n", carrier->obj->name);
+            return ei;
+        }
         if (ei.msg) {
             return ei;
         }
@@ -306,6 +310,9 @@ static error_info command_assignment(interpreter* inter, const command* cmd) {
                 return (error_info){ .msg = NULL };
             }
             if (rvalue->obj->type != ObjectTypePrimitiveData) {
+                if (carrier->obj->type == ObjectTypeFunctionDef) {
+                    return (error_info){ .msg = "functions cannot be assigned by default", .line = cmd->line_on_exec };
+                }
                 if (carrier->obj->type == ObjectTypePrimitiveData) {
                     cstring name = carrier->obj->name;
                     carrier->obj->destroy(carrier->obj, &inter->env);

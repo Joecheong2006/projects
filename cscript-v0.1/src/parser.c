@@ -52,10 +52,12 @@ static ast_node* parse_return(parser* par);
 static ast_node* parse_funcdef(parser* par);
 static ast_node* parse_assignment_operator(parser* par);
 static ast_node* parse_identifier_statement(parser* par);
+static ast_node* parse_if(parser* par);
 
 static ast_node* expr_brackets_terminal(parser* par, ast_node* node);
 static ast_node* expr_params_terminal(parser* par, ast_node* node);
 static ast_node* expr_default_terminal(parser* par, ast_node* node);
+static ast_node* expr_do_terminal(parser* par, ast_node* node);
 
 static void clean_up_fatal(vector(ast_node*) node);
 static ast_node* parser_parse_ins(parser* par);
@@ -98,6 +100,16 @@ ast_node* expr_default_terminal(parser* par, ast_node* node) {
     else {
         parser_report_error(par, tok, "expected ; or \\n at end of expr");
     }
+    return NULL;
+}
+
+static ast_node* expr_do_terminal(parser* par, ast_node* node) {
+    token* tok = parser_peek_token(par, 0);
+    if (tok->type == TokenTypeKeywordDo) {
+        return node;
+    }
+    node->destroy(node);
+    parser_report_error(par, tok, "missing keyword do");
     return NULL;
 }
 
@@ -609,6 +621,21 @@ static ast_node* parse_identifier_statement(parser* par) {
     return node;
 }
 
+ast_node* parse_if(parser* par) {
+    ++par->pointer;
+    ast_node* expr = parse_expr(par, expr_do_terminal);
+    if (!expr) {
+        return NULL;
+    }
+
+    token* tok = parser_peek_token(par, 0);
+    if (tok->type != TokenTypeKeywordDo) {
+        expr->destroy(expr);
+        return NULL;
+    }
+    return NULL;
+}
+
 static void clean_up_fatal(vector(ast_node*) node) {
     for_vector(node, i, 0) {
         if (!node[i])
@@ -629,6 +656,9 @@ static ast_node* parser_parse_ins(parser* par) {
     }
     case TokenTypeKeywordFun: {
         return parse_funcdef(par);
+    }
+    case TokenTypeKeywordIf: {
+        return parse_if(par);
     }
     case TokenTypeKeywordRet: {
         if (par->state == ParserStateParsing) {

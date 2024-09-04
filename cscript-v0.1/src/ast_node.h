@@ -43,6 +43,7 @@ struct command;
 struct token;
 typedef struct ast_node ast_node;
 struct ast_node {
+    void (*gen_bytecode)(ast_node*);
     struct command*(*gen_command)(ast_node*);
     void(*destroy)(ast_node*);
     struct token* tok;
