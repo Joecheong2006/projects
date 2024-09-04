@@ -149,6 +149,7 @@ static error_info access_funcall(interpreter* inter, command* cmd, object_carrie
         return (error_info){ .msg = "missing arguments", .line = cmd->line_on_exec };
     }
 
+    i32 level = get_env_level(&inter->env);
     env_push_scope(&inter->env);
     for_vector(def->args, i, 0) {
         error_info ei = initialize_object(inter, args->args[i], def->args[i]);
@@ -162,7 +163,8 @@ static error_info access_funcall(interpreter* inter, command* cmd, object_carrie
             if (ret->expr) {
                 error_info ei = initialize_object(inter, ret->expr, ".ret");
                 if (ei.msg) {
-                    env_pop_scope(&inter->env);
+                    while (get_env_level(&inter->env) != level)
+                        env_pop_scope(&inter->env);
                     return ei;
                 }
                 vector_pop(vector_back(inter->env.global));
@@ -183,7 +185,8 @@ static error_info access_funcall(interpreter* inter, command* cmd, object_carrie
             return ei;
         }
     }
-    env_pop_scope(&inter->env);
+    while (get_env_level(&inter->env) != level)
+        env_pop_scope(&inter->env);
 
     END_PROFILING(__func__);
     
@@ -330,21 +333,28 @@ static error_info command_assignment(interpreter* inter, const command* cmd) {
         return ei;
     }
 
-    if (carrier->obj->type != ObjectTypePrimitiveData) {
-        cstring name = carrier->obj->name;
-        carrier->obj->destroy(carrier->obj, &inter->env);
-        carrier->obj = make_object_primitive_data(name);
-    }
-
     if (data.type[2] != PrimitiveDataTypeBoolean) {
-        LOG_DEBUG("\tvar %s = %.20g\n", carrier->obj->name, data.float64);
+        if (carrier->obj->type != ObjectTypePrimitiveData) {
+            cstring name = carrier->obj->name;
+            carrier->obj->destroy(carrier->obj, &inter->env);
+            carrier->obj = make_object_primitive_data(name);
+        }
+
+        object_primitive_data* o = get_object_true_type(carrier->obj);
+        o->val = data;
+        LOG_DEBUG("\tvar %s = %.20g\n", carrier->obj->name, o->val.float32);
     }
     else {
-        LOG_DEBUG("\tvar %s = %s\n", carrier->obj->name, data.boolean ? "true" : "false");
-    }
+        if (carrier->obj->type != ObjectTypeBool) {
+            cstring name = carrier->obj->name;
+            carrier->obj->destroy(carrier->obj, &inter->env);
+            carrier->obj = make_object_bool(name);
+        }
 
-    object_primitive_data* o = get_object_true_type(carrier->obj);
-    o->val = data;
+        object_bool* o = get_object_true_type(carrier->obj);
+        o->val = data.boolean;
+        LOG_DEBUG("\tvar %s = %s\n", carrier->obj->name, o->val ? "true" : "false");
+    }
 
     END_PROFILING(__func__)
     return (error_info){ .msg = NULL };
@@ -362,13 +372,13 @@ static error_info initialize_object(interpreter* inter, command* cmd, const char
         if (ref_cmd->id->type == CommandTypeFuncall) {
             carrier->obj->name = name;
             env_push_object(&inter->env, carrier);
-            LOG_DEBUG("\tvar %s = .ret\n", name);
+            LOG_DEBUG("\tinit var %s = .ret\n", name);
             return (error_info){ .msg = NULL };
         }
         if (ref_cmd->id->type == CommandTypeReferenceIdentifier) {
             if (carrier->obj->type == ObjectTypeRef) {
                 object_ref* lvalue = get_object_true_type(carrier->obj);
-                LOG_DEBUG("\tvar %s -> func %s\n", name, lvalue->ref_name);
+                LOG_DEBUG("\tinit var %s -> func %s\n", name, lvalue->ref_name);
                 object* o = make_object_ref(name);
                 object_ref* ref = get_object_true_type(o);
                 ref->ref_name = lvalue->ref_name;
@@ -378,7 +388,7 @@ static error_info initialize_object(interpreter* inter, command* cmd, const char
                 return (error_info){ .msg = NULL };
             }
             if (carrier->obj->type != ObjectTypePrimitiveData) {
-                LOG_DEBUG("\tvar %s -> func %s\n", name, carrier->obj->name);
+                LOG_DEBUG("\tinit var %s -> func %s\n", name, carrier->obj->name);
                 object* o = make_object_ref(name);
                 object_ref* ref = get_object_true_type(o);
                 ref->ref_name = carrier->obj->name;
@@ -399,15 +409,23 @@ static error_info initialize_object(interpreter* inter, command* cmd, const char
     }
 
     if (data.type[2] != PrimitiveDataTypeBoolean) {
-        LOG_DEBUG("\tvar %s = %.20g\n", name, data.float64);
+        LOG_DEBUG("\tinit var %s = %.20g\n", name, data.float64);
     }
     else {
-        LOG_DEBUG("\tvar %s = %s\n", name, data.boolean ? "true" : "false");
+        LOG_DEBUG("\tinit var %s = %s\n", name, data.boolean ? "true" : "false");
     }
 
-    object* obj = make_object_primitive_data(name);
-    object_primitive_data* o = get_object_true_type(obj);
-    o->val = data;
+    object* obj;
+    if (data.type[2] == PrimitiveDataTypeBoolean) {
+        obj = make_object_bool(name);
+        object_bool* o = get_object_true_type(obj);
+        o->val = data.boolean;
+    }
+    else {
+        obj = make_object_primitive_data(name);
+        object_primitive_data* o = get_object_true_type(obj);
+        o->val = data;
+    }
 
     env_push_object(&inter->env, make_object_carrier(obj));
     return (error_info){ .msg = NULL };
@@ -433,6 +451,12 @@ static error_info exec_command_funcdef(interpreter* inter, command* cmd) {
     START_PROFILING()
     ASSERT(cmd->type == CommandTypeFuncDef);
     const command_funcdef* def = get_command_true_type(cmd);
+
+    object_carrier* carrier = env_find_object(&inter->env, def->identifier);
+    if (carrier != NULL && carrier->obj->level == get_env_level(&inter->env)) {
+        return (error_info){ .msg = "redeclare function '%s'", .line = cmd->line_on_exec };
+    }
+
     LOG_DEBUG("\tfunc %s ", def->identifier);
     const command_funcparam* p = get_command_true_type(def->params);
     for_vector(p->params, i, 0) {
@@ -480,9 +504,12 @@ error_info exec_command(interpreter* inter, command* cmd) {
     case CommandTypeReference: {
         object_carrier* carrier = NULL;
         error_info ei = access_object(inter, cmd, &carrier);
-        carrier = env_find_object(&inter->env, ".ret");
-        if (carrier) {
+        if (ei.msg) {
+            return ei;
+        }
+        if (carrier && carrier->obj->name[0] == '.') {
             carrier->obj->destroy(carrier->obj, &inter->env);
+            FREE(carrier);
         }
         return ei;
     }

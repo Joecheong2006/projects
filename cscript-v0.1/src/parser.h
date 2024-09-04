@@ -4,10 +4,18 @@
 #include "lexer.h"
 #include "error_info.h"
 
+typedef enum {
+    ParserStateInit,
+    ParserStateParsing,
+    ParserStateParsingFuncBody,
+    ParserStateParsingIfBody,
+} ParserState;
+
 struct token;
 typedef struct {
     vector(token) tokens;
     vector(error_info) errors;
+    ParserState state;
     i32 pointer;
 } parser;
 

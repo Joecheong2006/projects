@@ -7,7 +7,7 @@ typedef enum {
     PrimitiveDataTypeBoolean,
     PrimitiveDataTypeInt32,
     PrimitiveDataTypeInt64,
-    PrimitiveDataTypeFloat32, //NOTE: float32 + int64 -> flaot32
+    PrimitiveDataTypeFloat32, //NOTE: float32 + int64 -> float32
     PrimitiveDataTypeFloat64,
 } PrimitiveDataType;
 

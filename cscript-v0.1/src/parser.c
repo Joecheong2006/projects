@@ -3,6 +3,7 @@
 #include "interpreter.h"
 #include "lexer.h"
 #include "tracing.h"
+#include "core/log.h"
 
 // <digit>      ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
 // <letter>     ::= "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T" | "U" | "V" | "W" | "X" | "Y" | "Z" | "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k" | "l" | "m" | "n" | "o" | "p" | "q" | "r" | "s" | "t" | "u" | "v" | "w" | "x" | "y" | "z"
@@ -58,7 +59,6 @@ static ast_node* expr_default_terminal(parser* par, ast_node* node);
 
 static void clean_up_fatal(vector(ast_node*) node);
 static ast_node* parser_parse_ins(parser* par);
-static ast_node* parser_parse_body_ins(parser* par);
 
 ast_node* expr_brackets_terminal(parser* par, ast_node* node) {
     START_PROFILING()
@@ -93,7 +93,7 @@ ast_node* expr_default_terminal(parser* par, ast_node* node) {
     }
     node->destroy(node);
     if (tok->type == ')') {
-        parser_report_error(par, tok, "missing operator ( before ;");
+        parser_report_error(par, tok, "missing operator (");
     }
     else {
         parser_report_error(par, tok, "expected ; or \\n at end of expr");
@@ -497,7 +497,8 @@ static vector(ast_node*) parse_funcbody(parser* par) {
     token* tok = parser_peek_token(par, 0);
     vector(ast_node*) result = make_vector(ast_node*);
     while (tok->type != TokenTypeKeywordEnd) {
-        ast_node* ins = parser_parse_body_ins(par);
+        par->state = ParserStateParsingFuncBody;
+        ast_node* ins = parser_parse_ins(par);
         if (ins == NULL) {
             clean_up_fatal(result);
             result = NULL;
@@ -509,6 +510,7 @@ static vector(ast_node*) parse_funcbody(parser* par) {
         tok = parser_peek_token(par, 0);
     }
     ++par->pointer;
+    par->state = ParserStateParsing;
     return result;
 }
 
@@ -516,6 +518,9 @@ static ast_node* parse_return(parser* par) {
     ++par->pointer;
     token* tok = parser_peek_token(par, 0);
     ast_node* node = make_ast_return(tok);
+    if (!node) {
+        return NULL;
+    }
     ast_return* ret = get_ast_true_type(node);
     ret->expr = NULL;
     if (tok->type != '\n' && tok->type != ';') {
@@ -625,23 +630,26 @@ static ast_node* parser_parse_ins(parser* par) {
     case TokenTypeKeywordFun: {
         return parse_funcdef(par);
     }
+    case TokenTypeKeywordRet: {
+        if (par->state == ParserStateParsing) {
+            parser_report_error(par, tok, "unexpected return");
+            return NULL;
+        }
+        return parse_return(par);
+    }
+    case TokenTypeEOF: {
+        if (par->state != ParserStateParsing) {
+            parser_report_error(par, tok, "missing end");
+            return NULL;
+        }
+        parser_report_error(par, tok, "function declaration missing end");
+        return NULL;
+    }
     default: {
         parser_report_error(par, tok, "invalid token");
         return NULL;
     }
     }
-}
-
-static ast_node* parser_parse_body_ins(parser* par) {
-    token* tok = parser_peek_token(par, 0);
-    if (tok->type == TokenTypeKeywordRet) {
-        return parse_return(par);
-    }
-    if (tok->type == TokenTypeEOF) {
-        parser_report_error(par, tok, "function declaration missing end");
-        return NULL;
-    }
-    return parser_parse_ins(par);
 }
 
 vector(ast_node*) parser_parse(parser* par) {
@@ -650,6 +658,7 @@ vector(ast_node*) parser_parse(parser* par) {
         return NULL;
     }
     vector(ast_node*) result = make_vector(ast_node*);
+    par->state = ParserStateParsing;
     while (tok) {
         ast_node* ins = parser_parse_ins(par);
         if (ins == NULL) {
@@ -678,6 +687,7 @@ void init_parser(parser* par, vector(token) tokens) {
     par->tokens = tokens;
     par->errors = make_vector(error_info);
     par->pointer = 0;
+    par->state = ParserStateInit;
     END_PROFILING(__func__)
 }
 

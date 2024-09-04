@@ -1,9 +1,9 @@
 func main()
     func add(a,b)
         var c=a+b
-            func minus(a,b)
-                var c=a-b
-            end
+        func minus(a,b)
+            var c=a-b
+        end
         minus(a,b)
         return a+b
         return c
