@@ -28,7 +28,8 @@ typedef enum {
     AstNodeTypeExprGreaterThanEqual,
     AstNodeTypeExprLessThanEqual,
 
-    AstNodeTypeReference,
+    AstNodeTypeReferenceIdentifier,
+    AstNodeTypeReferenceFuncall,
     AstNodeTypeFuncParam,
     AstNodeTypeFuncDef,
     AstNodeTypeAssign,
@@ -64,7 +65,7 @@ typedef struct {
 
 typedef struct {
     ast_node* next;
-    ast_node* id;
+    // ast_node* id;
 } ast_reference;
 
 typedef struct {

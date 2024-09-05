@@ -1,3 +1,4 @@
+#include "object.h"
 #include "platform/platform.h"
 #include "core/log.h"
 #include "lexer.h"
@@ -31,13 +32,18 @@ void print_bytecode(vm* v) {
         case ByteCodeMod: LOG_DEBUG("\tmod\n"); break;
         case ByteCodeNegate: LOG_DEBUG("\tmod\n"); break;
         case ByteCodeInitVar: LOG_DEBUG("\tinitvar\n"); break;
-        case ByteCodePushRef: {
+        case ByteCodePushName: {
             LOG_DEBUG("\tpush %s\n", ((string)&v->code[i+1]));
             i+=8;
             break;
         }
+        case ByteCodeRefIden: {
+            LOG_DEBUG("\tref %s\n", ((string)&v->code[i+1]));
+            i+=8;
+            break;
+        }
         default: {
-            LOG_ERROR("invalid bytecode %d\n", code);
+            LOG_ERROR("\tinvalid bytecode %d\n", code);
             ASSERT_MSG(0, "invalid bytecode");
             return;
         }
@@ -45,112 +51,7 @@ void print_bytecode(vm* v) {
     }
     LOG_DEBUG("\n");
 }
-
-error_info run_bytecode(vm* v) {
-    START_PROFILING();
-    for_vector(v->code, i, 0) {
-        u8 code = v->code[i];
-        switch (code) {
-        case ByteCodePushConst: {
-            primitive_data data = {
-                .val = { v->code[i+2] },
-                .type = v->code[i+1]
-            };
-            LOG_DEBUG("\tpush %d:%d\n", data.val.int64, data.type);
-            vector_push(v->env.bp, data);
-            i += 9;
-        } break;
-        case ByteCodeAdd: {
-            primitive_data data;
-            u32 end = vector_size(v->env.bp);
-            error_info ei = primitive_data_add(&data, v->env.bp + end - 2, v->env.bp + end - 1);
-            if (ei.msg) {
-                return ei;
-            }
-            vector_popn(v->env.bp, 2);
-            vector_push(v->env.bp, data);
-            LOG_DEBUG("\tadd -> %d:%d\n", data.val.int64, data.type);
-        } break;
-        case ByteCodeSub: {
-            primitive_data data;
-            u32 end = vector_size(v->env.bp);
-            error_info ei = primitive_data_minus(&data, v->env.bp + end - 2, v->env.bp + end - 1);
-            if (ei.msg) {
-                return ei;
-            }
-            vector_popn(v->env.bp, 2);
-            vector_push(v->env.bp, data);
-            LOG_DEBUG("\tsub -> %d:%d\n", data.val.int64, data.type);
-        } break;
-        case ByteCodeMul: {
-            primitive_data data;
-            u32 end = vector_size(v->env.bp);
-            error_info ei = primitive_data_multiply(&data, v->env.bp + end - 2, v->env.bp + end - 1);
-            if (ei.msg) {
-                return ei;
-            }
-            vector_popn(v->env.bp, 2);
-            vector_push(v->env.bp, data);
-            LOG_DEBUG("\tmul -> %d:%d\n", data.val.int64, data.type);
-        } break;
-        case ByteCodeDiv: {
-            primitive_data data;
-            u32 end = vector_size(v->env.bp);
-            error_info ei = primitive_data_divide(&data, v->env.bp + end - 2, v->env.bp + end - 1);
-            if (ei.msg) {
-                return ei;
-            }
-            vector_popn(v->env.bp, 2);
-            vector_push(v->env.bp, data);
-            LOG_DEBUG("\tdiv -> %d:%d\n", data.val.int64, data.type);
-        } break;
-        case ByteCodeMod: {
-            primitive_data data;
-            u32 end = vector_size(v->env.bp);
-            error_info ei = primitive_data_modulus(&data, v->env.bp + end - 2, v->env.bp + end - 1);
-            if (ei.msg) {
-                return ei;
-            }
-            vector_popn(v->env.bp, 2);
-            vector_push(v->env.bp, data);
-            LOG_DEBUG("\tmod -> %d:%d\n", data.val.int64, data.type);
-        } break;
-        case ByteCodeNegate: {
-            primitive_data data;
-            u32 end = vector_size(v->env.bp);
-            error_info ei = primitive_data_negate(&data, v->env.bp + end - 1);
-            if (ei.msg) {
-                return ei;
-            }
-            vector_pop(v->env.bp);
-            vector_push(v->env.bp, data);
-            LOG_DEBUG("\tneg -> %d:%d\n", data.val.int64, data.type);
-        } break;
-        case ByteCodeInitVar: {
-            cstring name = vector_backn(v->env.bp, 0).val.string;
-            primitive_data rhs = vector_backn(v->env.bp, 1);
-            LOG_DEBUG("\tinitvar %s -> %d\n", name, rhs.val.int64);
-            vector_popn(v->env.bp, 2);
-        } break;
-        case ByteCodePushRef: {
-            primitive_data data = {
-                .val.string = (string)&v->code[i+1],
-                .type = PrimitiveDataTypeString,
-            };
-            vector_push(v->env.bp, data);
-            i+=8;
-            break;
-        }
-        default: {
-            LOG_ERROR("invalid bytecode '%c'\n", code);
-            ASSERT_MSG(0, "invalid bytecode");
-            return (error_info){ .msg = "undefine bytecode" };
-        }
-        }
-    }
-    END_PROFILING(__func__);
-    return (error_info){ .msg = NULL };
-}
+#include "timer.h"
 
 int main(void) {
     platform_state state;
@@ -178,7 +79,12 @@ int main(void) {
         print_bytecode(&v);
         END_PROFILING("debug log");
 
-        error_info ei = run_bytecode(&v);
+        timer t;
+        start_timer(&t);
+        error_info ei = vm_run(&v);
+        end_timer(&t);
+        LOG_TRACE("\trun for %gs\n", t.dur);
+
         if (ei.msg) {
             LOG_ERROR("\t%s\n", ei.msg);
         }

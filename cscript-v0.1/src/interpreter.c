@@ -272,7 +272,7 @@ static error_info command_assignment(interpreter* inter, const command* cmd) {
         object_carrier* rvalue = NULL;
         error_info ei = access_object(inter, ca->expr, &rvalue);
         if (carrier == rvalue) {
-            LOG_DEBUG("\tvar %s assignment is ignored\n", carrier->obj->name);
+            LOG_DEBUG("\tvar %s assignment ignore\n", carrier->obj->name);
             return ei;
         }
         if (ei.msg) {

@@ -5,7 +5,7 @@
 #include "lexer.h"
 #include "vm.h"
 
-static void gen_64bit(const void* ptr, vm* v) {
+static void gen_ptr(const void* ptr, vm* v) {
     u32 end = vector_size(v->code);
     vector_resize(v->code, end + 8);
     memcpy(v->code + end, ptr, 8);
@@ -14,28 +14,36 @@ static void gen_64bit(const void* ptr, vm* v) {
 static void gen_const(ast_node* node, vm* v) {
     u8 type = node->tok->data.type; 
     vector_push(v->code, type);
-    gen_64bit(&node->tok->data.val.int64, v);
+
+    u32 end = vector_size(v->code);
+    vector_resize(v->code, end + 8);
+    memcpy(v->code + end, &node->tok->data.val, 8);
 }
 
-void gen_bytecode_push_ref(ast_node* node, vm* v) {
-    ASSERT(node->type == AstNodeTypeReference);
+void gen_bytecode_push_name(ast_node* node, vm* v) {
+    ASSERT(node->type == AstNodeTypeReferenceIdentifier);
     START_PROFILING();
-    ast_reference* ref = get_ast_true_type(node);
-    u8 code = ByteCodePushRef;
+    u8 code = ByteCodePushName;
     vector_push(v->code, code);
-    gen_64bit(ref->id->tok->data.val.string, v);
-    if (ref->next) {
-        ref->next->gen_bytecode(ref->next, v);
-    }
+    gen_ptr(node->tok->data.val.string, v);
     END_PROFILING(__func__);
 }
 
-void gen_bytecode_push(ast_node* node, vm* v) {
+void gen_bytecode_push_const(ast_node* node, vm* v) {
     ASSERT(node->type == AstNodeTypeConstant);
     START_PROFILING();
     u8 code = ByteCodePushConst;
     vector_push(v->code, code);
     gen_const(node, v);
+    END_PROFILING(__func__);
+}
+
+void gen_bytecode_ref_iden(struct ast_node* node, struct vm* v) {
+    ASSERT(node->type == AstNodeTypeReferenceIdentifier);
+    START_PROFILING();
+    u8 code = ByteCodeRefIden;
+    vector_push(v->code, code);
+    gen_ptr(node->tok->data.val.string, v);
     END_PROFILING(__func__);
 }
 
@@ -110,7 +118,7 @@ void gen_bytecode_initvar(ast_node* node, vm* v) {
     ast_vardecl* vardecl = get_ast_true_type(node);
 
     vardecl->expr->gen_bytecode(vardecl->expr, v);
-    vardecl->variable_name->gen_bytecode(vardecl->variable_name, v);
+    gen_bytecode_push_name(vardecl->variable_name, v);
 
     u8 code = ByteCodeInitVar;
     vector_push(v->code, code);

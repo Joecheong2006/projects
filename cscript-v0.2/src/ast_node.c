@@ -84,27 +84,34 @@ ast_node* make_ast_negate(struct token* tok) {
 }
 
 ast_node* make_ast_constant(struct token* tok) {
-    return make_ast_node(AstNodeTypeConstant, 0, tok, destroy_default, gen_bytecode_push);
+    return make_ast_node(AstNodeTypeConstant, 0, tok, destroy_default, gen_bytecode_push_const);
 }
 
-static void destroy_ast_access(ast_node* node) {
-    ASSERT(node->type == AstNodeTypeReference);
+static void destroy_ast_access_funcall(ast_node* node) {
+    ASSERT(node->type == AstNodeTypeReferenceFuncall);
     ast_reference* iden = get_ast_true_type(node);
     if (iden->next) {
         iden->next->destroy(iden->next);
     }
-    iden->id->destroy(iden->id);
+    // iden->id->destroy(iden->id);
     FREE(node);
 }
 
 ast_node* make_ast_reference_funcall(struct token* tok) {
-    return make_ast_node(AstNodeTypeReference, sizeof(ast_reference), tok, destroy_ast_access, NULL);
+    return make_ast_node(AstNodeTypeReferenceFuncall, sizeof(ast_reference), tok, destroy_ast_access_funcall, NULL);
+}
+
+static void destroy_ast_access_identifier(ast_node* node) {
+    ASSERT(node->type == AstNodeTypeReferenceIdentifier);
+    ast_reference* iden = get_ast_true_type(node);
+    if (iden->next) {
+        iden->next->destroy(iden->next);
+    }
+    FREE(node);
 }
 
 ast_node* make_ast_reference_identifier(struct token* tok) {
-    ast_node* result =  make_ast_node(AstNodeTypeReference, sizeof(ast_reference), tok, destroy_ast_access, gen_bytecode_push_ref);
-    ast_reference* access = get_ast_true_type(result);
-    access->id = make_ast_node(AstNodeTypeIdentifier, 0, tok, destroy_default, NULL);
+    ast_node* result = make_ast_node(AstNodeTypeReferenceIdentifier, sizeof(ast_reference), tok, destroy_ast_access_identifier, gen_bytecode_ref_iden);
     return result;
 }
 

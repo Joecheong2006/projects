@@ -3,9 +3,10 @@
 #include "container/vector.h"
 #include "object.h"
 
-typedef struct {
+struct object_carrier {
     object* obj;
-} object_carrier;
+};
+typedef struct object_carrier object_carrier;
 object_carrier* make_object_carrier(object* obj);
 
 typedef vector(object_carrier*) scope;

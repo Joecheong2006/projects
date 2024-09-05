@@ -10,8 +10,10 @@ typedef enum {
     PrimitiveDataTypeFloat32, //NOTE: float32 + int64 -> float32
     PrimitiveDataTypeFloat64,
     PrimitiveDataTypeString,
+    PrimitiveDataTypeObjPtr,
 } PrimitiveDataType;
 
+struct object_carrier;
 typedef struct {
     union {
         u8 boolean;
@@ -20,6 +22,7 @@ typedef struct {
         f32 float32;
         f64 float64;
         const char* string;
+        struct object_carrier* carrier;
     } val;
     i32 type;
 } primitive_data;

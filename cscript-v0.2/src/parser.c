@@ -186,8 +186,8 @@ ast_node* parse_rvalue(parser* par) {
         }
         funcall_node->tok = tok;
         ast_node* ref_funcall = make_ast_reference_funcall(tok);
-        ast_reference* ref = get_ast_true_type(ref_funcall);
-        ref->id = funcall_node;
+        // ast_reference* ref = get_ast_true_type(ref_funcall);
+        // ref->id = funcall_node;
         END_PROFILING(__func__)
         return ref_funcall;
     }
@@ -259,7 +259,7 @@ ast_node* parse_reference(parser* par) {
             ast_node* af = parse_rvalue(par);
             ast_reference* iden = get_ast_true_type(id);
             iden->next = af;
-            id = af;
+            id = iden->next;
         }
         else if (tok->type == '(') {
             ast_node* funcall_node = parse_funcall(par);
@@ -269,8 +269,8 @@ ast_node* parse_reference(parser* par) {
             tok->data.val.string = ".ret"; // TODO: put literal .ret in somewhere else
             funcall_node->tok = tok;
             ast_node* ref_funcall = make_ast_reference_funcall(tok);
-            ast_reference* ref = get_ast_true_type(ref_funcall);
-            ref->id = funcall_node;
+            // ast_reference* ref = get_ast_true_type(ref_funcall);
+            // ref->id = funcall_node;
             ast_reference* prev = get_ast_true_type(id);
             prev->next = ref_funcall;
             id = ref_funcall;
