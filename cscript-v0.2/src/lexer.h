@@ -1,0 +1,59 @@
+#ifndef _LEXER_H_
+#define _LEXER_H_
+#include "container/vector.h"
+#include "primitive_data.h"
+
+typedef enum {
+    TokenTypeIdentifier = 256,
+    TokenTypeComment,
+
+    TokenTypeOperatorEqual,
+    TokenTypeOperatorNotEqual,
+    TokenTypeOperatorGreaterThan,
+    TokenTypeOperatorLessThan,
+
+    TokenTypeKeywordVar,
+    TokenTypeKeywordFun,
+    TokenTypeKeywordRet,
+    TokenTypeKeywordIf,
+    TokenTypeKeywordElif,
+    TokenTypeKeywordElse,
+    TokenTypeKeywordOr,
+    TokenTypeKeywordAnd,
+    TokenTypeKeywordWhile,
+    TokenTypeKeywordDo,
+    TokenTypeKeywordEnd,
+    TokenTypeKeywordFor,
+
+    TokenTypeAssignmentPlus,
+    TokenTypeAssignmentMinus,
+    TokenTypeAssignmentMultiply,
+    TokenTypeAssignmentDivide,
+    TokenTypeAssignmentModulus,
+
+    TokenTypeLiteralString,
+    TokenTypeLiteralInt,
+    TokenTypeLiteralFloat,
+
+    TokenTypeEOF,
+} TokenType;
+extern const char* TokenTypeString[TokenTypeEOF - 255];
+
+struct token {
+    primitive_data data;
+    i32 line, count;
+    TokenType type;
+};
+
+typedef struct token token;
+
+typedef struct {
+    const char* ctx;
+    i32 ctx_len;
+    i32 line, position, str_count;
+} lexer;
+
+void lexer_load_file_text(lexer* lex, const char* file_name);
+vector(token) generate_tokens(lexer* lex);
+
+#endif
