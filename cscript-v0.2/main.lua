@@ -1,8 +1,6 @@
-local function func()
-    local b = 10
-    b = b + 1.1
-    print(b)
+local function add(a, b)
+    return a + b
 end
-
-func()
-print(b)
+add(1 ,1 )
+local add = 1
+print(add)

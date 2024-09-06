@@ -45,7 +45,7 @@ static ast_node* parse_expr(parser* par, ast_node*(*is_terminal)(parser*,ast_nod
 static ast_node* parse_exprln(parser* par);
 static ast_node* parse_vardecl(parser* par);
 static ast_node* parse_funcparam(parser* par);
-static vector(ast_node*) parse_funcbody(parser* par);
+// static vector(ast_node*) parse_funcbody(parser* par);
 static ast_node* parse_return(parser* par);
 static ast_node* parse_funcdef(parser* par);
 static ast_node* parse_assignment_operator(parser* par);
@@ -362,10 +362,10 @@ ast_node* parse_operator(parser* par) {
 
 i32 bottom_up_need_to_reround(AstNodeType current, AstNodeType previous) {
     switch (current) {
-    case AstNodeTypeExprModulus:
-    case AstNodeTypeExprDivide:
-    case AstNodeTypeExprMultiply: {
-        if (previous == AstNodeTypeExprAdd || previous == AstNodeTypeExprMinus) {
+    case AstNodeTypeExprMod:
+    case AstNodeTypeExprDiv:
+    case AstNodeTypeExprMul: {
+        if (previous == AstNodeTypeExprAdd || previous == AstNodeTypeExprSub) {
             return 1;
         }
         return 0;
@@ -506,26 +506,26 @@ static ast_node* parse_funcparam(parser* par) {
     }
 }
 
-static vector(ast_node*) parse_funcbody(parser* par) {
-    token* tok = parser_peek_token(par, 0);
-    vector(ast_node*) result = make_vector(ast_node*);
-    while (tok->type != TokenTypeKeywordEnd) {
-        par->state = ParserStateParsingFuncBody;
-        ast_node* ins = parser_parse_ins(par);
-        if (ins == NULL) {
-            clean_up_fatal(result);
-            result = NULL;
-            return NULL;
-        }
-        vector_push(result, ins);
-
-        omit_separator(par);
-        tok = parser_peek_token(par, 0);
-    }
-    ++par->pointer;
-    par->state = ParserStateParsing;
-    return result;
-}
+// static vector(ast_node*) parse_funcbody(parser* par) {
+//     token* tok = parser_peek_token(par, 0);
+//     vector(ast_node*) result = make_vector(ast_node*);
+//     while (tok->type != TokenTypeKeywordEnd) {
+//         par->state = ParserStateParsingFuncBody;
+//         ast_node* ins = parser_parse_ins(par);
+//         if (ins == NULL) {
+//             clean_up_fatal(result);
+//             result = NULL;
+//             return NULL;
+//         }
+//         vector_push(result, ins);
+//
+//         omit_separator(par);
+//         tok = parser_peek_token(par, 0);
+//     }
+//     ++par->pointer;
+//     par->state = ParserStateParsing;
+//     return result;
+// }
 
 static ast_node* parse_return(parser* par) {
     ++par->pointer;
@@ -542,6 +542,14 @@ static ast_node* parse_return(parser* par) {
     return node;
 }
 
+static void get_funcparam_count(ast_node* node, int* out) {
+    ast_funcparam* param = get_ast_true_type(node);
+    if (param->next_param) {
+        (*out)++;
+        get_funcparam_count(param->next_param, out);
+    }
+}
+
 static ast_node* parse_funcdef(parser* par) {
     ++par->pointer;
     token* tok = parser_peek_token(par, 0);
@@ -556,16 +564,12 @@ static ast_node* parse_funcdef(parser* par) {
     }
     omit_separator(par);
 
-    vector(ast_node*) body = parse_funcbody(par);
-    if (!body) {
-        param->destroy(param);
-        return NULL;
-    }
-
     ast_node* result = make_ast_funcdef(tok);
     ast_funcdef* def = get_ast_true_type(result);
     def->param = param;
-    def->body = body;
+    def->param_count = 0;
+    get_funcparam_count(param, &def->param_count);
+    par->state = ParserStateParsingFuncBody;
     return result;
 }
 
@@ -660,6 +664,13 @@ static ast_node* parser_parse_ins(parser* par) {
     }
     case TokenTypeKeywordIf: {
         return parse_if(par);
+    }
+    case TokenTypeKeywordEnd: {
+        if (par->state == ParserStateParsingFuncBody) {
+            par->pointer++;
+            return make_ast_funcend(NULL);
+        }
+        return NULL;
     }
     case TokenTypeKeywordRet: {
         if (par->state == ParserStateParsing) {

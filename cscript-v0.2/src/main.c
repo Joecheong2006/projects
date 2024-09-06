@@ -2,6 +2,7 @@
 #include "core/log.h"
 #include "core/memory.h"
 #include "lexer.h"
+#include "lexer.h"
 
 #include "parser.h"
 #include "core/assert.h"
@@ -23,10 +24,10 @@ void print_bytecode(vm* v) {
         switch (code) {
         case ByteCodePushConst: {
             primitive_data data = { .type = v->code[i+1] };
-            memcpy(&data.val, &v->code[i+2], 8);
+            memcpy(&data.val, &v->code[i+2], primitive_size_map[data.type]);
             LOG_DEBUG("\tpush\t\t");
             print_primitive_data(&data);
-            i += 9;
+            i += primitive_size_map[data.type] + 1;
         } break;
         case ByteCodeAdd: LOG_DEBUG("\tadd\n"); break;
         case ByteCodeSub: LOG_DEBUG("\tsub\n"); break;
@@ -42,7 +43,7 @@ void print_bytecode(vm* v) {
         case ByteCodeDivAssign: LOG_DEBUG("\tdiv_assign\n"); break;
         case ByteCodeModAssign: LOG_DEBUG("\tmod_assign\n"); break;
         case ByteCodePushName: {
-            LOG_DEBUG("\tpushname %s\n", ((string)&v->code[i+1]));
+            LOG_DEBUG("\tpush\t%s\n", (string)&v->code[i+1]);
             i+=8;
             break;
         }
@@ -51,6 +52,8 @@ void print_bytecode(vm* v) {
             i+=8;
             break;
         }
+        case ByteCodeFuncDef: { LOG_DEBUG("\tfuncdef\n"); break; }
+        case ByteCodeFuncEnd: { LOG_DEBUG("\tfuncend\n"); break; }
         default: {
             LOG_ERROR("\tinvalid bytecode %d\n", code);
             ASSERT_MSG(0, "invalid bytecode");

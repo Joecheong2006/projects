@@ -9,3 +9,6 @@ a -= b
 a *= c
 a /= d
 a = e
+
+func add(a, b)
+end

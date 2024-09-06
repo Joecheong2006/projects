@@ -71,6 +71,35 @@ INLINE static error_info assign(vm* v) {
     return (error_info){ .msg = NULL };
 }
 
+INLINE static error_info funcdef(vm* v) {
+    cstring name = vector_backn(v->env.bp, 0).val.string;
+
+    object_carrier* carrier = env_find_object(&v->env, name);
+    if (carrier) {
+        return (error_info){ .msg = "redefine name" };
+    }
+
+    i32 param_count = vector_backn(v->env.bp, 1).val.int32;
+    vector_popn(v->env.bp, 2);
+    object* obj = make_object_function_def(name);
+    object_function_def* def = get_object_true_type(obj);
+    def->entry_point = v->ip + 1;
+
+    LOG_DEBUG("\tfuncdef\t\t%s %lld ", name, param_count);
+    for (i32 i = 0; i < param_count; i++) {
+        vector_push(def->args, vector_backn(v->env.bp, i).val.string);
+        LOG_DEBUG_MSG("%s ", def->args[i]);
+    }
+    LOG_DEBUG_MSG("\n");
+    vector_popn(v->env.bp, param_count);
+
+    env_push_object(&v->env, make_object_carrier(obj));
+
+    while (v->code[++v->ip] != ByteCodeFuncEnd);
+
+    return (error_info){ .msg = NULL };
+}
+
 #define IMPL_ASSIGN(assign_name)\
         object_carrier* carrier = vector_backn(v->env.bp, 0).val.carrier;\
         primitive_data* rhs = &vector_backn(v->env.bp, 1);\
@@ -129,11 +158,11 @@ static error_info run(vm* v) {
         switch (code) {
         case ByteCodePushConst: {
             primitive_data data = { .type = v->code[v->ip+1] };
-            memcpy(&data.val, &v->code[v->ip+2], 8);
+            memcpy(&data.val, &v->code[v->ip+2], primitive_size_map[data.type]);
             LOG_DEBUG("\tpush\t\t");
             print_primitive_data(&data);
             vector_push(v->env.bp, data);
-            v->ip += 9;
+            v->ip += primitive_size_map[data.type] + 1;
         } break;
         case ByteCodeAdd: { IMPL_ARITHMETIC(add) } break;
         case ByteCodeSub: { IMPL_ARITHMETIC(sub) } break;
@@ -164,6 +193,7 @@ static error_info run(vm* v) {
                 .type = PrimitiveDataTypeString,
             };
             vector_push(v->env.bp, data);
+            LOG_DEBUG("\tpush\t\t%s\n", data.val.string);
             v->ip += 8;
             break;
         }
@@ -193,6 +223,16 @@ static error_info run(vm* v) {
         case ByteCodeSubAssign: { IMPL_ASSIGN(sub) break; }
         case ByteCodeMulAssign: { IMPL_ASSIGN(mul) break; }
         case ByteCodeDivAssign: { IMPL_ASSIGN(div) break; }
+        case ByteCodeFuncDef: {
+            error_info ei = funcdef(v);
+            if (ei.msg) {
+                return ei;
+            }
+            break;
+        }
+        case ByteCodeFuncEnd: {
+            // i32 ret_ip = vector_
+        }
         default: {
             LOG_ERROR("\tinvalid bytecode %d\n", code);
             ASSERT_MSG(0, "invalid bytecode");

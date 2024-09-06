@@ -13,6 +13,8 @@ typedef enum {
     PrimitiveDataTypeObjPtr,
 } PrimitiveDataType;
 
+extern u8 primitive_size_map[];
+
 struct object_carrier;
 typedef struct {
     union {

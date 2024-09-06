@@ -11,10 +11,10 @@ typedef enum {
 
     AstNodeTypeExprBracket,
     AstNodeTypeExprAdd,
-    AstNodeTypeExprMinus,
-    AstNodeTypeExprMultiply,
-    AstNodeTypeExprDivide,
-    AstNodeTypeExprModulus,
+    AstNodeTypeExprSub,
+    AstNodeTypeExprMul,
+    AstNodeTypeExprDiv,
+    AstNodeTypeExprMod,
     AstNodeTypeAssignment,
     AstNodeTypeAddAssign,
     AstNodeTypeSubAssign,
@@ -32,7 +32,7 @@ typedef enum {
     AstNodeTypeReferenceFuncall,
     AstNodeTypeFuncParam,
     AstNodeTypeFuncDef,
-    AstNodeTypeAssign,
+    AstNodeTypeFuncEnd,
     AstNodeTypeVarDecl,
     AstNodeTypeIf,
     AstNodeTypeWhile,
@@ -88,7 +88,7 @@ typedef struct {
 
 typedef struct {
     ast_node* param;
-    vector(ast_node*) body;
+    i32 param_count;
 } ast_funcdef;
 
 typedef struct {
@@ -124,6 +124,7 @@ ast_node* make_ast_vardecl(struct token* tok);
 ast_node* make_ast_param(struct token* tok);
 ast_node* make_ast_funcparam(struct token* tok);
 ast_node* make_ast_funcdef(struct token* tok);
+ast_node* make_ast_funcend(struct token* tok);
 ast_node* make_ast_funcall(struct token* tok);
 ast_node* make_ast_return(struct token* tok);
 

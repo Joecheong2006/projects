@@ -1,6 +1,16 @@
 #include "primitive_data.h"
 #include "core/log.h"
 
+u8 primitive_size_map[] = {
+    [PrimitiveDataTypeBoolean] = 1,
+    [PrimitiveDataTypeInt32] = 4,
+    [PrimitiveDataTypeInt64] = 8,
+    [PrimitiveDataTypeFloat32] = 4,
+    [PrimitiveDataTypeFloat64] = 8,
+    [PrimitiveDataTypeString] = sizeof(void*),
+    [PrimitiveDataTypeObjPtr] = sizeof(void*),
+};
+
 void print_primitive_data(primitive_data* data) {
     if (data->type == PrimitiveDataTypeInt64) {
         LOG_DEBUG_MSG("%lld\n", data->val.int64);

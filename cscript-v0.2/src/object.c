@@ -64,12 +64,16 @@ object* make_object_string(cstring name) {
 void object_function_def_destroy(object* obj, struct environment* inter) {
     (void)inter;
     ASSERT(obj->type == ObjectTypeFunctionDef);
+    object_function_def* def = get_object_true_type(obj);
+    free_vector(def->args);
     free_mem(obj);
 }
 
 object* make_object_function_def(cstring name) {
     START_PROFILING();
     object* result = make_object(ObjectTypeFunctionDef, name, sizeof(object_function_def), object_function_def_destroy);
+    object_function_def* def = get_object_true_type(result);
+    def->args = make_vector(cstring);
     END_PROFILING(__func__);
     return result;
 }

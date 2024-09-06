@@ -52,19 +52,19 @@ ast_node* make_ast_binary_expression_add(struct token* tok) {
 }
 
 ast_node* make_ast_binary_expression_minus(struct token* tok) {
-    return make_ast_node(AstNodeTypeExprMinus, sizeof(ast_binary_expression), tok, destroy_ast_binary_expression, gen_bytecode_minus);
+    return make_ast_node(AstNodeTypeExprSub, sizeof(ast_binary_expression), tok, destroy_ast_binary_expression, gen_bytecode_sub);
 }
 
 ast_node* make_ast_binary_expression_multiply(struct token* tok) {
-    return make_ast_node(AstNodeTypeExprMultiply, sizeof(ast_binary_expression), tok, destroy_ast_binary_expression, gen_bytecode_multiply);
+    return make_ast_node(AstNodeTypeExprMul, sizeof(ast_binary_expression), tok, destroy_ast_binary_expression, gen_bytecode_mul);
 }
 
 ast_node* make_ast_binary_expression_divide(struct token* tok) {
-    return make_ast_node(AstNodeTypeExprDivide, sizeof(ast_binary_expression), tok, destroy_ast_binary_expression, gen_bytecode_divide);
+    return make_ast_node(AstNodeTypeExprDiv, sizeof(ast_binary_expression), tok, destroy_ast_binary_expression, gen_bytecode_div);
 }
 
 ast_node* make_ast_binary_expression_modulus(struct token* tok) {
-    return make_ast_node(AstNodeTypeExprModulus, sizeof(ast_binary_expression), tok, destroy_ast_binary_expression, gen_bytecode_modulus);
+    return make_ast_node(AstNodeTypeExprMod, sizeof(ast_binary_expression), tok, destroy_ast_binary_expression, gen_bytecode_mod);
 }
 
 static void destroy_ast_assignment(ast_node* node) {
@@ -187,7 +187,7 @@ static void destroy_ast_funcparam(ast_node* node) {
 }
 
 ast_node* make_ast_funcparam(struct token* tok) {
-    return make_ast_node(AstNodeTypeFuncParam, sizeof(ast_funcparam), tok, destroy_ast_funcparam, NULL);
+    return make_ast_node(AstNodeTypeFuncParam, sizeof(ast_funcparam), tok, destroy_ast_funcparam, gen_bytecode_funcparam);
 }
 
 static void destroy_ast_funcdef(ast_node* node) {
@@ -196,15 +196,15 @@ static void destroy_ast_funcdef(ast_node* node) {
     if (def->param) {
         def->param->destroy(def->param);
     }
-    for_vector(def->body, i, 0) {
-        def->body[i]->destroy(def->body[i]);
-    }
-    free_vector(def->body);
     free_mem(node);
 }
 
 ast_node* make_ast_funcdef(struct token* tok) {
-    return make_ast_node(AstNodeTypeFuncDef, sizeof(ast_funcdef), tok, destroy_ast_funcdef, NULL);
+    return make_ast_node(AstNodeTypeFuncDef, sizeof(ast_funcdef), tok, destroy_ast_funcdef, gen_bytecode_funcdef);
+}
+
+ast_node* make_ast_funcend(struct token* tok) {
+    return make_ast_node(AstNodeTypeFuncEnd, 0, tok, destroy_default, gen_bytecode_funcend);
 }
 
 static void destroy_ast_funcall(ast_node* node) {

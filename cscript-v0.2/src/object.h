@@ -50,7 +50,7 @@ DEFINE_OBJECT_TYPE(string,
 struct command;
 DEFINE_OBJECT_TYPE(function_def,
         vector(cstring) args;
-        vector(struct command*) body;
+        i32 entry_point;
 )
 
 DEFINE_OBJECT_TYPE(ref,
