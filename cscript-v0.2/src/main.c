@@ -1,20 +1,20 @@
-#include "object.h"
 #include "platform/platform.h"
 #include "core/log.h"
+#include "core/memory.h"
 #include "lexer.h"
-#include "container/memallocate.h"
 
 #include "parser.h"
 #include "core/assert.h"
 
-#include "environment.h"
+#include "primitive_data.h"
 #include "tracing.h"
 #include "vm.h"
 #include "bytecode.h"
+#include <string.h>
 
 __attribute__((destructor(101)))
 static void check_leak(void) {
-    LOG_DEBUG("\tleak count = %d\n", check_memory_leak());
+    LOG_DEBUG("\tleak count = %d\n", get_allocation_count());
 }
 
 void print_bytecode(vm* v) {
@@ -22,7 +22,10 @@ void print_bytecode(vm* v) {
         u8 code = v->code[i];
         switch (code) {
         case ByteCodePushConst: {
-            LOG_DEBUG("\tpush %lld:%d\n", *((i64*)&v->code[i+2]), v->code[i+1]);
+            primitive_data data = { .type = v->code[i+1] };
+            memcpy(&data.val, &v->code[i+2], 8);
+            LOG_DEBUG("\tpush\t\t");
+            print_primitive_data(&data);
             i += 9;
         } break;
         case ByteCodeAdd: LOG_DEBUG("\tadd\n"); break;

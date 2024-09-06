@@ -1,5 +1,21 @@
 #include "primitive_data.h"
+#include "core/log.h"
 // #include "tracing.h"
+
+void print_primitive_data(primitive_data* data) {
+    if (data->type == PrimitiveDataTypeInt64) {
+        LOG_DEBUG_MSG("%lld\n", data->val.int64);
+    }
+    else if (data->type == PrimitiveDataTypeFloat64) {
+        LOG_DEBUG_MSG("%lg\n", data->val.float64);
+    }
+    else if (data->type == PrimitiveDataTypeInt32) {
+        LOG_DEBUG_MSG("%d\n", data->val.int32);
+    }
+    else if (data->type == PrimitiveDataTypeFloat32) {
+        LOG_DEBUG_MSG("%g\n", data->val.float32);
+    }
+}
 
 INLINE i32 primitive_data_guess_type(primitive_data* a, primitive_data* b) {
     return a->type > b->type ? a->type : b->type;

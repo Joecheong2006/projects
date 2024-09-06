@@ -1,6 +1,6 @@
 #include "ast_node.h"
 #include "core/assert.h"
-#include "container/memallocate.h"
+#include "core/memory.h"
 #include "tracing.h"
 #include "bytecode.h"
 
@@ -8,7 +8,7 @@
 
 INLINE ast_node* make_ast_node(AstNodeType type, u64 type_size, struct token* tok, void(*destroy)(ast_node*), void(*gen_bytecode)(ast_node*,struct vm*)) {
     START_PROFILING();
-    ast_node* node = CALLOC(1, type_size + sizeof(ast_node));
+    ast_node* node = cnew_mem(1, type_size + sizeof(ast_node));
     node->type = type;
     node->gen_bytecode = gen_bytecode;
     node->destroy = destroy;
@@ -21,7 +21,7 @@ INLINE void* get_ast_true_type(ast_node* node) { return node + 1; }
 
 static void destroy_default(ast_node* node) {
     ASSERT(node);
-    FREE(node);
+    free_mem(node);
 }
 
 static void destroy_ast_binary_expression(ast_node* node) {
@@ -33,7 +33,18 @@ static void destroy_ast_binary_expression(ast_node* node) {
     if (expr->rhs) {
         expr->rhs->destroy(expr->rhs);
     }
-    FREE(node);
+    free_mem(node);
+}
+
+static void destroy_ast_expression_bracket(ast_node* node) {
+    ASSERT(node);
+    ast_expression_bracket* bracket = get_ast_true_type(node);
+    bracket->expr->destroy(bracket->expr);
+    free_mem(node);
+}
+
+ast_node* make_ast_expression_bracket(struct token* tok) {
+    return make_ast_node(AstNodeTypeExprBracket, sizeof(ast_expression_bracket), tok, destroy_ast_expression_bracket, gen_bytecode_bracket);
 }
 
 ast_node* make_ast_binary_expression_add(struct token* tok) {
@@ -65,7 +76,7 @@ static void destroy_ast_assignment(ast_node* node) {
     if (assignment->expr) {
         assignment->expr->destroy(assignment->expr);
     }
-    FREE(node);
+    free_mem(node);
 }
 
 ast_node* make_ast_assignment(AstNodeType type, struct token* tok, void(*gen_bytecode)(ast_node*,struct vm*)) {
@@ -76,7 +87,7 @@ static void destroy_ast_negate(ast_node* node) {
     ASSERT(node->type == AstNodeTypeNegate);
     ast_negate* negate = get_ast_true_type(node);
     negate->term->destroy(negate->term);
-    FREE(node);
+    free_mem(node);
 }
 
 ast_node* make_ast_negate(struct token* tok) {
@@ -94,7 +105,7 @@ static void destroy_ast_access_funcall(ast_node* node) {
         iden->next->destroy(iden->next);
     }
     // iden->id->destroy(iden->id);
-    FREE(node);
+    free_mem(node);
 }
 
 ast_node* make_ast_reference_funcall(struct token* tok) {
@@ -107,7 +118,7 @@ static void destroy_ast_access_identifier(ast_node* node) {
     if (iden->next) {
         iden->next->destroy(iden->next);
     }
-    FREE(node);
+    free_mem(node);
 }
 
 ast_node* make_ast_reference_identifier(struct token* tok) {
@@ -124,7 +135,7 @@ static void destroy_ast_vardecl(ast_node* node) {
     if (vardecl->expr) {
         vardecl->expr->destroy(vardecl->expr);
     }
-    FREE(node);
+    free_mem(node);
 }
 
 ast_node* make_ast_vardecl(struct token* tok) {
@@ -140,7 +151,7 @@ static void destroy_ast_args(ast_node* node) {
     if (args->next_arg) {
         args->next_arg->destroy(args->next_arg);
     }
-    FREE(node);
+    free_mem(node);
 }
 
 ast_node* make_ast_param(struct token* tok) {
@@ -153,7 +164,7 @@ static void destroy_ast_funcparam(ast_node* node) {
     if (param->next_param) {
         param->next_param->destroy(param->next_param);
     }
-    FREE(node);
+    free_mem(node);
 }
 
 ast_node* make_ast_funcparam(struct token* tok) {
@@ -170,7 +181,7 @@ static void destroy_ast_funcdef(ast_node* node) {
         def->body[i]->destroy(def->body[i]);
     }
     free_vector(def->body);
-    FREE(node);
+    free_mem(node);
 }
 
 ast_node* make_ast_funcdef(struct token* tok) {
@@ -181,7 +192,7 @@ static void destroy_ast_funcall(ast_node* node) {
     ASSERT(node->type == AstNodeTypeFuncall);
     ast_funcall* funcall = get_ast_true_type(node);
     funcall->args->destroy(funcall->args);
-    FREE(node);
+    free_mem(node);
 }
 
 ast_node* make_ast_funcall(struct token* tok) {
@@ -194,7 +205,7 @@ static void destroy_ast_return(ast_node* node) {
     if (ret->expr) {
         ret->expr->destroy(ret->expr);
     }
-    FREE(node);
+    free_mem(node);
 }
 
 ast_node* make_ast_return(struct token* tok) {

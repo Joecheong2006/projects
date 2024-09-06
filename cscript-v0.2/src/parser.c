@@ -131,10 +131,13 @@ ast_node* parse_expr_with_brackets(parser* par) {
         return NULL;
     }
     ++par->pointer;
+    ast_node* node = make_ast_expression_bracket(tok);
+    ast_expression_bracket* bracket = get_ast_true_type(node);
+    bracket->expr = expr;
     // NOTE: create a new node type maybe cleaner but for now it's fine
-    // expr->type = AstNodeTypeExpr;
+    // expr->type = AstNodeTypeExprBracket;
     END_PROFILING(__func__)
-    return expr;
+    return node;
 }
 
 void omit_separator(parser* par) {

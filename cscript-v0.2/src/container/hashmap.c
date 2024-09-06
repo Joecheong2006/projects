@@ -1,6 +1,5 @@
 #include "hashmap.h"
-#include <assert.h>
-#include <stdlib.h>
+#include "core/assert.h"
 
 hashmap make_hashmap(u32 size, u32 (*hash_function)(void* data, u32 size)) {
     hashmap result;
@@ -16,13 +15,13 @@ hashmap make_hashmap(u32 size, u32 (*hash_function)(void* data, u32 size)) {
 
 void hashmap_add(hashmap* map, void* data) {
     u32 key = map->hash(data, map->size);
-    assert(key < map->size);
+    ASSERT(key < map->size);
     vector_push(map->data[key], data);
 }
 
 vector(void*) hashmap_access_vector(hashmap* map, void* data) {
     u32 index = map->hash(data, map->size);
-    assert(index < map->size);
+    ASSERT(index < map->size);
     return map->data[index];
 }
 
@@ -35,7 +34,7 @@ void hashmap_free_items(hashmap map, void(free_item)(void* data)) {
 }
 
 void free_hashmap(hashmap* map) {
-    assert(map != NULL);
+    ASSERT(map != NULL);
     for (u32 i = 0; i < map->size; ++i) {
         free_vector(map->data[i]);
     }

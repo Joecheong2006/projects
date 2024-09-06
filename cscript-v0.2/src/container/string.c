@@ -1,6 +1,5 @@
 #include "string.h"
 #include <string.h>
-#include <assert.h>
 
 string _make_string(cstring ctx)
 {

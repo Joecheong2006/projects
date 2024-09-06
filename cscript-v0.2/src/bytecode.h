@@ -19,6 +19,7 @@ struct vm;
 void gen_bytecode_push_name(struct ast_node* node, struct vm* v);
 void gen_bytecode_push_const(struct ast_node* node, struct vm* v);
 void gen_bytecode_ref_iden(struct ast_node* node, struct vm* v);
+void gen_bytecode_bracket(struct ast_node* node, struct vm* v);
 void gen_bytecode_add(struct ast_node* node, struct vm* v);
 void gen_bytecode_minus(struct ast_node* node, struct vm* v);
 void gen_bytecode_multiply(struct ast_node* node, struct vm* v);

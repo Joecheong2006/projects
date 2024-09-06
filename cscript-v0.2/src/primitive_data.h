@@ -27,6 +27,8 @@ typedef struct {
     i32 type;
 } primitive_data;
 
+void print_primitive_data(primitive_data* data);
+
 i32 primitive_data_guess_type(primitive_data* a, primitive_data* b);
 error_info primitive_data_cast_to(i32 type, primitive_data* pd);
 

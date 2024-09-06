@@ -2,12 +2,16 @@
 #define _CORE_ASSERT_H_
 
 #include "core/log.h"
+#include "core/defines.h"
 
-#if defined(_WIN32)
-#include  <intrin.h>
-#define DEBUG_BREAK() __debugbreak()
+#if defined(PLATFORM_WINDOWS)
+    #ifdef _MSC_VER
+        #define DEBUG_BREAK() __debugbreak()
+    #else
+        #define DEBUG_BREAK() __builtin_trap()
+    #endif
 #else
-#define DEBUG_BREAK() __builtin_trap()
+    #define DEBUG_BREAK() __builtin_trap()
 #endif
 
 #if defined(DEBUG)

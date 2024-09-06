@@ -4,6 +4,7 @@
 #include "tracing.h"
 #include "lexer.h"
 #include "vm.h"
+#include <string.h>
 
 static void gen_ptr(const void* ptr, vm* v) {
     u32 end = vector_size(v->code);
@@ -45,6 +46,12 @@ void gen_bytecode_ref_iden(struct ast_node* node, struct vm* v) {
     vector_push(v->code, code);
     gen_ptr(node->tok->data.val.string, v);
     END_PROFILING(__func__);
+}
+
+void gen_bytecode_bracket(struct ast_node* node, struct vm* v) {
+    ASSERT(node->type == AstNodeTypeExprBracket);
+    ast_expression_bracket* bracket = get_ast_true_type(node);
+    bracket->expr->gen_bytecode(bracket->expr, v);
 }
 
 void gen_bytecode_add(ast_node* node, vm* v) {

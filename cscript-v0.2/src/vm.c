@@ -1,9 +1,11 @@
 #include "vm.h"
 #include "object.h"
+#include "primitive_data.h"
 #include "tracing.h"
 #include "bytecode.h"
 #include "core/log.h"
 #include "core/assert.h"
+#include <string.h>
 
 void init_vm(vm* v) {
     START_PROFILING();
@@ -31,14 +33,16 @@ static error_info initvar(vm* v) {
         o->val = rhs_obj->val;
         env_push_object(&v->env, make_object_carrier(obj));
         vector_popn(v->env.bp, 2);
-        LOG_DEBUG("\tinitvar %s -> %d\n", name, o->val.val.int64);
+        LOG_DEBUG("\tinitvar\t\t%s\t", name);
+        print_primitive_data(&o->val);
         return (error_info){ .msg = NULL };
     }
     object* obj = make_object_primitive_data(name);
     object_primitive_data* o = get_object_true_type(obj);
     o->val = rhs;
     env_push_object(&v->env, make_object_carrier(obj));
-    LOG_DEBUG("\tinitvar %s -> %d\n", name, o->val.val.int64);
+    LOG_DEBUG("\tinitvar\t\t%s\t", name);
+    print_primitive_data(&o->val);
     vector_popn(v->env.bp, 2);
     return (error_info){ .msg = NULL };
 }
@@ -68,7 +72,8 @@ static error_info initvar(vm* v) {
         }\
         vector_popn(v->env.bp, 2);\
         vector_push(v->env.bp, data);\
-        LOG_DEBUG("\t" #name " -> %d:%d\n", data.val.int64, data.type);
+        LOG_DEBUG("\t" #name "\t\t");\
+        print_primitive_data(&data);
 
 static error_info run(vm* v) {
     u32 size = vector_size(v->code);
@@ -76,11 +81,10 @@ static error_info run(vm* v) {
         u8 code = v->code[v->ip];
         switch (code) {
         case ByteCodePushConst: {
-            primitive_data data = {
-                .val = { v->code[v->ip+2] },
-                .type = v->code[v->ip+1]
-            };
-            LOG_DEBUG("\tpush %d:%d\n", data.val.int64, data.type);
+            primitive_data data = { .type = v->code[v->ip+1] };
+            memcpy(&data.val, &v->code[v->ip+2], 8);
+            LOG_DEBUG("\tpush\t\t");
+            print_primitive_data(&data);
             vector_push(v->env.bp, data);
             v->ip += 9;
         } break;
@@ -98,7 +102,8 @@ static error_info run(vm* v) {
             }
             vector_pop(v->env.bp);
             vector_push(v->env.bp, data);
-            LOG_DEBUG("\tneg -> %d:%d\n", data.val.int64, data.type);
+            LOG_DEBUG("\tneg\t\t");
+            print_primitive_data(&data);
         } break;
         case ByteCodeInitVar: {
             error_info ei = initvar(v);

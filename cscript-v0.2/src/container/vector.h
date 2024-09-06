@@ -1,7 +1,7 @@
 #ifndef VECTOR_H
 #define VECTOR_H
 
-#include "util.h"
+#include "core/defines.h"
 
 struct vector_data
 {

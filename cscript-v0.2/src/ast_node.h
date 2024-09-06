@@ -9,7 +9,7 @@ typedef enum {
     AstNodeTypeIdentifier,
     AstNodeTypeArgs,
 
-    AstNodeTypeExpr,
+    AstNodeTypeExprBracket,
     AstNodeTypeExprAdd,
     AstNodeTypeExprMinus,
     AstNodeTypeExprMultiply,
@@ -53,6 +53,10 @@ struct ast_node {
 typedef struct {
     ast_node *lhs, *rhs;
 } ast_binary_expression;
+
+typedef struct {
+    ast_node* expr;
+} ast_expression_bracket;
 
 typedef struct {
     ast_node* variable_name;
@@ -100,6 +104,7 @@ void* get_ast_true_type(ast_node* node);
 
 ast_node* make_ast_assignment(AstNodeType type, struct token* tok, void(*gen_bytecode)(ast_node*,struct vm*));
 
+ast_node* make_ast_expression_bracket(struct token* tok);
 ast_node* make_ast_binary_expression_add(struct token* tok);
 ast_node* make_ast_binary_expression_minus(struct token* tok);
 ast_node* make_ast_binary_expression_multiply(struct token* tok);
