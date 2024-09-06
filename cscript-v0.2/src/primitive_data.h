@@ -32,18 +32,18 @@ void print_primitive_data(primitive_data* data);
 i32 primitive_data_guess_type(primitive_data* a, primitive_data* b);
 error_info primitive_data_cast_to(i32 type, primitive_data* pd);
 
-error_info primitive_data_negate(primitive_data* out, primitive_data* a);
+error_info primitive_data_neg(primitive_data* out, primitive_data* a);
 error_info primitive_data_add(primitive_data* out, primitive_data* a, primitive_data* b);
-error_info primitive_data_minus(primitive_data* out, primitive_data* a, primitive_data* b);
-error_info primitive_data_multiply(primitive_data* out, primitive_data* a, primitive_data* b);
-error_info primitive_data_divide(primitive_data* out, primitive_data* a, primitive_data* b);
-error_info primitive_data_modulus(primitive_data* out, primitive_data* a, primitive_data* b);
+error_info primitive_data_sub(primitive_data* out, primitive_data* a, primitive_data* b);
+error_info primitive_data_mul(primitive_data* out, primitive_data* a, primitive_data* b);
+error_info primitive_data_div(primitive_data* out, primitive_data* a, primitive_data* b);
+error_info primitive_data_mod(primitive_data* out, primitive_data* a, primitive_data* b);
 
 error_info primitive_data_add_assign(primitive_data* a, primitive_data* b);
-error_info primitive_data_minus_assign(primitive_data* a, primitive_data* b);
-error_info primitive_data_multiply_assign(primitive_data* a, primitive_data* b);
-error_info primitive_data_divide_assign(primitive_data* a, primitive_data* b);
-error_info primitive_data_modulus_assign(primitive_data* a, primitive_data* b);
+error_info primitive_data_sub_assign(primitive_data* a, primitive_data* b);
+error_info primitive_data_mul_assign(primitive_data* a, primitive_data* b);
+error_info primitive_data_div_assign(primitive_data* a, primitive_data* b);
+error_info primitive_data_mod_assign(primitive_data* a, primitive_data* b);
 
 error_info primitive_data_cmp_equal(primitive_data* out, primitive_data* a, primitive_data* b);
 error_info primitive_data_cmp_not_equal(primitive_data* out, primitive_data* a, primitive_data* b);

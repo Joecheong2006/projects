@@ -574,22 +574,22 @@ static ast_node* parse_assignment_operator(parser* par) {
     switch ((int)tok->type) {
     case TokenTypeAssignmentPlus:
         ++par->pointer;
-        return make_ast_assignment(AstNodeTypeAddAssign, tok, NULL);
+        return make_ast_add_assign(tok);
     case TokenTypeAssignmentMinus:
         ++par->pointer;
-        return make_ast_assignment(AstNodeTypeMinusAssign, tok, NULL);
+        return make_ast_sub_assign(tok);
     case TokenTypeAssignmentMultiply:
         ++par->pointer;
-        return make_ast_assignment(AstNodeTypeMultiplyAssign, tok, NULL);
+        return make_ast_mul_assign(tok);
     case TokenTypeAssignmentDivide:
         ++par->pointer;
-        return make_ast_assignment(AstNodeTypeDivideAssign, tok, NULL);
+        return make_ast_div_assign(tok);
     case TokenTypeAssignmentModulus:
         ++par->pointer;
-        return make_ast_assignment(AstNodeTypeModulusAssign, tok, NULL);
+        return make_ast_mod_assign(tok);
     case '=':
         ++par->pointer;
-        return make_ast_assignment(AstNodeTypeAssignment, tok, NULL);
+        return make_ast_assignment(tok);
     default:
         // parser_report_error(par, tok, "expected assignment operator");
         return NULL;
@@ -617,7 +617,7 @@ static ast_node* parse_identifier_statement(parser* par) {
         refs->destroy(refs);
         return NULL;
     }
-    assignment->variable_name = refs;
+    assignment->name = refs;
     END_PROFILING(__func__)
     return node;
 }

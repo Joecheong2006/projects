@@ -59,11 +59,11 @@ object_carrier* env_find_object(environment* env, cstring name) {
 }
 
 void env_push_object(environment* env, object_carrier* carrier) {
-    // START_PROFILING();
+    START_PROFILING();
     carrier->obj->level = vector_size(env->global);
     hashmap_add(&env->map, carrier);
     scopes_push_obj(env, carrier);
-    // END_PROFILING(__func__);
+    END_PROFILING(__func__);
 }
 
 void init_environment(environment* env) {

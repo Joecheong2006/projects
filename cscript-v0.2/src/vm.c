@@ -22,10 +22,10 @@ void free_vm(vm* v) {
     END_PROFILING(__func__);
 }
 
-static error_info initvar(vm* v) {
+INLINE static error_info initvar(vm* v) {
     cstring name = vector_backn(v->env.bp, 0).val.string;
     primitive_data rhs = vector_backn(v->env.bp, 1);
-    if (rhs.type >= 0xf) {
+    if (rhs.type >= ObjectTypeNone) {
         ASSERT_MSG(rhs.val.carrier->obj->type == ObjectTypePrimitiveData, "not implement initvar obj yet");
         object* obj = make_object_primitive_data(name);
         object_primitive_data* o = get_object_true_type(obj);
@@ -33,33 +33,80 @@ static error_info initvar(vm* v) {
         o->val = rhs_obj->val;
         env_push_object(&v->env, make_object_carrier(obj));
         vector_popn(v->env.bp, 2);
-        LOG_DEBUG("\tinitvar\t\t%s\t", name);
-        print_primitive_data(&o->val);
+        LOG_DEBUG("\tinitvar\t\t%s\n", name);
         return (error_info){ .msg = NULL };
     }
     object* obj = make_object_primitive_data(name);
     object_primitive_data* o = get_object_true_type(obj);
     o->val = rhs;
     env_push_object(&v->env, make_object_carrier(obj));
-    LOG_DEBUG("\tinitvar\t\t%s\t", name);
-    print_primitive_data(&o->val);
+    LOG_DEBUG("\tinitvar\t\t%s\n", name);
     vector_popn(v->env.bp, 2);
     return (error_info){ .msg = NULL };
 }
+
+INLINE static error_info assign(vm* v) {
+    object_carrier* carrier = vector_backn(v->env.bp, 0).val.carrier;
+    primitive_data* rhs = &vector_backn(v->env.bp, 1);
+    if (carrier->obj->type == ObjectTypeFunctionDef) {
+        vector_popn(v->env.bp, 2);
+        return (error_info){ .msg = "function cannot be assigned by any kind!" };
+    }
+    if (carrier->obj->type == ObjectTypeRef) {
+        ASSERT_MSG(0, "not implement ref object assignment");
+    }
+
+    if (rhs->type >= ObjectTypeNone) {
+        if (rhs->type != ObjectTypePrimitiveData) {
+            return (error_info){ .msg = "attmpt to add with a non primitive object" };
+        }
+        object_primitive_data* o = get_object_true_type(rhs->val.carrier->obj);
+        *rhs = o->val;
+    }
+
+    object_primitive_data* o = get_object_true_type(carrier->obj);
+    o->val = *rhs;
+    LOG_DEBUG("\tassign\t\t%s\t", carrier->obj->name);
+    print_primitive_data(&o->val);
+    return (error_info){ .msg = NULL };
+}
+
+#define IMPL_ASSIGN(assign_name)\
+        object_carrier* carrier = vector_backn(v->env.bp, 0).val.carrier;\
+        primitive_data* rhs = &vector_backn(v->env.bp, 1);\
+        if (rhs->type >= ObjectTypeNone) {\
+            if (rhs->type != ObjectTypePrimitiveData) {\
+                return (error_info){ .msg = "attmpt to add with a non primitive object" };\
+            }\
+            object_primitive_data* o = get_object_true_type(rhs->val.carrier->obj);\
+            *rhs = o->val;\
+        }\
+        if (carrier->obj->type != ObjectTypePrimitiveData) {\
+            vector_popn(v->env.bp, 2);\
+            return (error_info){ .msg = "attemp to perform arithmetic operation on non primitive type" };\
+        }\
+        object_primitive_data* o = get_object_true_type(carrier->obj);\
+        error_info ei = primitive_data_##assign_name##_assign(&o->val, rhs);\
+        if (ei.msg) {\
+            return ei;\
+        }\
+        LOG_DEBUG("\t" #assign_name "_assign\t%s\t", carrier->obj->name);\
+        print_primitive_data(&o->val);\
+        break;
 
 #define IMPL_ARITHMETIC(name)\
         u32 end = vector_size(v->env.bp);\
         primitive_data data;\
         primitive_data* lhs = v->env.bp + end - 2;\
         primitive_data* rhs = v->env.bp + end - 1;\
-        if (lhs->type >= 0xf) {\
+        if (lhs->type >= ObjectTypeNone) {\
             if (lhs->type != ObjectTypePrimitiveData) {\
                 return (error_info){ .msg = "attmpt to add with a primitive object" };\
             }\
             object_primitive_data* o = get_object_true_type(lhs->val.carrier->obj);\
             *lhs = o->val;\
         }\
-        if (rhs->type >= 0xf) {\
+        if (rhs->type >= ObjectTypeNone) {\
             if (rhs->type != ObjectTypePrimitiveData) {\
                 return (error_info){ .msg = "attmpt to add with a primitive object" };\
             }\
@@ -89,14 +136,14 @@ static error_info run(vm* v) {
             v->ip += 9;
         } break;
         case ByteCodeAdd: { IMPL_ARITHMETIC(add) } break;
-        case ByteCodeSub: { IMPL_ARITHMETIC(minus) } break;
-        case ByteCodeMul: { IMPL_ARITHMETIC(multiply) } break;
-        case ByteCodeDiv: { IMPL_ARITHMETIC(divide) } break;
-        case ByteCodeMod: { IMPL_ARITHMETIC(modulus) } break;
+        case ByteCodeSub: { IMPL_ARITHMETIC(sub) } break;
+        case ByteCodeMul: { IMPL_ARITHMETIC(mul) } break;
+        case ByteCodeDiv: { IMPL_ARITHMETIC(div) } break;
+        case ByteCodeMod: { IMPL_ARITHMETIC(mod) } break;
         case ByteCodeNegate: {
             primitive_data data;
             u32 end = vector_size(v->env.bp);
-            error_info ei = primitive_data_negate(&data, v->env.bp + end - 1);
+            error_info ei = primitive_data_neg(&data, v->env.bp + end - 1);
             if (ei.msg) {
                 return ei;
             }
@@ -131,11 +178,23 @@ static error_info run(vm* v) {
                 .type = carrier->obj->type,
             };
             vector_push(v->env.bp, data);
+            LOG_DEBUG("\tref\t\t%s\n", name);
             v->ip += 8;
             break;
         }
+        case ByteCodeAssign: {
+            error_info ei = assign(v);
+            if (ei.msg) {
+                return ei;
+            }
+            break;
+        }
+        case ByteCodeAddAssign: { IMPL_ASSIGN(add) break; }
+        case ByteCodeSubAssign: { IMPL_ASSIGN(sub) break; }
+        case ByteCodeMulAssign: { IMPL_ASSIGN(mul) break; }
+        case ByteCodeDivAssign: { IMPL_ASSIGN(div) break; }
         default: {
-            LOG_ERROR("invalid bytecode %d\n", code);
+            LOG_ERROR("\tinvalid bytecode %d\n", code);
             ASSERT_MSG(0, "invalid bytecode");
             return (error_info){ .msg = "undefine bytecode" };
         }

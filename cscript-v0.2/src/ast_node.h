@@ -17,10 +17,10 @@ typedef enum {
     AstNodeTypeExprModulus,
     AstNodeTypeAssignment,
     AstNodeTypeAddAssign,
-    AstNodeTypeMinusAssign,
-    AstNodeTypeMultiplyAssign,
-    AstNodeTypeDivideAssign,
-    AstNodeTypeModulusAssign,
+    AstNodeTypeSubAssign,
+    AstNodeTypeMulAssign,
+    AstNodeTypeDivAssign,
+    AstNodeTypeModAssign,
     AstNodeTypeExprEqual,
     AstNodeTypeExprNotEqual,
     AstNodeTypeExprGreaterThan,
@@ -59,7 +59,7 @@ typedef struct {
 } ast_expression_bracket;
 
 typedef struct {
-    ast_node* variable_name;
+    ast_node* name;
     ast_node* expr;
 } ast_assignment;
 
@@ -102,14 +102,19 @@ typedef struct {
 ast_node* make_ast_node(AstNodeType type, u64 type_size, struct token* tok, void(*destroy)(ast_node*), void(*gen_bytecode)(ast_node*,struct vm*));
 void* get_ast_true_type(ast_node* node);
 
-ast_node* make_ast_assignment(AstNodeType type, struct token* tok, void(*gen_bytecode)(ast_node*,struct vm*));
-
 ast_node* make_ast_expression_bracket(struct token* tok);
 ast_node* make_ast_binary_expression_add(struct token* tok);
 ast_node* make_ast_binary_expression_minus(struct token* tok);
 ast_node* make_ast_binary_expression_multiply(struct token* tok);
 ast_node* make_ast_binary_expression_divide(struct token* tok);
 ast_node* make_ast_binary_expression_modulus(struct token* tok);
+
+ast_node* make_ast_assignment(struct token* tok);
+ast_node* make_ast_add_assign(struct token* tok);
+ast_node* make_ast_sub_assign(struct token* tok);
+ast_node* make_ast_mul_assign(struct token* tok);
+ast_node* make_ast_div_assign(struct token* tok);
+ast_node* make_ast_mod_assign(struct token* tok);
 
 ast_node* make_ast_negate(struct token* tok);
 ast_node* make_ast_constant(struct token* tok);

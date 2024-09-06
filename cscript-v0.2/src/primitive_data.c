@@ -1,6 +1,5 @@
 #include "primitive_data.h"
 #include "core/log.h"
-// #include "tracing.h"
 
 void print_primitive_data(primitive_data* data) {
     if (data->type == PrimitiveDataTypeInt64) {
@@ -104,10 +103,10 @@ error_info primitive_data_##name(primitive_data* out, primitive_data* a, primiti
 }
 
 IMPL_PRIMITIVE_ARITHMETIC(+, add)
-IMPL_PRIMITIVE_ARITHMETIC(-, minus)
-IMPL_PRIMITIVE_ARITHMETIC(*, multiply)
+IMPL_PRIMITIVE_ARITHMETIC(-, sub)
+IMPL_PRIMITIVE_ARITHMETIC(*, mul)
 
-error_info primitive_data_divide(primitive_data* out, primitive_data* a, primitive_data* b) {
+error_info primitive_data_div(primitive_data* out, primitive_data* a, primitive_data* b) {
     i32 type = primitive_data_guess_type(a, b);
     error_info ei = primitive_data_cast_to(type, a);
     if (ei.msg)
@@ -143,7 +142,7 @@ error_info primitive_data_divide(primitive_data* out, primitive_data* a, primiti
     return (error_info){ .msg = NULL };
 }
 
-error_info primitive_data_modulus(primitive_data* out, primitive_data* a, primitive_data* b) {
+error_info primitive_data_mod(primitive_data* out, primitive_data* a, primitive_data* b) {
     i32 type = primitive_data_guess_type(a, b);
     error_info ei = primitive_data_cast_to(type, a);
     if (ei.msg)
@@ -171,7 +170,7 @@ error_info primitive_data_modulus(primitive_data* out, primitive_data* a, primit
     return (error_info){ .msg = NULL };
 }
 
-error_info primitive_data_negate(primitive_data* out, primitive_data* a) {
+error_info primitive_data_neg(primitive_data* out, primitive_data* a) {
     out->type = a->type;
     switch (a->type) {
     case PrimitiveDataTypeInt32:
@@ -216,10 +215,10 @@ error_info primitive_data_negate(primitive_data* out, primitive_data* a) {
     }
 
 IMPL_PRIMITIVE_ASSIGN_ARITHMETIC(+=, add)
-IMPL_PRIMITIVE_ASSIGN_ARITHMETIC(-=, minus)
-IMPL_PRIMITIVE_ASSIGN_ARITHMETIC(*=, multiply)
+IMPL_PRIMITIVE_ASSIGN_ARITHMETIC(-=, sub)
+IMPL_PRIMITIVE_ASSIGN_ARITHMETIC(*=, mul)
 
-error_info primitive_data_divide_assign(primitive_data* a, primitive_data* b) {
+error_info primitive_data_div_assign(primitive_data* a, primitive_data* b) {
     error_info ei = primitive_data_cast_to(a->type, b);
     if (ei.msg)
         return ei;
@@ -249,7 +248,7 @@ error_info primitive_data_divide_assign(primitive_data* a, primitive_data* b) {
     return (error_info){ .msg = NULL };
 }
 
-error_info primitive_data_modulus_assign(primitive_data* a, primitive_data* b) {
+error_info primitive_data_mod_assign(primitive_data* a, primitive_data* b) {
     error_info ei = primitive_data_cast_to(a->type, b);
     if (ei.msg)
         return ei;

@@ -70,8 +70,8 @@ ast_node* make_ast_binary_expression_modulus(struct token* tok) {
 static void destroy_ast_assignment(ast_node* node) {
     ASSERT(node);
     ast_assignment* assignment = get_ast_true_type(node);
-    if (assignment->variable_name) {
-        assignment->variable_name->destroy(assignment->variable_name);
+    if (assignment->name) {
+        assignment->name->destroy(assignment->name);
     }
     if (assignment->expr) {
         assignment->expr->destroy(assignment->expr);
@@ -79,8 +79,28 @@ static void destroy_ast_assignment(ast_node* node) {
     free_mem(node);
 }
 
-ast_node* make_ast_assignment(AstNodeType type, struct token* tok, void(*gen_bytecode)(ast_node*,struct vm*)) {
-    return make_ast_node(type, sizeof(ast_assignment), tok, destroy_ast_assignment, gen_bytecode);
+ast_node* make_ast_assignment(struct token* tok) {
+    return make_ast_node(AstNodeTypeAssignment, sizeof(ast_assignment), tok, destroy_ast_assignment, gen_bytecode_assign);
+}
+
+ast_node* make_ast_add_assign(struct token* tok) {
+    return make_ast_node(AstNodeTypeAddAssign, sizeof(ast_assignment), tok, destroy_ast_assignment, gen_bytecode_add_assign);
+}
+
+ast_node* make_ast_sub_assign(struct token* tok) {
+    return make_ast_node(AstNodeTypeSubAssign, sizeof(ast_assignment), tok, destroy_ast_assignment, gen_bytecode_sub_assign);
+}
+
+ast_node* make_ast_mul_assign(struct token* tok) {
+    return make_ast_node(AstNodeTypeMulAssign, sizeof(ast_assignment), tok, destroy_ast_assignment, gen_bytecode_mul_assign);
+}
+
+ast_node* make_ast_div_assign(struct token* tok) {
+    return make_ast_node(AstNodeTypeDivAssign, sizeof(ast_assignment), tok, destroy_ast_assignment, gen_bytecode_div_assign);
+}
+
+ast_node* make_ast_mod_assign(struct token* tok) {
+    return make_ast_node(AstNodeTypeModAssign, sizeof(ast_assignment), tok, destroy_ast_assignment, gen_bytecode_mod_assign);
 }
 
 static void destroy_ast_negate(ast_node* node) {
@@ -122,8 +142,7 @@ static void destroy_ast_access_identifier(ast_node* node) {
 }
 
 ast_node* make_ast_reference_identifier(struct token* tok) {
-    ast_node* result = make_ast_node(AstNodeTypeReferenceIdentifier, sizeof(ast_reference), tok, destroy_ast_access_identifier, gen_bytecode_ref_iden);
-    return result;
+    return make_ast_node(AstNodeTypeReferenceIdentifier, sizeof(ast_reference), tok, destroy_ast_access_identifier, gen_bytecode_ref_iden);
 }
 
 static void destroy_ast_vardecl(ast_node* node) {

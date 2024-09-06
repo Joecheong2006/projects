@@ -35,8 +35,14 @@ void print_bytecode(vm* v) {
         case ByteCodeMod: LOG_DEBUG("\tmod\n"); break;
         case ByteCodeNegate: LOG_DEBUG("\tmod\n"); break;
         case ByteCodeInitVar: LOG_DEBUG("\tinitvar\n"); break;
+        case ByteCodeAssign: LOG_DEBUG("\tassign\n"); break;
+        case ByteCodeAddAssign: LOG_DEBUG("\tadd_assign\n"); break;
+        case ByteCodeSubAssign: LOG_DEBUG("\tsub_assign\n"); break;
+        case ByteCodeMulAssign: LOG_DEBUG("\tmul_assign\n"); break;
+        case ByteCodeDivAssign: LOG_DEBUG("\tdiv_assign\n"); break;
+        case ByteCodeModAssign: LOG_DEBUG("\tmod_assign\n"); break;
         case ByteCodePushName: {
-            LOG_DEBUG("\tpush %s\n", ((string)&v->code[i+1]));
+            LOG_DEBUG("\tpushname %s\n", ((string)&v->code[i+1]));
             i+=8;
             break;
         }
@@ -54,7 +60,6 @@ void print_bytecode(vm* v) {
     }
     LOG_DEBUG("\n");
 }
-#include "timer.h"
 
 int main(void) {
     platform_state state;
@@ -82,11 +87,7 @@ int main(void) {
         print_bytecode(&v);
         END_PROFILING("debug log");
 
-        timer t;
-        start_timer(&t);
         error_info ei = vm_run(&v);
-        end_timer(&t);
-        LOG_TRACE("\trun for %gs\n", t.dur);
 
         if (ei.msg) {
             LOG_ERROR("\t%s\n", ei.msg);
