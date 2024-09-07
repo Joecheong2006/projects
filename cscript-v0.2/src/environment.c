@@ -80,8 +80,8 @@ INLINE i32 get_env_level(environment* env) {
 
 void free_environment(environment* env) {
     START_PROFILING();
-    free_hashmap(&env->map);
     free_global_scopes(env);
+    free_hashmap(&env->map);
     free_vector(env->bp);
     END_PROFILING(__func__);
 }

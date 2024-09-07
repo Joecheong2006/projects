@@ -68,30 +68,31 @@ INLINE static error_info assign(vm* v) {
     o->val = *rhs;
     LOG_DEBUG("\tassign\t\t%s\t", carrier->obj->name);
     print_primitive_data(&o->val);
+    vector_popn(v->env.bp, 2);
     return (error_info){ .msg = NULL };
 }
 
 INLINE static error_info funcdef(vm* v) {
-    cstring name = vector_backn(v->env.bp, 0).val.string;
+    i8 param_count = vector_backn(v->env.bp, 0).val.int8;
+    cstring name = vector_backn(v->env.bp, 1 + param_count).val.string;
 
     object_carrier* carrier = env_find_object(&v->env, name);
     if (carrier) {
         return (error_info){ .msg = "redefine name" };
     }
 
-    i32 param_count = vector_backn(v->env.bp, 1).val.int32;
-    vector_popn(v->env.bp, 2);
+    vector_popn(v->env.bp, 1);
     object* obj = make_object_function_def(name);
     object_function_def* def = get_object_true_type(obj);
-    def->entry_point = v->ip + 1;
+    def->entry_point = v->ip;
 
-    LOG_DEBUG("\tfuncdef\t\t%s %lld ", name, param_count);
+    LOG_DEBUG("\tfuncdef\t\t%s %lld %d ", name, param_count, def->entry_point);
     for (i32 i = 0; i < param_count; i++) {
         vector_push(def->args, vector_backn(v->env.bp, i).val.string);
         LOG_DEBUG_MSG("%s ", def->args[i]);
     }
     LOG_DEBUG_MSG("\n");
-    vector_popn(v->env.bp, param_count);
+    vector_popn(v->env.bp, param_count + 1);
 
     env_push_object(&v->env, make_object_carrier(obj));
 
@@ -121,6 +122,7 @@ INLINE static error_info funcdef(vm* v) {
         }\
         LOG_DEBUG("\t" #assign_name "_assign\t%s\t", carrier->obj->name);\
         print_primitive_data(&o->val);\
+        vector_popn(v->env.bp, 2);\
         break;
 
 #define IMPL_ARITHMETIC(name)\
@@ -164,15 +166,14 @@ static error_info run(vm* v) {
             vector_push(v->env.bp, data);
             v->ip += primitive_size_map[data.type] + 1;
         } break;
-        case ByteCodeAdd: { IMPL_ARITHMETIC(add) } break;
-        case ByteCodeSub: { IMPL_ARITHMETIC(sub) } break;
-        case ByteCodeMul: { IMPL_ARITHMETIC(mul) } break;
-        case ByteCodeDiv: { IMPL_ARITHMETIC(div) } break;
-        case ByteCodeMod: { IMPL_ARITHMETIC(mod) } break;
+        case ByteCodeAdd: { IMPL_ARITHMETIC(add) break; }
+        case ByteCodeSub: { IMPL_ARITHMETIC(sub) break; }
+        case ByteCodeMul: { IMPL_ARITHMETIC(mul) break; }
+        case ByteCodeDiv: { IMPL_ARITHMETIC(div) break; }
+        case ByteCodeMod: { IMPL_ARITHMETIC(mod) break; }
         case ByteCodeNegate: {
             primitive_data data;
-            u32 end = vector_size(v->env.bp);
-            error_info ei = primitive_data_neg(&data, v->env.bp + end - 1);
+            error_info ei = primitive_data_neg(&data, &vector_back(v->env.bp));
             if (ei.msg) {
                 return ei;
             }
@@ -180,16 +181,23 @@ static error_info run(vm* v) {
             vector_push(v->env.bp, data);
             LOG_DEBUG("\tneg\t\t");
             print_primitive_data(&data);
-        } break;
+            break;
+        }
         case ByteCodeInitVar: {
             error_info ei = initvar(v);
             if (ei.msg) {
                 return ei;
             }
-        } break;
+            break;
+        }
+        case ByteCodePop: {
+            LOG_DEBUG("\tpop\n");
+            vector_pop(v->env.bp);
+            break;
+        }
         case ByteCodePushName: {
             primitive_data data = {
-                .val.string = (cstring)&v->code[v->ip+1],
+                .val.string = *((cstring*)&v->code[v->ip+1]),
                 .type = PrimitiveDataTypeString,
             };
             vector_push(v->env.bp, data);
@@ -198,7 +206,7 @@ static error_info run(vm* v) {
             break;
         }
         case ByteCodeRefIden: {
-            cstring name = (cstring)&v->code[v->ip+1];
+            cstring name = *((cstring*)&v->code[v->ip+1]);
             object_carrier* carrier = env_find_object(&v->env, name);
             if (!carrier) {
                 return (error_info){ .msg = "not found object '%s'" };
@@ -209,6 +217,13 @@ static error_info run(vm* v) {
             };
             vector_push(v->env.bp, data);
             LOG_DEBUG("\tref\t\t%s\n", name);
+            v->ip += 8;
+            break;
+        }
+        case ByteCodeAccessIden: {
+            cstring name = *((cstring*)&v->code[v->ip+1]);
+            (void)name;
+            LOG_DEBUG("\taccess\t\t%s\n", name);
             v->ip += 8;
             break;
         }
@@ -231,7 +246,50 @@ static error_info run(vm* v) {
             break;
         }
         case ByteCodeFuncEnd: {
-            // i32 ret_ip = vector_
+            i32 org_ip = (i32)(vector_backn(v->env.bp, 0).val.int64 >> 32);
+            i32 scope_level = (i32)((vector_backn(v->env.bp, 0).val.int64 << 32) >> 32);
+            vector_pop(v->env.bp);
+            LOG_DEBUG("\t%d %d %d\n", org_ip, scope_level, get_env_level(&v->env));
+            do { 
+                env_pop_scope(&v->env);
+            } while (scope_level != get_env_level(&v->env));
+            v->ip = org_ip;
+            break;
+        }
+        case ByteCodeFuncall: {
+            i8 args_count = vector_backn(v->env.bp, 0).val.int8;
+            object_carrier* carrier = vector_backn(v->env.bp, 1 + args_count).val.carrier;
+            if (carrier->obj->type != ObjectTypeFunctionDef) {
+                return (error_info){ .msg = "attemp to call a non funcation object" };
+            }
+            object_function_def* def = get_object_true_type(carrier->obj);
+
+            LOG_DEBUG("\tfuncall\t\t%s %d %d\n", carrier->obj->name, args_count, def->entry_point);
+            vector_pop(v->env.bp);
+
+            env_push_scope(&v->env);
+            for (i32 i = 0; i < args_count; i++) {
+                primitive_data data = {
+                    .val.string = def->args[i],
+                    .type = PrimitiveDataTypeString,
+                };
+                vector_push(v->env.bp, data);
+                error_info ei = initvar(v);
+                if (ei.msg) {
+                    return ei;
+                }
+            }
+            vector_popn(v->env.bp, 1);
+            primitive_data data = {
+                .val.int64 = (i64)v->ip << 32 | (i64)(get_env_level(&v->env) - 1),
+                .type = PrimitiveDataTypeInt64,
+            };
+            vector_push(v->env.bp, data);
+
+            v->ip = def->entry_point;
+
+            // TODO: push ret obj and the original ip
+            break;
         }
         default: {
             LOG_ERROR("\tinvalid bytecode %d\n", code);

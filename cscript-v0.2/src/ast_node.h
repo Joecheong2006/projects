@@ -28,8 +28,8 @@ typedef enum {
     AstNodeTypeExprGreaterThanEqual,
     AstNodeTypeExprLessThanEqual,
 
+    AstNodeTypePop,
     AstNodeTypeReferenceIdentifier,
-    AstNodeTypeReferenceFuncall,
     AstNodeTypeFuncParam,
     AstNodeTypeFuncDef,
     AstNodeTypeFuncEnd,
@@ -69,7 +69,7 @@ typedef struct {
 
 typedef struct {
     ast_node* next;
-    // ast_node* id;
+    ast_node* id;
 } ast_reference;
 
 typedef struct {
@@ -93,6 +93,7 @@ typedef struct {
 
 typedef struct {
     ast_node* args;
+    i32 args_count;
 } ast_funcall;
 
 typedef struct {
@@ -118,10 +119,13 @@ ast_node* make_ast_mod_assign(struct token* tok);
 
 ast_node* make_ast_negate(struct token* tok);
 ast_node* make_ast_constant(struct token* tok);
-ast_node* make_ast_reference_funcall(struct token* tok);
+
 ast_node* make_ast_reference_identifier(struct token* tok);
+ast_node* make_ast_access_identifier(struct token* tok);
+
+ast_node* make_ast_pop(struct token* tok);
 ast_node* make_ast_vardecl(struct token* tok);
-ast_node* make_ast_param(struct token* tok);
+ast_node* make_ast_args(struct token* tok);
 ast_node* make_ast_funcparam(struct token* tok);
 ast_node* make_ast_funcdef(struct token* tok);
 ast_node* make_ast_funcend(struct token* tok);

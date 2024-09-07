@@ -118,31 +118,28 @@ ast_node* make_ast_constant(struct token* tok) {
     return make_ast_node(AstNodeTypeConstant, 0, tok, destroy_default, gen_bytecode_push_const);
 }
 
-static void destroy_ast_access_funcall(ast_node* node) {
-    ASSERT(node->type == AstNodeTypeReferenceFuncall);
-    ast_reference* iden = get_ast_true_type(node);
-    if (iden->next) {
-        iden->next->destroy(iden->next);
-    }
-    // iden->id->destroy(iden->id);
-    free_mem(node);
-}
-
-ast_node* make_ast_reference_funcall(struct token* tok) {
-    return make_ast_node(AstNodeTypeReferenceFuncall, sizeof(ast_reference), tok, destroy_ast_access_funcall, NULL);
-}
-
-static void destroy_ast_access_identifier(ast_node* node) {
+static void destroy_ast_ref_identifier(ast_node* node) {
     ASSERT(node->type == AstNodeTypeReferenceIdentifier);
     ast_reference* iden = get_ast_true_type(node);
     if (iden->next) {
         iden->next->destroy(iden->next);
     }
+    if (iden->id) {
+        iden->id->destroy(iden->id);
+    }
     free_mem(node);
 }
 
 ast_node* make_ast_reference_identifier(struct token* tok) {
-    return make_ast_node(AstNodeTypeReferenceIdentifier, sizeof(ast_reference), tok, destroy_ast_access_identifier, gen_bytecode_ref_iden);
+    return make_ast_node(AstNodeTypeReferenceIdentifier, sizeof(ast_reference), tok, destroy_ast_ref_identifier, gen_bytecode_ref_iden);
+}
+
+ast_node* make_ast_access_identifier(struct token* tok) {
+    return make_ast_node(AstNodeTypeReferenceIdentifier, sizeof(ast_reference), tok, destroy_ast_ref_identifier, gen_bytecode_access_iden);
+}
+
+ast_node* make_ast_pop(struct token* tok) {
+    return make_ast_node(AstNodeTypePop, 0, tok, destroy_default, gen_bytecode_pop);
 }
 
 static void destroy_ast_vardecl(ast_node* node) {
@@ -173,8 +170,8 @@ static void destroy_ast_args(ast_node* node) {
     free_mem(node);
 }
 
-ast_node* make_ast_param(struct token* tok) {
-    return make_ast_node(AstNodeTypeArgs, sizeof(ast_arg), tok, destroy_ast_args, NULL);
+ast_node* make_ast_args(struct token* tok) {
+    return make_ast_node(AstNodeTypeArgs, sizeof(ast_arg), tok, destroy_ast_args, gen_bytecode_arguments);
 }
 
 static void destroy_ast_funcparam(ast_node* node) {
@@ -215,7 +212,7 @@ static void destroy_ast_funcall(ast_node* node) {
 }
 
 ast_node* make_ast_funcall(struct token* tok) {
-    return make_ast_node(AstNodeTypeFuncall, sizeof(ast_funcall), tok, destroy_ast_funcall, NULL);
+    return make_ast_node(AstNodeTypeFuncall, sizeof(ast_funcall), tok, destroy_ast_funcall, gen_bytecode_funcall);
 }
 
 static void destroy_ast_return(ast_node* node) {

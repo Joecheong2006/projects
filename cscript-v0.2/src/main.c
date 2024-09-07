@@ -42,18 +42,28 @@ void print_bytecode(vm* v) {
         case ByteCodeMulAssign: LOG_DEBUG("\tmul_assign\n"); break;
         case ByteCodeDivAssign: LOG_DEBUG("\tdiv_assign\n"); break;
         case ByteCodeModAssign: LOG_DEBUG("\tmod_assign\n"); break;
+        case ByteCodePop: LOG_DEBUG("\tpop\n"); break;
         case ByteCodePushName: {
-            LOG_DEBUG("\tpush\t%s\n", (string)&v->code[i+1]);
+            LOG_DEBUG("\tpush\t%s\n", *(cstring*)&v->code[i+1]);
             i+=8;
             break;
         }
         case ByteCodeRefIden: {
-            LOG_DEBUG("\tref %s\n", ((string)&v->code[i+1]));
+            LOG_DEBUG("\tref %s\n", *(cstring*)&v->code[i+1]);
+            i+=8;
+            break;
+        }
+        case ByteCodeAccessIden: {
+            LOG_DEBUG("\taccess %s\n", *(cstring*)&v->code[i+1]);
             i+=8;
             break;
         }
         case ByteCodeFuncDef: { LOG_DEBUG("\tfuncdef\n"); break; }
         case ByteCodeFuncEnd: { LOG_DEBUG("\tfuncend\n"); break; }
+        case ByteCodeFuncall: { 
+            LOG_DEBUG("\tfuncall\n");
+            break;
+        }
         default: {
             LOG_ERROR("\tinvalid bytecode %d\n", code);
             ASSERT_MSG(0, "invalid bytecode");
@@ -69,7 +79,7 @@ int main(void) {
     ASSERT(setup_platform(&state));
 
     lexer lex = {NULL, -1, 1, 1, 0};
-    lexer_load_file_text(&lex, "test.cscript");
+    lexer_load_file_text(&lex, "test.sc");
 
     parser par;
     init_parser(&par, generate_tokens(&lex));
@@ -90,7 +100,13 @@ int main(void) {
         print_bytecode(&v);
         END_PROFILING("debug log");
 
-        error_info ei = vm_run(&v);
+        error_info ei;
+        {
+            START_PROFILING();
+            ei = vm_run(&v);
+            END_PROFILING("vm run");
+        }
+        LOG_DEBUG("\tstack %d\n", vector_size(v.env.bp));
 
         if (ei.msg) {
             LOG_ERROR("\t%s\n", ei.msg);

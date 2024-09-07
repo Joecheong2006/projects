@@ -5,6 +5,8 @@
 
 typedef enum {
     PrimitiveDataTypeBoolean,
+    PrimitiveDataTypeInt8,
+    PrimitiveDataTypeInt16,
     PrimitiveDataTypeInt32,
     PrimitiveDataTypeInt64,
     PrimitiveDataTypeFloat32, //NOTE: float32 + int64 -> float32
@@ -19,6 +21,8 @@ struct object_carrier;
 typedef struct {
     union {
         u8 boolean;
+        i8 int8;
+        i16 int16;
         i32 int32;
         i64 int64;
         f32 float32;

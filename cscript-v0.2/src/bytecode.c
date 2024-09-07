@@ -85,12 +85,20 @@ IMPL_ASSIGNMENT(sub, SubAssign)
 IMPL_ASSIGNMENT(mul, MulAssign)
 IMPL_ASSIGNMENT(div, DivAssign)
 IMPL_ASSIGNMENT(mod, ModAssign)
+    
+void gen_bytecode_pop(struct ast_node* node, struct vm* v) {
+    (void)node;
+    START_PROFILING();
+    u8 code = ByteCodePop;
+    vector_push(v->code, code);
+    END_PROFILING(__func__);
+}
 
 void gen_bytecode_push_name(ast_node* node, vm* v) {
     START_PROFILING();
     u8 code = ByteCodePushName;
     vector_push(v->code, code);
-    gen_ptr(node->tok->data.val.string, v);
+    gen_ptr(&node->tok->data.val.string, v);
     END_PROFILING(__func__);
 }
 
@@ -108,8 +116,27 @@ void gen_bytecode_ref_iden(struct ast_node* node, struct vm* v) {
     START_PROFILING();
     u8 code = ByteCodeRefIden;
     vector_push(v->code, code);
-    gen_ptr(node->tok->data.val.string, v);
+    gen_ptr(&node->tok->data.val.string, v);
     ast_reference* ref = get_ast_true_type(node);
+    if (ref->id) {
+        ref->id->gen_bytecode(ref->id, v);
+    }
+    if (ref->next) {
+        ref->next->gen_bytecode(ref->next, v);
+    }
+    END_PROFILING(__func__);
+}
+
+void gen_bytecode_access_iden(struct ast_node* node, struct vm* v) {
+    ASSERT(node->type == AstNodeTypeReferenceIdentifier);
+    START_PROFILING();
+    u8 code = ByteCodeAccessIden;
+    vector_push(v->code, code);
+    gen_ptr(&node->tok->data.val.string, v);
+    ast_reference* ref = get_ast_true_type(node);
+    if (ref->id) {
+        ref->id->gen_bytecode(ref->id, v);
+    }
     if (ref->next) {
         ref->next->gen_bytecode(ref->next, v);
     }
@@ -132,31 +159,65 @@ void gen_bytecode_initvar(ast_node* node, vm* v) {
 
 void gen_bytecode_funcparam(struct ast_node* node, struct vm* v) {
     ASSERT(node->type == AstNodeTypeFuncParam);
+    START_PROFILING();
     ast_funcparam* param = get_ast_true_type(node);
     if (param->next_param) {
         gen_bytecode_push_name(param->next_param, v);
         param->next_param->gen_bytecode(param->next_param, v);
     }
+    END_PROFILING(__func__);
 }
 
 void gen_bytecode_funcdef(struct ast_node* node, struct vm* v) {
     ASSERT(node->type == AstNodeTypeFuncDef);
+    START_PROFILING();
+    gen_bytecode_push_name(node, v);
+
     ast_funcdef* def = get_ast_true_type(node);
     def->param->gen_bytecode(def->param, v);
 
     u8 code = ByteCodePushConst;
     vector_push(v->code, code);
-    gen_const(&def->param_count, PrimitiveDataTypeInt32, 4, v);
-
-    gen_bytecode_push_name(node, v);
+    gen_const(&def->param_count, PrimitiveDataTypeInt8, 1, v);
 
     code = ByteCodeFuncDef;
     vector_push(v->code, code);
+    END_PROFILING(__func__);
 }
 
 void gen_bytecode_funcend(struct ast_node* node, struct vm* v) {
     ASSERT(node->type == AstNodeTypeFuncEnd);
+    START_PROFILING();
     u8 code = ByteCodeFuncEnd;
     vector_push(v->code, code);
+    END_PROFILING(__func__);
+}
+
+void gen_bytecode_arguments(struct ast_node* node, struct vm* v) {
+    ASSERT(node->type == AstNodeTypeArgs);
+    ast_arg* arg = get_ast_true_type(node);
+    arg->expr->gen_bytecode(arg->expr, v);
+    if (arg->next_arg) {
+        arg->next_arg->gen_bytecode(arg->next_arg, v);
+    }
+}
+
+void gen_bytecode_funcall(struct ast_node* node, struct vm* v) {
+    ASSERT(node->type == AstNodeTypeFuncall);
+    START_PROFILING();
+
+    ast_funcall* funcall = get_ast_true_type(node);
+    ast_arg* arg = get_ast_true_type(funcall->args);
+    if (arg->expr) {
+        funcall->args->gen_bytecode(funcall->args, v);
+    }
+
+    u8 code = ByteCodePushConst;
+    vector_push(v->code, code);
+    gen_const(&funcall->args_count, PrimitiveDataTypeInt8, 1, v);
+
+    code = ByteCodeFuncall;
+    vector_push(v->code, code);
+    END_PROFILING(__func__);
 }
 

@@ -48,7 +48,7 @@ struct vector_data
 
 #define vector_back(vec) vec[vector_size(vec) - 1]
 
-#define vector_backn(vec, n) vec[vector_size(vec) - n - 1]
+#define vector_backn(vec, n) vec[vector_size(vec) - (n) - 1]
 
 #define for_vector(vec, i, start_index) for (u64 i = start_index; i < vector_size(vec); ++i)
 

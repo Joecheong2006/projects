@@ -3,6 +3,8 @@
 
 u8 primitive_size_map[] = {
     [PrimitiveDataTypeBoolean] = 1,
+    [PrimitiveDataTypeInt8] = 1,
+    [PrimitiveDataTypeInt16] = 2,
     [PrimitiveDataTypeInt32] = 4,
     [PrimitiveDataTypeInt64] = 8,
     [PrimitiveDataTypeFloat32] = 4,
@@ -23,6 +25,12 @@ void print_primitive_data(primitive_data* data) {
     }
     else if (data->type == PrimitiveDataTypeFloat32) {
         LOG_DEBUG_MSG("%g\n", data->val.float32);
+    }
+    else if (data->type == PrimitiveDataTypeInt16) {
+        LOG_DEBUG_MSG("%d\n", data->val.int16);
+    }
+    else if (data->type == PrimitiveDataTypeInt8) {
+        LOG_DEBUG_MSG("%d\n", data->val.int8);
     }
 }
 

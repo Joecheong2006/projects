@@ -9,6 +9,13 @@ a -= b
 a *= c
 a /= d
 a = e
+a.x
+a.x.y
+a.x.y.z
+a.x.y.z.a
 
 func add(a, b)
+    var c = a + b
+    c *= c
 end
+add(3, 4)

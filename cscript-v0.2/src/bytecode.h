@@ -17,6 +17,7 @@ typedef enum {
     ByteCodeDivAssign,
     ByteCodeModAssign,
 
+    ByteCodePop,
     ByteCodePushName,
     ByteCodePushConst,
     ByteCodeRefIden,
@@ -24,6 +25,7 @@ typedef enum {
     ByteCodeInitVar,
     ByteCodeFuncDef,
     ByteCodeFuncEnd,
+    ByteCodeFuncall,
 } ByteCode;
 
 struct ast_node;
@@ -44,13 +46,17 @@ void gen_bytecode_mul_assign(struct ast_node* node, struct vm* v);
 void gen_bytecode_div_assign(struct ast_node* node, struct vm* v);
 void gen_bytecode_mod_assign(struct ast_node* node, struct vm* v);
 
+void gen_bytecode_pop(struct ast_node* node, struct vm* v);
 void gen_bytecode_push_name(struct ast_node* node, struct vm* v);
 void gen_bytecode_push_const(struct ast_node* node, struct vm* v);
 void gen_bytecode_ref_iden(struct ast_node* node, struct vm* v);
+void gen_bytecode_access_iden(struct ast_node* node, struct vm* v);
 void gen_bytecode_initvar(struct ast_node* node, struct vm* v);
 
 void gen_bytecode_funcparam(struct ast_node* node, struct vm* v);
 void gen_bytecode_funcdef(struct ast_node* node, struct vm* v);
 void gen_bytecode_funcend(struct ast_node* node, struct vm* v);
+void gen_bytecode_arguments(struct ast_node* node, struct vm* v);
+void gen_bytecode_funcall(struct ast_node* node, struct vm* v);
 
 #endif
