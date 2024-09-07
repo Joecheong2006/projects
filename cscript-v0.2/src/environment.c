@@ -33,21 +33,16 @@ INLINE static u32 hash_object(void* data, u32 size) {
 }
 
 void env_push_scope(environment* env) {
-    START_PROFILING();
     scope sc = make_scope();
     vector_push(env->global, sc);
-    END_PROFILING(__func__);
 }
 
 void env_pop_scope(environment* env) {
-    START_PROFILING();
     free_scope(env, vector_back(env->global));
     vector_pop(env->global);
-    END_PROFILING(__func__);
 }
 
 object_carrier* env_find_object(environment* env, cstring name) {
-    START_PROFILING();
     vector(void*) result = env->map.data[hash_string(name) % env->map.size];
     for (i64 i = (i64)vector_size(result) - 1; i > -1; --i) {
         object_carrier* carrier = result[i];
@@ -55,16 +50,13 @@ object_carrier* env_find_object(environment* env, cstring name) {
             return carrier;
         }
     }
-    END_PROFILING(__func__);
     return NULL;
 }
 
 void env_push_object(environment* env, object_carrier* carrier) {
-    START_PROFILING();
     carrier->obj->level = vector_size(env->global);
     hashmap_add(&env->map, carrier);
     scopes_push_obj(env, carrier);
-    END_PROFILING(__func__);
 }
 
 void env_remove_object_from_scope(environment* env, object_carrier* carrier) {

@@ -1,7 +1,6 @@
 #include "object.h"
 #include "core/memory.h"
 #include "core/assert.h"
-#include "tracing.h"
 #include "environment.h"
 
 object* make_object(ObjectType type, cstring name, u64 type_size, void(*destroy)(object*, struct environment* inter)) {
@@ -54,11 +53,9 @@ void object_string_destroy(object* obj, struct environment* inter) {
 }
 
 object* make_object_string(cstring name) {
-    START_PROFILING();
     object* result = make_object(ObjectTypeString, name, sizeof(object_string), object_string_destroy);
     object_string* string = get_object_true_type(result);
     string->val = make_string("");
-    END_PROFILING(__func__);
     return result;
 }
 
@@ -71,11 +68,9 @@ void object_function_def_destroy(object* obj, struct environment* inter) {
 }
 
 object* make_object_function_def(cstring name) {
-    START_PROFILING();
     object* result = make_object(ObjectTypeFunctionDef, name, sizeof(object_function_def), object_function_def_destroy);
     object_function_def* def = get_object_true_type(result);
     def->args = make_vector(cstring);
-    END_PROFILING(__func__);
     return result;
 }
 
@@ -92,9 +87,7 @@ void object_ref_destroy(object* obj, struct environment* inter) {
 }
 
 object* make_object_ref(cstring name) {
-    START_PROFILING();
     object* result = make_object(ObjectTypeRef, name, sizeof(object_ref), object_ref_destroy);
-    END_PROFILING(__func__);
     return result;
 }
 
@@ -109,11 +102,9 @@ void object_user_type_destroy(object* obj, struct environment* inter) {
 }
 
 object* make_object_user_type(cstring name) {
-    START_PROFILING();
     object* result = make_object(ObjectTypeUserType, name, sizeof(object_user_type), object_user_type_destroy);
     object_user_type* user_type = get_object_true_type(result);
     user_type->members = make_vector(object*);
-    END_PROFILING(__func__);
     return result;
 
 }

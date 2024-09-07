@@ -2,6 +2,7 @@
 #include "object.h"
 #include "primitive_data.h"
 #include "tracing.h"
+#include "ast_node.h"
 #include "bytecode.h"
 #include "core/log.h"
 #include "core/assert.h"
@@ -370,6 +371,14 @@ static error_info run(vm* v) {
         v->ip++;
     }
     return (error_info){ .msg = NULL };
+}
+
+void vm_gen_bytecode(vm* v, ast_node** ast) {
+    START_PROFILING();
+    for_vector(ast, i, 0) {
+        ast[i]->gen_bytecode(ast[i], v);
+    }
+    END_PROFILING(__func__);
 }
 
 error_info vm_run(vm* v) {

@@ -90,9 +90,7 @@ int main(void) {
     if (ast) {
         vm v;
         init_vm(&v);
-        for_vector(ast, i, 0) {
-            ast[i]->gen_bytecode(ast[i], &v);
-        }
+        vm_gen_bytecode(&v, ast);
 
         START_PROFILING();
         print_bytecode(&v);
