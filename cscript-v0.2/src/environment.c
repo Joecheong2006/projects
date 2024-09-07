@@ -1,6 +1,7 @@
 #include "environment.h"
 #include "core/assert.h"
 #include "tracing.h"
+#include "core/memory.h"
 #include <string.h>
 
 INLINE static void scopes_push_obj(environment* env, object_carrier* obj) {
@@ -64,6 +65,25 @@ void env_push_object(environment* env, object_carrier* carrier) {
     hashmap_add(&env->map, carrier);
     scopes_push_obj(env, carrier);
     END_PROFILING(__func__);
+}
+
+void env_remove_object_from_scope(environment* env, object_carrier* carrier) {
+    vector(void*) result = hashmap_access_vector(&env->map, carrier);
+    for (i64 i = 0; i < vector_size(result); ++i) {
+        if (result[i] == carrier) {
+            for (i64 j = i; j < vector_size(result) - 1; ++j) {
+                result[j] = result[j + 1];
+            }
+            return;
+        }
+    }
+}
+
+void env_pop_object(environment* env, object_carrier* carrier) {
+    vector(void*) result = hashmap_access_vector(&env->map, carrier);
+    carrier->obj->destroy(carrier->obj, env);
+    free_mem(carrier);
+    vector_pop(result);
 }
 
 void init_environment(environment* env) {

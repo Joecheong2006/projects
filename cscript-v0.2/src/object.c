@@ -81,8 +81,12 @@ object* make_object_function_def(cstring name) {
 void object_ref_destroy(object* obj, struct environment* inter) {
     ASSERT(obj->type == ObjectTypeRef);
     object_ref* ref = get_object_true_type(obj);
-    object_carrier* ref_obj = env_find_object(inter, ref->ref_name);
-    ref_obj->obj->ref_count--;
+    (void)inter;
+    // object_carrier* ref_obj = env_find_object(inter, ref->ref_name);
+    ref->ref_obj->ref_count--;
+    // if (ref->ref_obj->ref_count == 0) {
+    //     ref->ref_obj->destroy(ref->ref_obj, inter);
+    // }
     free_mem(obj);
 }
 

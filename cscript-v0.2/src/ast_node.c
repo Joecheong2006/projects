@@ -225,6 +225,6 @@ static void destroy_ast_return(ast_node* node) {
 }
 
 ast_node* make_ast_return(struct token* tok) {
-    return make_ast_node(AstNodeTypeReturn, sizeof(ast_return), tok, destroy_ast_return, NULL);
+    return make_ast_node(AstNodeTypeReturn, sizeof(ast_return), tok, destroy_ast_return, gen_bytecode_return);
 }
 

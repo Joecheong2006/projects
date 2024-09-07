@@ -60,10 +60,8 @@ void print_bytecode(vm* v) {
         }
         case ByteCodeFuncDef: { LOG_DEBUG("\tfuncdef\n"); break; }
         case ByteCodeFuncEnd: { LOG_DEBUG("\tfuncend\n"); break; }
-        case ByteCodeFuncall: { 
-            LOG_DEBUG("\tfuncall\n");
-            break;
-        }
+        case ByteCodeFuncall: { LOG_DEBUG("\tfuncall\n"); break; }
+        case ByteCodeReturn: { LOG_DEBUG("\tret\n"); break; }
         default: {
             LOG_ERROR("\tinvalid bytecode %d\n", code);
             ASSERT_MSG(0, "invalid bytecode");
@@ -79,7 +77,7 @@ int main(void) {
     ASSERT(setup_platform(&state));
 
     lexer lex = {NULL, -1, 1, 1, 0};
-    lexer_load_file_text(&lex, "test.sc");
+    lexer_load_file_text(&lex, "test.script");
 
     parser par;
     init_parser(&par, generate_tokens(&lex));

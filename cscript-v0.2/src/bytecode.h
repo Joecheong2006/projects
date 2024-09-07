@@ -26,6 +26,7 @@ typedef enum {
     ByteCodeFuncDef,
     ByteCodeFuncEnd,
     ByteCodeFuncall,
+    ByteCodeReturn,
 } ByteCode;
 
 struct ast_node;
@@ -58,5 +59,6 @@ void gen_bytecode_funcdef(struct ast_node* node, struct vm* v);
 void gen_bytecode_funcend(struct ast_node* node, struct vm* v);
 void gen_bytecode_arguments(struct ast_node* node, struct vm* v);
 void gen_bytecode_funcall(struct ast_node* node, struct vm* v);
+void gen_bytecode_return(struct ast_node* node, struct vm* v);
 
 #endif

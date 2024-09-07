@@ -54,7 +54,8 @@ DEFINE_OBJECT_TYPE(function_def,
 )
 
 DEFINE_OBJECT_TYPE(ref,
-        cstring ref_name;
+        object* ref_obj;
+        // cstring ref_name;
 )
 
 DEFINE_OBJECT_TYPE(user_type,

@@ -221,3 +221,16 @@ void gen_bytecode_funcall(struct ast_node* node, struct vm* v) {
     END_PROFILING(__func__);
 }
 
+void gen_bytecode_return(struct ast_node* node, struct vm* v) {
+    ASSERT(node->type == AstNodeTypeReturn);
+    ast_return* ret = get_ast_true_type(node);
+    if (ret->expr) {
+        ret->expr->gen_bytecode(ret->expr, v);
+        u8 code = ByteCodeReturn;
+        vector_push(v->code, code);
+        return;
+    }
+    // u8 code = ByteCodeFuncEnd;
+    // vector_push(v->code, code);
+}
+

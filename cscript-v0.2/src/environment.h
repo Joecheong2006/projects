@@ -25,6 +25,9 @@ void env_push_scope(environment* env);
 void env_pop_scope(environment* env);
 
 object_carrier* env_find_object(environment* env, cstring name);
-void env_push_object(environment* env, object_carrier* obj);
+void env_push_object(environment* env, object_carrier* carrier);
+
+void env_remove_object_from_scope(environment* env, object_carrier* carrier);
+void env_pop_object(environment* env, object_carrier* carrier);
 
 #endif

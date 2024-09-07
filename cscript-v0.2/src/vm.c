@@ -26,7 +26,14 @@ INLINE static error_info initvar(vm* v) {
     cstring name = vector_backn(v->env.bp, 0).val.string;
     primitive_data rhs = vector_backn(v->env.bp, 1);
     if (rhs.type >= ObjectTypeNone) {
-        ASSERT_MSG(rhs.val.carrier->obj->type == ObjectTypePrimitiveData, "not implement initvar obj yet");
+        if (rhs.val.carrier->obj->type != ObjectTypePrimitiveData) {
+            object* obj = make_object_ref(name);
+            object_ref* ref = get_object_true_type(obj);
+            ref->ref_obj = rhs.val.carrier->obj;
+            ref->ref_obj->ref_count++;
+        }
+
+        // ASSERT_MSG(rhs.val.carrier->obj->type == ObjectTypePrimitiveData, "not implement initvar obj yet");
         object* obj = make_object_primitive_data(name);
         object_primitive_data* o = get_object_true_type(obj);
         object_primitive_data* rhs_obj = get_object_true_type(rhs.val.carrier->obj);
@@ -36,6 +43,7 @@ INLINE static error_info initvar(vm* v) {
         LOG_DEBUG("\tinitvar\t\t%s\n", name);
         return (error_info){ .msg = NULL };
     }
+
     object* obj = make_object_primitive_data(name);
     object_primitive_data* o = get_object_true_type(obj);
     o->val = rhs;
@@ -249,6 +257,7 @@ static error_info run(vm* v) {
             i32 org_ip = (i32)(vector_backn(v->env.bp, 0).val.int64 >> 32);
             i32 scope_level = (i32)((vector_backn(v->env.bp, 0).val.int64 << 32) >> 32);
             vector_pop(v->env.bp);
+            vector_push(v->env.bp, (primitive_data){ .type = ObjectTypeNone });
             LOG_DEBUG("\t%d %d %d\n", org_ip, scope_level, get_env_level(&v->env));
             do { 
                 env_pop_scope(&v->env);
@@ -263,6 +272,13 @@ static error_info run(vm* v) {
                 return (error_info){ .msg = "attemp to call a non funcation object" };
             }
             object_function_def* def = get_object_true_type(carrier->obj);
+
+            if (args_count > (i8)vector_size(def->args)) {
+                return (error_info){ .msg = "too many arguments" };
+            }
+            else if (args_count < (i8)vector_size(def->args)) {
+                return (error_info){ .msg = "missing arguments" };
+            }
 
             LOG_DEBUG("\tfuncall\t\t%s %d %d\n", carrier->obj->name, args_count, def->entry_point);
             vector_pop(v->env.bp);
@@ -289,6 +305,32 @@ static error_info run(vm* v) {
             v->ip = def->entry_point;
 
             // TODO: push ret obj and the original ip
+            break;
+        }
+        case ByteCodeReturn: {
+            primitive_data data = vector_back(v->env.bp);
+            vector_pop(v->env.bp);
+            i32 org_ip = (i32)(vector_backn(v->env.bp, 0).val.int64 >> 32);
+            i32 scope_level = (i32)((vector_backn(v->env.bp, 0).val.int64 << 32) >> 32);
+            vector_pop(v->env.bp);
+
+            if (data.type >= 0xf) {
+                if (data.type == ObjectTypePrimitiveData) {
+                    // env_remove_object_from_scope(&v->env, data.val.carrier);
+                    // env_push_object(&v->env, data.val.carrier);
+                    object_primitive_data* o = get_object_true_type(data.val.carrier->obj);
+                    vector_push(v->env.bp, o->val);
+                }
+            }
+            else {
+                vector_push(v->env.bp, data);
+            }
+
+            LOG_DEBUG("\treturn\t\t%d %d %d\n", org_ip, scope_level, get_env_level(&v->env));
+            do { 
+                env_pop_scope(&v->env);
+            } while (scope_level != get_env_level(&v->env));
+            v->ip = org_ip;
             break;
         }
         default: {

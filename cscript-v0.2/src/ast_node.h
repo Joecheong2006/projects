@@ -1,6 +1,6 @@
 #ifndef _AST_NODE_H_
 #define _AST_NODE_H_
-#include "container/vector.h"
+#include "core/defines.h"
 
 typedef enum {
     AstNodeTypeEnd,
