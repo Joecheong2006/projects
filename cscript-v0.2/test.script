@@ -14,19 +14,17 @@ a.x.y
 a.x.y.z
 a.x.y.z.a
 
-func add(a, b)
-    var c = a + b
-    return 1
-    return c * c
-end
-var r = add(add(1,2), add(3,4))
-r += 0
-
 func sqrt(x)
     var result = x * x
     return result
 end
 
-var n = sqrt(4)
-n+=0
-sqrt(4)
+var result = sqrt(sqrt(5))
+result += 0
+
+func add(a, b)
+    var c = a + b
+    return c
+end
+var r = add(add(1,2), add(3,4))
+r += 0

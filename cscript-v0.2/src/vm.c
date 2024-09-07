@@ -5,6 +5,7 @@
 #include "bytecode.h"
 #include "core/log.h"
 #include "core/assert.h"
+#include "core/memory.h"
 #include <string.h>
 
 void init_vm(vm* v) {
@@ -26,11 +27,19 @@ INLINE static error_info initvar(vm* v) {
     cstring name = vector_backn(v->env.bp, 0).val.string;
     primitive_data rhs = vector_backn(v->env.bp, 1);
     if (rhs.type >= ObjectTypeNone) {
+        if (rhs.val.carrier->obj->level != get_env_level(&v->env)) {
+            vector_popn(v->env.bp, 2);
+            rhs.val.carrier->obj->name = name;
+            env_push_object(&v->env, rhs.val.carrier);
+            LOG_DEBUG("\tcatch ret\t%s %d\n", name, get_env_level(&v->env));
+            return (error_info){ .msg = NULL };
+        }
         if (rhs.val.carrier->obj->type != ObjectTypePrimitiveData) {
             object* obj = make_object_ref(name);
             object_ref* ref = get_object_true_type(obj);
             ref->ref_obj = rhs.val.carrier->obj;
             ref->ref_obj->ref_count++;
+            return (error_info){ .msg = NULL };
         }
 
         // ASSERT_MSG(rhs.val.carrier->obj->type == ObjectTypePrimitiveData, "not implement initvar obj yet");
@@ -199,6 +208,11 @@ static error_info run(vm* v) {
             break;
         }
         case ByteCodePop: {
+            primitive_data* data = &vector_back(v->env.bp);
+            if (data->type > 0xf && data->val.carrier->obj->level != get_env_level(&v->env)) {
+                data->val.carrier->obj->destroy(data->val.carrier->obj, &v->env);
+                free_mem(data->val.carrier);
+            }
             LOG_DEBUG("\tpop\n");
             vector_pop(v->env.bp);
             break;
@@ -283,7 +297,6 @@ static error_info run(vm* v) {
             LOG_DEBUG("\tfuncall\t\t%s %d %d\n", carrier->obj->name, args_count, def->entry_point);
             vector_pop(v->env.bp);
 
-            env_push_scope(&v->env);
             for (i32 i = 0; i < args_count; i++) {
                 primitive_data data = {
                     .val.string = def->args[i],
@@ -295,6 +308,16 @@ static error_info run(vm* v) {
                     return ei;
                 }
             }
+
+            env_push_scope(&v->env);
+            for (i32 i = 0; i < args_count; i++) {
+                scope s = vector_backn(v->env.global, 1);
+                object_carrier* car = vector_back(s);
+                car->obj->level++;
+                vector_pop(s);
+                vector_push(vector_back(v->env.global), car);
+            }
+
             vector_popn(v->env.bp, 1);
             primitive_data data = {
                 .val.int64 = (i64)v->ip << 32 | (i64)(get_env_level(&v->env) - 1),
@@ -315,12 +338,17 @@ static error_info run(vm* v) {
             vector_pop(v->env.bp);
 
             if (data.type >= 0xf) {
-                if (data.type == ObjectTypePrimitiveData) {
-                    // env_remove_object_from_scope(&v->env, data.val.carrier);
-                    // env_push_object(&v->env, data.val.carrier);
-                    object_primitive_data* o = get_object_true_type(data.val.carrier->obj);
-                    vector_push(v->env.bp, o->val);
-                }
+                LOG_DEBUG("\treturn\t\t%d %d %d\n", org_ip, scope_level, get_env_level(&v->env));
+                env_remove_object_from_scope(&v->env, data.val.carrier);
+                do { 
+                    env_pop_scope(&v->env);
+                } while (scope_level != get_env_level(&v->env));
+                v->ip = org_ip;
+                vector_push(v->env.bp, (primitive_data){
+                        .val.carrier = data.val.carrier,
+                        .type = data.val.carrier->obj->type
+                    });
+                break;
             }
             else {
                 vector_push(v->env.bp, data);

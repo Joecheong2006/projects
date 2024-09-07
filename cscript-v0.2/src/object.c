@@ -9,6 +9,7 @@ object* make_object(ObjectType type, cstring name, u64 type_size, void(*destroy)
     result->type = type;
     result->name = name;
     result->destroy = destroy;
+    result->level = -1;
     return result;
 }
 

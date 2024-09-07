@@ -74,6 +74,18 @@ void env_remove_object_from_scope(environment* env, object_carrier* carrier) {
             for (i64 j = i; j < vector_size(result) - 1; ++j) {
                 result[j] = result[j + 1];
             }
+            vector_pop(result);
+            break;
+        }
+    }
+
+    scope s = vector_back(env->global);
+    for (i64 i = 0; i < vector_size(s); ++i) {
+        if (s[i] == carrier) {
+            for (i64 j = i; j < vector_size(s) - 1; ++j) {
+                s[j] = s[j + 1];
+            }
+            vector_pop(s);
             return;
         }
     }
