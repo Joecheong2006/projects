@@ -27,6 +27,9 @@ func add(a, b)
     return c
 end
 
+var r = add(add(1,2), add(3,4))
+r += 0
+
 func get_nil() 
     return
 end
@@ -41,6 +44,5 @@ end
 var s = get_n()
 s += 0
 
-var r = add(add(1,2), add(3,4))
-r += 0
+n += 1
 

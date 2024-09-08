@@ -91,6 +91,13 @@ INLINE static error_info assign(vm* v) {
             LOG_DEBUG("\tassign\t\t%s\t", carrier->obj->name);
             print_primitive_data(&o->val);
         }
+        else if (rhs->type == ObjectTypePrimitiveData) {
+            carrier->obj = make_object_primitive_data(carrier->obj->name);
+            carrier->obj->level = d->level;
+            object_primitive_data* o_rhs = get_object_true_type(rhs->val.carrier->obj);
+            object_primitive_data* o = get_object_true_type(carrier->obj);
+            o->val = o_rhs->val;
+        }
         d->destroy(d, &v->env);
     }
     else if (carrier->obj->type == ObjectTypePrimitiveData) {
@@ -200,8 +207,8 @@ INLINE static error_info func_return(vm* v) {
 
     if (data.type >= ObjectTypeNone) {
         LOG_DEBUG("\treturn\t\t%d %d %d\n", org_ip, scope_level, get_env_level(&v->env));
-        env_remove_object_from_scope(&v->env, data.val.carrier);
         if (get_env_level(&v->env) == data.val.carrier->obj->level) {
+            env_remove_object_from_scope(&v->env, data.val.carrier);
             data.val.carrier->obj->level++;
         }
         do { 
