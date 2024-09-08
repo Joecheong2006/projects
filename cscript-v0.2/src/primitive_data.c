@@ -1,5 +1,6 @@
 #include "primitive_data.h"
 #include "core/log.h"
+#include "object.h"
 
 u8 primitive_size_map[] = {
     [PrimitiveDataTypeBoolean] = 1,
@@ -11,6 +12,23 @@ u8 primitive_size_map[] = {
     [PrimitiveDataTypeFloat64] = 8,
     [PrimitiveDataTypeString] = sizeof(void*),
     [PrimitiveDataTypeObjPtr] = sizeof(void*),
+};
+
+char* primitive_type_name[] = {
+    [PrimitiveDataTypeBoolean] = "boolean",
+    [PrimitiveDataTypeInt8] = "int8",
+    [PrimitiveDataTypeInt16] = "int16",
+    [PrimitiveDataTypeInt32] = "int32",
+    [PrimitiveDataTypeInt64] = "int64",
+    [PrimitiveDataTypeFloat32] = "int32",
+    [PrimitiveDataTypeFloat64] = "int64",
+    [PrimitiveDataTypeString] = "string",
+    [ObjectTypeNone] = "none",
+    [ObjectTypeRef] = "ref",
+    [ObjectTypeBool] = "bool",
+    [ObjectTypeArray] = "array",
+    [ObjectTypeUserType] = "user",
+    [ObjectTypeFunctionDef] = "funcdef",
 };
 
 void print_primitive_data(primitive_data* data) {
@@ -171,11 +189,11 @@ error_info primitive_data_mod(primitive_data* out, primitive_data* a, primitive_
     out->type = type;
     switch (type) {
     case PrimitiveDataTypeInt32:
-        if (b->val.int32 == 0) { return (error_info){ .msg = "attemp to perform n % 0" }; }
+        if (b->val.int32 == 0) { return (error_info){ .msg = "attempt to perform n % 0" }; }
         out->val.int32 = a->val.int32 % b->val.int32;
         break;
     case PrimitiveDataTypeInt64:
-        if (b->val.int64 == 0) { return (error_info){ .msg = "attemp to perform n % 0" }; }
+        if (b->val.int64 == 0) { return (error_info){ .msg = "attempt to perform n % 0" }; }
         out->val.int64 = a->val.int64 % b->val.int64;
         break;
     case PrimitiveDataTypeFloat32:

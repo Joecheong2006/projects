@@ -62,6 +62,7 @@ void print_bytecode(vm* v) {
         case ByteCodeFuncEnd: { LOG_DEBUG("\tfuncend\n"); break; }
         case ByteCodeFuncall: { LOG_DEBUG("\tfuncall\n"); break; }
         case ByteCodeReturn: { LOG_DEBUG("\tret\n"); break; }
+        case ByteCodeReturnNone: { LOG_DEBUG("\tret_none\n"); break; }
         default: {
             LOG_ERROR("\tinvalid bytecode %d\n", code);
             ASSERT_MSG(0, "invalid bytecode");

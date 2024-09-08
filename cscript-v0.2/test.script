@@ -26,5 +26,21 @@ func add(a, b)
     var c = a + b
     return c
 end
+
+func get_nil() 
+    return
+end
+
+var n = get_nil()
+n = 0
+
+func get_n()
+    return n
+end
+
+var s = get_n()
+s += 0
+
 var r = add(add(1,2), add(3,4))
 r += 0
+

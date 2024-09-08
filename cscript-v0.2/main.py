@@ -1,11 +1,5 @@
-def func():
-    return [1, 2, 3]
-
-a = func()
+a = [1, 2, 3]
 l = a
-a[0] += 1;
-print(l)
-
-a = func()
+a = 1
 print(a)
 print(l)

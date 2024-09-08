@@ -7,6 +7,7 @@
 #include "core/log.h"
 #include "core/assert.h"
 #include "core/memory.h"
+#include <stdio.h>
 #include <string.h>
 
 void init_vm(vm* v) {
@@ -28,11 +29,17 @@ INLINE static error_info initvar(vm* v) {
     cstring name = vector_backn(v->env.bp, 0).val.string;
     primitive_data rhs = vector_backn(v->env.bp, 1);
     if (rhs.type >= ObjectTypeNone) {
+        if (rhs.type == ObjectTypeNone) {
+            vector_popn(v->env.bp, 2);
+            env_push_object(&v->env, make_object_carrier(make_object_none(name)));
+            LOG_DEBUG("\tcatch ret none\t%s\n", name);
+            return (error_info){ .msg = NULL };
+        }
         if (rhs.val.carrier->obj->level != get_env_level(&v->env)) {
             vector_popn(v->env.bp, 2);
             rhs.val.carrier->obj->name = name;
             env_push_object(&v->env, rhs.val.carrier);
-            LOG_DEBUG("\tcatch ret\t%s %d\n", name, get_env_level(&v->env));
+            LOG_DEBUG("\tcatch ret\t%s\n", name);
             return (error_info){ .msg = NULL };
         }
         if (rhs.val.carrier->obj->type != ObjectTypePrimitiveData) {
@@ -66,14 +73,6 @@ INLINE static error_info initvar(vm* v) {
 INLINE static error_info assign(vm* v) {
     object_carrier* carrier = vector_backn(v->env.bp, 0).val.carrier;
     primitive_data* rhs = &vector_backn(v->env.bp, 1);
-    if (carrier->obj->type == ObjectTypeFunctionDef) {
-        vector_popn(v->env.bp, 2);
-        return (error_info){ .msg = "function cannot be assigned by any kind!" };
-    }
-    if (carrier->obj->type == ObjectTypeRef) {
-        ASSERT_MSG(0, "not implement ref object assignment");
-    }
-
     if (rhs->type >= ObjectTypeNone) {
         if (rhs->type != ObjectTypePrimitiveData) {
             return (error_info){ .msg = "attmpt to add with a non primitive object" };
@@ -82,10 +81,29 @@ INLINE static error_info assign(vm* v) {
         *rhs = o->val;
     }
 
-    object_primitive_data* o = get_object_true_type(carrier->obj);
-    o->val = *rhs;
-    LOG_DEBUG("\tassign\t\t%s\t", carrier->obj->name);
-    print_primitive_data(&o->val);
+    if (carrier->obj->type == ObjectTypeNone) {
+        object* d = carrier->obj;
+        if (rhs->type < ObjectTypeNone) {
+            carrier->obj = make_object_primitive_data(carrier->obj->name);
+            carrier->obj->level = d->level;
+            object_primitive_data* o = get_object_true_type(carrier->obj);
+            o->val = *rhs;
+            LOG_DEBUG("\tassign\t\t%s\t", carrier->obj->name);
+            print_primitive_data(&o->val);
+        }
+        d->destroy(d, &v->env);
+    }
+    else if (carrier->obj->type == ObjectTypePrimitiveData) {
+        object_primitive_data* o = get_object_true_type(carrier->obj);
+        o->val = *rhs;
+        LOG_DEBUG("\tassign\t\t%s\t", carrier->obj->name);
+        print_primitive_data(&o->val);
+    }
+    else {
+        // vector_popn(v->env.bp, 2);
+        ASSERT_MSG(0, "not implement object assignment");
+    }
+
     vector_popn(v->env.bp, 2);
     return (error_info){ .msg = NULL };
 }
@@ -119,19 +137,112 @@ INLINE static error_info funcdef(vm* v) {
     return (error_info){ .msg = NULL };
 }
 
+INLINE static error_info funcall(vm* v) {
+    i8 args_count = vector_backn(v->env.bp, 0).val.int8;
+    object_carrier* carrier = vector_backn(v->env.bp, 1 + args_count).val.carrier;
+    if (carrier->obj->type != ObjectTypeFunctionDef) {
+        return (error_info){ .msg = "attempt to call a non funcation object" };
+    }
+    object_function_def* def = get_object_true_type(carrier->obj);
+
+    if (args_count > (i8)vector_size(def->args)) {
+        return (error_info){ .msg = "too many arguments" };
+    }
+    else if (args_count < (i8)vector_size(def->args)) {
+        return (error_info){ .msg = "missing arguments" };
+    }
+
+    LOG_DEBUG("\tfuncall\t\t%s %d %d\n", carrier->obj->name, args_count, def->entry_point);
+    vector_pop(v->env.bp);
+
+    env_push_scope(&v->env);
+    for (i32 i = 0; i < args_count; i++) {
+        primitive_data data = {
+            .val.string = def->args[i],
+            .type = PrimitiveDataTypeString,
+        };
+        vector_push(v->env.bp, data);
+        error_info ei = initvar(v);
+        if (ei.msg) {
+            return ei;
+        }
+    }
+    vector_popn(v->env.bp, 1);
+
+    primitive_data data = {
+        .val.int64 = (i64)v->ip << 32 | (i64)(get_env_level(&v->env) - 1),
+        .type = PrimitiveDataTypeInt64,
+    };
+    vector_push(v->env.bp, data);
+    v->ip = def->entry_point;
+    return (error_info){ .msg = NULL };
+}
+
+INLINE static error_info funcend(vm* v) {
+    i32 org_ip = (i32)(vector_backn(v->env.bp, 0).val.int64 >> 32);
+    i32 scope_level = (i32)((vector_backn(v->env.bp, 0).val.int64 << 32) >> 32);
+    vector_pop(v->env.bp);
+    vector_push(v->env.bp, (primitive_data){ .type = ObjectTypeNone });
+    LOG_DEBUG("\tfuncend\t\t%d %d %d\n", org_ip, scope_level, get_env_level(&v->env));
+    do { 
+        env_pop_scope(&v->env);
+    } while (scope_level != get_env_level(&v->env));
+    v->ip = org_ip;
+    return (error_info){ .msg = NULL };
+}
+
+INLINE static error_info func_return(vm* v) {
+    primitive_data data = vector_back(v->env.bp);
+    vector_pop(v->env.bp);
+    i32 org_ip = (i32)(vector_backn(v->env.bp, 0).val.int64 >> 32);
+    i32 scope_level = (i32)((vector_backn(v->env.bp, 0).val.int64 << 32) >> 32);
+    vector_pop(v->env.bp);
+
+    if (data.type >= ObjectTypeNone) {
+        LOG_DEBUG("\treturn\t\t%d %d %d\n", org_ip, scope_level, get_env_level(&v->env));
+        env_remove_object_from_scope(&v->env, data.val.carrier);
+        if (get_env_level(&v->env) == data.val.carrier->obj->level) {
+            data.val.carrier->obj->level++;
+        }
+        do { 
+            env_pop_scope(&v->env);
+        } while (scope_level != get_env_level(&v->env));
+        v->ip = org_ip;
+        vector_push(v->env.bp, (primitive_data){
+                .val.carrier = data.val.carrier,
+                .type = data.val.carrier->obj->type
+            });
+        return (error_info){ .msg = NULL };
+    }
+    else {
+        vector_push(v->env.bp, data);
+    }
+
+    LOG_DEBUG("\treturn\t\t%d %d %d\n", org_ip, scope_level, get_env_level(&v->env));
+    do { 
+        env_pop_scope(&v->env);
+    } while (scope_level != get_env_level(&v->env));
+    v->ip = org_ip;
+    return (error_info){ .msg = NULL };
+}
+
 #define IMPL_ASSIGN(assign_name)\
+        static char msg[54];\
         object_carrier* carrier = vector_backn(v->env.bp, 0).val.carrier;\
         primitive_data* rhs = &vector_backn(v->env.bp, 1);\
         if (rhs->type >= ObjectTypeNone) {\
             if (rhs->type != ObjectTypePrimitiveData) {\
-                return (error_info){ .msg = "attmpt to add with a non primitive object" };\
+                vector_popn(v->env.bp, 2);\
+                sprintf(msg, "attempt to perform " #assign_name " operation on %s", primitive_type_name[rhs->type]);\
+                return (error_info){ .msg = msg };\
             }\
             object_primitive_data* o = get_object_true_type(rhs->val.carrier->obj);\
             *rhs = o->val;\
         }\
         if (carrier->obj->type != ObjectTypePrimitiveData) {\
             vector_popn(v->env.bp, 2);\
-            return (error_info){ .msg = "attemp to perform arithmetic operation on non primitive type" };\
+            sprintf(msg, "attempt to perform " #assign_name " operation on %s", primitive_type_name[carrier->obj->type]);\
+            return (error_info){ .msg = msg};\
         }\
         object_primitive_data* o = get_object_true_type(carrier->obj);\
         error_info ei = primitive_data_##assign_name##_assign(&o->val, rhs);\
@@ -144,20 +255,25 @@ INLINE static error_info funcdef(vm* v) {
         break;
 
 #define IMPL_ARITHMETIC(name)\
+        static char msg[32];\
         u32 end = vector_size(v->env.bp);\
         primitive_data data;\
         primitive_data* lhs = v->env.bp + end - 2;\
         primitive_data* rhs = v->env.bp + end - 1;\
         if (lhs->type >= ObjectTypeNone) {\
             if (lhs->type != ObjectTypePrimitiveData) {\
-                return (error_info){ .msg = "attmpt to add with a primitive object" };\
+                vector_popn(v->env.bp, 2);\
+                sprintf(msg, "attempt to " #name " with a %s object", primitive_type_name[lhs->type]);\
+                return (error_info){ .msg = msg };\
             }\
             object_primitive_data* o = get_object_true_type(lhs->val.carrier->obj);\
             *lhs = o->val;\
         }\
         if (rhs->type >= ObjectTypeNone) {\
             if (rhs->type != ObjectTypePrimitiveData) {\
-                return (error_info){ .msg = "attmpt to add with a primitive object" };\
+                vector_popn(v->env.bp, 2);\
+                sprintf(msg, "attempt to " #name " with a %s object", primitive_type_name[rhs->type]);\
+                return (error_info){ .msg = msg };\
             }\
             object_primitive_data* o = get_object_true_type(rhs->val.carrier->obj);\
             *rhs = o->val;\
@@ -210,7 +326,7 @@ static error_info run(vm* v) {
         }
         case ByteCodePop: {
             primitive_data* data = &vector_back(v->env.bp);
-            if (data->type > 0xf && data->val.carrier->obj->level != get_env_level(&v->env)) {
+            if (data->type > ObjectTypeNone && data->val.carrier->obj->level != get_env_level(&v->env)) {
                 data->val.carrier->obj->destroy(data->val.carrier->obj, &v->env);
                 free_mem(data->val.carrier);
             }
@@ -268,98 +384,26 @@ static error_info run(vm* v) {
             }
             break;
         }
+        case ByteCodeReturnNone:
         case ByteCodeFuncEnd: {
-            i32 org_ip = (i32)(vector_backn(v->env.bp, 0).val.int64 >> 32);
-            i32 scope_level = (i32)((vector_backn(v->env.bp, 0).val.int64 << 32) >> 32);
-            vector_pop(v->env.bp);
-            vector_push(v->env.bp, (primitive_data){ .type = ObjectTypeNone });
-            LOG_DEBUG("\t%d %d %d\n", org_ip, scope_level, get_env_level(&v->env));
-            do { 
-                env_pop_scope(&v->env);
-            } while (scope_level != get_env_level(&v->env));
-            v->ip = org_ip;
+            error_info ei = funcend(v);
+            if (ei.msg) {
+                return ei;
+            }
             break;
         }
         case ByteCodeFuncall: {
-            i8 args_count = vector_backn(v->env.bp, 0).val.int8;
-            object_carrier* carrier = vector_backn(v->env.bp, 1 + args_count).val.carrier;
-            if (carrier->obj->type != ObjectTypeFunctionDef) {
-                return (error_info){ .msg = "attemp to call a non funcation object" };
+            error_info ei = funcall(v);
+            if (ei.msg) {
+                return ei;
             }
-            object_function_def* def = get_object_true_type(carrier->obj);
-
-            if (args_count > (i8)vector_size(def->args)) {
-                return (error_info){ .msg = "too many arguments" };
-            }
-            else if (args_count < (i8)vector_size(def->args)) {
-                return (error_info){ .msg = "missing arguments" };
-            }
-
-            LOG_DEBUG("\tfuncall\t\t%s %d %d\n", carrier->obj->name, args_count, def->entry_point);
-            vector_pop(v->env.bp);
-
-            for (i32 i = 0; i < args_count; i++) {
-                primitive_data data = {
-                    .val.string = def->args[i],
-                    .type = PrimitiveDataTypeString,
-                };
-                vector_push(v->env.bp, data);
-                error_info ei = initvar(v);
-                if (ei.msg) {
-                    return ei;
-                }
-            }
-
-            env_push_scope(&v->env);
-            for (i32 i = 0; i < args_count; i++) {
-                scope s = vector_backn(v->env.global, 1);
-                object_carrier* car = vector_back(s);
-                car->obj->level++;
-                vector_pop(s);
-                vector_push(vector_back(v->env.global), car);
-            }
-
-            vector_popn(v->env.bp, 1);
-            primitive_data data = {
-                .val.int64 = (i64)v->ip << 32 | (i64)(get_env_level(&v->env) - 1),
-                .type = PrimitiveDataTypeInt64,
-            };
-            vector_push(v->env.bp, data);
-
-            v->ip = def->entry_point;
-
-            // TODO: push ret obj and the original ip
             break;
         }
         case ByteCodeReturn: {
-            primitive_data data = vector_back(v->env.bp);
-            vector_pop(v->env.bp);
-            i32 org_ip = (i32)(vector_backn(v->env.bp, 0).val.int64 >> 32);
-            i32 scope_level = (i32)((vector_backn(v->env.bp, 0).val.int64 << 32) >> 32);
-            vector_pop(v->env.bp);
-
-            if (data.type >= 0xf) {
-                LOG_DEBUG("\treturn\t\t%d %d %d\n", org_ip, scope_level, get_env_level(&v->env));
-                env_remove_object_from_scope(&v->env, data.val.carrier);
-                do { 
-                    env_pop_scope(&v->env);
-                } while (scope_level != get_env_level(&v->env));
-                v->ip = org_ip;
-                vector_push(v->env.bp, (primitive_data){
-                        .val.carrier = data.val.carrier,
-                        .type = data.val.carrier->obj->type
-                    });
-                break;
+            error_info ei = func_return(v);
+            if (ei.msg) {
+                return ei;
             }
-            else {
-                vector_push(v->env.bp, data);
-            }
-
-            LOG_DEBUG("\treturn\t\t%d %d %d\n", org_ip, scope_level, get_env_level(&v->env));
-            do { 
-                env_pop_scope(&v->env);
-            } while (scope_level != get_env_level(&v->env));
-            v->ip = org_ip;
             break;
         }
         default: {

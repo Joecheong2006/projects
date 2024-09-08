@@ -16,6 +16,7 @@ typedef enum {
 } PrimitiveDataType;
 
 extern u8 primitive_size_map[];
+extern char* primitive_type_name[];
 
 struct object_carrier;
 typedef struct {

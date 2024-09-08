@@ -27,6 +27,7 @@ typedef enum {
     ByteCodeFuncEnd,
     ByteCodeFuncall,
     ByteCodeReturn,
+    ByteCodeReturnNone,
 } ByteCode;
 
 struct ast_node;

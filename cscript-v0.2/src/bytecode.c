@@ -229,7 +229,7 @@ void gen_bytecode_return(struct ast_node* node, struct vm* v) {
         vector_push(v->code, code);
         return;
     }
-    // u8 code = ByteCodeFuncEnd;
-    // vector_push(v->code, code);
+    u8 code = ByteCodeReturnNone;
+    vector_push(v->code, code);
 }
 

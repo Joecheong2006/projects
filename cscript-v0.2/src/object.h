@@ -4,7 +4,7 @@
 #include "primitive_data.h"
 
 typedef enum {
-    ObjectTypeNone = 0xf,
+    ObjectTypeNone = PrimitiveDataTypeObjPtr + 1,
     ObjectTypeBool,
     ObjectTypePrimitiveData,
     ObjectTypeString,
