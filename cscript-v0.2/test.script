@@ -27,7 +27,7 @@ func add(a, b)
     return c
 end
 
-var r = add(add(1,2), add(3,4))
+var r = add(add(add(1,2), add(3,4)), add(add(1,2), add(3,4)))
 r += 0
 
 func get_nil() 

@@ -3,26 +3,14 @@
 #include "core/assert.h"
 #include "environment.h"
 
-object* make_object(ObjectType type, cstring name, u64 type_size, void(*destroy)(object*, struct environment* inter)) {
+object* make_object(ObjectType type, u64 type_size, void(*destroy)(object*, struct environment* inter)) {
     object* result = cnew_mem(1, type_size + sizeof(object));
     result->type = type;
-    result->name = name;
     result->destroy = destroy;
-    result->level = -1;
     return result;
 }
 
 INLINE void* get_object_true_type(object* obj) { return obj + 1; }
-
-void object_none_destroy(object* obj, struct environment* inter) {
-    (void)inter;
-    ASSERT(obj->type == ObjectTypeNone);
-    free_mem(obj);
-}
-
-INLINE object* make_object_none(cstring name) {
-    return make_object(ObjectTypeNone, name, 0, object_none_destroy);
-}
 
 void object_bool_destroy(object* obj, struct environment* inter) {
     (void)inter;
@@ -30,8 +18,8 @@ void object_bool_destroy(object* obj, struct environment* inter) {
     free_mem(obj);
 }
 
-INLINE object* make_object_bool(cstring name) {
-    return make_object(ObjectTypeBool, name, sizeof(object_bool), object_bool_destroy);
+INLINE object* make_object_bool(void) {
+    return make_object(ObjectTypeBool, sizeof(object_bool), object_bool_destroy);
 }
 
 void object_primitive_data_destroy(object* obj, struct environment* inter) {
@@ -40,8 +28,8 @@ void object_primitive_data_destroy(object* obj, struct environment* inter) {
     free_mem(obj);
 }
 
-INLINE object* make_object_primitive_data(cstring name) {
-    return make_object(ObjectTypePrimitiveData, name, sizeof(object_primitive_data), object_primitive_data_destroy);
+INLINE object* make_object_primitive_data(void) {
+    return make_object(ObjectTypePrimitiveData, sizeof(object_primitive_data), object_primitive_data_destroy);
 }
 
 void object_string_destroy(object* obj, struct environment* inter) {
@@ -52,8 +40,8 @@ void object_string_destroy(object* obj, struct environment* inter) {
     free_mem(obj);
 }
 
-object* make_object_string(cstring name) {
-    object* result = make_object(ObjectTypeString, name, sizeof(object_string), object_string_destroy);
+object* make_object_string(void) {
+    object* result = make_object(ObjectTypeString, sizeof(object_string), object_string_destroy);
     object_string* string = get_object_true_type(result);
     string->val = make_string("");
     return result;
@@ -67,8 +55,8 @@ void object_function_def_destroy(object* obj, struct environment* inter) {
     free_mem(obj);
 }
 
-object* make_object_function_def(cstring name) {
-    object* result = make_object(ObjectTypeFunctionDef, name, sizeof(object_function_def), object_function_def_destroy);
+object* make_object_function_def(void) {
+    object* result = make_object(ObjectTypeFunctionDef, sizeof(object_function_def), object_function_def_destroy);
     object_function_def* def = get_object_true_type(result);
     def->args = make_vector(cstring);
     return result;
@@ -86,8 +74,8 @@ void object_ref_destroy(object* obj, struct environment* inter) {
     free_mem(obj);
 }
 
-object* make_object_ref(cstring name) {
-    object* result = make_object(ObjectTypeRef, name, sizeof(object_ref), object_ref_destroy);
+object* make_object_ref(void) {
+    object* result = make_object(ObjectTypeRef, sizeof(object_ref), object_ref_destroy);
     return result;
 }
 
@@ -101,8 +89,8 @@ void object_user_type_destroy(object* obj, struct environment* inter) {
     free_mem(obj);
 }
 
-object* make_object_user_type(cstring name) {
-    object* result = make_object(ObjectTypeUserType, name, sizeof(object_user_type), object_user_type_destroy);
+object* make_object_user_type(void) {
+    object* result = make_object(ObjectTypeUserType, sizeof(object_user_type), object_user_type_destroy);
     object_user_type* user_type = get_object_true_type(result);
     user_type->members = make_vector(object*);
     return result;

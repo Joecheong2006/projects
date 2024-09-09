@@ -29,7 +29,7 @@ static u32 hash_string(const char* str) {
 INLINE static u32 hash_object(void* data, u32 size) {
     ASSERT(data);
     object_carrier* carrier = (object_carrier*)data;
-    return hash_string(carrier->obj->name) % size;
+    return hash_string(carrier->name) % size;
 }
 
 void env_push_scope(environment* env) {
@@ -46,7 +46,7 @@ object_carrier* env_find_object(environment* env, cstring name) {
     vector(void*) result = env->map.data[hash_string(name) % env->map.size];
     for (i64 i = (i64)vector_size(result) - 1; i > -1; --i) {
         object_carrier* carrier = result[i];
-        if (strcmp(carrier->obj->name, name) == 0) {
+        if (strcmp(carrier->name, name) == 0) {
             return carrier;
         }
     }
@@ -54,7 +54,7 @@ object_carrier* env_find_object(environment* env, cstring name) {
 }
 
 void env_push_object(environment* env, object_carrier* carrier) {
-    carrier->obj->level = vector_size(env->global);
+    carrier->level = vector_size(env->global);
     hashmap_add(&env->map, carrier);
     scopes_push_obj(env, carrier);
 }

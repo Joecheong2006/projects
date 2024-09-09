@@ -4,8 +4,8 @@
 #include "primitive_data.h"
 
 typedef enum {
-    ObjectTypeNone = PrimitiveDataTypeObjPtr + 1,
-    ObjectTypeBool,
+    // ObjectTypeNone = PrimitiveDataTypeObjPtr + 1,
+    ObjectTypeBool = PrimitiveDataTypeObjPtr + 1,
     ObjectTypePrimitiveData,
     ObjectTypeString,
     ObjectTypeFunctionDef,
@@ -19,21 +19,17 @@ struct environment;
 typedef struct object object;
 struct object {
     ObjectType type;
-    cstring name;
-    i32 level, ref_count;
+    i32 ref_count;
     void(*destroy)(object*, struct environment*);
 };
 
-object* make_object(ObjectType type, cstring name, u64 type_size, void(*destroy)(object*, struct environment*));
+object* make_object(ObjectType type, u64 type_size, void(*destroy)(object*, struct environment*));
 void* get_object_true_type(object* obj);
 
 #define DEFINE_OBJECT_TYPE(type, body)\
     typedef struct { body } object_##type;\
     void object_##type_##destroy(object* obj, struct environment* inter);\
-    object* make_object_##type(cstring name);
-
-void object_none_destroy(object* obj, struct environment* inter);
-object* make_object_none(cstring name);
+    object* make_object_##type(void);
 
 DEFINE_OBJECT_TYPE(bool,
         u8 val;

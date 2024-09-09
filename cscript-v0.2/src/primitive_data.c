@@ -23,7 +23,6 @@ char* primitive_type_name[] = {
     [PrimitiveDataTypeFloat32] = "int32",
     [PrimitiveDataTypeFloat64] = "int64",
     [PrimitiveDataTypeString] = "string",
-    [ObjectTypeNone] = "none",
     [ObjectTypeRef] = "ref",
     [ObjectTypeBool] = "bool",
     [ObjectTypeArray] = "array",

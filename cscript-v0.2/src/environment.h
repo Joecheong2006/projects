@@ -15,8 +15,6 @@ struct environment {
 };
 typedef struct environment environment;
 
-object_carrier* make_object_carrier(object* obj);
-
 void init_environment(environment* env);
 i32 get_env_level(environment* env);
 void free_environment(environment* env);
