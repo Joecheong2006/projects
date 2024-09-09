@@ -3,6 +3,7 @@
 #include "core/memory.h"
 #include "lexer.h"
 #include "lexer.h"
+#include "timer.h"
 
 #include "parser.h"
 #include "core/assert.h"
@@ -43,21 +44,9 @@ void print_bytecode(vm* v) {
         case ByteCodeDivAssign: LOG_DEBUG("\tdiv_assign\n"); break;
         case ByteCodeModAssign: LOG_DEBUG("\tmod_assign\n"); break;
         case ByteCodePop: LOG_DEBUG("\tpop\n"); break;
-        case ByteCodePushName: {
-            LOG_DEBUG("\tpush\t%s\n", *(cstring*)&v->code[i+1]);
-            i+=8;
-            break;
-        }
-        case ByteCodeRefIden: {
-            LOG_DEBUG("\tref %s\n", *(cstring*)&v->code[i+1]);
-            i+=8;
-            break;
-        }
-        case ByteCodeAccessIden: {
-            LOG_DEBUG("\taccess %s\n", *(cstring*)&v->code[i+1]);
-            i+=8;
-            break;
-        }
+        case ByteCodePushName: { LOG_DEBUG("\tpush\t%s\n", *(cstring*)&v->code[i+1]); i+=8; break; }
+        case ByteCodeRefIden: { LOG_DEBUG("\tref %s\n", *(cstring*)&v->code[i+1]); i+=8; break; }
+        case ByteCodeAccessIden: { LOG_DEBUG("\taccess %s\n", *(cstring*)&v->code[i+1]); i+=8; break; }
         case ByteCodeFuncDef: { LOG_DEBUG("\tfuncdef\n"); break; }
         case ByteCodeFuncEnd: { LOG_DEBUG("\tfuncend\n"); break; }
         case ByteCodeFuncall: { LOG_DEBUG("\tfuncall\n"); break; }

@@ -44,5 +44,6 @@ end
 var s = get_n()
 s += 0
 
-n += 1
-
+n = get_nil()
+n = s
+n += 0

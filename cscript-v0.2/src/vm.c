@@ -28,15 +28,14 @@ void free_vm(vm* v) {
 INLINE static error_info initvar(vm* v) {
     cstring name = vector_backn(v->env.bp, 0).val.string;
     primitive_data rhs = vector_backn(v->env.bp, 1);
+    vector_popn(v->env.bp, 2);
     if (rhs.type >= ObjectTypeNone) {
         if (rhs.type == ObjectTypeNone) {
-            vector_popn(v->env.bp, 2);
             env_push_object(&v->env, make_object_carrier(make_object_none(name)));
             LOG_DEBUG("\tcatch ret none\t%s\n", name);
             return (error_info){ .msg = NULL };
         }
         if (rhs.val.carrier->obj->level != get_env_level(&v->env)) {
-            vector_popn(v->env.bp, 2);
             rhs.val.carrier->obj->name = name;
             env_push_object(&v->env, rhs.val.carrier);
             LOG_DEBUG("\tcatch ret\t%s\n", name);
@@ -56,7 +55,6 @@ INLINE static error_info initvar(vm* v) {
         object_primitive_data* rhs_obj = get_object_true_type(rhs.val.carrier->obj);
         o->val = rhs_obj->val;
         env_push_object(&v->env, make_object_carrier(obj));
-        vector_popn(v->env.bp, 2);
         LOG_DEBUG("\tinitvar\t\t%s\n", name);
         return (error_info){ .msg = NULL };
     }
@@ -66,19 +64,22 @@ INLINE static error_info initvar(vm* v) {
     o->val = rhs;
     env_push_object(&v->env, make_object_carrier(obj));
     LOG_DEBUG("\tinitvar\t\t%s\n", name);
-    vector_popn(v->env.bp, 2);
     return (error_info){ .msg = NULL };
 }
 
 INLINE static error_info assign(vm* v) {
     object_carrier* carrier = vector_backn(v->env.bp, 0).val.carrier;
     primitive_data* rhs = &vector_backn(v->env.bp, 1);
-    if (rhs->type >= ObjectTypeNone) {
-        if (rhs->type != ObjectTypePrimitiveData) {
-            return (error_info){ .msg = "attmpt to add with a non primitive object" };
-        }
-        object_primitive_data* o = get_object_true_type(rhs->val.carrier->obj);
-        *rhs = o->val;
+    vector_popn(v->env.bp, 2);
+    if (rhs->type == ObjectTypeNone && carrier->obj->type == ObjectTypeNone) {
+        return (error_info){ .msg = NULL };
+    }
+    if (rhs->type == ObjectTypeNone) {
+        object* none = make_object_none(carrier->obj->name);
+        none->level = carrier->obj->level;
+        carrier->obj->destroy(carrier->obj, &v->env);
+        carrier->obj = none;
+        return (error_info){ .msg = NULL };
     }
 
     if (carrier->obj->type == ObjectTypeNone) {
@@ -101,17 +102,22 @@ INLINE static error_info assign(vm* v) {
         d->destroy(d, &v->env);
     }
     else if (carrier->obj->type == ObjectTypePrimitiveData) {
+        if (rhs->type >= ObjectTypeNone) {
+            if (rhs->type != ObjectTypePrimitiveData) {
+                return (error_info){ .msg = "assigning non primitive object is not implemented yet" };
+            }
+            object_primitive_data* o = get_object_true_type(rhs->val.carrier->obj);
+            *rhs = o->val;
+        }
         object_primitive_data* o = get_object_true_type(carrier->obj);
         o->val = *rhs;
         LOG_DEBUG("\tassign\t\t%s\t", carrier->obj->name);
         print_primitive_data(&o->val);
     }
     else {
-        // vector_popn(v->env.bp, 2);
         ASSERT_MSG(0, "not implement object assignment");
     }
 
-    vector_popn(v->env.bp, 2);
     return (error_info){ .msg = NULL };
 }
 
