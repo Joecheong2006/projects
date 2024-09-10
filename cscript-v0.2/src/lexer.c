@@ -53,7 +53,11 @@ static vector(char) load_file(const char* file_name, const char* mode) {
 
     vector(char) result = make_vector(char);
     vector_resize(result, size + 1);
-    fread(result, 1, size, file);
+    size_t res = fread(result, 1, size, file);
+    if (res != size) {
+        free_vector(result);
+        return NULL;
+    }
     result[size] = 0;
     fclose(file);
     return result;
@@ -62,6 +66,7 @@ static vector(char) load_file(const char* file_name, const char* mode) {
 void lexer_load_file_text(lexer* lex, const char* file_name) {
     START_PROFILING();
     vector(char) ctx = load_file(file_name, "rb");
+    ASSERT_MSG(ctx, "failed to read file");
     lex->ctx_len = strlen(ctx);
     lex->ctx = ctx;
     END_PROFILING(__func__);

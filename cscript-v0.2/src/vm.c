@@ -49,7 +49,6 @@ INLINE static error_info initvar(vm* v) {
             return (error_info){ .msg = NULL };
         }
 
-        // ASSERT_MSG(rhs.val.carrier->obj->type == ObjectTypePrimitiveData, "not implement initvar obj yet");
         object* obj = make_object_primitive_data();
         object_primitive_data* o = get_object_true_type(obj);
         object_primitive_data* rhs_obj = get_object_true_type(rhs.val.carrier->obj);
