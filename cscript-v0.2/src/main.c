@@ -3,7 +3,6 @@
 #include "core/memory.h"
 #include "lexer.h"
 #include "lexer.h"
-#include "timer.h"
 
 #include "parser.h"
 #include "core/assert.h"

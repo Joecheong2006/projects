@@ -52,9 +52,9 @@ static vector(char) load_file(const char* file_name, const char* mode) {
     fseek(file, 0, SEEK_SET);
 
     vector(char) result = make_vector(char);
-    vector_resize(result, size);
+    vector_resize(result, size + 1);
     fread(result, 1, size, file);
-    result[size - 1] = 0;
+    result[size] = 0;
     fclose(file);
     return result;
 }
@@ -63,7 +63,6 @@ void lexer_load_file_text(lexer* lex, const char* file_name) {
     START_PROFILING();
     vector(char) ctx = load_file(file_name, "rb");
     lex->ctx_len = strlen(ctx);
-    ctx[lex->ctx_len - 1] = 0;
     lex->ctx = ctx;
     END_PROFILING(__func__);
 }

@@ -698,7 +698,10 @@ static ast_node* parser_parse_ins(parser* par) {
             parser_report_error(par, tok, "missing end");
             return NULL;
         }
-        parser_report_error(par, tok, "function declaration missing end");
+        else if (par->state == ParserStateParsingFuncBody) {
+            parser_report_error(par, tok, "function declaration missing end");
+            return NULL;
+        }
         return NULL;
     }
     default: {

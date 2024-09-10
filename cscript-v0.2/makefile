@@ -13,7 +13,7 @@ OBJ = $(SRC:%.c=%.o)
 DEP = $(OBJ:%.o=%.d)
 BIN = bin
 LIB = 
-PROGRAM = cscript
+PROGRAM = script
 
 ifeq ($(OS),Windows_NT)
 	OUT = $(PROGRAM).exe
@@ -35,7 +35,7 @@ bin:
 
 app: CFLAGS += $(DEBUG_FLAGS) $(CONFIG)
 app: $(OBJ)
-	@$(CC) $(CFLAGS) $(OBJ) -o $(BIN)/$(OUT) $(LIB)
+	$(CC) $(CFLAGS) $(OBJ) $(LIB) -o $(BIN)/$(OUT)
 	@echo "Compilation completed"
 
 debug:
