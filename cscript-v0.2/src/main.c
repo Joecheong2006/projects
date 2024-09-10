@@ -18,39 +18,48 @@ static void check_leak(void) {
     LOG_DEBUG("\tleak count = %d\n", get_allocation_count());
 }
 
-void print_bytecode(vm* v) {
-    for_vector(v->code, i, 0) {
-        u8 code = v->code[i];
+void locating_position(vm* v) {
+    vector(u32) position = make_vector(u32);
+    for_vector(v->code, ip, 0) {
+        u8 code = v->code[ip];
         switch (code) {
         case ByteCodePushConst: {
-            primitive_data data = { .type = v->code[i+1] };
-            memcpy(&data.val, &v->code[i+2], primitive_size_map[data.type]);
-            LOG_DEBUG("\tpush\t\t");
+            primitive_data data = { .type = v->code[ip+1] };
+            memcpy(&data.val, &v->code[ip+2], primitive_size_map[data.type]);
             print_primitive_data(&data);
-            i += primitive_size_map[data.type] + 1;
+            ip += primitive_size_map[data.type] + 1;
         } break;
-        case ByteCodeAdd: LOG_DEBUG("\tadd\n"); break;
-        case ByteCodeSub: LOG_DEBUG("\tsub\n"); break;
-        case ByteCodeMul: LOG_DEBUG("\tmul\n"); break;
-        case ByteCodeDiv: LOG_DEBUG("\tdiv\n"); break;
-        case ByteCodeMod: LOG_DEBUG("\tmod\n"); break;
-        case ByteCodeNegate: LOG_DEBUG("\tmod\n"); break;
-        case ByteCodeInitVar: LOG_DEBUG("\tinitvar\n"); break;
-        case ByteCodeAssign: LOG_DEBUG("\tassign\n"); break;
-        case ByteCodeAddAssign: LOG_DEBUG("\tadd_assign\n"); break;
-        case ByteCodeSubAssign: LOG_DEBUG("\tsub_assign\n"); break;
-        case ByteCodeMulAssign: LOG_DEBUG("\tmul_assign\n"); break;
-        case ByteCodeDivAssign: LOG_DEBUG("\tdiv_assign\n"); break;
-        case ByteCodeModAssign: LOG_DEBUG("\tmod_assign\n"); break;
-        case ByteCodePop: LOG_DEBUG("\tpop\n"); break;
-        case ByteCodePushName: { LOG_DEBUG("\tpush\t%s\n", *(cstring*)&v->code[i+1]); i+=8; break; }
-        case ByteCodeRefIden: { LOG_DEBUG("\tref %s\n", *(cstring*)&v->code[i+1]); i+=8; break; }
-        case ByteCodeAccessIden: { LOG_DEBUG("\taccess %s\n", *(cstring*)&v->code[i+1]); i+=8; break; }
-        case ByteCodeFuncDef: { LOG_DEBUG("\tfuncdef\n"); break; }
-        case ByteCodeFuncEnd: { LOG_DEBUG("\tfuncend\n"); break; }
-        case ByteCodeFuncall: { LOG_DEBUG("\tfuncall\n"); break; }
-        case ByteCodeReturn: { LOG_DEBUG("\tret\n"); break; }
-        case ByteCodeReturnNone: { LOG_DEBUG("\tret_none\n"); break; }
+        case ByteCodeAdd:
+        case ByteCodeSub:
+        case ByteCodeMul:
+        case ByteCodeDiv:
+        case ByteCodeMod:
+        case ByteCodeNegate:
+        case ByteCodeInitVar:
+        case ByteCodeAssign:
+        case ByteCodeAddAssign:
+        case ByteCodeSubAssign:
+        case ByteCodeMulAssign:
+        case ByteCodeDivAssign:
+        case ByteCodeModAssign:
+        case ByteCodePop: break;
+        case ByteCodePushName:
+        case ByteCodeRefIden:
+        case ByteCodeAccessIden: ip+=8; break;
+        case ByteCodeFuncDef: {
+            vector_push(position, ip);
+            ip+=4;
+            break;
+        }
+        case ByteCodeFuncEnd: {
+            u32* pos = (u32*)(v->code + vector_back(position) + 1);
+            *pos = ip;
+            vector_pop(position);
+            break;
+        }
+        case ByteCodeFuncall: break;
+        case ByteCodeReturn: break;
+        case ByteCodeReturnNone: break;
         default: {
             LOG_ERROR("\tinvalid bytecode %d\n", code);
             ASSERT_MSG(0, "invalid bytecode");
@@ -59,6 +68,7 @@ void print_bytecode(vm* v) {
         }
     }
     LOG_DEBUG("\n");
+    free_vector(position);
 }
 
 int main(void) {
@@ -82,8 +92,8 @@ int main(void) {
         vm_gen_bytecode(&v, ast);
 
         START_PROFILING();
-        print_bytecode(&v);
-        END_PROFILING("debug log");
+        locating_position(&v);
+        END_PROFILING("locating position");
 
         error_info ei;
         {

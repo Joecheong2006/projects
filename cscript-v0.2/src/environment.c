@@ -92,7 +92,7 @@ void env_pop_object(environment* env, object_carrier* carrier) {
 
 void init_environment(environment* env) {
     START_PROFILING();
-    env->map = make_hashmap(1 << 9, hash_object);
+    env->map = make_hashmap(1 << 8, hash_object);
     env->global = make_scopes();
     env->bp = make_stack();
     END_PROFILING(__func__);

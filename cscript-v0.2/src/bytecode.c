@@ -22,6 +22,13 @@ static void gen_const(void* val, u8 type, u8 size, vm* v) {
     memcpy(v->code + end, val, size);
     END_PROFILING(__func__);
 }
+static void gen_const_bytes(void* val, u8 size, vm* v) {
+    START_PROFILING();
+    u32 end = vector_size(v->code);
+    vector_resize(v->code, end + size);
+    memcpy(v->code + end, val, size);
+    END_PROFILING(__func__);
+}
 
 void gen_bytecode_bracket(struct ast_node* node, struct vm* v) {
     ASSERT(node->type == AstNodeTypeExprBracket);
@@ -182,6 +189,9 @@ void gen_bytecode_funcdef(struct ast_node* node, struct vm* v) {
 
     code = ByteCodeFuncDef;
     vector_push(v->code, code);
+
+    u32 tmp = 69;
+    gen_const_bytes(&tmp, 4, v);
 }
 
 void gen_bytecode_funcend(struct ast_node* node, struct vm* v) {

@@ -70,12 +70,11 @@ INLINE static error_info assign(vm* v) {
     object_carrier* carrier = vector_backn(v->env.bp, 0).val.carrier;
     primitive_data* rhs = &vector_backn(v->env.bp, 1);
     vector_popn(v->env.bp, 2);
-    if (rhs->type == PrimitiveDataTypeObjPtr && (rhs->val.carrier == NULL || rhs->val.carrier->obj == NULL) && carrier->obj == NULL) {
-        return (error_info){ .msg = NULL };
-    }
     if (rhs->type == PrimitiveDataTypeObjPtr && (rhs->val.carrier == NULL || rhs->val.carrier->obj == NULL)) {
-        carrier->obj->destroy(carrier->obj, &v->env);
-        carrier->obj = NULL;
+        if (carrier->obj) {
+            carrier->obj->destroy(carrier->obj, &v->env);
+            carrier->obj = NULL;
+        }
         return (error_info){ .msg = NULL };
     }
 
@@ -87,25 +86,40 @@ INLINE static error_info assign(vm* v) {
             LOG_DEBUG("\tassign\t\t%s\t", carrier->name);
             print_primitive_data(&o->val);
         }
-        else if (rhs->type == PrimitiveDataTypeObjPtr) {
+        else if (rhs->val.carrier->obj->type == ObjectTypePrimitiveData) {
             carrier->obj = make_object_primitive_data();
             object_primitive_data* o_rhs = get_object_true_type(rhs->val.carrier->obj);
             object_primitive_data* o = get_object_true_type(carrier->obj);
             o->val = o_rhs->val;
+            LOG_DEBUG("\tassign\t\t%s\t", carrier->name);
+            print_primitive_data(&o->val);
         }
+        else {
+            return (error_info){ .msg = "not implement object assignment for none beside primitive date" };
+        }
+        return (error_info){ .msg = NULL };
     }
     else if (carrier->obj->type == ObjectTypePrimitiveData) {
-        if (rhs->type == PrimitiveDataTypeObjPtr) {
-            if (rhs->val.carrier->obj->type != ObjectTypePrimitiveData) {
-                return (error_info){ .msg = "assigning non primitive object is not implemented yet" };
-            }
-            object_primitive_data* o = get_object_true_type(rhs->val.carrier->obj);
-            *rhs = o->val;
+        if (rhs->type < PrimitiveDataTypeObjPtr) {
+            object_primitive_data* o = get_object_true_type(carrier->obj);
+            o->val = *rhs;
+            LOG_DEBUG("\tassign\t\t%s\t", carrier->name);
+            print_primitive_data(&o->val);
         }
-        object_primitive_data* o = get_object_true_type(carrier->obj);
-        o->val = *rhs;
-        LOG_DEBUG("\tassign\t\t%s\t", carrier->name);
-        print_primitive_data(&o->val);
+        else if (rhs->val.carrier->obj->type == ObjectTypePrimitiveData) {
+            object_primitive_data* o_rhs = get_object_true_type(rhs->val.carrier->obj);
+            object_primitive_data* o = get_object_true_type(carrier->obj);
+            o->val = o_rhs->val;
+            LOG_DEBUG("\tassign\t\t%s\t", carrier->name);
+            print_primitive_data(&o->val);
+        }
+        else {
+            return (error_info){ .msg = "not implement object assignment for primitive data beside primitive date and none" };
+        }
+        return (error_info){ .msg = NULL };
+    }
+    else if (carrier->obj->type == ObjectTypeFunctionDef) {
+        return (error_info){ .msg = "function cannot be assigned" };
     }
     else {
         ASSERT_MSG(0, "not implement object assignment");
@@ -117,6 +131,8 @@ INLINE static error_info assign(vm* v) {
 INLINE static error_info funcdef(vm* v) {
     i8 param_count = vector_backn(v->env.bp, 0).val.int8;
     cstring name = vector_backn(v->env.bp, 1 + param_count).val.string;
+    u32 end_pos = *(u32*)(v->code + v->ip + 1);
+    v->ip += 4;
 
     object_carrier* carrier = env_find_object(&v->env, name);
     if (carrier) {
@@ -128,7 +144,7 @@ INLINE static error_info funcdef(vm* v) {
     object_function_def* def = get_object_true_type(obj);
     def->entry_point = v->ip;
 
-    LOG_DEBUG("\tfuncdef\t\t%s %lld %d ", name, param_count, def->entry_point);
+    LOG_DEBUG("\tfuncdef\t\t%s %lld %d %d ", name, param_count, def->entry_point, end_pos);
     for (i32 i = 0; i < param_count; i++) {
         vector_push(def->args, vector_backn(v->env.bp, i).val.string);
         LOG_DEBUG_MSG("%s ", def->args[i]);
@@ -138,7 +154,7 @@ INLINE static error_info funcdef(vm* v) {
 
     env_push_object(&v->env, make_object_carrier(name, obj));
 
-    while (v->code[++v->ip] != ByteCodeFuncEnd);
+    v->ip = end_pos;
 
     return (error_info){ .msg = NULL };
 }
@@ -392,6 +408,7 @@ static error_info run(vm* v) {
         case ByteCodeSubAssign: { IMPL_ASSIGN(sub) break; }
         case ByteCodeMulAssign: { IMPL_ASSIGN(mul) break; }
         case ByteCodeDivAssign: { IMPL_ASSIGN(div) break; }
+        case ByteCodeModAssign: { IMPL_ASSIGN(mod) break; }
         case ByteCodeFuncDef: {
             error_info ei = funcdef(v);
             if (ei.msg) {
