@@ -15,6 +15,11 @@ typedef enum {
     TokenTypeKeywordVar,
     TokenTypeKeywordFun,
     TokenTypeKeywordRet,
+
+    TokenTypeKeywordNull,
+    TokenTypeKeywordTrue,
+    TokenTypeKeywordFalse,
+
     TokenTypeKeywordIf,
     TokenTypeKeywordElif,
     TokenTypeKeywordElse,

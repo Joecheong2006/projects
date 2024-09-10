@@ -18,7 +18,7 @@
 // <reference>  ::= <rvalue> {"." <rvalue>}
 // <literal>    ::= <int> | <float> | char | string | "true" | "false"
 // <operator>   ::= "-" | "+" | "*" | "/" | "%" | "<" | ">" | "<=" | ">=" | "==" | "!="
-// <term>       ::= <literal> | <reference> | "(" <expr> ")" | <funcall> | "-" <term> | "+" <term>
+// <term>       ::= <literal> | <reference> | "(" <expr> ")" | <funcall> | "-" <term> | "+" <term> | "null" | "true" | "false"
 // <expr>       ::= <term> {<operator> <expr>}
 // <assignment> ::= <reference> ("=" | "+=" | "-=" | "*=" | "/=") <expr>
 // <argument>   ::= [<expr> {"," <expr>}]
@@ -332,6 +332,18 @@ ast_node* parse_term(parser* par) {
         END_PROFILING(__func__)
         return make_ast_constant(tok);
     }
+    case TokenTypeKeywordNull: {
+        ++par->pointer;
+        return make_ast_null(tok);
+    }
+    case TokenTypeKeywordTrue: {
+        ++par->pointer;
+        return make_ast_boolean_true(tok);
+    }
+    case TokenTypeKeywordFalse: {
+        ++par->pointer;
+        return make_ast_boolean_false(tok);
+    }
     case '(': {
         END_PROFILING(__func__)
         return parse_expr_with_brackets(par);
@@ -371,24 +383,24 @@ ast_node* parse_operator(parser* par) {
     case '%':
         ++par->pointer;
         return make_ast_binary_expression_modulus(tok);
-    // case TokenTypeOperatorEqual:
-    //     ++par->pointer;
-    //     return make_ast_binary_expression(AstNodeTypeExprEqual, tok, NULL);
-    // case TokenTypeOperatorNotEqual:
-    //     ++par->pointer;
-    //     return make_ast_binary_expression(AstNodeTypeExprNotEqual, tok, NULL);
-    // case '>':
-    //     ++par->pointer;
-    //     return make_ast_binary_expression(AstNodeTypeExprGreaterThan, tok, NULL);
-    // case '<':
-    //     ++par->pointer;
-    //     return make_ast_binary_expression(AstNodeTypeExprLessThan, tok, NULL);
-    // case TokenTypeOperatorGreaterThan:
-    //     ++par->pointer;
-    //     return make_ast_binary_expression(AstNodeTypeExprGreaterThanEqual, tok, NULL);
-    // case TokenTypeOperatorLessThan:
-    //     ++par->pointer;
-    //     return make_ast_binary_expression(AstNodeTypeExprLessThanEqual, tok, NULL);
+    case TokenTypeOperatorEqual:
+        ++par->pointer;
+        return make_ast_cmp_equal(tok);
+    case TokenTypeOperatorNotEqual:
+        ++par->pointer;
+        return make_ast_cmp_not_equal(tok);
+    case '>':
+        ++par->pointer;
+        return make_ast_cmp_greater_than(tok);
+    case '<':
+        ++par->pointer;
+        return make_ast_cmp_less_than(tok);
+    case TokenTypeOperatorGreaterThan:
+        ++par->pointer;
+        return make_ast_cmp_greater_than_equal(tok);
+    case TokenTypeOperatorLessThan:
+        ++par->pointer;
+        return make_ast_cmp_less_than_equal(tok);
     default:
         return NULL;
     }

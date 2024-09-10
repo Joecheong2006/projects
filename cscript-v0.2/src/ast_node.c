@@ -67,6 +67,36 @@ ast_node* make_ast_binary_expression_modulus(struct token* tok) {
     return make_ast_node(AstNodeTypeExprMod, sizeof(ast_binary_expression), tok, destroy_ast_binary_expression, gen_bytecode_mod);
 }
 
+ast_node* make_ast_cmp_equal(struct token* tok) {
+    return make_ast_node(AstNodeTypeExprEqual, sizeof(ast_binary_expression), tok, destroy_ast_binary_expression, gen_bytecode_equal);
+}
+
+ast_node* make_ast_cmp_not_equal(struct token* tok) {
+    return make_ast_node(AstNodeTypeExprNotEqual, sizeof(ast_binary_expression), tok, destroy_ast_binary_expression, gen_bytecode_not_equal);
+}
+
+ast_node* make_ast_cmp_greater_than(struct token* tok) {
+    return make_ast_node(AstNodeTypeExprGreaterThan, sizeof(ast_binary_expression), tok, destroy_ast_binary_expression, gen_bytecode_greater_than);
+}
+
+ast_node* make_ast_cmp_less_than(struct token* tok) {
+    return make_ast_node(AstNodeTypeExprLessThan, sizeof(ast_binary_expression), tok, destroy_ast_binary_expression, gen_bytecode_less_than);
+}
+
+ast_node* make_ast_cmp_greater_than_equal(struct token* tok) {
+    return make_ast_node(AstNodeTypeExprGreaterThanEqual, sizeof(ast_binary_expression), tok, destroy_ast_binary_expression, gen_bytecode_greater_than_equal);
+}
+
+ast_node* make_ast_cmp_less_than_equal(struct token* tok) {
+    return make_ast_node(AstNodeTypeExprLessThanEqual, sizeof(ast_binary_expression), tok, destroy_ast_binary_expression, gen_bytecode_less_than_equal);
+}
+
+ast_node* make_ast_cmp_not_equal(struct token* tok);
+ast_node* make_ast_cmp_greater_than(struct token* tok);
+ast_node* make_ast_cmp_less_than(struct token* tok);
+ast_node* make_ast_cmp_greater_than_equal(struct token* tok);
+ast_node* make_ast_cmp_less_than_equal(struct token* tok);
+
 static void destroy_ast_assignment(ast_node* node) {
     ASSERT(node);
     ast_assignment* assignment = get_ast_true_type(node);
@@ -116,6 +146,18 @@ ast_node* make_ast_negate(struct token* tok) {
 
 ast_node* make_ast_constant(struct token* tok) {
     return make_ast_node(AstNodeTypeConstant, 0, tok, destroy_default, gen_bytecode_push_const);
+}
+
+ast_node* make_ast_null(struct token* tok) {
+    return make_ast_node(AstNodeTypeConstant, 0, tok, destroy_default, gen_bytecode_push_null);
+}
+
+ast_node* make_ast_boolean_true(struct token* tok) {
+    return make_ast_node(AstNodeTypeConstant, 0, tok, destroy_default, gen_bytecode_push_true);
+}
+
+ast_node* make_ast_boolean_false(struct token* tok) {
+    return make_ast_node(AstNodeTypeConstant, 0, tok, destroy_default, gen_bytecode_push_false);
 }
 
 static void destroy_ast_ref_identifier(ast_node* node) {

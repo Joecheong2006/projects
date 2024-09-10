@@ -1,5 +1,4 @@
-a = [1, 2, 3]
-l = a
-a = 1
+a = int(1)
+a += 0.1
+a += 3
 print(a)
-print(l)

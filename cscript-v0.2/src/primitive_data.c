@@ -1,6 +1,7 @@
 #include "primitive_data.h"
 #include "core/log.h"
 #include "object.h"
+#include "scope.h" // NOTE: for object_carrier struct members
 
 u8 primitive_size_map[] = {
     [PrimitiveDataTypeBoolean] = 1,
@@ -49,6 +50,12 @@ void print_primitive_data(primitive_data* data) {
     else if (data->type == PrimitiveDataTypeInt8) {
         LOG_DEBUG_MSG("%d\n", data->val.int8);
     }
+    else if (data->type == PrimitiveDataTypeBoolean) {
+        LOG_DEBUG_MSG("%s\n", data->val.boolean ? "true" : "false");
+    }
+    else if (data->type == PrimitiveDataTypeObjPtr && (data->val.carrier == NULL || data->val.carrier->obj == NULL)) {
+        LOG_DEBUG_MSG("null\n");
+    }
 }
 
 INLINE i32 primitive_data_guess_type(primitive_data* a, primitive_data* b) {
@@ -95,7 +102,7 @@ error_info primitive_data_cast_to(i32 type, primitive_data* pd) {
         break;
     }
     case PrimitiveDataTypeBoolean: {
-        IMPL_PRIMITIVE_DATA_CAST(float64, "invalid cast to boolean");
+        IMPL_PRIMITIVE_DATA_CAST(boolean, "invalid cast to boolean");
         break;
     }
     default:
@@ -228,7 +235,7 @@ error_info primitive_data_neg(primitive_data* out, primitive_data* a) {
 
 #define IMPL_PRIMITIVE_ASSIGN_ARITHMETIC(oper, assign_name)\
     error_info primitive_data_##assign_name##_assign(primitive_data* a, primitive_data* b) {\
-        error_info ei = primitive_data_cast_to(a->type, b);\
+        error_info ei = primitive_data_cast_to(a->type > b->type ? a->type : b->type, a->type > b->type ? b : a);\
         if (ei.msg)\
             return ei;\
         switch (a->type) {\

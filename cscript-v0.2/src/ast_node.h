@@ -15,12 +15,14 @@ typedef enum {
     AstNodeTypeExprMul,
     AstNodeTypeExprDiv,
     AstNodeTypeExprMod,
+
     AstNodeTypeAssignment,
     AstNodeTypeAddAssign,
     AstNodeTypeSubAssign,
     AstNodeTypeMulAssign,
     AstNodeTypeDivAssign,
     AstNodeTypeModAssign,
+
     AstNodeTypeExprEqual,
     AstNodeTypeExprNotEqual,
     AstNodeTypeExprGreaterThan,
@@ -110,6 +112,13 @@ ast_node* make_ast_binary_expression_multiply(struct token* tok);
 ast_node* make_ast_binary_expression_divide(struct token* tok);
 ast_node* make_ast_binary_expression_modulus(struct token* tok);
 
+ast_node* make_ast_cmp_equal(struct token* tok);
+ast_node* make_ast_cmp_not_equal(struct token* tok);
+ast_node* make_ast_cmp_greater_than(struct token* tok);
+ast_node* make_ast_cmp_less_than(struct token* tok);
+ast_node* make_ast_cmp_greater_than_equal(struct token* tok);
+ast_node* make_ast_cmp_less_than_equal(struct token* tok);
+
 ast_node* make_ast_assignment(struct token* tok);
 ast_node* make_ast_add_assign(struct token* tok);
 ast_node* make_ast_sub_assign(struct token* tok);
@@ -119,6 +128,9 @@ ast_node* make_ast_mod_assign(struct token* tok);
 
 ast_node* make_ast_negate(struct token* tok);
 ast_node* make_ast_constant(struct token* tok);
+ast_node* make_ast_null(struct token* tok);
+ast_node* make_ast_boolean_true(struct token* tok);
+ast_node* make_ast_boolean_false(struct token* tok);
 
 ast_node* make_ast_reference_identifier(struct token* tok);
 ast_node* make_ast_access_identifier(struct token* tok);

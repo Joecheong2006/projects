@@ -54,6 +54,13 @@ IMPL_ARITHMETIC(mul, Mul)
 IMPL_ARITHMETIC(div, Div)
 IMPL_ARITHMETIC(mod, Mod)
 
+IMPL_ARITHMETIC(equal, Equal)
+IMPL_ARITHMETIC(not_equal, NotEqual)
+IMPL_ARITHMETIC(greater_than, GreaterThan)
+IMPL_ARITHMETIC(less_than, LessThan)
+IMPL_ARITHMETIC(greater_than_equal, GreaterThanEqual)
+IMPL_ARITHMETIC(less_than_equal, LessThanEqual)
+
 void gen_bytecode_negate(struct ast_node* node, struct vm* v) {
     ASSERT(node->type == AstNodeTypeNegate);
     ast_negate* neg = get_ast_true_type(node);
@@ -117,6 +124,30 @@ void gen_bytecode_push_const(ast_node* node, vm* v) {
     vector_push(v->code, code);
     END_PROFILING(__func__);
     gen_const(&node->tok->data.val, node->tok->data.type, primitive_size_map[node->tok->data.type], v);
+}
+
+void gen_bytecode_push_null(struct ast_node* node, struct vm* v) {
+    ASSERT(node->type == AstNodeTypeConstant);
+    START_PROFILING();
+    u8 code = ByteCodePushNull;
+    vector_push(v->code, code);
+    END_PROFILING(__func__);
+}
+
+void gen_bytecode_push_true(struct ast_node* node, struct vm* v) {
+    ASSERT(node->type == AstNodeTypeConstant);
+    START_PROFILING();
+    u8 code = ByteCodePushTrue;
+    vector_push(v->code, code);
+    END_PROFILING(__func__);
+}
+
+void gen_bytecode_push_false(struct ast_node* node, struct vm* v) {
+    ASSERT(node->type == AstNodeTypeConstant);
+    START_PROFILING();
+    u8 code = ByteCodePushFalse;
+    vector_push(v->code, code);
+    END_PROFILING(__func__);
 }
 
 void gen_bytecode_ref_iden(struct ast_node* node, struct vm* v) {

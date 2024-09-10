@@ -26,15 +26,24 @@ void locating_position(vm* v) {
         case ByteCodePushConst: {
             primitive_data data = { .type = v->code[ip+1] };
             memcpy(&data.val, &v->code[ip+2], primitive_size_map[data.type]);
-            print_primitive_data(&data);
             ip += primitive_size_map[data.type] + 1;
-        } break;
+            break;
+        }
+        case ByteCodePushNull:
+        case ByteCodePushTrue:
+        case ByteCodePushFalse:
         case ByteCodeAdd:
         case ByteCodeSub:
         case ByteCodeMul:
         case ByteCodeDiv:
         case ByteCodeMod:
         case ByteCodeNegate:
+        case ByteCodeEqual:
+        case ByteCodeNotEqual:
+        case ByteCodeGreaterThan:
+        case ByteCodeLessThan:
+        case ByteCodeGreaterThanEqual:
+        case ByteCodeLessThanEqual:
         case ByteCodeInitVar:
         case ByteCodeAssign:
         case ByteCodeAddAssign:

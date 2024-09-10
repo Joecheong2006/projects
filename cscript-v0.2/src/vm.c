@@ -10,6 +10,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#define LOG(name, fmt, ...) LOG_DEBUG("\t%-30s" fmt, name, __VA_ARGS__)
+
 void init_vm(vm* v) {
     START_PROFILING();
     v->ip = 0;
@@ -32,13 +34,13 @@ INLINE static error_info initvar(vm* v) {
     if (rhs.type == PrimitiveDataTypeObjPtr) {
         if (rhs.val.carrier == NULL) {
             env_push_object(&v->env, make_object_carrier(name, NULL));
-            LOG_DEBUG("\tcatch ret none\t%s\n", name);
+            LOG("initvar", "%s null\n", name);
             return (error_info){ .msg = NULL };
         }
         if (rhs.val.carrier->level != get_env_level(&v->env)) {
             rhs.val.carrier->name = name;
             env_push_object(&v->env, rhs.val.carrier);
-            LOG_DEBUG("\tcatch ret\t%s\n", name);
+            LOG("catach ret", "%s\n", name);
             return (error_info){ .msg = NULL };
         }
         if (rhs.val.carrier->obj->type != ObjectTypePrimitiveData) {
@@ -54,7 +56,7 @@ INLINE static error_info initvar(vm* v) {
         object_primitive_data* rhs_obj = get_object_true_type(rhs.val.carrier->obj);
         o->val = rhs_obj->val;
         env_push_object(&v->env, make_object_carrier(name, obj));
-        LOG_DEBUG("\tinitvar\t\t%s\n", name);
+        LOG("initvar", "%s\n", name);
         return (error_info){ .msg = NULL };
     }
 
@@ -62,7 +64,7 @@ INLINE static error_info initvar(vm* v) {
     object_primitive_data* o = get_object_true_type(obj);
     o->val = rhs;
     env_push_object(&v->env, make_object_carrier(name, obj));
-    LOG_DEBUG("\tinitvar\t\t%s\n", name);
+    LOG("initvar", "%s\n", name);
     return (error_info){ .msg = NULL };
 }
 
@@ -75,6 +77,7 @@ INLINE static error_info assign(vm* v) {
             carrier->obj->destroy(carrier->obj, &v->env);
             carrier->obj = NULL;
         }
+        LOG("assign", "%s\n", "null");
         return (error_info){ .msg = NULL };
     }
 
@@ -83,7 +86,7 @@ INLINE static error_info assign(vm* v) {
             carrier->obj = make_object_primitive_data();
             object_primitive_data* o = get_object_true_type(carrier->obj);
             o->val = *rhs;
-            LOG_DEBUG("\tassign\t\t%s\t", carrier->name);
+            LOG("assign", "%s\t", carrier->name);
             print_primitive_data(&o->val);
         }
         else if (rhs->val.carrier->obj->type == ObjectTypePrimitiveData) {
@@ -91,7 +94,7 @@ INLINE static error_info assign(vm* v) {
             object_primitive_data* o_rhs = get_object_true_type(rhs->val.carrier->obj);
             object_primitive_data* o = get_object_true_type(carrier->obj);
             o->val = o_rhs->val;
-            LOG_DEBUG("\tassign\t\t%s\t", carrier->name);
+            LOG("assign", "%s\t", carrier->name);
             print_primitive_data(&o->val);
         }
         else {
@@ -103,14 +106,14 @@ INLINE static error_info assign(vm* v) {
         if (rhs->type < PrimitiveDataTypeObjPtr) {
             object_primitive_data* o = get_object_true_type(carrier->obj);
             o->val = *rhs;
-            LOG_DEBUG("\tassign\t\t%s\t", carrier->name);
+            LOG("assign", "%s\t", carrier->name);
             print_primitive_data(&o->val);
         }
         else if (rhs->val.carrier->obj->type == ObjectTypePrimitiveData) {
             object_primitive_data* o_rhs = get_object_true_type(rhs->val.carrier->obj);
             object_primitive_data* o = get_object_true_type(carrier->obj);
             o->val = o_rhs->val;
-            LOG_DEBUG("\tassign\t\t%s\t", carrier->name);
+            LOG("assign", "%s\t", carrier->name);
             print_primitive_data(&o->val);
         }
         else {
@@ -144,7 +147,7 @@ INLINE static error_info funcdef(vm* v) {
     object_function_def* def = get_object_true_type(obj);
     def->entry_point = v->ip;
 
-    LOG_DEBUG("\tfuncdef\t\t%s %lld %d %d ", name, param_count, def->entry_point, end_pos);
+    LOG("funcdef", "%s %lld %d %d ", name, param_count, def->entry_point, end_pos);
     for (i32 i = 0; i < param_count; i++) {
         vector_push(def->args, vector_backn(v->env.bp, i).val.string);
         LOG_DEBUG_MSG("%s ", def->args[i]);
@@ -174,7 +177,7 @@ INLINE static error_info funcall(vm* v) {
         return (error_info){ .msg = "missing arguments" };
     }
 
-    LOG_DEBUG("\tfuncall\t\t%s %d %d\n", carrier->name, args_count, def->entry_point);
+    LOG("funcall", "%s %d %d\n", carrier->name, args_count, def->entry_point);
     vector_pop(v->env.bp);
 
     env_push_scope(&v->env);
@@ -205,7 +208,7 @@ INLINE static error_info funcend(vm* v) {
     i32 scope_level = (i32)((vector_backn(v->env.bp, 0).val.int64 << 32) >> 32);
     vector_pop(v->env.bp);
     vector_push(v->env.bp, (primitive_data){ .type = PrimitiveDataTypeObjPtr, .val.carrier = NULL });
-    LOG_DEBUG("\tfuncend\t\t%d %d %d\n", org_ip, scope_level, get_env_level(&v->env));
+    LOG("funcend", "%d %d %d\n", org_ip, scope_level, get_env_level(&v->env));
     do { 
         env_pop_scope(&v->env);
     } while (scope_level != get_env_level(&v->env));
@@ -221,7 +224,7 @@ INLINE static error_info func_return(vm* v) {
     vector_pop(v->env.bp);
 
     if (data.type == PrimitiveDataTypeObjPtr) {
-        LOG_DEBUG("\treturn\t\t%d %d %d\n", org_ip, scope_level, get_env_level(&v->env));
+        LOG("return", "%d %d %d\n", org_ip, scope_level, get_env_level(&v->env));
         if (get_env_level(&v->env) == data.val.carrier->level) {
             env_remove_object_from_scope(&v->env, data.val.carrier);
             data.val.carrier->level++;
@@ -240,7 +243,7 @@ INLINE static error_info func_return(vm* v) {
         vector_push(v->env.bp, data);
     }
 
-    LOG_DEBUG("\treturn\t\t%d %d %d\n", org_ip, scope_level, get_env_level(&v->env));
+    LOG("return", "%d %d %d\n", org_ip, scope_level, get_env_level(&v->env));
     do { 
         env_pop_scope(&v->env);
     } while (scope_level != get_env_level(&v->env));
@@ -275,12 +278,12 @@ INLINE static error_info func_return(vm* v) {
         if (ei.msg) {\
             return ei;\
         }\
-        LOG_DEBUG("\t" #assign_name "_assign\t%s\t", carrier->name);\
+        LOG(#assign_name "_assign", "%s\t", carrier->name);\
         print_primitive_data(&o->val);\
         break;
 
 #define IMPL_ARITHMETIC(name)\
-        static char msg[32];\
+        static char msg[52];\
         u32 end = vector_size(v->env.bp);\
         primitive_data data;\
         primitive_data* lhs = v->env.bp + end - 2;\
@@ -315,7 +318,7 @@ INLINE static error_info func_return(vm* v) {
             return ei;\
         }\
         vector_push(v->env.bp, data);\
-        LOG_DEBUG("\t" #name "\t\t");\
+        LOG(#name, "", "");\
         print_primitive_data(&data);
 
 static error_info run(vm* v) {
@@ -326,16 +329,38 @@ static error_info run(vm* v) {
         case ByteCodePushConst: {
             primitive_data data = { .type = v->code[v->ip+1] };
             memcpy(&data.val, &v->code[v->ip+2], primitive_size_map[data.type]);
-            LOG_DEBUG("\tpush\t\t");
+            LOG("push", "", "");
             print_primitive_data(&data);
             vector_push(v->env.bp, data);
             v->ip += primitive_size_map[data.type] + 1;
-        } break;
+            break;
+        }
+        case ByteCodePushNull: {
+            primitive_data data = { .type = PrimitiveDataTypeObjPtr, .val.carrier = NULL };
+            vector_push(v->env.bp, data);
+            break;
+        }
+        case ByteCodePushTrue: {
+            primitive_data data = { .type = PrimitiveDataTypeBoolean, .val.boolean = 1 };
+            vector_push(v->env.bp, data);
+            break;
+        }
+        case ByteCodePushFalse: {
+            primitive_data data = { .type = PrimitiveDataTypeBoolean, .val.boolean = 0 };
+            vector_push(v->env.bp, data);
+            break;
+        }
         case ByteCodeAdd: { IMPL_ARITHMETIC(add) break; }
         case ByteCodeSub: { IMPL_ARITHMETIC(sub) break; }
         case ByteCodeMul: { IMPL_ARITHMETIC(mul) break; }
         case ByteCodeDiv: { IMPL_ARITHMETIC(div) break; }
         case ByteCodeMod: { IMPL_ARITHMETIC(mod) break; }
+        case ByteCodeEqual: { IMPL_ARITHMETIC(cmp_equal) break; }
+        case ByteCodeNotEqual: { IMPL_ARITHMETIC(cmp_not_equal) break; }
+        case ByteCodeGreaterThan: { IMPL_ARITHMETIC(cmp_greater_than) break; }
+        case ByteCodeLessThan: { IMPL_ARITHMETIC(cmp_less_than) break; }
+        case ByteCodeGreaterThanEqual: { IMPL_ARITHMETIC(cmp_greater_than_equal) break; }
+        case ByteCodeLessThanEqual: { IMPL_ARITHMETIC(cmp_less_than_equal) break; }
         case ByteCodeNegate: {
             primitive_data data;
             error_info ei = primitive_data_neg(&data, &vector_back(v->env.bp));
@@ -344,7 +369,7 @@ static error_info run(vm* v) {
             }
             vector_pop(v->env.bp);
             vector_push(v->env.bp, data);
-            LOG_DEBUG("\tneg\t\t");
+            LOG("neg", "\n", "");
             print_primitive_data(&data);
             break;
         }
@@ -361,7 +386,7 @@ static error_info run(vm* v) {
                 data->val.carrier->obj->destroy(data->val.carrier->obj, &v->env);
                 free_mem(data->val.carrier);
             }
-            LOG_DEBUG("\tpop\n");
+            LOG("pop", "\n", "");
             vector_pop(v->env.bp);
             break;
         }
@@ -371,7 +396,7 @@ static error_info run(vm* v) {
                 .type = PrimitiveDataTypeString,
             };
             vector_push(v->env.bp, data);
-            LOG_DEBUG("\tpush\t\t%s\n", data.val.string);
+            LOG("push", "%s\n", data.val.string);
             v->ip += 8;
             break;
         }
@@ -386,14 +411,14 @@ static error_info run(vm* v) {
                 .type = PrimitiveDataTypeObjPtr,
             };
             vector_push(v->env.bp, data);
-            LOG_DEBUG("\tref\t\t%s\n", name);
+            LOG("ref", "%s\n", name);
             v->ip += 8;
             break;
         }
         case ByteCodeAccessIden: {
             cstring name = *((cstring*)&v->code[v->ip+1]);
             (void)name;
-            LOG_DEBUG("\taccess\t\t%s\n", name);
+            LOG("access", "%s\n", name);
             v->ip += 8;
             break;
         }

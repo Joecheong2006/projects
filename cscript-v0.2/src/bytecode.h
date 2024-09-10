@@ -10,6 +10,13 @@ typedef enum {
 
     ByteCodeNegate,
 
+    ByteCodeEqual,
+    ByteCodeNotEqual,
+    ByteCodeGreaterThan,
+    ByteCodeLessThan,
+    ByteCodeGreaterThanEqual,
+    ByteCodeLessThanEqual,
+
     ByteCodeAssign,
     ByteCodeAddAssign,
     ByteCodeSubAssign,
@@ -20,6 +27,9 @@ typedef enum {
     ByteCodePop,
     ByteCodePushName,
     ByteCodePushConst,
+    ByteCodePushNull,
+    ByteCodePushTrue,
+    ByteCodePushFalse,
     ByteCodeRefIden,
     ByteCodeAccessIden,
     ByteCodeInitVar,
@@ -41,6 +51,13 @@ void gen_bytecode_mod(struct ast_node* node, struct vm* v);
 
 void gen_bytecode_negate(struct ast_node* node, struct vm* v);
 
+void gen_bytecode_equal(struct ast_node* node, struct vm* v);
+void gen_bytecode_not_equal(struct ast_node* node, struct vm* v);
+void gen_bytecode_greater_than(struct ast_node* node, struct vm* v);
+void gen_bytecode_less_than(struct ast_node* node, struct vm* v);
+void gen_bytecode_greater_than_equal(struct ast_node* node, struct vm* v);
+void gen_bytecode_less_than_equal(struct ast_node* node, struct vm* v);
+
 void gen_bytecode_assign(struct ast_node* node, struct vm* v);
 void gen_bytecode_add_assign(struct ast_node* node, struct vm* v);
 void gen_bytecode_sub_assign(struct ast_node* node, struct vm* v);
@@ -51,6 +68,9 @@ void gen_bytecode_mod_assign(struct ast_node* node, struct vm* v);
 void gen_bytecode_pop(struct ast_node* node, struct vm* v);
 void gen_bytecode_push_name(struct ast_node* node, struct vm* v);
 void gen_bytecode_push_const(struct ast_node* node, struct vm* v);
+void gen_bytecode_push_null(struct ast_node* node, struct vm* v);
+void gen_bytecode_push_true(struct ast_node* node, struct vm* v);
+void gen_bytecode_push_false(struct ast_node* node, struct vm* v);
 void gen_bytecode_ref_iden(struct ast_node* node, struct vm* v);
 void gen_bytecode_access_iden(struct ast_node* node, struct vm* v);
 void gen_bytecode_initvar(struct ast_node* node, struct vm* v);

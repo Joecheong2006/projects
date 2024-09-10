@@ -49,8 +49,20 @@ func main()
     n = s
     n += 0
     n = s
+    n = 2 * 1 / 2 + 1 > 1 + 2 * 2
+    n = 2 * 1 / 2 + 1 >= 1 + 2 * 2
+    n = 2 * 1 / 2 + 1 < 1 + 2 * 2
+    n = 2 * 1 / 2 + 1 <= 1 + 2 * 2
+    n = 2 * 1 / 2 + 1 == 1 + 2 * 2
+    n = 1
+    n += 0.1
+    n += 3
+    var b = true
+    b = false
+    b = true
+    b = null
+    b = 3.2 + 1.3
+    b = get_nil()
 end
 
 main()
-main()
-
