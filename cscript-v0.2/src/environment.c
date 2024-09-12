@@ -2,6 +2,7 @@
 #include "core/assert.h"
 #include "tracing.h"
 #include "core/memory.h"
+#include "object_carrier.h"
 #include <string.h>
 
 INLINE static void scopes_push_obj(environment* env, object_carrier* obj) {
@@ -85,7 +86,7 @@ void env_remove_object_from_scope(environment* env, object_carrier* carrier) {
 
 void env_pop_object(environment* env, object_carrier* carrier) {
     vector(void*) result = hashmap_access_vector(&env->map, carrier);
-    carrier->obj->destroy(carrier->obj, env);
+    carrier->obj->destroy(carrier->obj);
     free_mem(carrier);
     vector_pop(result);
 }
@@ -93,7 +94,7 @@ void env_pop_object(environment* env, object_carrier* carrier) {
 void init_environment(environment* env) {
     START_PROFILING();
     env->map = make_hashmap(1 << 8, hash_object);
-    env->global = make_scopes();
+    env->global = make_vector(scope);
     env->bp = make_stack();
     END_PROFILING(__func__);
 }

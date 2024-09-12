@@ -270,3 +270,7 @@ ast_node* make_ast_return(struct token* tok) {
     return make_ast_node(AstNodeTypeReturn, sizeof(ast_return), tok, destroy_ast_return, gen_bytecode_return);
 }
 
+ast_node* make_ast_eof(struct token* tok) {
+    return make_ast_node(AstNodeTypeEOF, 0, tok, destroy_default, gen_bytecode_none);
+}
+

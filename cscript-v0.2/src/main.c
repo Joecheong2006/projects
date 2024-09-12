@@ -24,11 +24,21 @@ void locating_position(vm* v) {
         u8 code = v->code[ip];
         switch (code) {
         case ByteCodePushConst: {
-            primitive_data data = { .type = v->code[ip+1] };
-            memcpy(&data.val, &v->code[ip+2], primitive_size_map[data.type]);
+            primitive_data data = { .type = v->code[ip + 1] };
+            memcpy(&data.val, &v->code[ip + 2], primitive_size_map[data.type]);
             ip += primitive_size_map[data.type] + 1;
             break;
         }
+        case ByteCodePushUInt8:
+        case ByteCodePushInt8: { ip += 1; break; }
+        case ByteCodePushUInt16:
+        case ByteCodePushInt16: { ip += 2; break; }
+        case ByteCodePushFloat32:
+        case ByteCodePushUInt32:
+        case ByteCodePushInt32: { ip += 4; break; }
+        case ByteCodePushFloat64:
+        case ByteCodePushUInt64:
+        case ByteCodePushInt64: { ip += 8; break; }
         case ByteCodePushNull:
         case ByteCodePushTrue:
         case ByteCodePushFalse:
@@ -54,10 +64,10 @@ void locating_position(vm* v) {
         case ByteCodePop: break;
         case ByteCodePushName:
         case ByteCodeRefIden:
-        case ByteCodeAccessIden: ip+=8; break;
+        case ByteCodeAccessIden: ip += 8; break;
         case ByteCodeFuncDef: {
             vector_push(position, ip);
-            ip+=4;
+            ip += 4;
             break;
         }
         case ByteCodeFuncEnd: {

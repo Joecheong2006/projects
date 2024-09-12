@@ -17,7 +17,7 @@ struct token;
 typedef struct {
     vector(token) tokens;
     vector(error_info) errors;
-    ParserState state;
+    vector(ParserState) states;
     i32 pointer;
 } parser;
 

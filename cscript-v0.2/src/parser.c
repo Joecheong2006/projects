@@ -594,13 +594,14 @@ static ast_node* parse_funcdef(parser* par) {
     def->param = param;
     def->param_count = 0;
     get_funcparam_count(param, &def->param_count);
-    par->state = ParserStateParsingFuncBody;
+    i32 state = ParserStateParsingFuncBody;
+    vector_push(par->states, state);
     return result;
 }
 
 static ast_node* parse_assignment_operator(parser* par) {
     token* tok = parser_peek_token(par, 0);
-    switch ((int)tok->type) {
+    switch ((i32)tok->type) {
     case TokenTypeAssignmentPlus:
         ++par->pointer;
         return make_ast_add_assign(tok);
@@ -691,7 +692,8 @@ static ast_node* parser_parse_ins(parser* par) {
         return parse_if(par);
     }
     case TokenTypeKeywordEnd: {
-        if (par->state == ParserStateParsingFuncBody) {
+        if (vector_back(par->states) == ParserStateParsingFuncBody) {
+            vector_pop(par->states);
             par->pointer++;
             return make_ast_funcend(NULL);
         }
@@ -699,22 +701,22 @@ static ast_node* parser_parse_ins(parser* par) {
         return NULL;
     }
     case TokenTypeKeywordRet: {
-        if (par->state == ParserStateParsing) {
+        if (vector_back(par->states) == ParserStateParsing) {
             parser_report_error(par, tok, "unexpected return");
             return NULL;
         }
         return parse_return(par);
     }
     case TokenTypeEOF: {
-        if (par->state != ParserStateParsing) {
+        if (vector_back(par->states) != ParserStateParsing) {
             parser_report_error(par, tok, "missing end");
             return NULL;
         }
-        else if (par->state == ParserStateParsingFuncBody) {
+        else if (vector_back(par->states) == ParserStateParsingFuncBody) {
             parser_report_error(par, tok, "function declaration missing end");
             return NULL;
         }
-        return NULL;
+        return make_ast_eof(tok);
     }
     default: {
         parser_report_error(par, tok, "invalid token");
@@ -729,7 +731,8 @@ vector(ast_node*) parser_parse(parser* par) {
         return NULL;
     }
     vector(ast_node*) result = make_vector(ast_node*);
-    par->state = ParserStateParsing;
+    i32 state = ParserStateParsing;
+    vector_push(par->states, state);
     while (tok) {
         i32 is_reference = tok->type == TokenTypeIdentifier;
         ast_node* ins = parser_parse_ins(par);
@@ -749,11 +752,11 @@ vector(ast_node*) parser_parse(parser* par) {
             vector_push(result, node);
         }
 
-        omit_separator(par);
-        tok = parser_peek_token(par, 0);
         if (tok->type == TokenTypeEOF) {
             return result;
         }
+        omit_separator(par);
+        tok = parser_peek_token(par, 0);
     }
     return result;
 }
@@ -763,7 +766,7 @@ void init_parser(parser* par, vector(token) tokens) {
     par->tokens = tokens;
     par->errors = make_vector(error_info);
     par->pointer = 0;
-    par->state = ParserStateInit;
+    par->states = make_vector(ParserState);
     END_PROFILING(__func__)
 }
 
@@ -771,6 +774,7 @@ void free_parser(parser* par) {
     START_PROFILING()
     free_vector(par->tokens);
     free_vector(par->errors);
+    free_vector(par->states);
     END_PROFILING(__func__)
 }
 

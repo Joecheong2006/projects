@@ -1,5 +1,6 @@
 #include "vm.h"
 #include "object.h"
+#include "object_carrier.h"
 #include "primitive_data.h"
 #include "tracing.h"
 #include "ast_node.h"
@@ -74,7 +75,7 @@ INLINE static error_info assign(vm* v) {
     vector_popn(v->env.bp, 2);
     if (rhs->type == PrimitiveDataTypeObjPtr && (rhs->val.carrier == NULL || rhs->val.carrier->obj == NULL)) {
         if (carrier->obj) {
-            carrier->obj->destroy(carrier->obj, &v->env);
+            carrier->obj->destroy(carrier->obj);
             carrier->obj = NULL;
         }
         LOG("assign", "%s\n", "null");
@@ -321,20 +322,41 @@ INLINE static error_info func_return(vm* v) {
         LOG(#name, "", "");\
         print_primitive_data(&data);
 
+#define IMPL_PUSH_CONST(flag, type_name, val_name, size)\
+        primitive_data data = {\
+            .type = PrimitiveDataType##flag,\
+            .val.val_name = *(type_name*)(v->code + v->ip + 1)\
+        };\
+        vector_push(v->env.bp, data);\
+        v->ip += size;\
+        LOG("push", "", "");\
+        print_primitive_data(&data);\
+        break;
+
 static error_info run(vm* v) {
     u32 size = vector_size(v->code);
     while(size > v->ip) {
         u8 code = v->code[v->ip];
         switch (code) {
         case ByteCodePushConst: {
-            primitive_data data = { .type = v->code[v->ip+1] };
-            memcpy(&data.val, &v->code[v->ip+2], primitive_size_map[data.type]);
+            primitive_data data = { .type = v->code[v->ip + 1] };
+            memcpy(&data.val, &v->code[v->ip + 2], primitive_size_map[data.type]);
             LOG("push", "", "");
             print_primitive_data(&data);
             vector_push(v->env.bp, data);
             v->ip += primitive_size_map[data.type] + 1;
             break;
         }
+        case ByteCodePushUInt8: { IMPL_PUSH_CONST(UInt8, u8, uint8, 1) }
+        case ByteCodePushInt8: { IMPL_PUSH_CONST(Int8, i8, int8, 1) }
+        case ByteCodePushUInt16: { IMPL_PUSH_CONST(UInt16, u16, uint16, 2) }
+        case ByteCodePushInt16: { IMPL_PUSH_CONST(Int16, i16, int16, 2) }
+        case ByteCodePushUInt32: { IMPL_PUSH_CONST(UInt32, u32, uint32, 4) }
+        case ByteCodePushInt32: { IMPL_PUSH_CONST(Int32, i32, int32, 4) }
+        case ByteCodePushUInt64: { IMPL_PUSH_CONST(UInt64, u64, uint64, 8) }
+        case ByteCodePushInt64: { IMPL_PUSH_CONST(Int64, i64, int64, 8) }
+        case ByteCodePushFloat32: { IMPL_PUSH_CONST(Float32, f32, float32, 4) }
+        case ByteCodePushFloat64: { IMPL_PUSH_CONST(Float64, f64, float64, 8) }
         case ByteCodePushNull: {
             primitive_data data = { .type = PrimitiveDataTypeObjPtr, .val.carrier = NULL };
             vector_push(v->env.bp, data);
@@ -383,7 +405,7 @@ static error_info run(vm* v) {
         case ByteCodePop: {
             primitive_data* data = &vector_back(v->env.bp);
             if (data->type == PrimitiveDataTypeObjPtr && data->val.carrier && data->val.carrier->level != get_env_level(&v->env)) {
-                data->val.carrier->obj->destroy(data->val.carrier->obj, &v->env);
+                data->val.carrier->obj->destroy(data->val.carrier->obj);
                 free_mem(data->val.carrier);
             }
             LOG("pop", "\n", "");
@@ -392,7 +414,7 @@ static error_info run(vm* v) {
         }
         case ByteCodePushName: {
             primitive_data data = {
-                .val.string = *((cstring*)&v->code[v->ip+1]),
+                .val.string = *((cstring*)&v->code[v->ip + 1]),
                 .type = PrimitiveDataTypeString,
             };
             vector_push(v->env.bp, data);
@@ -401,7 +423,7 @@ static error_info run(vm* v) {
             break;
         }
         case ByteCodeRefIden: {
-            cstring name = *((cstring*)&v->code[v->ip+1]);
+            cstring name = *((cstring*)&v->code[v->ip + 1]);
             object_carrier* carrier = env_find_object(&v->env, name);
             if (!carrier) {
                 return (error_info){ .msg = "not found object '%s'" };
@@ -416,7 +438,7 @@ static error_info run(vm* v) {
             break;
         }
         case ByteCodeAccessIden: {
-            cstring name = *((cstring*)&v->code[v->ip+1]);
+            cstring name = *((cstring*)&v->code[v->ip + 1]);
             (void)name;
             LOG("access", "%s\n", name);
             v->ip += 8;

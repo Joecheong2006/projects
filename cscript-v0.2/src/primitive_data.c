@@ -1,13 +1,17 @@
 #include "primitive_data.h"
 #include "core/log.h"
 #include "object.h"
-#include "scope.h" // NOTE: for object_carrier struct members
+#include "object_carrier.h"
 
 u8 primitive_size_map[] = {
     [PrimitiveDataTypeBoolean] = 1,
+    [PrimitiveDataTypeUInt8] = 1,
     [PrimitiveDataTypeInt8] = 1,
+    [PrimitiveDataTypeUInt16] = 2,
     [PrimitiveDataTypeInt16] = 2,
+    [PrimitiveDataTypeUInt32] = 4,
     [PrimitiveDataTypeInt32] = 4,
+    [PrimitiveDataTypeUInt64] = 8,
     [PrimitiveDataTypeInt64] = 8,
     [PrimitiveDataTypeFloat32] = 4,
     [PrimitiveDataTypeFloat64] = 8,
@@ -17,9 +21,13 @@ u8 primitive_size_map[] = {
 
 char* primitive_type_name[] = {
     [PrimitiveDataTypeBoolean] = "boolean",
+    [PrimitiveDataTypeUInt8] = "uint8",
     [PrimitiveDataTypeInt8] = "int8",
+    [PrimitiveDataTypeUInt16] = "uint16",
     [PrimitiveDataTypeInt16] = "int16",
+    [PrimitiveDataTypeUInt32] = "uint32",
     [PrimitiveDataTypeInt32] = "int32",
+    [PrimitiveDataTypeUInt64] = "uint64",
     [PrimitiveDataTypeInt64] = "int64",
     [PrimitiveDataTypeFloat32] = "int32",
     [PrimitiveDataTypeFloat64] = "int64",

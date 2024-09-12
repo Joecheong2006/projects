@@ -27,6 +27,16 @@ typedef enum {
     ByteCodePop,
     ByteCodePushName,
     ByteCodePushConst,
+    ByteCodePushUInt8,
+    ByteCodePushInt8,
+    ByteCodePushUInt16,
+    ByteCodePushInt16,
+    ByteCodePushUInt32,
+    ByteCodePushInt32,
+    ByteCodePushUInt64,
+    ByteCodePushInt64,
+    ByteCodePushFloat32,
+    ByteCodePushFloat64,
     ByteCodePushNull,
     ByteCodePushTrue,
     ByteCodePushFalse,
@@ -81,5 +91,7 @@ void gen_bytecode_funcend(struct ast_node* node, struct vm* v);
 void gen_bytecode_arguments(struct ast_node* node, struct vm* v);
 void gen_bytecode_funcall(struct ast_node* node, struct vm* v);
 void gen_bytecode_return(struct ast_node* node, struct vm* v);
+
+void gen_bytecode_none(struct ast_node* node, struct vm* v);
 
 #endif

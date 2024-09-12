@@ -117,13 +117,65 @@ void gen_bytecode_push_name(ast_node* node, vm* v) {
     gen_ptr(&node->tok->data.val.string, v);
 }
 
+#define IMPL_PUSH_CONST(name, flag, byte_size)\
+    static void gen_bytecode_push_##name(struct ast_node* node, struct vm* v) {\
+        START_PROFILING();\
+        u8 code = ByteCodePush##flag;\
+        vector_push(v->code, code);\
+        END_PROFILING(__func__);\
+        gen_const_bytes(&node->tok->data.val, byte_size, v);\
+    }
+
+IMPL_PUSH_CONST(uint8, UInt8, 1)
+IMPL_PUSH_CONST(int8, Int8, 1)
+IMPL_PUSH_CONST(uint16, UInt16, 2)
+IMPL_PUSH_CONST(int16, Int16, 2)
+IMPL_PUSH_CONST(uint32, UInt32, 4)
+IMPL_PUSH_CONST(int32, Int32, 4)
+IMPL_PUSH_CONST(uint64, UInt64, 8)
+IMPL_PUSH_CONST(int64, Int64, 8)
+IMPL_PUSH_CONST(float32, Float32, 4)
+IMPL_PUSH_CONST(float64, Float64, 8)
+
 void gen_bytecode_push_const(ast_node* node, vm* v) {
     ASSERT(node->type == AstNodeTypeConstant);
-    START_PROFILING();
-    u8 code = ByteCodePushConst;
-    vector_push(v->code, code);
-    END_PROFILING(__func__);
-    gen_const(&node->tok->data.val, node->tok->data.type, primitive_size_map[node->tok->data.type], v);
+    if (node->tok->data.type == PrimitiveDataTypeUInt8) {
+        gen_bytecode_push_uint8(node, v);
+    }
+    else if (node->tok->data.type == PrimitiveDataTypeInt8) {
+        gen_bytecode_push_int8(node, v);
+    }
+    else if (node->tok->data.type == PrimitiveDataTypeUInt16) {
+        gen_bytecode_push_uint16(node, v);
+    }
+    else if (node->tok->data.type == PrimitiveDataTypeInt16) {
+        gen_bytecode_push_int16(node, v);
+    }
+    else if (node->tok->data.type == PrimitiveDataTypeUInt32) {
+        gen_bytecode_push_uint32(node, v);
+    }
+    else if (node->tok->data.type == PrimitiveDataTypeInt32) {
+        gen_bytecode_push_int32(node, v);
+    }
+    else if (node->tok->data.type == PrimitiveDataTypeUInt64) {
+        gen_bytecode_push_uint64(node, v);
+    }
+    else if (node->tok->data.type == PrimitiveDataTypeInt64) {
+        gen_bytecode_push_int64(node, v);
+    }
+    else if (node->tok->data.type == PrimitiveDataTypeFloat32) {
+        gen_bytecode_push_float32(node, v);
+    }
+    else if (node->tok->data.type == PrimitiveDataTypeFloat64) {
+        gen_bytecode_push_float64(node, v);
+    }
+    else {
+        START_PROFILING();
+        u8 code = ByteCodePushConst;
+        vector_push(v->code, code);
+        END_PROFILING(__func__);
+        gen_const(&node->tok->data.val, node->tok->data.type, primitive_size_map[node->tok->data.type], v);
+    }
 }
 
 void gen_bytecode_push_null(struct ast_node* node, struct vm* v) {
@@ -272,5 +324,9 @@ void gen_bytecode_return(struct ast_node* node, struct vm* v) {
     }
     u8 code = ByteCodeReturnNone;
     vector_push(v->code, code);
+}
+
+void gen_bytecode_none(struct ast_node* node, struct vm* v) {
+    (void)node, (void)v;
 }
 

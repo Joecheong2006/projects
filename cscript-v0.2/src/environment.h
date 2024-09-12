@@ -6,8 +6,6 @@
 #include "stack.h"
 #include "object.h"
 
-#define make_scopes() make_vector(scope)
-
 struct environment {
     hashmap map;
     vector(scope) global;
@@ -22,10 +20,10 @@ void free_environment(environment* env);
 void env_push_scope(environment* env);
 void env_pop_scope(environment* env);
 
-object_carrier* env_find_object(environment* env, cstring name);
-void env_push_object(environment* env, object_carrier* carrier);
+struct object_carrier* env_find_object(environment* env, cstring name);
+void env_push_object(environment* env, struct object_carrier* carrier);
 
-void env_remove_object_from_scope(environment* env, object_carrier* carrier);
-void env_pop_object(environment* env, object_carrier* carrier);
+void env_remove_object_from_scope(environment* env, struct object_carrier* carrier);
+void env_pop_object(environment* env, struct object_carrier* carrier);
 
 #endif

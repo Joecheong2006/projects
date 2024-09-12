@@ -40,6 +40,8 @@ typedef enum {
     AstNodeTypeWhile,
     AstNodeTypeFuncall,
     AstNodeTypeReturn,
+
+    AstNodeTypeEOF,
 } AstNodeType;
 
 struct token;
@@ -143,5 +145,7 @@ ast_node* make_ast_funcdef(struct token* tok);
 ast_node* make_ast_funcend(struct token* tok);
 ast_node* make_ast_funcall(struct token* tok);
 ast_node* make_ast_return(struct token* tok);
+
+ast_node* make_ast_eof(struct token* tok);
 
 #endif
