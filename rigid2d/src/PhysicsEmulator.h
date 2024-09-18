@@ -57,7 +57,7 @@ private:
     // window status
     i32 width, height;
     vec2 mouse;
-    const real refresh_rate = 144, fps = refresh_rate;
+    const real refresh_rate = 165, fps = refresh_rate;
     real frame = 1.0 / fps, render_frame = 0, update_frame = 0;
 
     void SetWorldProjection(vec2 view);
