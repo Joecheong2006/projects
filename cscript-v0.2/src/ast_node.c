@@ -91,11 +91,13 @@ ast_node* make_ast_cmp_less_than_equal(struct token* tok) {
     return make_ast_node(AstNodeTypeExprLessThanEqual, sizeof(ast_binary_expression), tok, destroy_ast_binary_expression, gen_bytecode_less_than_equal);
 }
 
-ast_node* make_ast_cmp_not_equal(struct token* tok);
-ast_node* make_ast_cmp_greater_than(struct token* tok);
-ast_node* make_ast_cmp_less_than(struct token* tok);
-ast_node* make_ast_cmp_greater_than_equal(struct token* tok);
-ast_node* make_ast_cmp_less_than_equal(struct token* tok);
+ast_node* make_ast_expr_and(struct token* tok) {
+    return make_ast_node(AstNodeTypeExprAnd, sizeof(ast_binary_expression), tok, destroy_ast_binary_expression, gen_bytecode_and);
+}
+
+ast_node* make_ast_expr_or(struct token* tok) {
+    return make_ast_node(AstNodeTypeExprOr, sizeof(ast_binary_expression), tok, destroy_ast_binary_expression, gen_bytecode_or);
+}
 
 static void destroy_ast_assignment(ast_node* node) {
     ASSERT(node);
@@ -268,6 +270,10 @@ static void destroy_ast_return(ast_node* node) {
 
 ast_node* make_ast_return(struct token* tok) {
     return make_ast_node(AstNodeTypeReturn, sizeof(ast_return), tok, destroy_ast_return, gen_bytecode_return);
+}
+
+ast_node* make_ast_newline(struct token* tok) {
+    return make_ast_node(AstNodeTypeNewLine, 0, tok, destroy_default, gen_bytecode_count_newline);
 }
 
 ast_node* make_ast_eof(struct token* tok) {

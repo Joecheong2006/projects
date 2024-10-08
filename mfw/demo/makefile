@@ -2,17 +2,19 @@ CC = g++
 CFLAGS := -std=c++17 -Wall -Wextra -Wpedantic -Wstrict-aliasing -g -O2
 SOURCE = src src/**
 INCLUDE = -I../lib -I../include
-LIB = bin/mfw.dll  -static-libgcc -static-libstdc++ -Wl,-Bstatic -lstdc++ -lpthread -Wl,-Bdynamic
+LIB = bin/mfw.dll -static-libgcc -static-libstdc++ -Wl,-Bstatic -lstdc++ -lpthread -Wl,-Bdynamic
 
 SRC = $(wildcard $(patsubst %, %/*.cpp, $(SOURCE)))
 OBJ = $(SRC:%.cpp=%.o)
 DEP = $(OBJ:%.o=%.d)
 BIN = bin
-OUT = $(BIN)/demo.exe
 
-PROCESS_INDEX = -1
-TOTAL_FILES = $(words $(SRC))
-PROCESS_PERCENTAGE = 0
+PROGRAM = demo
+OUT = $(BIN)/$(PROGRAM)
+
+ifeq ($(OS), Windows_NT)
+	OUT = $(BIN)/$(PROGRAM).exe
+endif
 
 .PHONY: all clean
 
@@ -36,14 +38,10 @@ bin:
 	@mkdir -p $(BIN)
 
 app: bin $(OBJ) 
-	@$(CC) -o $(OUT) $(OBJ) $(LIB)
+	$(CC) -o $(OUT) $(OBJ) $(LIB)
 	@echo "[100%] Compilation completed"
 
 %.o: %.cpp
-	$(eval PROCESS_INDEX := $(shell expr $(PROCESS_INDEX) + 1))
-	$(eval PROCESS_PERCENTAGE := $(shell echo "$$(($(PROCESS_INDEX) * 100))"))
-	$(eval PROCESS_PERCENTAGE := $(shell echo "$$(($(PROCESS_PERCENTAGE) / $(TOTAL_FILES)))"))
-	@echo "[$(PROCESS_PERCENTAGE)%] $<"
-	@$(CC) $(CFLAGS) $(INCLUDE) -o $@ -c $< -MMD
+	$(CC) $(CFLAGS) $(INCLUDE) -o $@ -c $< -MMD
 
 -include $(DEP)

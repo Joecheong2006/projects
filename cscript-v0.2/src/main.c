@@ -54,6 +54,8 @@ void locating_position(vm* v) {
         case ByteCodeLessThan:
         case ByteCodeGreaterThanEqual:
         case ByteCodeLessThanEqual:
+        case ByteCodeAnd:
+        case ByteCodeOr:
         case ByteCodeInitVar:
         case ByteCodeAssign:
         case ByteCodeAddAssign:
@@ -79,6 +81,7 @@ void locating_position(vm* v) {
         case ByteCodeFuncall: break;
         case ByteCodeReturn: break;
         case ByteCodeReturnNone: break;
+        case ByteCodeCountNewLine: break;
         default: {
             LOG_ERROR("\tinvalid bytecode %d\n", code);
             ASSERT_MSG(0, "invalid bytecode");
@@ -100,7 +103,13 @@ int main(void) {
     parser par;
     init_parser(&par, generate_tokens(&lex));
 
-    vector(ast_node*) ast = parser_parse(&par);
+    vector(ast_node*) ast = NULL;
+    {
+        START_PROFILING()
+        ast = parser_parse(&par);
+        END_PROFILING("parsing");
+    }
+
     for_vector(par.errors, i, 0) {
         LOG_ERROR("\t%d:%d %s\n", par.errors[i].line, par.errors[i].position, par.errors[i].msg);
     }

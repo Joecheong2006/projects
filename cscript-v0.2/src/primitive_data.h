@@ -67,4 +67,7 @@ error_info primitive_data_cmp_less_than(primitive_data* out, primitive_data* a, 
 error_info primitive_data_cmp_greater_than_equal(primitive_data* out, primitive_data* a, primitive_data* b);
 error_info primitive_data_cmp_less_than_equal(primitive_data* out, primitive_data* a, primitive_data* b);
 
+error_info primitive_data_and(primitive_data* out, primitive_data* a, primitive_data* b);
+error_info primitive_data_or(primitive_data* out, primitive_data* a, primitive_data* b);
+
 #endif

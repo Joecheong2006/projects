@@ -82,9 +82,8 @@ void platform_console_log(const char* msg, ConsoleTextColor color) {
     SetConsoleTextAttribute(handle, console_color_map[color]);
 #if defined(_MSC_VER)
     OutputDebugString(msg);
-#else
-    WriteConsole(handle, msg, strlen(msg), NULL, NULL);
 #endif
+    WriteConsole(handle, msg, strlen(msg), NULL, NULL);
     SetConsoleTextAttribute(handle, console_color_map[ConsoleTextColorWhite]);
 }
 

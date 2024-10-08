@@ -7,10 +7,12 @@
       "-Wextra",
       "-Ilib/glad/include",
       "-Ilib/stb_image",
+      "-Ilib/openal",
+      "-Ilib/sndfile/include",
       "-Ilib",
       "-DDEBUG"
     ],
-    "directory": "/home/joe/project/chess",
+    "directory": "C:/Users/joech/project/chess",
     "file": "src/main.c"
   }
 ]

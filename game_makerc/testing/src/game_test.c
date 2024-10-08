@@ -647,6 +647,8 @@ static void game_test_on_update(void* self) {
 		game->con.window.on_render(game->con.owner);
     }
 
+    platform_sleep(6); // TODO: replace this code by dynamic fps control
+
     static transform p1 = (transform) {
         .position = {0, 2, 0},
         .scale = {2, 2, 1},

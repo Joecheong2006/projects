@@ -2,6 +2,7 @@
 #include "core/log.h"
 #include "object.h"
 #include "object_carrier.h"
+#include "core/assert.h"
 
 u8 primitive_size_map[] = {
     [PrimitiveDataTypeBoolean] = 1,
@@ -40,6 +41,7 @@ char* primitive_type_name[] = {
 };
 
 void print_primitive_data(primitive_data* data) {
+    ASSERT(data);
     if (data->type == PrimitiveDataTypeInt64) {
         LOG_DEBUG_MSG("%lld\n", data->val.int64);
     }
@@ -92,6 +94,7 @@ INLINE i32 primitive_data_guess_type(primitive_data* a, primitive_data* b) {
     }
 
 error_info primitive_data_cast_to(i32 type, primitive_data* pd) {
+    ASSERT(pd);
     switch (type) {
     case PrimitiveDataTypeInt32: {
         IMPL_PRIMITIVE_DATA_CAST(int32, "invalid cast to int32");
@@ -122,6 +125,7 @@ error_info primitive_data_cast_to(i32 type, primitive_data* pd) {
 
 #define IMPL_PRIMITIVE_ARITHMETIC(oper, name)\
 error_info primitive_data_##name(primitive_data* out, primitive_data* a, primitive_data* b) {\
+    ASSERT(out && a && b);\
     if (a->type == PrimitiveDataTypeBoolean || b->type == PrimitiveDataTypeBoolean) {\
         return (error_info){ .msg = "attempt to perform arithmetic operation on a boolean value" };\
     }\
@@ -157,6 +161,7 @@ IMPL_PRIMITIVE_ARITHMETIC(-, sub)
 IMPL_PRIMITIVE_ARITHMETIC(*, mul)
 
 error_info primitive_data_div(primitive_data* out, primitive_data* a, primitive_data* b) {
+    ASSERT(out && a && b);
     i32 type = primitive_data_guess_type(a, b);
     error_info ei = primitive_data_cast_to(type, a);
     if (ei.msg)
@@ -193,6 +198,7 @@ error_info primitive_data_div(primitive_data* out, primitive_data* a, primitive_
 }
 
 error_info primitive_data_mod(primitive_data* out, primitive_data* a, primitive_data* b) {
+    ASSERT(out && a && b);
     i32 type = primitive_data_guess_type(a, b);
     error_info ei = primitive_data_cast_to(type, a);
     if (ei.msg)
@@ -221,6 +227,7 @@ error_info primitive_data_mod(primitive_data* out, primitive_data* a, primitive_
 }
 
 error_info primitive_data_neg(primitive_data* out, primitive_data* a) {
+    ASSERT(out && a);
     out->type = a->type;
     switch (a->type) {
     case PrimitiveDataTypeInt32:
@@ -243,6 +250,7 @@ error_info primitive_data_neg(primitive_data* out, primitive_data* a) {
 
 #define IMPL_PRIMITIVE_ASSIGN_ARITHMETIC(oper, assign_name)\
     error_info primitive_data_##assign_name##_assign(primitive_data* a, primitive_data* b) {\
+        ASSERT(a && b);\
         error_info ei = primitive_data_cast_to(a->type > b->type ? a->type : b->type, a->type > b->type ? b : a);\
         if (ei.msg)\
             return ei;\
@@ -269,6 +277,7 @@ IMPL_PRIMITIVE_ASSIGN_ARITHMETIC(-=, sub)
 IMPL_PRIMITIVE_ASSIGN_ARITHMETIC(*=, mul)
 
 error_info primitive_data_div_assign(primitive_data* a, primitive_data* b) {
+    ASSERT(a && b);
     error_info ei = primitive_data_cast_to(a->type, b);
     if (ei.msg)
         return ei;
@@ -299,6 +308,7 @@ error_info primitive_data_div_assign(primitive_data* a, primitive_data* b) {
 }
 
 error_info primitive_data_mod_assign(primitive_data* a, primitive_data* b) {
+    ASSERT(a && b);
     error_info ei = primitive_data_cast_to(a->type, b);
     if (ei.msg)
         return ei;
@@ -320,6 +330,7 @@ error_info primitive_data_mod_assign(primitive_data* a, primitive_data* b) {
 
 #define IMPL_PRIMITIVE_CMP(cmp_oper, name)\
 error_info primitive_data_cmp_##name(primitive_data* out, primitive_data* a, primitive_data* b) {\
+    ASSERT(out && a && b);\
     if (a->type == PrimitiveDataTypeBoolean || b->type == PrimitiveDataTypeBoolean) {\
         return (error_info){ .msg = "attempt to compare boolean to number" };\
     }\
@@ -349,10 +360,68 @@ error_info primitive_data_cmp_##name(primitive_data* out, primitive_data* a, pri
     return (error_info){ .msg = NULL };\
 }
 
-IMPL_PRIMITIVE_CMP(==, equal)
+error_info primitive_data_cmp_equal(primitive_data* out, primitive_data* a, primitive_data* b) {
+    ASSERT(out && a && b);
+    i32 type = primitive_data_guess_type(a, b);
+    error_info ei = primitive_data_cast_to(type, a);
+    if (ei.msg)
+        return ei;
+    ei = primitive_data_cast_to(type, b);
+    if (ei.msg)
+        return ei;
+    out->type = PrimitiveDataTypeBoolean;
+    switch (type) {
+    case PrimitiveDataTypeInt32:
+        out->val.boolean = a->val.int32 == b->val.int32;
+        break;
+    case PrimitiveDataTypeInt64:
+        out->val.boolean = a->val.int64 == b->val.int64;
+        break;
+    case PrimitiveDataTypeFloat32:
+        out->val.boolean = a->val.float32 == b->val.float32;
+        break;
+    case PrimitiveDataTypeFloat64:
+        out->val.boolean = a->val.float64 == b->val.float64;
+        break;
+    case PrimitiveDataTypeBoolean:
+        out->val.boolean = a->val.boolean == b->val.boolean;
+        break;
+    default: return (error_info){ .msg = "undefine primitive data type" };
+    }
+    return (error_info){ .msg = NULL };
+}
+
 IMPL_PRIMITIVE_CMP(!=, not_equal)
 IMPL_PRIMITIVE_CMP(>, greater_than)
 IMPL_PRIMITIVE_CMP(<, less_than)
 IMPL_PRIMITIVE_CMP(>=, greater_than_equal)
 IMPL_PRIMITIVE_CMP(<=, less_than_equal)
+
+error_info primitive_data_and(primitive_data* out, primitive_data* a, primitive_data* b) {
+    ASSERT(out && a && b);
+    error_info ei = primitive_data_cast_to(PrimitiveDataTypeBoolean, a);
+    if (ei.msg)
+        return ei;
+    ei = primitive_data_cast_to(PrimitiveDataTypeBoolean, b);
+    if (ei.msg)
+        return ei;
+
+    out->val.boolean = a->val.boolean && b->val.boolean;
+    out->type = PrimitiveDataTypeBoolean;
+    return (error_info){ .msg = NULL };
+}
+
+error_info primitive_data_or(primitive_data* out, primitive_data* a, primitive_data* b) {
+    ASSERT(out && a && b);
+    error_info ei = primitive_data_cast_to(PrimitiveDataTypeBoolean, a);
+    if (ei.msg)
+        return ei;
+    ei = primitive_data_cast_to(PrimitiveDataTypeBoolean, b);
+    if (ei.msg)
+        return ei;
+
+    out->val.boolean = a->val.boolean || b->val.boolean;
+    out->type = PrimitiveDataTypeBoolean;
+    return (error_info){ .msg = NULL };
+}
 

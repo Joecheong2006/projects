@@ -267,8 +267,8 @@ void set_projection(mat4 proj, f32 fov, f32 aspect, f32 n, f32 f) {
 }
 
 int main(void) {
-    //test_mat3();
-    //test_mat4();
+    // test_mat3();
+    // test_mat4();
 
     printf("[mat3 performance]\n");
     test_mat3_performance();

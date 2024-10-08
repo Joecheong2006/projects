@@ -1,7 +1,7 @@
 CC = g++
 CFLAGS := -std=c++17
-# CFLAGS += -O3 -march=native -flto -fdefer-pop -fmerge-constants -fthread-jumps -floop-optimize -fif-conversion2 -fif-conversion -fcrossjumping -fguess-branch-probability -fcprop-registers -foptimize-sibling-calls -fstrength-reduce -fcse-follow-jumps -fcse-skip-blocks -frerun-cse-after-loop -frerun-loop-opt -fgcse -fgcse-lm -fgcse-sm -fdelete-null-pointer-checks -fexpensive-optimizations -fregmove -fschedule-insns -fschedule-insns2 -fsched-interblock -fsched-spec -fcaller-saves -fpeephole2 -freorder-blocks -freorder-functions -fstrict-aliasing -falign-functions -falign-jumps -falign-loops -falign-labels -finline-functions -frename-registers
-CFLAGS += -Wall -Wextra -Wpedantic -Wstrict-aliasing -lm
+CFLAGS += -O3 -march=native -flto -fdefer-pop -fmerge-constants -fthread-jumps -floop-optimize -fif-conversion2 -fif-conversion -fcrossjumping -fguess-branch-probability -fcprop-registers -foptimize-sibling-calls -fstrength-reduce -fcse-follow-jumps -fcse-skip-blocks -frerun-cse-after-loop -frerun-loop-opt -fgcse -fgcse-lm -fgcse-sm -fdelete-null-pointer-checks -fexpensive-optimizations -fregmove -fschedule-insns -fschedule-insns2 -fsched-interblock -fsched-spec -fcaller-saves -fpeephole2 -freorder-blocks -freorder-functions -fstrict-aliasing -falign-functions -falign-jumps -falign-loops -falign-labels -finline-functions -frename-registers
+# CFLAGS += -Wall -Wextra -Wpedantic -Wstrict-aliasing -lm
 
 SOURCE = src src/**
 LIBRARY = lib/glad/src lib/stb_image lib/imgui
@@ -12,17 +12,12 @@ OBJ = $(SRC:%.cpp=%.o)
 LIBOBJ = $(wildcard $(patsubst %, %/*.o, $(LIBRARY))) 
 DEP = $(OBJ:%.o=%.d)
 
-# DLL = lib/glfw/glfw3.dll 
-# LIB = $(LIBOBJ) $(DLL) lib/glfw/libglfw3dll.a -lopengl32
-LIB = $(LIBOBJ) -lglfw -lOpenGL
+DLL = lib/glfw/glfw3.dll 
+LIB = $(LIBOBJ) $(DLL) lib/glfw/libglfw3dll.a -lopengl32
+# LIB = $(LIBOBJ) -lglfw -lOpenGL
 
 BIN = bin
 OUT = $(BIN)/balls_collision_test.exe
-
-
-PROCESS_INDEX = -1
-TOTAL_FILES = $(words $(SRC))
-PROCESS_PERCENTAGE = 0
 
 .PHONY: all clean
 
@@ -46,14 +41,10 @@ bin:
 	@cp $(DLL) $(BIN)/.
 
 app: $(OBJ)
-	@$(CC) -o $(OUT) $(OBJ) $(LIB)
+	$(CC) -o $(OUT) $(OBJ) $(LIB)
 	@echo "[100%] Compilation completed"
 
 %.o: %.cpp
-	$(eval PROCESS_INDEX := $(shell expr $(PROCESS_INDEX) + 1))
-	$(eval PROCESS_PERCENTAGE := $(shell echo "$$(($(PROCESS_INDEX) * 100))"))
-	$(eval PROCESS_PERCENTAGE := $(shell echo "$$(($(PROCESS_PERCENTAGE) / $(TOTAL_FILES)))"))
-	@echo "[$(PROCESS_PERCENTAGE)%] $<"
-	@$(CC) $(CFLAGS) $(INCLUDE) -o $@ -c $< -MMD
+	$(CC) $(CFLAGS) $(INCLUDE) -o $@ -c $< -MMD
 
 -include $(DEP)

@@ -139,7 +139,7 @@ INLINE static error_info funcdef(vm* v) {
     v->ip += 4;
 
     object_carrier* carrier = env_find_object(&v->env, name);
-    if (carrier) {
+    if (carrier && carrier->level == get_env_level(&v->env)) {
         return (error_info){ .msg = "redefine name" };
     }
 
@@ -148,7 +148,7 @@ INLINE static error_info funcdef(vm* v) {
     object_function_def* def = get_object_true_type(obj);
     def->entry_point = v->ip;
 
-    LOG("funcdef", "%s %lld %d %d ", name, param_count, def->entry_point, end_pos);
+    LOG("funcdef", "%s %d %d %d ", name, param_count, def->entry_point, end_pos);
     for (i32 i = 0; i < param_count; i++) {
         vector_push(def->args, vector_backn(v->env.bp, i).val.string);
         LOG_DEBUG_MSG("%s ", def->args[i]);
@@ -383,6 +383,8 @@ static error_info run(vm* v) {
         case ByteCodeLessThan: { IMPL_ARITHMETIC(cmp_less_than) break; }
         case ByteCodeGreaterThanEqual: { IMPL_ARITHMETIC(cmp_greater_than_equal) break; }
         case ByteCodeLessThanEqual: { IMPL_ARITHMETIC(cmp_less_than_equal) break; }
+        case ByteCodeAnd: { IMPL_ARITHMETIC(and) break; }
+        case ByteCodeOr: { IMPL_ARITHMETIC(or) break; }
         case ByteCodeNegate: {
             primitive_data data;
             error_info ei = primitive_data_neg(&data, &vector_back(v->env.bp));
@@ -483,6 +485,11 @@ static error_info run(vm* v) {
             if (ei.msg) {
                 return ei;
             }
+            break;
+        }
+        case ByteCodeCountNewLine: {
+            static i32 line_count = 0;
+            LOG_DEBUG("\tline count: %d\n", ++line_count);
             break;
         }
         default: {

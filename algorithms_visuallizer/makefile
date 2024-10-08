@@ -10,17 +10,18 @@ OBJ = $(SRC:%.cpp=%.o)
 LIBOBJ = $(wildcard $(patsubst %, %/*.o, $(LIBRARY))) 
 DEP = $(OBJ:%.o=%.d)
 
-# DLL = lib/glfw/glfw3.dll 
-# LIB = $(LIBOBJ) $(DLL) lib/glfw/libglfw3dll.a -lopengl32 -lpdh
-LIB = $(LIBOBJ) -lglfw -lOpenGL
+
+ifeq ($(OS),Windows_NT)
+	OUT = $(PROGRAM).exe
+	DLL = lib/glfw/glfw3.dll 
+	LIB = $(LIBOBJ) $(DLL) lib/glfw/libglfw3dll.a -lopengl32 -lpdh
+else
+	OUT = $(PROGRAM)
+	LIB = $(LIBOBJ) -lglfw -lOpenGL
+endif
 
 BIN = bin
 OUT = $(BIN)/main.exe
-
-
-PROCESS_INDEX = -1
-TOTAL_FILES = $(words $(SRC))
-PROCESS_PERCENTAGE = 0
 
 .PHONY: all clean
 
@@ -44,14 +45,10 @@ bin:
 	@cp $(DLL) $(BIN)/.
 
 app: $(OBJ)
-	@$(CC) -o $(OUT) $(OBJ) $(LIB)
+	$(CC) -o $(OUT) $(OBJ) $(LIB)
 	@echo "[100%] Compilation completed"
 
 %.o: %.cpp
-	$(eval PROCESS_INDEX := $(shell expr $(PROCESS_INDEX) + 1))
-	$(eval PROCESS_PERCENTAGE := $(shell echo "$$(($(PROCESS_INDEX) * 100))"))
-	$(eval PROCESS_PERCENTAGE := $(shell echo "$$(($(PROCESS_PERCENTAGE) / $(TOTAL_FILES)))"))
-	@echo "[$(PROCESS_PERCENTAGE)%] $<"
-	@$(CC) $(CFLAGS) $(INCLUDE) -o $@ -c $< -MMD
+	$(CC) $(CFLAGS) $(INCLUDE) -o $@ -c $< -MMD
 
 -include $(DEP)

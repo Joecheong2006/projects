@@ -30,6 +30,9 @@ typedef enum {
     AstNodeTypeExprGreaterThanEqual,
     AstNodeTypeExprLessThanEqual,
 
+    AstNodeTypeExprAnd,
+    AstNodeTypeExprOr,
+
     AstNodeTypePop,
     AstNodeTypeReferenceIdentifier,
     AstNodeTypeFuncParam,
@@ -41,6 +44,7 @@ typedef enum {
     AstNodeTypeFuncall,
     AstNodeTypeReturn,
 
+    AstNodeTypeNewLine,
     AstNodeTypeEOF,
 } AstNodeType;
 
@@ -121,6 +125,9 @@ ast_node* make_ast_cmp_less_than(struct token* tok);
 ast_node* make_ast_cmp_greater_than_equal(struct token* tok);
 ast_node* make_ast_cmp_less_than_equal(struct token* tok);
 
+ast_node* make_ast_expr_and(struct token* tok);
+ast_node* make_ast_expr_or(struct token* tok);
+
 ast_node* make_ast_assignment(struct token* tok);
 ast_node* make_ast_add_assign(struct token* tok);
 ast_node* make_ast_sub_assign(struct token* tok);
@@ -146,6 +153,7 @@ ast_node* make_ast_funcend(struct token* tok);
 ast_node* make_ast_funcall(struct token* tok);
 ast_node* make_ast_return(struct token* tok);
 
+ast_node* make_ast_newline(struct token* tok);
 ast_node* make_ast_eof(struct token* tok);
 
 #endif

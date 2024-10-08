@@ -43,6 +43,7 @@ static ast_node* parse_term(parser* par);
 static ast_node* parse_expr_with_brackets(parser* par);
 static ast_node* parse_operator(parser* par);
 static ast_node* parse_expr(parser* par, ast_node*(*is_terminal)(parser*,ast_node*));
+static ast_node* parse_expr_statement(parser* par, ast_node*(*is_terminal)(parser*,ast_node*));
 static ast_node* parse_exprln(parser* par);
 static ast_node* parse_vardecl(parser* par);
 static ast_node* parse_funcparam(parser* par);
@@ -63,6 +64,9 @@ static ast_node* parser_parse_ins(parser* par);
 ast_node* expr_brackets_terminal(parser* par, ast_node* node) {
     START_PROFILING()
     token* tok = parser_peek_token(par, 0);
+    if (tok->type == TokenTypeKeywordAnd || tok->type == TokenTypeKeywordOr) {
+        return node;
+    }
     if (tok->type == ')') {
         END_PROFILING(__func__)
         return node;
@@ -75,6 +79,9 @@ ast_node* expr_brackets_terminal(parser* par, ast_node* node) {
 
 ast_node* expr_params_terminal(parser* par, ast_node* node) {
     token* tok = parser_peek_token(par, 0);
+    if (tok->type == TokenTypeKeywordAnd || tok->type == TokenTypeKeywordOr) {
+        return node;
+    }
     if (tok->type == ',' || tok->type == ')') {
         return node;
     }
@@ -85,8 +92,11 @@ ast_node* expr_params_terminal(parser* par, ast_node* node) {
 
 ast_node* expr_default_terminal(parser* par, ast_node* node) {
     token* tok = parser_peek_token(par, 0);
+    if (tok->type == TokenTypeKeywordAnd || tok->type == TokenTypeKeywordOr) {
+        return node;
+    }
     if (tok->type != ')' && (tok->type == ';' || tok->type == '\n' || tok->type == TokenTypeEOF)) {
-        if (tok->type == ';' || tok->type == '\n') {
+        if (tok->type == ';') {
             ++par->pointer;
         }
         return node;
@@ -148,8 +158,7 @@ void omit_separator(parser* par) {
     while (1) {
         switch ((i32)tok->type) {
         case ';': 
-        case '\t': 
-        case '\n': {
+        case '\t': {
             ++par->pointer;
             tok = parser_peek_token(par, 0);
             break;
@@ -423,6 +432,39 @@ i32 bottom_up_need_to_reround(AstNodeType current, AstNodeType previous) {
 }
 
 ast_node* parse_expr(parser* par, ast_node*(*is_terminal)(parser*,ast_node*)) {
+    ast_node* lhs = parse_expr_statement(par, is_terminal);
+    if (!lhs) {
+        return NULL;
+    }
+    ast_node* ret = lhs;
+    while (1) {
+        token* tok = parser_peek_token(par, 0);
+        ast_node* ope = NULL;
+        if (tok->type == TokenTypeKeywordAnd) {
+            ++par->pointer;
+            ope = make_ast_expr_and(tok);
+        }
+        else if (tok->type == TokenTypeKeywordOr) {
+            ++par->pointer;
+            ope = make_ast_expr_or(tok);
+        }
+
+        if (!ope) {
+            return ret;
+        }
+
+        ast_binary_expression* be = get_ast_true_type(ope);
+        be->lhs = lhs;
+        be->rhs = parse_expr_statement(par, is_terminal);
+        if (!be->rhs) {
+            ope->destroy(ope);
+            return NULL;
+        }
+        ret = lhs = ope;
+    }
+}
+
+static ast_node* parse_expr_statement(parser* par, ast_node*(*is_terminal)(parser*,ast_node*)) {
     ast_node* lhs = parse_term(par);
     if (!lhs) {
         return NULL;
@@ -437,7 +479,7 @@ ast_node* parse_expr(parser* par, ast_node*(*is_terminal)(parser*,ast_node*)) {
             return is_terminal(par, ret);
         }
         if (ope->type >= AstNodeTypeExprEqual && ope->type <= AstNodeTypeExprLessThanEqual) {
-            ast_node* boolean_rhs = parse_expr(par, is_terminal);
+            ast_node* boolean_rhs = parse_expr_statement(par, is_terminal);
             if (!boolean_rhs) {
                 lhs->destroy(lhs);
                 ope->destroy(ope);
@@ -447,8 +489,8 @@ ast_node* parse_expr(parser* par, ast_node*(*is_terminal)(parser*,ast_node*)) {
             expr_ope->rhs = boolean_rhs;
             expr_ope->lhs = lhs;
             return ope;
-            ret = lhs = ope;
-            continue;
+            // ret = lhs = ope;
+            // continue;
         }
         ast_node* rhs = parse_term(par);
         if (!rhs) {
@@ -678,7 +720,7 @@ static void clean_up_fatal(vector(ast_node*) node) {
 
 static ast_node* parser_parse_ins(parser* par) {
     token* tok = parser_peek_token(par, 0);
-    switch (tok->type) {
+    switch ((i32)tok->type) {
     case TokenTypeKeywordVar: {
         return parse_vardecl(par);
     }
@@ -706,6 +748,10 @@ static ast_node* parser_parse_ins(parser* par) {
             return NULL;
         }
         return parse_return(par);
+    }
+    case '\n': {
+        par->pointer++;
+        return make_ast_newline(tok);
     }
     case TokenTypeEOF: {
         if (vector_back(par->states) != ParserStateParsing) {

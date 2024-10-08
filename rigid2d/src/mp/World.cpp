@@ -8,7 +8,8 @@
 #include <algorithm>
 #include <execution>
 
-std::unique_ptr<Solver> PhysicsWorld::solver = std::make_unique<VerletOdeSolver>();
+std::unique_ptr<Solver> PhysicsWorld::solver = std::make_unique<EulerOdeSolver>();
+// std::unique_ptr<Solver> PhysicsWorld::solver = std::make_unique<VerletOdeSolver>();
 
 PhysicsWorld::~PhysicsWorld() {
     clear();

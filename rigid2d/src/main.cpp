@@ -66,8 +66,10 @@ public:
 
 mfw::Application* mfw::CreateApplication() {
     PhysicsEmulator* emulator = new PhysicsEmulator();
+    // emulator->setSimulation(new Demo);
+    emulator->setSimulation(new Cloth);
     // emulator->setSimulation(new PoolBalls);
-    emulator->setSimulation(new Cradle);
+    // emulator->setSimulation(new Cradle);
     emulator->world_scale = 13;
     emulator->shift_rate = 0.01;
     emulator->zoom_rate = 0.03;

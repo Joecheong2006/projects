@@ -65,4 +65,4 @@ func main()
     b = get_nil()
 end
 
-main()
+var a = false == (1 == 1 + 1 - 1.0 and (false == 4 and true == 3.0))

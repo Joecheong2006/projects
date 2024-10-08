@@ -1,0 +1,29 @@
+{
+    "configurations": [
+        {
+            "name": "Win32",
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE",
+                "-Wall",
+                "-Wextra",
+                "-Wpedantic",
+                "-Wstrict-aliasing",
+                "-Werror",
+                "-Isrc",
+                "-DDEBUG",
+                "-DPROFILING",
+                "-O2"
+            ],
+            "windowsSdkVersion": "10.0.22621.0",
+            "compilerPath": "C:/mingw64/bin/gcc.exe",
+            "cStandard": "c99",
+            "cppStandard": "c++17"
+        }
+    ],
+    "version": 4
+}

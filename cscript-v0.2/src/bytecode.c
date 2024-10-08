@@ -61,6 +61,9 @@ IMPL_ARITHMETIC(less_than, LessThan)
 IMPL_ARITHMETIC(greater_than_equal, GreaterThanEqual)
 IMPL_ARITHMETIC(less_than_equal, LessThanEqual)
 
+IMPL_ARITHMETIC(and, And)
+IMPL_ARITHMETIC(or, Or)
+
 void gen_bytecode_negate(struct ast_node* node, struct vm* v) {
     ASSERT(node->type == AstNodeTypeNegate);
     ast_negate* neg = get_ast_true_type(node);
@@ -328,5 +331,13 @@ void gen_bytecode_return(struct ast_node* node, struct vm* v) {
 
 void gen_bytecode_none(struct ast_node* node, struct vm* v) {
     (void)node, (void)v;
+}
+
+void gen_bytecode_count_newline(struct ast_node* node, struct vm* v) {
+    ASSERT(node->type == AstNodeTypeNewLine);
+    START_PROFILING();
+    u8 code = ByteCodeCountNewLine;
+    vector_push(v->code, code);
+    END_PROFILING(__func__);
 }
 

@@ -10,14 +10,15 @@ SRC = $(wildcard $(patsubst %, %/*.cpp, $(SOURCE)))
 OBJ = $(SRC:%.cpp=%.o)
 DEP = $(OBJ:%.o=%.d)
 
-# DLL = lib/glfw/glfw3.dll 
-# LIB = $(LIBOBJ) $(DLL) lib/glfw/libglfw3dll.a -lopengl32
-LIB = $(LIBOBJ) -lglfw -lOpenGL
+DLL = lib/glfw/glfw3.dll 
+LIB = $(LIBOBJ) $(DLL) lib/glfw/libglfw3dll.a -lopengl32
+# LIB = $(LIBOBJ) -lglfw -lOpenGL
 
 BIN = bin
-OUT = $(BIN)/glsl_test.exe
+PROGRAM = glsl_test
+OUT = $(BIN)/$(PROGRAM)
 
-.PHONY: all clean compile_obj
+.PHONY: all clean
 
 all: bin app
 
@@ -39,30 +40,11 @@ bin:
 	@cp $(DLL) $(BIN)/.
 
 
-app: bin $(OBJ) compile_obj
-	@$(CC) -o $(OUT) $(OBJ) $(LIB)
+app: bin $(OBJ)
+	$(CC) -o $(OUT) $(OBJ) $(LIB)
 	@echo "[100%] Compilation completed"
 
-.PROCESS_INDEX = -1
-.PROCESS_PERCENTAGE = 0
-.MFILECOUNT := 0
-.MSRCFILE := 
-.MOBJFILE := 
-
 %.o: %.cpp
-	$(eval .MSRCFILE += $<)
-	$(eval .MOBJFILE += $@)
-	$(eval .MFILECOUNT := $(shell expr $(.MFILECOUNT) + 1))
-
-compile_obj:
-	$(if $(filter-out 0, $(words $(.MSRCFILE))),\
-		@$(foreach i, $(shell seq 1 $(words $(.MSRCFILE))),\
-			$(eval .PROCESS_INDEX := $(shell expr $(.PROCESS_INDEX) + 1))\
-			$(eval .PROCESS_PERCENTAGE := $(shell echo "$$(($(.PROCESS_INDEX) * 100))"))\
-			$(eval .PROCESS_PERCENTAGE := $(shell echo "$$(($(.PROCESS_PERCENTAGE) / $(.MFILECOUNT)))"))\
-			echo "[$(.PROCESS_PERCENTAGE)%] $(word $(i), $(.MSRCFILE))";\
-			$(CC) $(CFLAGS) $(INCLUDE) -o $(word $(i), $(.MOBJFILE)) -c $(word $(i), $(.MSRCFILE)) -MMD;\
-		)\
-	)
+	$(CC) $(CFLAGS) $(INCLUDE) -o $@ -c $< -MMD
 
 -include $(DEP)

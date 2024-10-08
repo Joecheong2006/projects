@@ -12,7 +12,7 @@
       "-Ilib/glm",
       "-Ilib"
     ],
-    "directory": "D:/project/glsl-test",
+    "directory": "C:/Users/joech/project/glsl-test",
     "file": "src/main.cpp"
   }
 ]

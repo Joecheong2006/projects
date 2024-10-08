@@ -6,13 +6,13 @@ public:
     Cloth(): Simulation(__func__, 0.1) {}
     virtual void OnStart() override {
         SetDefaultConfig();
-        world.setSubStep(6);
+        world.setSubStep(7);
         world.setObjectLayer<DistanceConstraint>(RenderLayer::Level2);
         world.setObjectLayer<Spring>(RenderLayer::Level1);
         world.setObjectLayer<Circle>(RenderLayer::Level3);
         world.setObjectLayer<Cylinder>(RenderLayer::Level8);
 
-        cloth({15.0_mu, 7.0_mu}, {30, 20}, 50, 0.3, {0, 3.0_mu});
+        cloth({15.0_mu, 7.0_mu}, {30, 20}, 30, 0.8, {0, 3.0_mu});
     }
 
     void cloth(vec2 size, vec2 count, real stiffness, real damping, vec2 offset = vec2(0)) {
@@ -25,9 +25,9 @@ public:
         for (i32 i = 0; i < count.y; i++) {
             for (i32 j = 0; j < count.x; j++) {
                 auto obj = world.addRigidBody<Circle>(vec2(j, -i) * persize + offset);
-                obj->setMass(0.004);
-                obj->radius = persize.x * 0.2;
-                obj->m_damping = 0.3;
+                obj->setMass(0.015);
+                obj->radius = persize.x * 0.22;
+                obj->m_damping = 0.8;
                 obj->getCollider().enable = false;
             }
         }
@@ -42,6 +42,7 @@ public:
         const color pre_color = Spring::default_color;
         Spring::default_w = 0.015_mu;
         Spring::default_color = {COLOR(0xaaaaaa)};
+
         for (i32 i = 0; i < count.y; i++) {
             for (i32 j = 0; j < count.x - 1; j++) {
                 world.addConstraint<Spring>(

@@ -17,6 +17,9 @@ typedef enum {
     ByteCodeGreaterThanEqual,
     ByteCodeLessThanEqual,
 
+    ByteCodeAnd,
+    ByteCodeOr,
+
     ByteCodeAssign,
     ByteCodeAddAssign,
     ByteCodeSubAssign,
@@ -48,6 +51,8 @@ typedef enum {
     ByteCodeFuncall,
     ByteCodeReturn,
     ByteCodeReturnNone,
+
+    ByteCodeCountNewLine,
 } ByteCode;
 
 struct ast_node;
@@ -67,6 +72,9 @@ void gen_bytecode_greater_than(struct ast_node* node, struct vm* v);
 void gen_bytecode_less_than(struct ast_node* node, struct vm* v);
 void gen_bytecode_greater_than_equal(struct ast_node* node, struct vm* v);
 void gen_bytecode_less_than_equal(struct ast_node* node, struct vm* v);
+
+void gen_bytecode_and(struct ast_node* node, struct vm* v);
+void gen_bytecode_or(struct ast_node* node, struct vm* v);
 
 void gen_bytecode_assign(struct ast_node* node, struct vm* v);
 void gen_bytecode_add_assign(struct ast_node* node, struct vm* v);
@@ -93,5 +101,7 @@ void gen_bytecode_funcall(struct ast_node* node, struct vm* v);
 void gen_bytecode_return(struct ast_node* node, struct vm* v);
 
 void gen_bytecode_none(struct ast_node* node, struct vm* v);
+
+void gen_bytecode_count_newline(struct ast_node* node, struct vm* v);
 
 #endif

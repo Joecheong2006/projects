@@ -302,7 +302,7 @@ vector(token) generate_tokens(lexer* lex) {
                 vector_push(result, tok);
             }
             else {
-                LOG_ERROR("unkwon ascci %d\n", (u8)c);
+                LOG_ERROR("\tunkwon ascci %d\n", (u8)c);
                 ASSERT_MSG(0, "unkown symbol");
             }
             break;
