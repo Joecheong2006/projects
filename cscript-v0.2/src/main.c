@@ -2,7 +2,6 @@
 #include "core/log.h"
 #include "core/memory.h"
 #include "lexer.h"
-#include "lexer.h"
 
 #include "parser.h"
 #include "core/assert.h"

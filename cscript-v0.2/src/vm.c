@@ -283,6 +283,67 @@ INLINE static error_info func_return(vm* v) {
         print_primitive_data(&o->val);\
         break;
 
+static error_info cmp_equal(vm* v) {
+    static char msg[52];
+    u32 end = vector_size(v->env.bp);
+    primitive_data data;
+    primitive_data* lhs = v->env.bp + end - 2;
+    primitive_data* rhs = v->env.bp + end - 1;
+    vector_popn(v->env.bp, 2);
+    if (lhs->type == PrimitiveDataTypeObjPtr) {
+        if (lhs->val.carrier == NULL || lhs->val.carrier->obj == NULL) {
+            lhs = NULL;
+            // sprintf(msg, "attempt to cmp_equal with none");
+            // return (error_info){ .msg = msg };
+        }
+        else if (lhs->val.carrier->obj->type != ObjectTypePrimitiveData) {
+            sprintf(msg, "attempt to rmp_equal with a %s object", primitive_type_name[lhs->type]);
+            return (error_info){ .msg = msg };
+        }
+        else {
+            object_primitive_data* o = get_object_true_type(lhs->val.carrier->obj);
+            *lhs = o->val;
+        }
+    }
+    if (rhs->type == PrimitiveDataTypeObjPtr) {
+        if (rhs->val.carrier == NULL || rhs->val.carrier->obj == NULL) {
+            rhs = NULL;
+            // sprintf(msg, "attempt to cmp_equal with none");
+            // return (error_info){ .msg = msg };
+        }
+        else if (rhs->val.carrier->obj->type != ObjectTypePrimitiveData) {
+            sprintf(msg, "attempt to cmp_equal with a %s object", primitive_type_name[rhs->type]);
+            return (error_info){ .msg = msg };
+        }
+        else {
+            object_primitive_data* o = get_object_true_type(rhs->val.carrier->obj);
+            *rhs = o->val;
+        }
+    }
+
+    if (!rhs || !lhs) {
+        if (!rhs && !lhs) {
+            data.type = PrimitiveDataTypeBoolean;
+            data.val.boolean = 1;
+            vector_push(v->env.bp, data);
+            LOG(__func__, "", "");
+            print_primitive_data(&data);
+            return (error_info){ .msg = NULL };
+        }
+        sprintf(msg, "attempt to cmp_equal with none");
+        return (error_info){ .msg = msg };
+    }
+
+    error_info ei = primitive_data_cmp_equal(&data, lhs, rhs);
+    if (ei.msg) {
+        return ei;
+    }
+    vector_push(v->env.bp, data);
+    LOG(__func__, "", "");
+    print_primitive_data(&data);
+    return (error_info){ .msg = NULL };
+}
+
 #define IMPL_ARITHMETIC(name)\
         static char msg[52];\
         u32 end = vector_size(v->env.bp);\
@@ -377,7 +438,13 @@ static error_info run(vm* v) {
         case ByteCodeMul: { IMPL_ARITHMETIC(mul) break; }
         case ByteCodeDiv: { IMPL_ARITHMETIC(div) break; }
         case ByteCodeMod: { IMPL_ARITHMETIC(mod) break; }
-        case ByteCodeEqual: { IMPL_ARITHMETIC(cmp_equal) break; }
+        case ByteCodeEqual: {
+            error_info ei = cmp_equal(v);
+            if (ei.msg) {
+                return ei;
+            }
+            break;
+        }
         case ByteCodeNotEqual: { IMPL_ARITHMETIC(cmp_not_equal) break; }
         case ByteCodeGreaterThan: { IMPL_ARITHMETIC(cmp_greater_than) break; }
         case ByteCodeLessThan: { IMPL_ARITHMETIC(cmp_less_than) break; }
@@ -489,6 +556,7 @@ static error_info run(vm* v) {
         }
         case ByteCodeCountNewLine: {
             static i32 line_count = 0;
+            (void)line_count;
             LOG_DEBUG("\tline count: %d\n", ++line_count);
             break;
         }

@@ -15,12 +15,12 @@ func main()
     a.x.y.z
     a.x.y.z.a
 
-    func sqrt(x)
+    func pow(x)
         var result = x * x
         return result
     end
 
-    var result = sqrt(sqrt(5))
+    var result = pow(pow(5))
     result += 0
 
     func add(a, b)
@@ -63,6 +63,9 @@ func main()
     b = null
     b = 3.2 + 1.3
     b = get_nil()
+
+    var a = false == (1 == 1 + 1 - 1.0 and (false == 4 and true == 3.0))
+    b = 1 == 2 or 2 == 4 or b == null
 end
 
-var a = false == (1 == 1 + 1 - 1.0 and (false == 4 and true == 3.0))
+main()
