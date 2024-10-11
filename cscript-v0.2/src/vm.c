@@ -561,6 +561,10 @@ static error_info run(vm* v) {
         }
         }
         v->ip++;
+
+        if (vector_size(v->env.bp) >= 20) {
+            return (error_info){ .msg = "stack overflow" };
+        }
     }
     return (error_info){ .msg = NULL };
 }

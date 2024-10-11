@@ -40,6 +40,7 @@ typedef enum {
     AstNodeTypeFuncEnd,
     AstNodeTypeVarDecl,
     AstNodeTypeIf,
+    AstNodeTypeIfEnd,
     AstNodeTypeWhile,
     AstNodeTypeFuncall,
     AstNodeTypeReturn,
@@ -150,6 +151,7 @@ ast_node* make_ast_access_identifier(struct token* tok);
 ast_node* make_ast_pop(struct token* tok);
 ast_node* make_ast_vardecl(struct token* tok);
 ast_node* make_ast_if(struct token* tok);
+ast_node* make_ast_ifend(struct token* tok);
 ast_node* make_ast_args(struct token* tok);
 ast_node* make_ast_funcparam(struct token* tok);
 ast_node* make_ast_funcdef(struct token* tok);

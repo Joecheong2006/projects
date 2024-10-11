@@ -9,8 +9,8 @@ typedef enum {
     ParserStateParsing,
     ParserStateParsingFuncBody,
     ParserStateParsingIfBody,
-    ParserStateParsinElIfBody,
-    ParserStateParsinElseBody,
+    ParserStateParsingElIfBody,
+    ParserStateParsingElseBody,
 } ParserState;
 
 struct token;

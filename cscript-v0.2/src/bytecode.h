@@ -47,6 +47,7 @@ typedef enum {
     ByteCodeAccessIden,
     ByteCodeInitVar,
     ByteCodeIf,
+    ByteCodeIfEnd,
     ByteCodeFuncDef,
     ByteCodeFuncEnd,
     ByteCodeFuncall,
@@ -92,6 +93,7 @@ void gen_bytecode_ref_iden(struct ast_node* node, struct vm* v);
 void gen_bytecode_access_iden(struct ast_node* node, struct vm* v);
 void gen_bytecode_initvar(struct ast_node* node, struct vm* v);
 void gen_bytecode_if(struct ast_node* node, struct vm* v);
+void gen_bytecode_ifend(struct ast_node* node, struct vm* v);
 
 void gen_bytecode_funcparam(struct ast_node* node, struct vm* v);
 void gen_bytecode_funcdef(struct ast_node* node, struct vm* v);

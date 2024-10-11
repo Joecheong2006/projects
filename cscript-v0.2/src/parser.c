@@ -701,18 +701,19 @@ static ast_node* parse_identifier_statement(parser* par) {
 }
 
 ast_node* parse_if(parser* par) {
+    token* tok = parser_peek_token(par, 0);
+    ast_node* node = make_ast_if(tok);
+
+    ast_if* if_statement = get_ast_true_type(node);
+
     ++par->pointer;
-    ast_node* expr = parse_expr(par, expr_do_terminal);
-    if (!expr) {
+    if_statement->expr = parse_expr(par, expr_do_terminal);
+    if (!if_statement->expr) {
+        node->destroy(node);
         return NULL;
     }
 
-    token* tok = parser_peek_token(par, 0);
-    if (tok->type != TokenTypeKeywordDo) {
-        expr->destroy(expr);
-        return NULL;
-    }
-    return NULL;
+    return node;
 }
 
 static void clean_up_fatal(vector(ast_node*) node) {
@@ -739,11 +740,32 @@ static ast_node* parser_parse_ins(parser* par) {
     case TokenTypeKeywordIf: {
         return parse_if(par);
     }
+    case TokenTypeKeywordElif: {
+        if (vector_size(par->states) > 0 && vector_back(par->states) == ParserStateParsingIfBody) {
+            // TODO(Oct11): implement parse_elif()
+        }
+
+        parser_report_error(par, tok, "missing if above elif");
+        return NULL;
+    }
+    case TokenTypeKeywordElse: {
+        if (vector_size(par->states) > 0 && (vector_back(par->states) == ParserStateParsingIfBody || vector_back(par->states) == ParserStateParsingElIfBody)) {
+            // TODO(Oct11): implement parse_else()
+        }
+
+        parser_report_error(par, tok, "missing if or elif above else");
+        return NULL;
+    }
     case TokenTypeKeywordEnd: {
         if (vector_back(par->states) == ParserStateParsingFuncBody) {
             vector_pop(par->states);
             par->pointer++;
             return make_ast_funcend(NULL);
+        }
+        else if (vector_back(par->states) == ParserStateParsingIfBody) {
+            vector_pop(par->states);
+            par->pointer++;
+            return make_ast_ifend(NULL);
         }
         parser_report_error(par, tok, "end does not match any scope");
         return NULL;

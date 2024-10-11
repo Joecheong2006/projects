@@ -77,6 +77,10 @@ void locating_position(vm* v) {
             vector_pop(position);
             break;
         }
+        case ByteCodeIfEnd: {
+            // TODO(Oct11): calculate the end index
+            break;
+        }
         case ByteCodeFuncall: break;
         case ByteCodeReturn: break;
         case ByteCodeReturnNone: break;

@@ -263,6 +263,14 @@ void gen_bytecode_if(struct ast_node* node, struct vm* v) {
     END_PROFILING(__func__);
 }
 
+void gen_bytecode_ifend(struct ast_node* node, struct vm* v) {
+    ASSERT(node->type == AstNodeTypeIfEnd);
+    START_PROFILING();
+    u8 code = ByteCodeIfEnd;
+    vector_push(v->code, code);
+    END_PROFILING(__func__);
+}
+
 void gen_bytecode_funcparam(struct ast_node* node, struct vm* v) {
     ASSERT(node->type == AstNodeTypeFuncParam);
     ast_funcparam* param = get_ast_true_type(node);

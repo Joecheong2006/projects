@@ -216,6 +216,10 @@ ast_node* make_ast_if(struct token* tok) {
     return make_ast_node(AstNodeTypeIf, sizeof(ast_if), tok, destroy_ast_if, gen_bytecode_if);
 }
 
+ast_node* make_ast_ifend(struct token* tok) {
+    return make_ast_node(AstNodeTypeIfEnd, 0, tok, destroy_default, NULL);
+}
+
 static void destroy_ast_args(ast_node* node) {
     ASSERT(node->type == AstNodeTypeArgs);
     ast_arg* args = get_ast_true_type(node);
