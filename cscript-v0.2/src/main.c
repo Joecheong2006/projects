@@ -80,7 +80,6 @@ void locating_position(vm* v) {
         case ByteCodeFuncall: break;
         case ByteCodeReturn: break;
         case ByteCodeReturnNone: break;
-        case ByteCodeCountNewLine: break;
         default: {
             LOG_ERROR("\tinvalid bytecode %d\n", code);
             ASSERT_MSG(0, "invalid bytecode");

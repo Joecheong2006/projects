@@ -63,6 +63,7 @@ static ast_node* parser_parse_ins(parser* par);
 
 ast_node* expr_brackets_terminal(parser* par, ast_node* node) {
     START_PROFILING()
+    omit_separator(par);
     token* tok = parser_peek_token(par, 0);
     if (tok->type == TokenTypeKeywordAnd || tok->type == TokenTypeKeywordOr) {
         return node;
@@ -158,6 +159,7 @@ void omit_separator(parser* par) {
     while (1) {
         switch ((i32)tok->type) {
         case ';': 
+        case '\n':
         case '\t': {
             ++par->pointer;
             tok = parser_peek_token(par, 0);
@@ -438,6 +440,8 @@ ast_node* parse_expr(parser* par, ast_node*(*is_terminal)(parser*,ast_node*)) {
     }
     ast_node* ret = lhs;
     while (1) {
+        omit_separator(par);
+
         token* tok = parser_peek_token(par, 0);
         ast_node* ope = NULL;
         if (tok->type == TokenTypeKeywordAnd) {
@@ -452,6 +456,8 @@ ast_node* parse_expr(parser* par, ast_node*(*is_terminal)(parser*,ast_node*)) {
         if (!ope) {
             return ret;
         }
+
+        omit_separator(par);
 
         ast_binary_expression* be = get_ast_true_type(ope);
         be->lhs = lhs;
@@ -748,10 +754,6 @@ static ast_node* parser_parse_ins(parser* par) {
             return NULL;
         }
         return parse_return(par);
-    }
-    case '\n': {
-        par->pointer++;
-        return make_ast_newline(tok);
     }
     case TokenTypeEOF: {
         if (vector_back(par->states) != ParserStateParsing) {

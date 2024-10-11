@@ -554,12 +554,6 @@ static error_info run(vm* v) {
             }
             break;
         }
-        case ByteCodeCountNewLine: {
-            static i32 line_count = 0;
-            (void)line_count;
-            LOG_DEBUG("\tline count: %d\n", ++line_count);
-            break;
-        }
         default: {
             LOG_ERROR("\tinvalid bytecode %d\n", code);
             ASSERT_MSG(0, "invalid bytecode");

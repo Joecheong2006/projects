@@ -44,7 +44,6 @@ typedef enum {
     AstNodeTypeFuncall,
     AstNodeTypeReturn,
 
-    AstNodeTypeNewLine,
     AstNodeTypeEOF,
 } AstNodeType;
 
@@ -84,6 +83,10 @@ typedef struct {
     ast_node* variable_name;
     ast_node* expr;
 } ast_vardecl;
+
+typedef struct {
+    ast_node* expr;
+} ast_if;
 
 typedef struct {
     ast_node* expr;
@@ -146,6 +149,7 @@ ast_node* make_ast_access_identifier(struct token* tok);
 
 ast_node* make_ast_pop(struct token* tok);
 ast_node* make_ast_vardecl(struct token* tok);
+ast_node* make_ast_if(struct token* tok);
 ast_node* make_ast_args(struct token* tok);
 ast_node* make_ast_funcparam(struct token* tok);
 ast_node* make_ast_funcdef(struct token* tok);
@@ -153,7 +157,6 @@ ast_node* make_ast_funcend(struct token* tok);
 ast_node* make_ast_funcall(struct token* tok);
 ast_node* make_ast_return(struct token* tok);
 
-ast_node* make_ast_newline(struct token* tok);
 ast_node* make_ast_eof(struct token* tok);
 
 #endif

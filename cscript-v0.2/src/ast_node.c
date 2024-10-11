@@ -202,6 +202,20 @@ ast_node* make_ast_vardecl(struct token* tok) {
     return make_ast_node(AstNodeTypeVarDecl, sizeof(ast_vardecl), tok, destroy_ast_vardecl, gen_bytecode_initvar);
 }
 
+static void destroy_ast_if(ast_node* node) {
+    ASSERT(node->type == AstNodeTypeIf);
+    ast_if* if_statement = get_ast_true_type(node);
+    if (if_statement->expr) {
+        if_statement->expr->destroy(if_statement->expr);
+    }
+    free_mem(node);
+}
+
+
+ast_node* make_ast_if(struct token* tok) {
+    return make_ast_node(AstNodeTypeIf, sizeof(ast_if), tok, destroy_ast_if, gen_bytecode_if);
+}
+
 static void destroy_ast_args(ast_node* node) {
     ASSERT(node->type == AstNodeTypeArgs);
     ast_arg* args = get_ast_true_type(node);
@@ -270,10 +284,6 @@ static void destroy_ast_return(ast_node* node) {
 
 ast_node* make_ast_return(struct token* tok) {
     return make_ast_node(AstNodeTypeReturn, sizeof(ast_return), tok, destroy_ast_return, gen_bytecode_return);
-}
-
-ast_node* make_ast_newline(struct token* tok) {
-    return make_ast_node(AstNodeTypeNewLine, 0, tok, destroy_default, gen_bytecode_count_newline);
 }
 
 ast_node* make_ast_eof(struct token* tok) {
