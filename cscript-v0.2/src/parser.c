@@ -741,11 +741,30 @@ static ast_node* parser_parse_ins(parser* par) {
         return parse_if(par);
     }
     case TokenTypeKeywordElif: {
-        if (vector_size(par->states) > 0 && vector_back(par->states) == ParserStateParsingIfBody) {
+        if (vector_size(par->states) > 0 && (vector_back(par->states) == ParserStateParsingIfBody || vector_back(par->states) == ParserStateParsingElIfBody)) {
             // TODO(Oct11): implement parse_elif()
         }
-
         parser_report_error(par, tok, "missing if above elif");
+
+        // 0:   push false 
+        // 1:   if 6
+        // 2:    push 1
+        // 3:    push 2
+        // 4:    add
+        // 5:   endif 16
+        // 6:   push false
+        // 7:   elif 12
+        // 8:    push 1.0
+        // 9:    push 1.3
+        // 10:   sub
+        // 11:  endif 16
+        // 12:  else
+        // 13:   push 0
+        // 14:   push 1
+        // 15:   add
+        // 16:  endif 16
+        // 17:  ...
+
         return NULL;
     }
     case TokenTypeKeywordElse: {

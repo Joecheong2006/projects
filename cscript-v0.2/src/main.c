@@ -22,6 +22,18 @@ void locating_position(vm* v) {
     for_vector(v->code, ip, 0) {
         u8 code = v->code[ip];
         switch (code) {
+        case ByteCodeIf: {
+            // TODO(Oct11): calculate the end index
+            vector_push(position, ip);
+            ip += 4;
+            break;
+        }
+        case ByteCodeIfEnd: {
+            // TODO(Oct11): calculate the end index
+            u32* pos = (u32*)(v->code + vector_back(position) + 1);
+            *pos = ip;
+            break;
+        }
         case ByteCodePushConst: {
             primitive_data data = { .type = v->code[ip + 1] };
             memcpy(&data.val, &v->code[ip + 2], primitive_size_map[data.type]);
@@ -75,10 +87,6 @@ void locating_position(vm* v) {
             u32* pos = (u32*)(v->code + vector_back(position) + 1);
             *pos = ip;
             vector_pop(position);
-            break;
-        }
-        case ByteCodeIfEnd: {
-            // TODO(Oct11): calculate the end index
             break;
         }
         case ByteCodeFuncall: break;

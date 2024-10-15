@@ -49,6 +49,8 @@ INLINE static error_info initvar(vm* v) {
             object_ref* ref = get_object_true_type(obj);
             ref->ref_obj = rhs.val.carrier->obj;
             ref->ref_obj->ref_count++;
+            env_push_object(&v->env, make_object_carrier(name, obj));
+            LOG("ref_type", "%d\n", ref->ref_obj->type);
             return (error_info){ .msg = NULL };
         }
 
@@ -166,10 +168,22 @@ INLINE static error_info funcdef(vm* v) {
 INLINE static error_info funcall(vm* v) {
     i8 args_count = vector_backn(v->env.bp, 0).val.int8;
     object_carrier* carrier = vector_backn(v->env.bp, 1 + args_count).val.carrier;
-    if (carrier->obj->type != ObjectTypeFunctionDef) {
+
+    object* obj = NULL;
+    if (carrier->obj->type == ObjectTypeRef) {
+        // TODO(Oct15): implement ref function call
+        object_ref* ref = get_object_true_type(carrier->obj);
+        obj = ref->ref_obj;
+        LOG("ref_funcall", "\n", "");
+    }
+    else {
+        obj = carrier->obj;
+    }
+
+    if (obj->type != ObjectTypeFunctionDef) {
         return (error_info){ .msg = "attempt to call a non funcation object" };
     }
-    object_function_def* def = get_object_true_type(carrier->obj);
+    object_function_def* def = get_object_true_type(obj);
 
     if (args_count > (i8)vector_size(def->args)) {
         return (error_info){ .msg = "too many arguments" };

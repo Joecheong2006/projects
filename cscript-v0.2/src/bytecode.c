@@ -261,6 +261,10 @@ void gen_bytecode_if(struct ast_node* node, struct vm* v) {
     u8 code = ByteCodeIf;
     vector_push(v->code, code);
     END_PROFILING(__func__);
+
+    u32 ope_address = vector_size(v->code);
+    gen_const(&ope_address, PrimitiveDataTypeUInt32, 4, v);
+
 }
 
 void gen_bytecode_ifend(struct ast_node* node, struct vm* v) {

@@ -60,9 +60,10 @@ object* make_object_function_def(void) {
 void object_ref_destroy(object* obj) {
     ASSERT(obj->type == ObjectTypeRef);
     object_ref* ref = get_object_true_type(obj);
-    if (--ref->ref_obj->ref_count == 0) {
-        ref->ref_obj->destroy(ref->ref_obj);
-    }
+    --ref->ref_obj->ref_count;
+    // if (--ref->ref_obj->ref_count == 0) {
+    //     ref->ref_obj->destroy(ref->ref_obj);
+    // }
     free_mem(obj);
 }
 

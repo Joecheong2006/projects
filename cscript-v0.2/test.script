@@ -70,7 +70,12 @@ func main()
     b = 1 == 2 or
         2 == 4 or
         b == null
-    main()
 end
 
-main()
+func start()
+    return main
+end
+
+var entry_point = start()
+entry_point()
+
