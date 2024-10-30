@@ -23,8 +23,8 @@ namespace json {
             return err.msg.size() != boolean;
         }
 
-        bool operator!() const {
-            return err.msg.size() != 0;
+        operator bool() const {
+            return err.msg.size() == 0;
         }
     };
 
