@@ -38,10 +38,10 @@ app: $(OBJ)
 %.o: %.cpp
 	$(CC) $(CFLAGS) $(INCLUDE) -o $@ -c $< -MMD
 
-win_release:
-	@$(MAKE) app DEFINE="" FLAGS="-std=c++17 -O2"
+win_release: CFLAGS+=-std=c++17 -O2
+win_release: app
 
-win_debug:
-	@$(MAKE) app DEFINE="-DDEBUG" FLAGS="-std=c++17 -Wall -Wextra -Wpedantic -Wstrict-aliasing -g"
+win_debug: CFLAGS+=-std=c++17 -Wall -Wextra -Wpedantic -Wstrict-aliasing -g -DDEBUG
+win_debug: app
 
 -include $(DEP)

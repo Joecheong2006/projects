@@ -1,0 +1,19 @@
+[
+  {
+    "arguments": [
+      "g++",
+      "-std=c++11",
+      "-Wall",
+      "-Wextra",
+      "-Wpedantic",
+      "-Wstrict-aliasing",
+      "-Werror",
+      "-Isrc",
+      "-DDEBUG",
+      "-DPROFILING",
+      "-O2"
+    ],
+    "directory": "C://Users//joech//project//json-parser",
+    "file": "src/main.cpp"
+  }
+]
