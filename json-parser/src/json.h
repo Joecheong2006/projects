@@ -6,9 +6,13 @@
 namespace json {
     enum ErrorType {
         InvalidInput,
+        InvalidWord,
+        InvalidFormat,
     };
 
     struct error {
+        error() = default;
+        error(const std::string& msg, ErrorType type): msg(msg), type(type) {}
         std::string msg = "";
         ErrorType type;
     };
@@ -28,10 +32,11 @@ namespace json {
         }
     };
 
-    enum Token {
-        Identifier = 256,
-        Literal,
-        Number
+    enum TokenType {
+        Number = 256,
+        String,
+        Null,
+        Boolean,
     };
 
     struct token {
@@ -40,8 +45,9 @@ namespace json {
             unsigned rows, cols;
         } loc;
         union {
-            long long int64;
-            int int32;
+            long long number;
+            char* literal;
+            bool boolean;
         } val;
     };
 

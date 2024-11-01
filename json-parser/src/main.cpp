@@ -10,9 +10,28 @@ int main(void) {
     }
 
     const auto lexing_ret = json::lexer::load_file(loading_ret.val);
+    if (!lexing_ret) {
+        std::cout << lexing_ret.err.msg << std::endl;
+        return lexing_ret.err.type;
+    }
+
     const auto tokens = lexing_ret.val;
 
     for (auto& tok : tokens) {
-        printf("tokens: type - %d; loc - [%d, %d]\n", tok.type, tok.loc.rows, tok.loc.cols);
+        if (tok.type < 256) {
+            printf("tokens; type - %-3d; [%-3d, %-3d]; %c\n", tok.type, tok.loc.rows, tok.loc.cols, tok.type);
+        }
+        else if (tok.type == json::TokenType::String) {
+            printf("tokens; type - %-3d; [%-3d, %-3d]; %s\n", tok.type, tok.loc.rows, tok.loc.cols, tok.val.literal);
+        }
+        else if (tok.type == json::TokenType::Number) {
+            printf("tokens; type - %-3d; [%-3d, %-3d]; %lld\n", tok.type, tok.loc.rows, tok.loc.cols, tok.val.number);
+        }
+        else if (tok.type == json::TokenType::Boolean) {
+            printf("tokens; type - %-3d; [%-3d, %-3d]; %s\n", tok.type, tok.loc.rows, tok.loc.cols, tok.val.boolean ? "true" : "false");
+        }
+        else if (tok.type == json::TokenType::Null) {
+            printf("tokens; type - %-3d; [%-3d, %-3d]; null\n", tok.type, tok.loc.rows, tok.loc.cols);
+        }
     }
 }

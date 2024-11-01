@@ -1,6 +1,6 @@
 #include "json.h"
 #include <fstream>
-#include <stdio.h>
+#include <cstring>
 
 namespace json {
     ret_type<file> file::load(const std::string& path) {
@@ -18,9 +18,37 @@ namespace json {
         return ret;
     }
 
-    static ret_type<token> parse_number(std::string::const_iterator& iter) {
-        (void)iter;
-        return {};
+    static ret_type<int> parse_literal(token& tok, std::string::const_iterator& begin) {
+        int skip_len = 1;
+        for (auto iter = ++begin;; ++iter, ++skip_len) {
+            if (*iter == EOF) {
+                return {{}, {"missing string closing braket", ErrorType::InvalidInput}};
+            }
+            if (*iter == '"') {
+                tok.val.literal = new char[skip_len];
+                const char* src = &(*begin);
+                std::memcpy(tok.val.literal, src, skip_len);
+                tok.val.literal[skip_len - 1] = '\0';
+                begin += skip_len + 1;
+                return {skip_len + 1, {}};
+            }
+            // TODO(Oct31): implement character encoding
+        }
+    }
+
+    static ret_type<int> parse_number(token& tok, std::string::const_iterator& begin) {
+        int skip_len = 1;
+        for (auto& iter = begin;; ++iter, ++skip_len) {
+            if (*iter == EOF) {
+                return {{}, {"failed to parse number", ErrorType::InvalidInput}};
+            }
+            if (isdigit(*iter)) {
+                tok.val.number = tok.val.number * 10 + (*iter - '0');
+                continue;
+            }
+            // TODO(Oct31): implement fraction and exponent
+            return {skip_len, {}};
+        }
     }
 
     ret_type<std::vector<token>> lexer::load_file(const file& f) {
@@ -31,7 +59,34 @@ namespace json {
 
         for (auto iter = content.begin(); iter != content.end(); ++iter) {
             switch (*iter) {
+            case 'n':
+                if (std::strncmp(&*iter, "null", 4)) {
+                    return {{}, {"unkown keyword", ErrorType::InvalidWord}};
+                }
+                result.push_back({TokenType::Null, {rows, cols}, {}});
+                cols += 3;
+                iter += 3;
+                break;
+            case 't': {
+                if (std::strncmp(&*iter, "true", 4)) {
+                    return {{}, {"unkown keyword", ErrorType::InvalidWord}};
+                }
+                result.push_back({TokenType::Boolean, {rows, cols}, {true}});
+                cols += 3;
+                iter += 3;
+                break;
+            }
+            case 'f': {
+                if (std::strncmp(&*iter, "false", 5)) {
+                    return {{}, {"unkown keyword", ErrorType::InvalidWord}};
+                }
+                result.push_back({TokenType::Boolean, {rows, cols}, {false}});
+                cols += 4;
+                iter += 4;
+                break;
+            }
             case ':':
+            case ',':
             case '\'':
             case '{':
             case '}':
@@ -46,7 +101,13 @@ namespace json {
                 break;
             }
             case '"': {
-                // TODO(Oct29): implement parse number
+                token tok = {TokenType::String, {rows, cols}, {}};
+                const auto ret = parse_literal(tok, iter);
+                if (!ret) {
+                    return {{}, ret.err};
+                }
+                result.push_back(tok);
+                cols += ret.val;
                 break;
             }
             case '0':
@@ -59,12 +120,13 @@ namespace json {
             case '7':
             case '8':
             case '9': {
-                // TODO(Oct28): implement parse number
-                auto tok_ret = parse_number(iter);
-                if (!tok_ret) {
+                token tok = {TokenType::Number, {rows, cols}, {}};
+                const auto ret = parse_number(tok, iter);
+                if (!ret) {
+                    return {{}, ret.err};
                 }
-                token& tok = tok_ret.val;
-                printf("\ttokens: type - %d; loc - [%d, %d]\n", tok.type, tok.loc.rows, tok.loc.cols);
+                result.push_back(tok);
+                cols += ret.val;
                 break;
             }
             default:
