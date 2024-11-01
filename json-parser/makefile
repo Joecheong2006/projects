@@ -11,7 +11,7 @@ OBJ = $(SRC:%.cpp=%.o)
 DEP = $(OBJ:%.o=%.d)
 BIN = bin
 LIB = 
-PROGRAM = json-parser
+PROGRAM = jsonparser
 
 ifeq ($(OS),Windows_NT)
 	OUT = $(PROGRAM).exe

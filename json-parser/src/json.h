@@ -15,6 +15,7 @@ namespace json {
         error(const std::string& msg, ErrorType type): msg(msg), type(type) {}
         std::string msg = "";
         ErrorType type;
+        unsigned rows, cols;
     };
 
     template <typename T>
@@ -41,9 +42,7 @@ namespace json {
 
     struct token {
         int type;
-        struct {
-            unsigned rows, cols;
-        } loc;
+        unsigned rows, cols;
         union {
             double number;
             char* literal;

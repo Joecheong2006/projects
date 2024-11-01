@@ -82,7 +82,9 @@ namespace json {
                     minus_flag = false;
                 }
                 else {
-                    return {{}, {"unkown exp flag", ErrorType::InvalidFormat}};
+                    ret_type<int> ret = {{}, {"unkown exp flag ", ErrorType::InvalidFormat}};
+                    ret.err.msg.push_back(*iter);
+                    return ret;
                 }
                 ++iter, ++skip_len;
             }
@@ -119,7 +121,7 @@ namespace json {
                 if (std::strncmp(&*iter, "null", 4)) {
                     return {{}, {"unkown keyword", ErrorType::InvalidWord}};
                 }
-                result.push_back({TokenType::Null, {rows, cols}, {}});
+                result.push_back({TokenType::Null, rows, cols, {}});
                 cols += 3;
                 iter += 3;
                 break;
@@ -127,7 +129,7 @@ namespace json {
                 if (std::strncmp(&*iter, "true", 4)) {
                     return {{}, {"unkown keyword", ErrorType::InvalidWord}};
                 }
-                result.push_back({TokenType::Boolean, {rows, cols}, {true}});
+                result.push_back({TokenType::Boolean, rows, cols, {true}});
                 cols += 3;
                 iter += 3;
                 break;
@@ -136,7 +138,7 @@ namespace json {
                 if (std::strncmp(&*iter, "false", 5)) {
                     return {{}, {"unkown keyword", ErrorType::InvalidWord}};
                 }
-                result.push_back({TokenType::Boolean, {rows, cols}, {false}});
+                result.push_back({TokenType::Boolean, rows, cols, {false}});
                 cols += 4;
                 iter += 4;
                 break;
@@ -148,7 +150,7 @@ namespace json {
             case '}':
             case '[':
             case ']': {
-                result.push_back(token{ (int)*iter, { rows, cols }, {} });
+                result.push_back(token{ (int)*iter, rows, cols, {} });
                 break;
             }
             case '\n': {
@@ -157,7 +159,7 @@ namespace json {
                 break;
             }
             case '"': {
-                token tok = {TokenType::String, {rows, cols}, {}};
+                token tok = {TokenType::String, rows, cols, {}};
                 const auto ret = parse_literal(tok, iter);
                 if (!ret) {
                     return {{}, ret.err};
@@ -176,7 +178,7 @@ namespace json {
             case '7':
             case '8':
             case '9': {
-                token tok = {TokenType::Number, {rows, cols}, {}};
+                token tok = {TokenType::Number, rows, cols, {}};
                 const auto ret = parse_number(tok, iter);
                 if (!ret) {
                     return {{}, ret.err};

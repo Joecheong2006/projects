@@ -19,19 +19,19 @@ int main(void) {
 
     for (auto& tok : tokens) {
         if (tok.type < 256) {
-            printf("tokens; type - %-3d; [%-3d, %-3d]; %c\n", tok.type, tok.loc.rows, tok.loc.cols, tok.type);
+            printf("tokens; type - %-3d; [%-3d, %-3d]; %c\n", tok.type, tok.rows, tok.cols, tok.type);
         }
         else if (tok.type == json::TokenType::String) {
-            printf("tokens; type - %-3d; [%-3d, %-3d]; %s\n", tok.type, tok.loc.rows, tok.loc.cols, tok.val.literal);
+            printf("tokens; type - %-3d; [%-3d, %-3d]; %s\n", tok.type, tok.rows, tok.cols, tok.val.literal);
         }
         else if (tok.type == json::TokenType::Number) {
-            printf("tokens; type - %-3d; [%-3d, %-3d]; %g\n", tok.type, tok.loc.rows, tok.loc.cols, tok.val.number);
+            printf("tokens; type - %-3d; [%-3d, %-3d]; %g\n", tok.type, tok.rows, tok.cols, tok.val.number);
         }
         else if (tok.type == json::TokenType::Boolean) {
-            printf("tokens; type - %-3d; [%-3d, %-3d]; %s\n", tok.type, tok.loc.rows, tok.loc.cols, tok.val.boolean ? "true" : "false");
+            printf("tokens; type - %-3d; [%-3d, %-3d]; %s\n", tok.type, tok.rows, tok.cols, tok.val.boolean ? "true" : "false");
         }
         else if (tok.type == json::TokenType::Null) {
-            printf("tokens; type - %-3d; [%-3d, %-3d]; null\n", tok.type, tok.loc.rows, tok.loc.cols);
+            printf("tokens; type - %-3d; [%-3d, %-3d]; null\n", tok.type, tok.rows, tok.cols);
         }
     }
 }
