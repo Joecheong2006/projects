@@ -202,51 +202,8 @@ namespace json {
         return {result, {}};
     }
 
-    void string::log() const {
-        std::cout << val;
-    }
-
-    void number::log() const {
-        std::cout << val;
-    }
-
-    void object::log() const {
-    }
-
-    void array::log() const {
-    }
-
-    void boolean::log() const {
-    }
-
-    void null::log() const {
-    }
-
-    ret_type<std::unique_ptr<primitive>> parse(const tokens& toks) {
-        for (tokens::const_iterator iter = toks.begin(); toks.end() != iter; ++iter) {
-            switch (iter->type) {
-            case Number: {
-                return {std::make_unique<json::number>(iter->val.number), {}};
-                break; // TODO(Nov1): implement number
-            }
-            case String: {
-                break; // TODO(Nov1): implement string
-            }
-            case Null: {
-                break; // TODO(Nov1): implement null 
-            }
-            case Boolean: {
-                break; // TODO(Nov1): implement boolean
-            }
-            case '{': {
-                break; // TODO(Nov1): implement object
-            }
-            case '[': {
-                break; // TODO(Nov1): implement arrary
-            }
-            default:
-                break;
-            }
+    std::unique_ptr<primitive> parse(const tokens& toks) {
+        for (const auto& tok : toks) {
         }
         return {};
     }

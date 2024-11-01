@@ -15,11 +15,5 @@
     ],
     "directory": "C://Users//joech//project//json-parser",
     "file": "src/main.cpp",
-    "number": 32,
-    "bool1": true,
-    "bool2": false,
-    "empty": null,
-    "f": 1.123456789123456789,
-    "a": 1.23e-1,
   }
 ]

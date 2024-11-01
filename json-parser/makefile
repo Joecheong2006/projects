@@ -1,5 +1,5 @@
 CC = g++
-CFLAGS = -std=c++11 -Wall -Wextra -Wpedantic -Wstrict-aliasing -Werror -Isrc
+CFLAGS = -std=c++17 -Wall -Wextra -Wpedantic -Wstrict-aliasing -Werror -Isrc
 DEBUG_FLAGS = -g3 -DDEBUG
 RELEASE_FLAGS = -O2
 DEBUGGER = gdb

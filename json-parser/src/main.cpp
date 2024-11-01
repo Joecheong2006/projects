@@ -3,13 +3,14 @@
 #include <iostream> // std::cout
 
 int main(void) {
-    const auto loading_ret = json::file::load("compile_commands.json");
+    const auto loading_ret = json::file::load("test.json");
     if (!loading_ret) {
         std::cout << loading_ret.err;
         return loading_ret.err.type;
     }
 
-    const auto lexing_ret = json::lexer::load_file(loading_ret.val);
+    const auto& file = loading_ret.val;
+    const auto lexing_ret = json::lex(file);
     if (!lexing_ret) {
         std::cout << lexing_ret.err;
         return lexing_ret.err.type;
@@ -34,4 +35,13 @@ int main(void) {
             printf("tokens; type - %-3d; [%-3d, %-3d]; null\n", tok.type, tok.rows, tok.cols);
         }
     }
+
+    const auto& parse_ret = json::parse(tokens);
+    if (!parse_ret) {
+        std::cout << parse_ret.err;
+        return parse_ret.err.type;
+    }
+
+    const auto& json = parse_ret.val;
+    std::cout << json;
 }
