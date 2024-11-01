@@ -25,7 +25,7 @@ int main(void) {
             printf("tokens; type - %-3d; [%-3d, %-3d]; %s\n", tok.type, tok.loc.rows, tok.loc.cols, tok.val.literal);
         }
         else if (tok.type == json::TokenType::Number) {
-            printf("tokens; type - %-3d; [%-3d, %-3d]; %lld\n", tok.type, tok.loc.rows, tok.loc.cols, tok.val.number);
+            printf("tokens; type - %-3d; [%-3d, %-3d]; %g\n", tok.type, tok.loc.rows, tok.loc.cols, tok.val.number);
         }
         else if (tok.type == json::TokenType::Boolean) {
             printf("tokens; type - %-3d; [%-3d, %-3d]; %s\n", tok.type, tok.loc.rows, tok.loc.cols, tok.val.boolean ? "true" : "false");

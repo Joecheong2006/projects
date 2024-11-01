@@ -45,7 +45,7 @@ namespace json {
             unsigned rows, cols;
         } loc;
         union {
-            long long number;
+            double number;
             char* literal;
             bool boolean;
         } val;
