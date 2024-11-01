@@ -2,8 +2,15 @@
 #include <fstream>
 #include <cstring>
 #include <cmath>
+#include <iostream>
+#include <cstdio>
 
 namespace json {
+    std::ostream& operator<<(std::ostream& os, const error& err) {
+        printf("[ERROR][%d, %d][%s]\n", err.rows, err.cols, err.msg.c_str());
+        return os;
+    }
+
     ret_type<file> file::load(const std::string& path) {
         ret_type<file> ret = {};
         std::ifstream stream(path);
@@ -23,7 +30,7 @@ namespace json {
         int skip_len = 1;
         for (auto iter = ++begin;; ++iter, ++skip_len) {
             if (*iter == EOF) {
-                return {{}, {"missing string closing braket", ErrorType::InvalidInput}};
+                return {skip_len, {"missing string closing braket", ErrorType::InvalidInput}};
             }
             if (*iter == '"') {
                 tok.val.literal = new char[skip_len];
@@ -44,7 +51,7 @@ namespace json {
         auto iter = begin;
         for (;; ++iter, ++skip_len) {
             if (*iter == EOF) {
-                return {{}, {"failed to parse number", ErrorType::InvalidInput}};
+                return {skip_len, {"failed to parse number", ErrorType::InvalidInput}};
             }
 
             if (precision_factor > 1) {
@@ -53,7 +60,7 @@ namespace json {
 
             if (*iter == '.') {
                 if (precision_factor > 1) {
-                    return {{}, {"failed to parse float. There are more than one '.'", ErrorType::InvalidFormat}};
+                    return {skip_len, {"failed to parse float. There are more than one '.'", ErrorType::InvalidFormat}};
                 }
                 precision_factor *= 10;
                 ++iter, ++skip_len;
@@ -82,7 +89,7 @@ namespace json {
                     minus_flag = false;
                 }
                 else {
-                    ret_type<int> ret = {{}, {"unkown exp flag ", ErrorType::InvalidFormat}};
+                    ret_type<int> ret = {skip_len - 1, {"unkown exp flag ", ErrorType::InvalidFormat}};
                     ret.err.msg.push_back(*iter);
                     return ret;
                 }
@@ -91,10 +98,10 @@ namespace json {
 
             for (;; ++iter, ++skip_len) {
                 if (*iter == EOF) {
-                    return {{}, {"failed to parse number", ErrorType::InvalidInput}};
+                    return {skip_len, {"failed to parse number", ErrorType::InvalidInput}};
                 }
                 else if (*iter == '.') {
-                    return {{}, {"exp cannot be floating point", ErrorType::InvalidFormat}};
+                    return {skip_len, {"exp cannot be floating point", ErrorType::InvalidFormat}};
                 }
 
                 if (isdigit(*iter)) {
@@ -119,7 +126,7 @@ namespace json {
             switch (*iter) {
             case 'n':
                 if (std::strncmp(&*iter, "null", 4)) {
-                    return {{}, {"unkown keyword", ErrorType::InvalidWord}};
+                    return {{}, {"unkown keyword", ErrorType::InvalidWord, rows, cols}};
                 }
                 result.push_back({TokenType::Null, rows, cols, {}});
                 cols += 3;
@@ -127,7 +134,7 @@ namespace json {
                 break;
             case 't': {
                 if (std::strncmp(&*iter, "true", 4)) {
-                    return {{}, {"unkown keyword", ErrorType::InvalidWord}};
+                    return {{}, {"unkown keyword", ErrorType::InvalidWord, rows, cols}};
                 }
                 result.push_back({TokenType::Boolean, rows, cols, {true}});
                 cols += 3;
@@ -136,7 +143,7 @@ namespace json {
             }
             case 'f': {
                 if (std::strncmp(&*iter, "false", 5)) {
-                    return {{}, {"unkown keyword", ErrorType::InvalidWord}};
+                    return {{}, {"unkown keyword", ErrorType::InvalidWord, rows, cols}};
                 }
                 result.push_back({TokenType::Boolean, rows, cols, {false}});
                 cols += 4;
@@ -162,7 +169,7 @@ namespace json {
                 token tok = {TokenType::String, rows, cols, {}};
                 const auto ret = parse_literal(tok, iter);
                 if (!ret) {
-                    return {{}, ret.err};
+                    return {{}, { ret.err, rows, cols + ret.val }};
                 }
                 result.push_back(tok);
                 cols += ret.val;
@@ -179,9 +186,9 @@ namespace json {
             case '8':
             case '9': {
                 token tok = {TokenType::Number, rows, cols, {}};
-                const auto ret = parse_number(tok, iter);
+                auto ret = parse_number(tok, iter);
                 if (!ret) {
-                    return {{}, ret.err};
+                    return {{}, { ret.err, rows, cols + ret.val }};
                 }
                 result.push_back(tok);
                 cols += ret.val;

@@ -5,13 +5,13 @@
 int main(void) {
     const auto loading_ret = json::file::load("compile_commands.json");
     if (!loading_ret) {
-        std::cout << loading_ret.err.msg << std::endl;
+        std::cout << loading_ret.err;
         return loading_ret.err.type;
     }
 
     const auto lexing_ret = json::lexer::load_file(loading_ret.val);
     if (!lexing_ret) {
-        std::cout << lexing_ret.err.msg << std::endl;
+        std::cout << lexing_ret.err;
         return lexing_ret.err.type;
     }
 

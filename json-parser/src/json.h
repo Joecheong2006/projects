@@ -12,10 +12,14 @@ namespace json {
 
     struct error {
         error() = default;
-        error(const std::string& msg, ErrorType type): msg(msg), type(type) {}
+        error(const std::string& msg, ErrorType type, unsigned rows = -1, unsigned cols = -1)
+            : msg(msg), type(type), rows(rows), cols(cols) {}
+        error(const error& err, unsigned rows = -1, unsigned cols = -1)
+            : msg(err.msg), type(err.type), rows(rows), cols(cols) {}
         std::string msg = "";
         ErrorType type;
         unsigned rows, cols;
+        friend std::ostream& operator<<(std::ostream& os, const error& err);
     };
 
     template <typename T>
