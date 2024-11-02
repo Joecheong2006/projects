@@ -3,7 +3,6 @@
 #include <vector>
 #include <string>
 #include <map>
-// #include <memory>
 
 namespace json {
     enum ErrorType {
@@ -94,6 +93,22 @@ namespace json {
         inline virtual void log() const {};
 
         friend std::ostream& operator<<(std::ostream& os, primitive* pri) { pri->log(); return os; }
+
+        primitive* get(int index) {
+            const auto& ret = get_array();
+            if (!ret) {
+                return nullptr;
+            }
+            return ret.val[index];
+        }
+
+        primitive* get(std::string key) {
+            auto&& ret = get_object();
+            if (!ret) {
+                return nullptr;
+            }
+            return ret.val[key];
+        }
         
     };
 
@@ -122,6 +137,9 @@ namespace json {
     struct boolean : public primitive {
         bool val;
 
+        boolean(bool val)
+            : val(val) {}
+
         inline virtual bool is_string() const override { return true; }
         inline virtual ret_type<bool> get_boolean() override { return {val, {}}; }
         virtual void log() const override;
@@ -133,11 +151,20 @@ namespace json {
     };
 
     struct object : public primitive {
-        using obj = std::map<std::string, primitive*>;
-        obj val;
+        using type = std::map<std::string, primitive*>;
+        type val;
+
+        object(const type& obj)
+            : val(obj) {}
+
+        ~object() {
+            for (const auto& e : val) {
+                delete e.second;
+            }
+        }
 
         inline virtual bool is_string() const override { return true; }
-        inline virtual ret_type<obj> get_object() override { return {val, {}}; }
+        inline virtual ret_type<type> get_object() override { return {val, {}}; }
         virtual void log() const override;
     };
 

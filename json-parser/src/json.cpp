@@ -136,7 +136,9 @@ namespace json {
                 if (std::strncmp(&*iter, "true", 4)) {
                     return {{}, {"unkown keyword", ErrorType::InvalidWord, rows, cols}};
                 }
-                result.push_back({TokenType::Boolean, rows, cols, {true}});
+                token tok = {TokenType::Boolean, rows, cols, {}};
+                tok.val.boolean = true;
+                result.push_back(tok);
                 cols += 3;
                 iter += 3;
                 break;
@@ -145,7 +147,9 @@ namespace json {
                 if (std::strncmp(&*iter, "false", 5)) {
                     return {{}, {"unkown keyword", ErrorType::InvalidWord, rows, cols}};
                 }
-                result.push_back({TokenType::Boolean, rows, cols, {false}});
+                token tok = {TokenType::Boolean, rows, cols, {}};
+                tok.val.boolean = false;
+                result.push_back(tok);
                 cols += 4;
                 iter += 4;
                 break;
@@ -211,11 +215,25 @@ namespace json {
     }
 
     void object::log() const {
+        std::cout << '{';
+        for (auto iter = val.begin();;) {
+            std::cout << iter->first << ": " << iter->second;
+            if (++iter != val.end()) {
+                std::cout << ", ";
+                continue;
+            }
+            break;
+        }
+        std::cout << '}';
     }
 
     void array::log() const {
         std::cout << '[';
-        for (size_t i = 0; i < val.size() - 1; ++i) {
+        if (val.size() == 0) {
+            std::cout << ']';
+            return;
+        }
+        for (int i = 0; i < (int)val.size() - 1; ++i) {
             std::cout << val[i] << ", ";
         }
         std::cout << val.back();
@@ -223,9 +241,11 @@ namespace json {
     }
 
     void boolean::log() const {
+        std::cout << (val ? "true" : "false");
     }
 
     void null::log() const {
+        std::cout << "null";
     }
 
     static ret_type<primitive*> parse_impl(const tokens& toks, tokens::const_iterator& iter);
@@ -234,19 +254,66 @@ namespace json {
         array::type arr;
 
         do {
+            if (iter == toks.end()) {
+                return {nullptr, {"missing closing bracket ] for array", ErrorType::InvalidFormat, (iter - 1)->rows, (iter - 1)->cols}};
+            }
+
             if (iter->type == ']') {
                 return {new array(arr), {}};
             }
-
-            if (iter->type == ',') {
+            else if (iter->type == ',') {
                 ++iter;
             }
+
             const auto& ret = parse_impl(toks, iter);
             if (!ret) {
                 return {nullptr, ret.err};
             }
-            arr.push_back(ret.val);
             ++iter;
+
+            arr.push_back(ret.val);
+        } while (iter != toks.end());
+        return {};
+    }
+
+    static ret_type<primitive*> parse_object(const tokens& toks, tokens::const_iterator& iter) {
+        object::type obj;
+
+        do {
+            if (iter == toks.end()) {
+                return {nullptr, {"missing closing bracket } for object", ErrorType::InvalidFormat, (iter - 1)->rows, (iter - 1)->cols}};
+            }
+            if (iter->type == '}') {
+                return {new object(obj), {}};
+            }
+            else if (iter->type == ',') {
+                ++iter;
+            }
+
+            const auto& key_ret = parse_impl(toks, iter);
+            if (!key_ret) {
+                return {nullptr, key_ret.err};
+            }
+
+            if (!key_ret.val->is_string()) {
+                return {nullptr, {"key in object must be string", ErrorType::InvalidFormat, (iter - 1)->rows, (iter - 1)->cols}};
+            }
+            ++iter;
+
+            if (iter->type != ':') {
+                return {nullptr, {"missing : for key mapping", ErrorType::InvalidFormat, (iter - 1)->rows, (iter - 1)->cols}};
+            }
+            ++iter;
+
+            const auto& value_ret = parse_impl(toks, iter);
+            if (!value_ret) {
+                return {nullptr, value_ret.err};
+            }
+            ++iter;
+
+            obj.insert({key_ret.val->get_string().val, value_ret.val});
+            // obj.push_back({, value_ret.val});
+            // obj[key_ret.val->get_string().val] = value_ret.val;
         } while (iter != toks.end());
         return {};
     }
@@ -260,13 +327,20 @@ namespace json {
             return {new number(iter->val.number), {}};
         }
         case Boolean: {
-            break; // TODO(Nov1): implement boolean
+            return {new boolean(iter->val.boolean), {}};
         }
         case Null: {
-            break; // TODO(Nov1): implement null 
+            return {new null(), {}};
         }
         case '{': {
-            break; // TODO(Nov1): implement object
+            const auto& ret = parse_object(toks, ++iter);
+            if (!ret) {
+                return {nullptr, ret.err};
+            }
+            return {ret.val, {}};
+        }
+        case '}': {
+            return {nullptr, {"missing element in object", ErrorType::InvalidFormat, iter->rows, iter->cols}};
         }
         case '[': {
             const auto& ret = parse_array(toks, ++iter);
