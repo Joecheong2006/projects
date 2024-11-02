@@ -216,7 +216,7 @@ namespace json {
 
     void object::log() const {
         std::cout << '{';
-        for (auto iter = val.begin();;) {
+        for (auto iter = val.begin(); iter != val.end();) {
             std::cout << iter->first << ": " << iter->second;
             if (++iter != val.end()) {
                 std::cout << ", ";
@@ -290,14 +290,10 @@ namespace json {
                 ++iter;
             }
 
-            const auto& key_ret = parse_impl(toks, iter);
-            if (!key_ret) {
-                return {nullptr, key_ret.err};
-            }
-
-            if (!key_ret.val->is_string()) {
+            if (iter->type != TokenType::String) {
                 return {nullptr, {"key in object must be string", ErrorType::InvalidFormat, (iter - 1)->rows, (iter - 1)->cols}};
             }
+            const auto& key = iter->val.literal;
             ++iter;
 
             if (iter->type != ':') {
@@ -311,9 +307,8 @@ namespace json {
             }
             ++iter;
 
-            obj.insert({key_ret.val->get_string().val, value_ret.val});
-            // obj.push_back({, value_ret.val});
-            // obj[key_ret.val->get_string().val] = value_ret.val;
+            obj[key] = value_ret.val;
+            // delete[] key;
         } while (iter != toks.end());
         return {};
     }

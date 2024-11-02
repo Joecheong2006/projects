@@ -49,6 +49,7 @@ namespace json {
     struct token {
         int type;
         unsigned rows, cols;
+
         union {
             double number;
             char* literal;
@@ -69,7 +70,7 @@ namespace json {
     ret_type<tokens> lex(const file& f);
 
     struct primitive {
-        using obj = std::map<std::string, primitive*>;
+        using obj = std::map<const char*, primitive*>;
         using arr = std::vector<primitive*>;
         virtual ~primitive() = default;
 
@@ -107,16 +108,28 @@ namespace json {
             if (!ret) {
                 return nullptr;
             }
+            return ret.val[key.c_str()];
+        }
+
+        primitive* get(const char* key) {
+            auto&& ret = get_object();
+            if (!ret) {
+                return nullptr;
+            }
             return ret.val[key];
         }
         
     };
 
     struct string : public primitive {
-        std::string val;
+        const char* val;
 
-        string(const std::string& str)
-            : val(str) {}
+        string(char* val)
+            : val(val) {}
+
+        ~string() {
+            delete[] val;
+        }
 
         inline virtual bool is_string() const override { return true; }
         inline virtual ret_type<std::string> get_string() override { return {val, {}}; }
@@ -151,17 +164,17 @@ namespace json {
     };
 
     struct object : public primitive {
-        using type = std::map<std::string, primitive*>;
+        using type = std::map<const char*, primitive*>;
         type val;
-
-        object(const type& obj)
-            : val(obj) {}
 
         ~object() {
             for (const auto& e : val) {
+                delete[] e.first;
                 delete e.second;
             }
         }
+        object(const type& obj)
+            : val(obj) {}
 
         inline virtual bool is_string() const override { return true; }
         inline virtual ret_type<type> get_object() override { return {val, {}}; }
@@ -172,14 +185,13 @@ namespace json {
         using type = std::vector<primitive*>;
         type val;
 
-        array(const type& arr)
-            : val(arr) {}
-
         ~array() {
             for (const auto& e : val) {
                 delete e;
             }
         }
+        array(const type& arr)
+            : val(arr) {}
 
         inline virtual bool is_string() const override { return true; }
         inline virtual ret_type<arr> get_array() override { return {val, {}}; }
