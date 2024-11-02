@@ -41,7 +41,8 @@ int main(void) {
         std::cout << parse_ret.err;
         return parse_ret.err.type;
     }
-
     const auto& json = parse_ret.val;
-    std::cout << json;
+
+    std::cout << json << std::endl;
+    delete json;
 }

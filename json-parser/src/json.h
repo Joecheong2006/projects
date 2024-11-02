@@ -3,7 +3,7 @@
 #include <vector>
 #include <string>
 #include <map>
-#include <memory>
+// #include <memory>
 
 namespace json {
     enum ErrorType {
@@ -17,11 +17,11 @@ namespace json {
         error() = default;
         error(const std::string& msg, ErrorType type, unsigned rows = -1, unsigned cols = -1)
             : msg(msg), type(type), rows(rows), cols(cols) {}
-        error(const error& err, unsigned rows = -1, unsigned cols = -1)
-            : msg(err.msg), type(err.type), rows(rows), cols(cols) {}
+
         std::string msg = "";
         ErrorType type;
         unsigned rows, cols;
+
         friend std::ostream& operator<<(std::ostream& os, const error& err);
     };
 
@@ -70,8 +70,8 @@ namespace json {
     ret_type<tokens> lex(const file& f);
 
     struct primitive {
-        using obj = std::map<std::string, primitive>;
-        using arr = std::vector<primitive>;
+        using obj = std::map<std::string, primitive*>;
+        using arr = std::vector<primitive*>;
         virtual ~primitive() = default;
 
         inline virtual bool is_string() const { return false; }
@@ -94,12 +94,14 @@ namespace json {
         inline virtual void log() const {};
 
         friend std::ostream& operator<<(std::ostream& os, primitive* pri) { pri->log(); return os; }
-        friend std::ostream& operator<<(std::ostream& os, const std::unique_ptr<primitive>& pri) { pri->log(); return os; }
         
     };
 
     struct string : public primitive {
         std::string val;
+
+        string(const std::string& str)
+            : val(str) {}
 
         inline virtual bool is_string() const override { return true; }
         inline virtual ret_type<std::string> get_string() override { return {val, {}}; }
@@ -117,24 +119,6 @@ namespace json {
         virtual void log() const override;
     };
 
-    struct object : public primitive {
-        using obj = std::map<std::string, primitive>;
-        obj val;
-
-        inline virtual bool is_string() const override { return true; }
-        inline virtual ret_type<obj> get_object() override { return {val, {}}; }
-        virtual void log() const override;
-    };
-
-    struct array : public primitive {
-        using arr = std::vector<primitive>;
-        arr val;
-
-        inline virtual bool is_string() const override { return true; }
-        inline virtual ret_type<arr> get_array() override { return {val, {}}; }
-        virtual void log() const override;
-    };
-
     struct boolean : public primitive {
         bool val;
 
@@ -148,5 +132,32 @@ namespace json {
         virtual void log() const override;
     };
 
-    ret_type<std::unique_ptr<primitive>> parse(const tokens& toks);
+    struct object : public primitive {
+        using obj = std::map<std::string, primitive*>;
+        obj val;
+
+        inline virtual bool is_string() const override { return true; }
+        inline virtual ret_type<obj> get_object() override { return {val, {}}; }
+        virtual void log() const override;
+    };
+
+    struct array : public primitive {
+        using type = std::vector<primitive*>;
+        type val;
+
+        array(const type& arr)
+            : val(arr) {}
+
+        ~array() {
+            for (const auto& e : val) {
+                delete e;
+            }
+        }
+
+        inline virtual bool is_string() const override { return true; }
+        inline virtual ret_type<arr> get_array() override { return {val, {}}; }
+        virtual void log() const override;
+    };
+
+    ret_type<primitive*> parse(const tokens& toks);
 }

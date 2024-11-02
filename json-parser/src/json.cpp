@@ -26,11 +26,11 @@ namespace json {
         return ret;
     }
 
-    static ret_type<int> parse_literal(token& tok, std::string::const_iterator& begin) {
+    static ret_type<int> parse_literal(token& tok, const std::string& content, std::string::const_iterator& begin) {
         int skip_len = 1;
         for (auto iter = ++begin;; ++iter, ++skip_len) {
-            if (*iter == EOF) {
-                return {skip_len, {"missing string closing braket", ErrorType::InvalidInput}};
+            if (iter == content.end()) {
+                return {skip_len, {"missing string closing braket", ErrorType::InvalidInput, tok.rows, tok.cols + skip_len - 2}};
             }
             if (*iter == '"') {
                 tok.val.literal = new char[skip_len];
@@ -44,14 +44,14 @@ namespace json {
         }
     }
 
-    inline static ret_type<int> parse_number(token& tok, std::string::const_iterator& begin) {
+    static ret_type<int> parse_number(token& tok, const std::string& content, std::string::const_iterator& begin) {
         int skip_len = 1;
         size_t precision_factor = 1;
     
         auto iter = begin;
         for (;; ++iter, ++skip_len) {
-            if (*iter == EOF) {
-                return {skip_len, {"failed to parse number", ErrorType::InvalidInput}};
+            if (iter == content.end()) {
+                return {skip_len, {"failed to parse number", ErrorType::InvalidInput, tok.rows, tok.cols + skip_len - 2}};
             }
 
             if (precision_factor > 1) {
@@ -60,7 +60,7 @@ namespace json {
 
             if (*iter == '.') {
                 if (precision_factor > 1) {
-                    return {skip_len, {"failed to parse float. There are more than one '.'", ErrorType::InvalidFormat}};
+                    return {skip_len, {"failed to parse float. There are more than one '.'", ErrorType::InvalidFormat, tok.rows, tok.cols}};
                 }
                 precision_factor *= 10;
                 ++iter, ++skip_len;
@@ -89,7 +89,7 @@ namespace json {
                     minus_flag = false;
                 }
                 else {
-                    ret_type<int> ret = {skip_len - 1, {"unkown exp flag ", ErrorType::InvalidFormat}};
+                    ret_type<int> ret = {skip_len - 1, {"unkown exp flag ", ErrorType::InvalidFormat, tok.rows, tok.cols}};
                     ret.err.msg.push_back(*iter);
                     return ret;
                 }
@@ -97,11 +97,11 @@ namespace json {
             }
 
             for (;; ++iter, ++skip_len) {
-                if (*iter == EOF) {
-                    return {skip_len, {"failed to parse number", ErrorType::InvalidInput}};
+                if (iter == content.end()) {
+                    return {skip_len, {"failed to parse number", ErrorType::InvalidInput, tok.rows, tok.cols + skip_len - 2}};
                 }
                 else if (*iter == '.') {
-                    return {skip_len, {"exp cannot be floating point", ErrorType::InvalidFormat}};
+                    return {skip_len, {"exp cannot be floating point", ErrorType::InvalidFormat, tok.rows, tok.cols}};
                 }
 
                 if (isdigit(*iter)) {
@@ -167,9 +167,9 @@ namespace json {
             }
             case '"': {
                 token tok = {TokenType::String, rows, cols, {}};
-                const auto ret = parse_literal(tok, iter);
+                const auto ret = parse_literal(tok, content, iter);
                 if (!ret) {
-                    return {{}, { ret.err, rows, cols + ret.val }};
+                    return {{}, ret.err};
                 }
                 result.push_back(tok);
                 cols += ret.val;
@@ -186,9 +186,9 @@ namespace json {
             case '8':
             case '9': {
                 token tok = {TokenType::Number, rows, cols, {}};
-                auto ret = parse_number(tok, iter);
+                auto ret = parse_number(tok, content, iter);
                 if (!ret) {
-                    return {{}, { ret.err, rows, cols + ret.val }};
+                    return {{}, ret.err};
                 }
                 result.push_back(tok);
                 cols += ret.val;
@@ -214,6 +214,12 @@ namespace json {
     }
 
     void array::log() const {
+        std::cout << '[';
+        for (size_t i = 0; i < val.size() - 1; ++i) {
+            std::cout << val[i] << ", ";
+        }
+        std::cout << val.back();
+        std::cout << ']';
     }
 
     void boolean::log() const {
@@ -222,32 +228,64 @@ namespace json {
     void null::log() const {
     }
 
-    ret_type<std::unique_ptr<primitive>> parse(const tokens& toks) {
-        for (tokens::const_iterator iter = toks.begin(); toks.end() != iter; ++iter) {
-            switch (iter->type) {
-            case Number: {
-                return {std::make_unique<json::number>(iter->val.number), {}};
-                break; // TODO(Nov1): implement number
+    static ret_type<primitive*> parse_impl(const tokens& toks, tokens::const_iterator& iter);
+
+    static ret_type<primitive*> parse_array(const tokens& toks, tokens::const_iterator& iter) {
+        array::type arr;
+
+        do {
+            if (iter->type == ']') {
+                return {new array(arr), {}};
             }
-            case String: {
-                break; // TODO(Nov1): implement string
+
+            if (iter->type == ',') {
+                ++iter;
             }
-            case Null: {
-                break; // TODO(Nov1): implement null 
+            const auto& ret = parse_impl(toks, iter);
+            if (!ret) {
+                return {nullptr, ret.err};
             }
-            case Boolean: {
-                break; // TODO(Nov1): implement boolean
+            arr.push_back(ret.val);
+            ++iter;
+        } while (iter != toks.end());
+        return {};
+    }
+
+    static ret_type<primitive*> parse_impl(const tokens& toks, tokens::const_iterator& iter) {
+        switch (iter->type) {
+        case String: {
+            return {new string(iter->val.literal), {}};
+        }
+        case Number: {
+            return {new number(iter->val.number), {}};
+        }
+        case Boolean: {
+            break; // TODO(Nov1): implement boolean
+        }
+        case Null: {
+            break; // TODO(Nov1): implement null 
+        }
+        case '{': {
+            break; // TODO(Nov1): implement object
+        }
+        case '[': {
+            const auto& ret = parse_array(toks, ++iter);
+            if (!ret) {
+                return {nullptr, ret.err};
             }
-            case '{': {
-                break; // TODO(Nov1): implement object
-            }
-            case '[': {
-                break; // TODO(Nov1): implement arrary
-            }
-            default:
-                break;
-            }
+            return {ret.val, {}};
+        }
+        case ']': {
+            return {nullptr, {"missing element in array", ErrorType::InvalidFormat, iter->rows, iter->cols}};
+        }
+        default:
+            break;
         }
         return {};
+    }
+
+    ret_type<primitive*> parse(const tokens& toks) {
+        tokens::const_iterator iter = toks.begin();
+        return parse_impl(toks, iter);
     }
 }
