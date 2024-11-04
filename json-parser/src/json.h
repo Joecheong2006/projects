@@ -93,6 +93,8 @@ namespace json {
 
         inline virtual void log() const {};
 
+        virtual std::string dump() const = 0;
+
         friend std::ostream& operator<<(std::ostream& os, primitive* pri) { pri->log(); return os; }
 
         primitive* get(int index) {
@@ -134,6 +136,14 @@ namespace json {
         inline virtual bool is_string() const override { return true; }
         inline virtual ret_type<std::string> get_string() override { return {val, {}}; }
         virtual void log() const override;
+
+        virtual std::string dump() const override {
+            std::string ret;
+            ret.push_back('"');
+            ret += val;
+            ret.push_back('"');
+            return ret;
+        }
     };
 
     struct number : public primitive {
@@ -145,6 +155,10 @@ namespace json {
         inline virtual bool is_string() const override { return true; }
         inline virtual ret_type<double> get_number() override { return {val, {}}; }
         virtual void log() const override;
+
+        virtual std::string dump() const override {
+            return std::to_string(val);
+        }
     };
 
     struct boolean : public primitive {
@@ -156,11 +170,19 @@ namespace json {
         inline virtual bool is_string() const override { return true; }
         inline virtual ret_type<bool> get_boolean() override { return {val, {}}; }
         virtual void log() const override;
+
+        virtual std::string dump() const override {
+            return val ? "true" : "false";
+        }
     };
 
     struct null : public primitive {
         inline virtual bool is_string() const override { return true; }
         virtual void log() const override;
+
+        virtual std::string dump() const override {
+            return "null";
+        }
     };
 
     struct object : public primitive {
@@ -179,6 +201,24 @@ namespace json {
         inline virtual bool is_string() const override { return true; }
         inline virtual ret_type<type> get_object() override { return {val, {}}; }
         virtual void log() const override;
+
+        virtual std::string dump() const override {
+            std::string ret = "{\n";
+            for (auto iter = val.begin(); iter != val.end();) {
+                ret.push_back('"');
+                ret += iter->first;
+                ret.push_back('"');
+                ret += ": ";
+                ret += iter->second->dump();
+                if (++iter != val.end()) {
+                    ret += ",\n";
+                    continue;
+                }
+                break;
+            }
+            ret += "}\n";
+            return ret;
+        }
     };
 
     struct array : public primitive {
@@ -196,6 +236,21 @@ namespace json {
         inline virtual bool is_string() const override { return true; }
         inline virtual ret_type<arr> get_array() override { return {val, {}}; }
         virtual void log() const override;
+
+        virtual std::string dump() const override {
+            std::string ret = "[\n";
+            if (val.size() == 0) {
+                ret += "]\n";
+                return ret;
+            }
+            for (int i = 0; i < (int)val.size() - 1; ++i) {
+                ret += val[i]->dump();
+                ret += ",\n";
+            }
+            ret += val.back()->dump();
+            ret += "\n]";
+            return ret;
+        }
     };
 
     ret_type<primitive*> parse(const tokens& toks);

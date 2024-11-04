@@ -45,6 +45,7 @@ int main(void) {
     }
     const auto& json = parse_ret.val;
 
-    std::cout << json << std::endl;
+    // std::cout << json << std::endl;
+    std::cout << json->dump() << std::endl;
     delete json;
 }
