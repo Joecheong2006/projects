@@ -97,61 +97,44 @@ namespace json {
 
     };
 
-    struct json_object;
+    struct object;
+    struct string;
+    struct number;
+    struct object;
+    struct array;
+    struct boolean;
+    
     struct primitive {
-        using obj = std::map<const char*, primitive*>;
+        using obj = std::map<const char*, json>;
         using arr = std::vector<primitive*>;
         virtual ~primitive() = default;
 
-        inline virtual bool is_string() const { return false; }
-        inline virtual ret_type<std::string> get_string() const { return {{}, {"it is not a string", ErrorType::InvalidType}}; }
+        virtual bool is_string() const { return false; }
+        virtual string* get_string() { return nullptr; }
 
-        inline virtual bool is_number() const { return false; }
-        inline virtual ret_type<double> get_number() const { return {{}, {"it is not a number", ErrorType::InvalidType}}; }
+        virtual bool is_number() const { return false; }
+        virtual number* get_number() { return nullptr; }
         
-        inline virtual bool is_object() const { return false; }
-        inline virtual ret_type<obj> get_object() const { return {{}, {"it is not a object", ErrorType::InvalidType}}; }
+        virtual bool is_object() const { return false; }
+        virtual object* get_object() { return nullptr; }
 
-        inline virtual bool is_array() const { return false; }
-        inline virtual ret_type<arr> get_array() { return {{}, {"it is not a arrary", ErrorType::InvalidType}}; }
+        virtual bool is_array() const { return false; }
+        virtual array* get_array() { return nullptr; }
 
-        inline virtual bool is_boolean() const { return false; }
-        inline virtual ret_type<bool> get_boolean() { return {{}, {"it is not a boolean", ErrorType::InvalidType}}; }
+        virtual bool is_boolean() const { return false; }
+        virtual boolean* get_boolean() { return nullptr; }
 
-        inline virtual bool is_null() const { return false; }
+        virtual bool is_null() const { return false; }
 
         virtual void log() const = 0;
 
         virtual std::string dump() const = 0;
 
-        primitive* get(int index) {
-            const auto& ret = get_array();
-            if (!ret) {
-                return nullptr;
-            }
-            return ret.val[index];
-        }
+        primitive* get(int index);
+        primitive* get(std::string key);
+        primitive* get(const char* key);
 
-        primitive* get(std::string key) {
-            auto&& ret = get_object();
-            if (!ret) {
-                return nullptr;
-            }
-            return ret.val[key.c_str()];
-        }
-
-        primitive* get(const char* key) {
-            auto&& ret = get_object();
-            if (!ret) {
-                return nullptr;
-            }
-            return ret.val[key];
-        }
-
-        friend std::ostream& operator<<(std::ostream& os, const primitive* j) {
-            j->log();
-            return os;
-        }
+        friend std::ostream& operator<<(std::ostream& os, primitive* pri);
     };
 
     struct string : public primitive {
@@ -164,8 +147,8 @@ namespace json {
             delete[] val;
         }
 
-        inline virtual bool is_string() const override { return true; }
-        inline virtual ret_type<std::string> get_string() const override { return {val, {}}; }
+        virtual bool is_string() const override { return true; }
+        virtual string* get_string() override { return this; }
         virtual void log() const override;
 
         virtual std::string dump() const override {
@@ -183,8 +166,8 @@ namespace json {
         number(double num)
             : val(num) {}
 
-        inline virtual bool is_string() const override { return true; }
-        inline virtual ret_type<double> get_number() const override { return {val, {}}; }
+        virtual bool is_string() const override { return true; }
+        virtual number* get_number() override { return this; }
         virtual void log() const override;
 
         virtual std::string dump() const override {
@@ -198,8 +181,8 @@ namespace json {
         boolean(bool val)
             : val(val) {}
 
-        inline virtual bool is_string() const override { return true; }
-        inline virtual ret_type<bool> get_boolean() override { return {val, {}}; }
+        virtual bool is_boolean() const override { return true; }
+        virtual boolean* get_boolean() override { return this; }
         virtual void log() const override;
 
         virtual std::string dump() const override {
@@ -208,7 +191,7 @@ namespace json {
     };
 
     struct null : public primitive {
-        inline virtual bool is_string() const override { return true; }
+        virtual bool is_null() const override { return true; }
         virtual void log() const override;
 
         virtual std::string dump() const override {
@@ -217,20 +200,19 @@ namespace json {
     };
 
     struct object : public primitive {
-        using type = std::map<const char*, primitive*>;
+        using type = std::map<std::string, primitive*>;
         type val;
 
         ~object() {
             for (const auto& e : val) {
-                delete[] e.first;
                 delete e.second;
             }
         }
         object(const type& obj)
             : val(obj) {}
 
-        inline virtual bool is_string() const override { return true; }
-        inline virtual ret_type<type> get_object() const override { return {val, {}}; }
+        virtual bool is_object() const override { return true; }
+        virtual object* get_object() override { return this; }
         virtual void log() const override;
 
         virtual std::string dump() const override {
@@ -264,8 +246,8 @@ namespace json {
         array(const type& arr)
             : val(arr) {}
 
-        inline virtual bool is_string() const override { return true; }
-        inline virtual ret_type<arr> get_array() override { return {val, {}}; }
+        virtual bool is_array() const override { return true; }
+        virtual array* get_array() override { return this; }
         virtual void log() const override;
 
         virtual std::string dump() const override {

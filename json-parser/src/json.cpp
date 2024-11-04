@@ -25,11 +25,46 @@ namespace json {
         j.pri = nullptr;
     }
 
-    std::ostream& operator<<(std::ostream& os, const json& j) {
-        if (j.pri) {
-            j.pri->log();
+    std::ostream& operator<<(std::ostream& os, primitive* pri) {
+        if (!pri) {
+            std::cout << "nullptr";
+            return os;
         }
+        pri->log();
         return os;
+    }
+
+    std::ostream& operator<<(std::ostream& os, const json& j) {
+        if (!j.pri) {
+            std::cout << "nullptr";
+            return os;
+        }
+        j.pri->log();
+        return os;
+    }
+
+    primitive* primitive::get(int index) {
+        const auto& ret = get_array();
+        if (!ret) {
+            return nullptr;
+        }
+        return ret->val[index];
+    }
+
+    primitive* primitive::get(std::string key) {
+        auto ret = get_object();
+        if (!ret) {
+            return nullptr;
+        }
+        return ret->val[key.c_str()];
+    }
+
+    primitive* primitive::get(const char* key) {
+        auto ret = get_object();
+        if (!ret) {
+            return nullptr;
+        }
+        return ret->val[key];
     }
 
     ret_type<file> file::load(const std::string& path) {
@@ -329,7 +364,7 @@ namespace json {
             ++iter;
 
             obj[key] = value_ret.val;
-            // delete[] key;
+            delete[] key;
         } while (iter != toks.end());
         return {};
     }

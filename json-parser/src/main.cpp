@@ -45,8 +45,8 @@ int main(void) {
     }
     const auto& json = parse_ret.val;
 
+    // std::cout << json->dump() << std::endl;
     std::cout << json << std::endl;
-    std::cout << json->dump() << std::endl;
-    // auto pri = json->get(0)->get("file");
-    // std::cout << "file: " << json->get(0) << std::endl;
+
+    std::cout << "file: " << json->get(0)->get("file") << std::endl;
 }
