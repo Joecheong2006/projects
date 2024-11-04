@@ -4,46 +4,41 @@ DEBUG_FLAGS = -g3 -DDEBUG
 RELEASE_FLAGS = -O2
 DEBUGGER = gdb
 
-CONFIG=
+FLAGS=
 
-SRC = $(wildcard src/*.cpp src/**/*.cpp)
+SRC = $(wildcard src/*.cpp src/**/*.cpp test/*.cpp)
 OBJ = $(SRC:%.cpp=%.o)
 DEP = $(OBJ:%.o=%.d)
-BIN = bin
-LIB = 
-PROGRAM = jsonparser
+BIN = test/bin
+PROGRAM = test
 
 ifeq ($(OS),Windows_NT)
-	OUT = $(PROGRAM).exe
-	LIB += $(WINLIB)
+	OUT = $(BIN)/$(PROGRAM).exe
 else
-	OUT = $(PROGRAM)
+	OUT = $(BIN)/(PROGRAM)
 endif
-
-
-all: bin app 
-
-rel: CFLAGS += $(RELEASE_FLAGS) $(CONFIG)
-rel: bin $(OBJ)
-	@$(CC) $(CFLAGS) $(OBJ) -o $(BIN)/$(OUT) $(LIB)
-	@echo "Compilation completed"
 
 bin:
 	@mkdir -p $(BIN)
 
-app: CFLAGS += $(DEBUG_FLAGS) $(CONFIG)
-app: $(OBJ)
-	$(CC) $(CFLAGS) $(OBJ) $(LIB) -o $(BIN)/$(OUT)
+test-rel: CFLAGS += $(RELEASE_FLAGS) $(FLAGS)
+test-rel: bin $(OBJ)
+	@$(CC) $(CFLAGS) $(OBJ) -o $(OUT)
+	@echo "Compilation completed"
+
+test: CFLAGS += $(DEBUG_FLAGS) $(FLAGS)
+test: bin $(OBJ)
+	$(CC) $(CFLAGS) $(OBJ) -o $(OUT)
 	@echo "Compilation completed"
 
 debug:
-	@$(DEBUGGER) -q $(BIN)/$(OUT) --eval-command=run --eval-command=exit
+	@$(DEBUGGER) -q $(OUT) --eval-command=run --eval-command=exit
 
 check:
-	@valgrind --leak-check=yes $(BIN)/$(OUT)
+	@valgrind --leak-check=yes $(OUT)
 
 run:
-	@./$(BIN)/$(OUT) 
+	@./$(OUT) 
 
 clean:
 	@rm -rf $(OBJ) $(DEP) $(BIN)
