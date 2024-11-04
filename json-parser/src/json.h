@@ -67,7 +67,7 @@ namespace json {
     };
 
     using tokens = std::vector<token>;
-    ret_type<tokens> lex(const file& f);
+    ret_type<std::vector<token>> lex(const file& f);
 
     struct primitive {
         using obj = std::map<const char*, primitive*>;
