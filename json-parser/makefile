@@ -15,8 +15,10 @@ PROGRAM = test
 ifeq ($(OS),Windows_NT)
 	OUT = $(BIN)/$(PROGRAM).exe
 else
-	OUT = $(BIN)/(PROGRAM)
+	OUT = $(BIN)/$(PROGRAM)
 endif
+
+all:
 
 bin:
 	@mkdir -p $(BIN)
