@@ -69,19 +69,48 @@ namespace json {
     using tokens = std::vector<token>;
     ret_type<std::vector<token>> lex(const file& f);
 
+    struct primitive;
+    class json {
+    private:
+        primitive* pri = nullptr;
+
+    public:
+        json(primitive* pri = nullptr): pri(pri) {}
+
+        ~json();
+
+        json(json&& j) {
+            pri = j.pri;
+            j.pri = nullptr;
+        }
+
+        void operator=(json&& j);
+
+        json(const json&) = delete;
+        void operator=(const json&) = delete;
+        
+        primitive* operator->() const {
+            return pri;
+        }
+
+        friend std::ostream& operator<<(std::ostream& os, const json& j);
+
+    };
+
+    struct json_object;
     struct primitive {
         using obj = std::map<const char*, primitive*>;
         using arr = std::vector<primitive*>;
         virtual ~primitive() = default;
 
         inline virtual bool is_string() const { return false; }
-        inline virtual ret_type<std::string> get_string() { return {{}, {"it is not a string", ErrorType::InvalidType}}; }
+        inline virtual ret_type<std::string> get_string() const { return {{}, {"it is not a string", ErrorType::InvalidType}}; }
 
         inline virtual bool is_number() const { return false; }
-        inline virtual ret_type<double> get_number() { return {{}, {"it is not a number", ErrorType::InvalidType}}; }
+        inline virtual ret_type<double> get_number() const { return {{}, {"it is not a number", ErrorType::InvalidType}}; }
         
         inline virtual bool is_object() const { return false; }
-        inline virtual ret_type<obj> get_object() { return {{}, {"it is not a object", ErrorType::InvalidType}}; }
+        inline virtual ret_type<obj> get_object() const { return {{}, {"it is not a object", ErrorType::InvalidType}}; }
 
         inline virtual bool is_array() const { return false; }
         inline virtual ret_type<arr> get_array() { return {{}, {"it is not a arrary", ErrorType::InvalidType}}; }
@@ -91,11 +120,9 @@ namespace json {
 
         inline virtual bool is_null() const { return false; }
 
-        inline virtual void log() const {};
+        virtual void log() const = 0;
 
         virtual std::string dump() const = 0;
-
-        friend std::ostream& operator<<(std::ostream& os, primitive* pri) { pri->log(); return os; }
 
         primitive* get(int index) {
             const auto& ret = get_array();
@@ -120,7 +147,11 @@ namespace json {
             }
             return ret.val[key];
         }
-        
+
+        friend std::ostream& operator<<(std::ostream& os, const primitive* j) {
+            j->log();
+            return os;
+        }
     };
 
     struct string : public primitive {
@@ -134,7 +165,7 @@ namespace json {
         }
 
         inline virtual bool is_string() const override { return true; }
-        inline virtual ret_type<std::string> get_string() override { return {val, {}}; }
+        inline virtual ret_type<std::string> get_string() const override { return {val, {}}; }
         virtual void log() const override;
 
         virtual std::string dump() const override {
@@ -153,7 +184,7 @@ namespace json {
             : val(num) {}
 
         inline virtual bool is_string() const override { return true; }
-        inline virtual ret_type<double> get_number() override { return {val, {}}; }
+        inline virtual ret_type<double> get_number() const override { return {val, {}}; }
         virtual void log() const override;
 
         virtual std::string dump() const override {
@@ -199,7 +230,7 @@ namespace json {
             : val(obj) {}
 
         inline virtual bool is_string() const override { return true; }
-        inline virtual ret_type<type> get_object() override { return {val, {}}; }
+        inline virtual ret_type<type> get_object() const override { return {val, {}}; }
         virtual void log() const override;
 
         virtual std::string dump() const override {
@@ -253,5 +284,5 @@ namespace json {
         }
     };
 
-    ret_type<primitive*> parse(const tokens& toks);
+    ret_type<json> parse(const tokens& toks);
 }

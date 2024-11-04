@@ -11,6 +11,27 @@ namespace json {
         return os;
     }
 
+    json::~json() {
+        if (pri) {
+            delete pri;
+        }
+    }
+
+    void json::operator=(json&& j) {
+        if (pri) {
+            delete pri;
+        }
+        pri = j.pri;
+        j.pri = nullptr;
+    }
+
+    std::ostream& operator<<(std::ostream& os, const json& j) {
+        if (j.pri) {
+            j.pri->log();
+        }
+        return os;
+    }
+
     ret_type<file> file::load(const std::string& path) {
         ret_type<file> ret = {};
         std::ifstream stream(path);
@@ -353,8 +374,12 @@ namespace json {
         return {};
     }
 
-    ret_type<primitive*> parse(const tokens& toks) {
+    ret_type<json> parse(const tokens& toks) {
         tokens::const_iterator iter = toks.begin();
-        return parse_impl(toks, iter);
+        const auto ret = parse_impl(toks, iter);
+        if (!ret) {
+            return {{}, ret.err};
+        }
+        return {{ret.val}, {}};
     }
 }
