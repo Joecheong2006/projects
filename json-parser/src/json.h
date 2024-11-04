@@ -52,7 +52,7 @@ namespace json {
 
         union {
             double number;
-            char* literal;
+            char* string;
             bool boolean;
         } val;
     };
@@ -109,25 +109,24 @@ namespace json {
         using arr = std::vector<primitive*>;
         virtual ~primitive() = default;
 
-        virtual bool is_string() const { return false; }
-        virtual string* get_string() { return nullptr; }
+        inline virtual bool is_string() const { return false; }
+        inline virtual string* get_string() { return nullptr; }
 
-        virtual bool is_number() const { return false; }
-        virtual number* get_number() { return nullptr; }
+        inline virtual bool is_number() const { return false; }
+        inline virtual number* get_number() { return nullptr; }
         
-        virtual bool is_object() const { return false; }
-        virtual object* get_object() { return nullptr; }
+        inline virtual bool is_object() const { return false; }
+        inline virtual object* get_object() { return nullptr; }
 
-        virtual bool is_array() const { return false; }
-        virtual array* get_array() { return nullptr; }
+        inline virtual bool is_array() const { return false; }
+        inline virtual array* get_array() { return nullptr; }
 
-        virtual bool is_boolean() const { return false; }
-        virtual boolean* get_boolean() { return nullptr; }
+        inline virtual bool is_boolean() const { return false; }
+        inline virtual boolean* get_boolean() { return nullptr; }
 
-        virtual bool is_null() const { return false; }
+        inline virtual bool is_null() const { return false; }
 
         virtual void log() const = 0;
-
         virtual std::string dump() const = 0;
 
         primitive* get(int index);
@@ -152,11 +151,7 @@ namespace json {
         virtual void log() const override;
 
         virtual std::string dump() const override {
-            std::string ret;
-            ret.push_back('"');
-            ret += val;
-            ret.push_back('"');
-            return ret;
+            return '\"' + std::string(val) + '\"';
         }
     };
 
@@ -216,21 +211,16 @@ namespace json {
         virtual void log() const override;
 
         virtual std::string dump() const override {
-            std::string ret = "{\n";
+            std::string ret;
             for (auto iter = val.begin(); iter != val.end();) {
-                ret.push_back('"');
-                ret += iter->first;
-                ret.push_back('"');
-                ret += ": ";
-                ret += iter->second->dump();
+                ret += '"' + iter->first + "\":" + iter->second->dump();
                 if (++iter != val.end()) {
-                    ret += ",\n";
+                    ret += ",";
                     continue;
                 }
                 break;
             }
-            ret += "\n}";
-            return ret;
+            return '{' + ret + '}';
         }
     };
 
@@ -251,17 +241,15 @@ namespace json {
         virtual void log() const override;
 
         virtual std::string dump() const override {
-            std::string ret = "[\n";
             if (val.size() == 0) {
-                ret += "]\n";
-                return ret;
+                return "[]";
             }
+
+            std::string ret;
             for (int i = 0; i < (int)val.size() - 1; ++i) {
-                ret += val[i]->dump();
-                ret += ",\n";
+                ret += val[i]->dump() + ',';
             }
-            ret += val.back()->dump();
-            ret += "\n]";
+            ret += val.back()->dump() + ']';
             return ret;
         }
     };

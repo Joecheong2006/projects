@@ -8,7 +8,7 @@ void print_tokens(std::vector<json::token> tokens) {
             printf("tokens; type - %-3d; [%-3d, %-3d]; %c\n", tok.type, tok.rows, tok.cols, tok.type);
         }
         else if (tok.type == json::TokenType::String) {
-            printf("tokens; type - %-3d; [%-3d, %-3d]; %s\n", tok.type, tok.rows, tok.cols, tok.val.literal);
+            printf("tokens; type - %-3d; [%-3d, %-3d]; %s\n", tok.type, tok.rows, tok.cols, tok.val.string);
         }
         else if (tok.type == json::TokenType::Number) {
             printf("tokens; type - %-3d; [%-3d, %-3d]; %g\n", tok.type, tok.rows, tok.cols, tok.val.number);
@@ -45,8 +45,8 @@ int main(void) {
     }
     const auto& json = parse_ret.val;
 
-    // std::cout << json->dump() << std::endl;
-    std::cout << json << std::endl;
+    std::cout << "json->dump():\t" << json->dump() << "\n";
+    std::cout << "\njson:\t" << json << std::endl;
 
-    std::cout << "file: " << json->get(0)->get("file") << std::endl;
+    std::cout << "\njson->get(0)->get(\"file\"): " << json->get(0)->get("file") << std::endl;
 }

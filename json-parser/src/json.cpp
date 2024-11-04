@@ -82,20 +82,21 @@ namespace json {
         return ret;
     }
 
-    static ret_type<int> parse_literal(token& tok, const std::string& content, std::string::const_iterator& begin) {
+    static ret_type<int> parse_string(token& tok, const std::string& content, std::string::const_iterator& begin) {
         int skip_len = 1;
         for (auto iter = ++begin;; ++iter, ++skip_len) {
             if (iter == content.end()) {
                 return {skip_len, {"missing string closing braket", ErrorType::InvalidInput, tok.rows, tok.cols + skip_len - 2}};
             }
             if (*iter == '"') {
-                tok.val.literal = new char[skip_len];
+                tok.val.string = new char[skip_len];
                 const char* src = &(*begin);
-                std::memcpy(tok.val.literal, src, skip_len);
-                tok.val.literal[skip_len - 1] = '\0';
+                std::memcpy(tok.val.string, src, skip_len);
+                tok.val.string[skip_len - 1] = '\0';
                 begin += skip_len - 1;
                 return {skip_len, {}};
             }
+
             // TODO(Oct31): implement character encoding
         }
     }
@@ -227,7 +228,7 @@ namespace json {
             }
             case '"': {
                 token tok = {TokenType::String, rows, cols, {}};
-                const auto ret = parse_literal(tok, content, iter);
+                const auto ret = parse_string(tok, content, iter);
                 if (!ret) {
                     return {{}, ret.err};
                 }
@@ -349,7 +350,7 @@ namespace json {
             if (iter->type != TokenType::String) {
                 return {nullptr, {"key in object must be string", ErrorType::InvalidFormat, (iter - 1)->rows, (iter - 1)->cols}};
             }
-            const auto& key = iter->val.literal;
+            const auto& key = iter->val.string;
             ++iter;
 
             if (iter->type != ':') {
@@ -372,7 +373,7 @@ namespace json {
     static ret_type<primitive*> parse_impl(const tokens& toks, tokens::const_iterator& iter) {
         switch (iter->type) {
         case String: {
-            return {new string(iter->val.literal), {}};
+            return {new string(iter->val.string), {}};
         }
         case Number: {
             return {new number(iter->val.number), {}};
