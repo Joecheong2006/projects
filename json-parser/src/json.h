@@ -216,7 +216,7 @@ namespace json {
                 }
                 break;
             }
-            ret += "}\n";
+            ret += "\n}";
             return ret;
         }
     };
