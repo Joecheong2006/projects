@@ -151,7 +151,23 @@ namespace json {
         virtual void log() const override;
 
         virtual std::string dump() const override {
-            return '\"' + std::string(val) + '\"';
+            std::string ret;
+            for (int i = 0; val[i] != '\0'; ++i) {
+                switch (val[i]) {
+                case '"': ret += "\\\""; continue;
+                case '\\': ret += "\\\\"; continue;
+                case '/':  ret += "\\/"; continue;
+                case '\b': ret += "\\b"; continue;
+                case '\f': ret += "\\f"; continue;
+                case '\n': ret += "\\n"; continue;
+                case '\r': ret += "\\r"; continue;
+                case '\t': ret += "\\t"; continue;
+                default:
+                    ret.push_back(val[i]);
+                    continue;
+                }
+            }
+            return '\"' + ret + '\"';
         }
     };
 

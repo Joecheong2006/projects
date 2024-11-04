@@ -82,20 +82,57 @@ namespace json {
         return ret;
     }
 
+    /*
+     string = quotation-mark *char quotation-mark
+    
+     char = unescaped /
+         escape (
+             %x22 /          ; "    quotation mark  U+0022
+             %x5C /          ; \    reverse solidus U+005C
+             %x2F /          ; /    solidus         U+002F
+             %x62 /          ; b    backspace       U+0008
+             %x66 /          ; f    form feed       U+000C
+             %x6E /          ; n    line feed       U+000A
+             %x72 /          ; r    carriage return U+000D
+             %x74 /          ; t    tab             U+0009
+             %x75 4HEXDIG )  ; uXXXX                U+XXXX
+    
+     escape = %x5C              ; \
+    
+     quotation-mark = %x22      ; "
+    
+     unescaped = %x20-21 / %x23-5B / %x5D-10FFFF
+    */
     static ret_type<int> parse_string(token& tok, const std::string& content, std::string::const_iterator& begin) {
         int skip_len = 1;
+        std::string str;
         for (auto iter = ++begin;; ++iter, ++skip_len) {
             if (iter == content.end()) {
                 return {skip_len, {"missing string closing braket", ErrorType::InvalidInput, tok.rows, tok.cols + skip_len - 2}};
             }
             if (*iter == '"') {
-                tok.val.string = new char[skip_len];
-                const char* src = &(*begin);
-                std::memcpy(tok.val.string, src, skip_len);
-                tok.val.string[skip_len - 1] = '\0';
+                tok.val.string = new char[str.size() + 1];
+                std::memcpy(tok.val.string, str.c_str(), str.size() + 1);
                 begin += skip_len - 1;
                 return {skip_len, {}};
             }
+            if (*iter == '\\') {
+                ++iter, ++skip_len;
+                switch(*iter) {
+                case 0x22: str.push_back('"'); continue;
+                case 0x5C: str.push_back('\\'); continue;
+                case 0x2F: str.push_back('/'); continue;
+                case 0x62: str.push_back('\b'); continue;
+                case 0x66: str.push_back('\f'); continue;
+                case 0x6E: str.push_back('\n'); continue;
+                case 0x72: str.push_back('\r'); continue;
+                case 0x74: str.push_back('\t'); continue;
+                case 0x75: continue; // TODO(Nov4): parse 4 hex
+                default:
+                    return {skip_len, {"unkown special character.", ErrorType::InvalidInput, tok.rows, tok.cols + skip_len - 2}};
+                }
+            }
+            str.push_back(*iter);
 
             // TODO(Oct31): implement character encoding
         }

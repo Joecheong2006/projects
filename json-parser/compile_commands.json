@@ -13,7 +13,7 @@
       "-DPROFILING",
       "-O2"
     ],
-    "directory": "C://Users//joech//project//json-parser",
-    "file": "src/main.cpp"
+    "directory": "C:\\Users\\joech\\project\\json-parser",
+    "file": "src\\main.cpp"
   }
 ]
