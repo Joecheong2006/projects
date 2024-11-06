@@ -5,6 +5,7 @@
 #include <iostream>
 #include <cstdio>
 #include <sstream>
+#include <map>
 
 namespace json {
     std::ostream& operator<<(std::ostream& os, const error& err) {
@@ -43,6 +44,187 @@ namespace json {
         j.pri->log();
         return os;
     }
+
+   struct string : public primitive {
+        const char* val;
+
+        string(char* val)
+            : val(val) {}
+
+        ~string() {
+            delete[] val;
+        }
+
+        virtual bool is_string() const override { return true; }
+        virtual string* get_string() override { return this; }
+        inline virtual void log() const override {
+            std::cout << val;
+        }
+
+        virtual std::string dump() const override {
+            std::string ret;
+            for (int i = 0; val[i] != '\0'; ++i) {
+                unsigned short c = val[i];
+                if (c < 128) {
+                    switch (c) {
+                        case '"': ret += "\\\""; continue;
+                        case '\\': ret += "\\\\"; continue;
+                        case '/':  ret += "\\/"; continue;
+                        case '\b': ret += "\\b"; continue;
+                        case '\f': ret += "\\f"; continue;
+                        case '\n': ret += "\\n"; continue;
+                        case '\r': ret += "\\r"; continue;
+                        case '\t': ret += "\\t"; continue;
+                        default:
+                           ret.push_back(c);
+                           continue;
+                    }
+                }
+                else if ((c & 0xE0) == 0xC0) {
+                    short code = (val[i] & 0x1F) << 6 | (val[i + 1] & 0x3F);
+                    std::stringstream ss;
+                    ss << "\\u" << std::uppercase << std::hex << code;
+                    ret += ss.str();
+                    ++i;
+                }
+                else if ((c & 0xF0) == 0xE0) {
+                    short code = (val[i] & 0xF) << 12 | (val[i + 1] & 0x3F) << 6 | (val[i + 2] & 0x3F);
+                    std::stringstream ss;
+                    ss << "\\u" << std::uppercase << std::hex << code;
+                    ret += ss.str();
+                    i += 2;
+                }
+            }
+            return '\"' + ret + '\"';
+        }
+    };
+
+    struct number : public primitive {
+        double val;
+
+        number(double num)
+            : val(num) {}
+
+        virtual bool is_string() const override { return true; }
+        virtual number* get_number() override { return this; }
+        inline virtual void log() const override {
+            std::cout << val;
+        }
+
+        virtual std::string dump() const override {
+            return std::to_string(val);
+        }
+    };
+
+    struct boolean : public primitive {
+        bool val;
+
+        boolean(bool val)
+            : val(val) {}
+
+        virtual bool is_boolean() const override { return true; }
+        virtual boolean* get_boolean() override { return this; }
+        virtual void log() const override {
+            std::cout << (val ? "true" : "false");
+        }
+
+        virtual std::string dump() const override {
+            return val ? "true" : "false";
+        }
+    };
+
+    struct null : public primitive {
+        virtual bool is_null() const override { return true; }
+        virtual void log() const override {
+            std::cout << "null";
+        }
+
+        virtual std::string dump() const override {
+            return "null";
+        }
+    };
+
+    struct object : public primitive {
+        using type = std::map<std::string, primitive*>;
+        type val;
+
+        ~object() {
+            for (const auto& e : val) {
+                delete e.second;
+            }
+        }
+        object(const type& obj)
+            : val(obj) {}
+
+        virtual bool is_object() const override { return true; }
+        virtual object* get_object() override { return this; }
+        virtual void log() const override {
+            std::cout << '{';
+            for (auto iter = val.begin(); iter != val.end();) {
+                std::cout << iter->first << ": " << iter->second;
+                if (++iter != val.end()) {
+                    std::cout << ", ";
+                    continue;
+                }
+                break;
+            }
+            std::cout << '}';
+        }
+
+        virtual std::string dump() const override {
+            std::string ret;
+            for (auto iter = val.begin(); iter != val.end();) {
+                ret += '"' + iter->first + "\":" + iter->second->dump();
+                if (++iter != val.end()) {
+                    ret += ",";
+                    continue;
+                }
+                break;
+            }
+            return '{' + ret + '}';
+        }
+    };
+
+    struct array : public primitive {
+        using type = std::vector<primitive*>;
+        type val;
+
+        ~array() {
+            for (const auto& e : val) {
+                delete e;
+            }
+        }
+        array(const type& arr)
+            : val(arr) {}
+
+        virtual bool is_array() const override { return true; }
+        virtual array* get_array() override { return this; }
+        virtual void log() const override {
+            std::cout << '[';
+            if (val.size() == 0) {
+                std::cout << ']';
+                return;
+            }
+            for (int i = 0; i < (int)val.size() - 1; ++i) {
+                std::cout << val[i] << ", ";
+            }
+            std::cout << val.back();
+            std::cout << ']';
+        }
+
+        virtual std::string dump() const override {
+            if (val.size() == 0) {
+                return "[]";
+            }
+
+            std::string ret;
+            for (int i = 0; i < (int)val.size() - 1; ++i) {
+                ret += val[i]->dump() + ',';
+            }
+            ret += val.back()->dump() + ']';
+            return '[' + ret;
+        }
+    };
 
     primitive* primitive::get(int index) {
         const auto& ret = get_array();
@@ -342,85 +524,6 @@ namespace json {
             ++cols;
         }
         return {result, {}};
-    }
-
-    void string::log() const {
-        std::cout << val;
-    }
-
-    std::string string::dump() const {
-        std::string ret;
-        for (int i = 0; val[i] != '\0'; ++i) {
-            unsigned short c = val[i];
-            if (c < 128) {
-                switch (c) {
-                    case '"': ret += "\\\""; continue;
-                    case '\\': ret += "\\\\"; continue;
-                    case '/':  ret += "\\/"; continue;
-                    case '\b': ret += "\\b"; continue;
-                    case '\f': ret += "\\f"; continue;
-                    case '\n': ret += "\\n"; continue;
-                    case '\r': ret += "\\r"; continue;
-                    case '\t': ret += "\\t"; continue;
-                    default:
-                       ret.push_back(c);
-                       continue;
-                }
-            }
-            else if ((c & 0xE0) == 0xC0) {
-                short code = (val[i] & 0x1F) << 6 | (val[i + 1] & 0x3F);
-                std::stringstream ss;
-                ss << "\\u" << std::uppercase << std::hex << code;
-                ret += ss.str();
-                ++i;
-            }
-            else if ((c & 0xF0) == 0xE0) {
-                short code = (val[i] & 0xF) << 12 | (val[i + 1] & 0x3F) << 6 | (val[i + 2] & 0x3F);
-                std::stringstream ss;
-                ss << "\\u" << std::uppercase << std::hex << code;
-                ret += ss.str();
-                i += 2;
-            }
-        }
-        return '\"' + ret + '\"';
-    }
-
-    void number::log() const {
-        std::cout << val;
-    }
-
-    void object::log() const {
-        std::cout << '{';
-        for (auto iter = val.begin(); iter != val.end();) {
-            std::cout << iter->first << ": " << iter->second;
-            if (++iter != val.end()) {
-                std::cout << ", ";
-                continue;
-            }
-            break;
-        }
-        std::cout << '}';
-    }
-
-    void array::log() const {
-        std::cout << '[';
-        if (val.size() == 0) {
-            std::cout << ']';
-            return;
-        }
-        for (int i = 0; i < (int)val.size() - 1; ++i) {
-            std::cout << val[i] << ", ";
-        }
-        std::cout << val.back();
-        std::cout << ']';
-    }
-
-    void boolean::log() const {
-        std::cout << (val ? "true" : "false");
-    }
-
-    void null::log() const {
-        std::cout << "null";
     }
 
     static ret_type<primitive*> parse_impl(const tokens& toks, tokens::const_iterator& iter);
