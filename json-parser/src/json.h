@@ -266,7 +266,7 @@ namespace json {
                 ret += val[i]->dump() + ',';
             }
             ret += val.back()->dump() + ']';
-            return ret;
+            return '[' + ret;
         }
     };
 

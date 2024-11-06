@@ -103,6 +103,40 @@ namespace json {
     
      unescaped = %x20-21 / %x23-5B / %x5D-10FFFF
     */
+
+    // static bool is_hex(char c) {
+    //     switch (c) {
+    //     case 'a': case 'b': case 'c': case 'd': case 'e': case 'f':
+    //     case 'A': case 'B': case 'C': case 'D': case 'E': case 'F':
+    //         return true;
+    //     default:
+    //         return false;
+    //     }
+    // }
+
+    static std::string utf8_encoding(int unicode) {
+        std::string str;
+        if (unicode <= 0x7f) {
+            char b1 = (char)(unicode & 0x7F);
+            str.push_back(b1);
+        }
+        else if (unicode <= 0x7ff) {
+            char b1 = 0xC0 | (char)((unicode & 0x7C0) >> 6);
+            char b2 = 0x80 | (char)(unicode & 0x3f);
+            str.push_back(b1);
+            str.push_back(b2);
+        }
+        else {
+            char b1 = 0xE0 | (char)((unicode & 0xF000) >> 12);
+            char b2 = 0x80 | (char)((unicode & 0xFC0) >> 6);
+            char b3 = 0x80 | (char)(unicode & 0x3F);
+            str.push_back(b1);
+            str.push_back(b2);
+            str.push_back(b3);
+        }
+        return str;
+    }
+
     static ret_type<int> parse_string(token& tok, const std::string& content, std::string::const_iterator& begin) {
         int skip_len = 1;
         std::string str;
@@ -127,7 +161,32 @@ namespace json {
                 case 0x6E: str.push_back('\n'); continue;
                 case 0x72: str.push_back('\r'); continue;
                 case 0x74: str.push_back('\t'); continue;
-                case 0x75: continue; // TODO(Nov4): parse 4 hex
+                case 0x75: {
+                    int hex = 0x0000;
+                    int i;
+                    for (i = 0; i < 4; ++i) {
+                        ++iter;
+                        if (isdigit(*iter)) {
+                            hex = hex * 16 + *iter - '0';
+                            continue;
+                        }
+
+                        switch (*iter) {
+                        case 'a': case 'b': case 'c': case 'd': case 'e': case 'f':
+                            hex = hex * 16 + *iter - 'a' + 10;
+                            break;
+                        case 'A': case 'B': case 'C': case 'D': case 'E': case 'F':
+                            hex = hex * 16 + *iter - 'A' + 10;
+                            break;
+                        default:
+                            return {skip_len, {"\\u must follow exactly 4 hex number", ErrorType::InvalidInput, tok.rows, tok.cols + skip_len - 2}};
+                        }
+                    }
+
+                    str += utf8_encoding(hex);
+                    skip_len += 4;
+                    continue;
+                }
                 default:
                     return {skip_len, {"unkown special character.", ErrorType::InvalidInput, tok.rows, tok.cols + skip_len - 2}};
                 }

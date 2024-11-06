@@ -14,6 +14,7 @@
       "-O2"
     ],
     "directory": "C:\\Users\\joech\\project\\json-parser",
-    "file": "src\\main.cpp"
+    "file": "src\\main.cpp",
+    "text": "Hello, world\u2665\u2665"
   }
 ]
