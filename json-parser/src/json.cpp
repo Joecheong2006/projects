@@ -104,17 +104,7 @@ namespace json {
      unescaped = %x20-21 / %x23-5B / %x5D-10FFFF
     */
 
-    // static bool is_hex(char c) {
-    //     switch (c) {
-    //     case 'a': case 'b': case 'c': case 'd': case 'e': case 'f':
-    //     case 'A': case 'B': case 'C': case 'D': case 'E': case 'F':
-    //         return true;
-    //     default:
-    //         return false;
-    //     }
-    // }
-
-    static std::string utf8_encoding(int unicode) {
+    static std::string itoutf8_encoding(int unicode) {
         std::string str;
         if (unicode <= 0x7f) {
             char b1 = (char)(unicode & 0x7F);
@@ -126,13 +116,23 @@ namespace json {
             str.push_back(b1);
             str.push_back(b2);
         }
-        else {
+        else if (unicode <= 0xffff) {
             char b1 = 0xE0 | (char)((unicode & 0xF000) >> 12);
             char b2 = 0x80 | (char)((unicode & 0xFC0) >> 6);
             char b3 = 0x80 | (char)(unicode & 0x3F);
             str.push_back(b1);
             str.push_back(b2);
             str.push_back(b3);
+        }
+        else if (unicode <= 0x10ffff) {
+            char b1 = 0xF0 | (char)((unicode & 0x1C0000) >> 18);
+            char b2 = 0x80 | (char)((unicode & 0x3F000) >> 12);
+            char b3 = 0x80 | (char)((unicode & 0xFC0) >> 6);
+            char b4 = 0x80 | (char)(unicode & 0x3F);
+            str.push_back(b1);
+            str.push_back(b2);
+            str.push_back(b3);
+            str.push_back(b4);
         }
         return str;
     }
@@ -183,7 +183,7 @@ namespace json {
                         }
                     }
 
-                    str += utf8_encoding(hex);
+                    str += itoutf8_encoding(hex);
                     skip_len += 4;
                     continue;
                 }
