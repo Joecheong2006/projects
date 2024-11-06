@@ -45,6 +45,8 @@ int main(void) {
     }
     const auto& json = parse_ret.val;
 
+    setlocale(LC_ALL, "xx_XX.UTF-8");
+
     std::cout << "json->dump(): " << json->dump() << "\n";
     std::cout << "\njson: " << json << std::endl;
 
