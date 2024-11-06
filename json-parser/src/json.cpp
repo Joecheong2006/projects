@@ -4,6 +4,7 @@
 #include <cmath>
 #include <iostream>
 #include <cstdio>
+#include <sstream>
 
 namespace json {
     std::ostream& operator<<(std::ostream& os, const error& err) {
@@ -123,16 +124,6 @@ namespace json {
             str.push_back(b1);
             str.push_back(b2);
             str.push_back(b3);
-        }
-        else if (unicode <= 0x10ffff) {
-            char b1 = 0xF0 | (char)((unicode & 0x1C0000) >> 18);
-            char b2 = 0x80 | (char)((unicode & 0x3F000) >> 12);
-            char b3 = 0x80 | (char)((unicode & 0xFC0) >> 6);
-            char b4 = 0x80 | (char)(unicode & 0x3F);
-            str.push_back(b1);
-            str.push_back(b2);
-            str.push_back(b3);
-            str.push_back(b4);
         }
         return str;
     }
@@ -361,6 +352,46 @@ namespace json {
 
     void string::log() const {
         std::cout << val;
+    }
+
+    std::string string::dump() const {
+        std::string ret;
+        for (int i = 0; val[i] != '\0'; ++i) {
+            unsigned short c = val[i];
+            if (c < 128) {
+                switch (c) {
+                    case '"': ret += "\\\""; continue;
+                    case '\\': ret += "\\\\"; continue;
+                    case '/':  ret += "\\/"; continue;
+                    case '\b': ret += "\\b"; continue;
+                    case '\f': ret += "\\f"; continue;
+                    case '\n': ret += "\\n"; continue;
+                    case '\r': ret += "\\r"; continue;
+                    case '\t': ret += "\\t"; continue;
+                    default:
+                       ret.push_back(c);
+                       continue;
+                }
+            }
+            else if ((c & 0xE0) == 0xC0) {
+                char b1 = val[i] & 0x1F;
+                char b2 = val[++i] & 0x3F;
+                short code = b1 << 6 | b2;
+                std::stringstream ss;
+                ss << "\\u" << std::uppercase << std::hex << code;
+                ret += ss.str();
+            }
+            else if ((c & 0xF0) == 0xE0) {
+                char b1 = val[i] & 0xF;
+                char b2 = val[++i] & 0x3F;
+                char b3 = val[++i] & 0x3F;
+                short code = b1 << 12 | b2 << 6 | b3;
+                std::stringstream ss;
+                ss << "\\u" << std::uppercase << std::hex << code;
+                ret += ss.str();
+            }
+        }
+        return '\"' + ret + '\"';
     }
 
     void number::log() const {
