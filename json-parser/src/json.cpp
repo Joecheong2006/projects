@@ -105,25 +105,19 @@ namespace json {
      unescaped = %x20-21 / %x23-5B / %x5D-10FFFF
     */
 
-    static std::string itoutf8_encoding(int unicode) {
+    inline static std::string itoutf8_encoding(int unicode) {
         std::string str;
         if (unicode <= 0x7f) {
-            char b1 = (char)(unicode & 0x7F);
-            str.push_back(b1);
+            str.push_back((char)(unicode & 0x7F));
         }
         else if (unicode <= 0x7ff) {
-            char b1 = 0xC0 | (char)((unicode & 0x7C0) >> 6);
-            char b2 = 0x80 | (char)(unicode & 0x3f);
-            str.push_back(b1);
-            str.push_back(b2);
+            str.push_back(0xC0 | (char)((unicode & 0x7C0) >> 6));
+            str.push_back(0x80 | (char)(unicode & 0x3f));
         }
         else if (unicode <= 0xffff) {
-            char b1 = 0xE0 | (char)((unicode & 0xF000) >> 12);
-            char b2 = 0x80 | (char)((unicode & 0xFC0) >> 6);
-            char b3 = 0x80 | (char)(unicode & 0x3F);
-            str.push_back(b1);
-            str.push_back(b2);
-            str.push_back(b3);
+            str.push_back(0xE0 | (char)((unicode & 0xF000) >> 12));
+            str.push_back(0x80 | (char)((unicode & 0xFC0) >> 6));
+            str.push_back(0x80 | (char)(unicode & 0x3F));
         }
         return str;
     }
@@ -374,21 +368,18 @@ namespace json {
                 }
             }
             else if ((c & 0xE0) == 0xC0) {
-                char b1 = val[i] & 0x1F;
-                char b2 = val[++i] & 0x3F;
-                short code = b1 << 6 | b2;
+                short code = (val[i] & 0x1F) << 6 | (val[i + 1] & 0x3F);
                 std::stringstream ss;
                 ss << "\\u" << std::uppercase << std::hex << code;
                 ret += ss.str();
+                ++i;
             }
             else if ((c & 0xF0) == 0xE0) {
-                char b1 = val[i] & 0xF;
-                char b2 = val[++i] & 0x3F;
-                char b3 = val[++i] & 0x3F;
-                short code = b1 << 12 | b2 << 6 | b3;
+                short code = (val[i] & 0xF) << 12 | (val[i + 1] & 0x3F) << 6 | (val[i + 2] & 0x3F);
                 std::stringstream ss;
                 ss << "\\u" << std::uppercase << std::hex << code;
                 ret += ss.str();
+                i += 2;
             }
         }
         return '\"' + ret + '\"';
