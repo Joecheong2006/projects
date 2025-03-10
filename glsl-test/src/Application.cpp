@@ -9,18 +9,16 @@
 #define DEFAULT_SHADER_NAME "default"
 
 ShaderProgram* Application::currentShader;
-std::string Application::shaderName = "pixel";
+std::string Application::shaderName = "ray-tracing";
 
-f32 vertexs[] =
-{
+f32 vertexs[] = {
      1.0,  1.0,
     -1.0,  1.0,
      1.0, -1.0,
     -1.0, -1.0,
 };
 
-u32 indices[] =
-{
+u32 indices[] = {
     0, 1, 2,
     1, 3, 2,
 };
@@ -63,8 +61,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     }
 }
 
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
-{
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
     (void)window;
     (void)xoffset;
     zoom -= yoffset * 0.5f;
@@ -131,8 +128,6 @@ void Application::loadShader(const std::string& name) {
     shaderName = name;
 }
 
-static char buf[64] = "test";
-
 void Application::run() {
     VertexArray vao;
     VertexBuffer vbo(vertexs, sizeof(f32) * 8);
@@ -158,10 +153,7 @@ void Application::run() {
         currentShader->bind();
         vao.bind();
         currentShader->set_2f("resolution", width, height);
-        currentShader->set_2f("mouse_coord", mouse_x / width, 1 - mouse_y / height);
-        currentShader->set_2f("center", cx, cy);
         currentShader->set_1f("time", glfwGetTime());
-        currentShader->set_1f("zoom", zoom);
         GLCALL(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
 
         float speed = 0.02;
@@ -176,10 +168,11 @@ void Application::run() {
         if (glfwGetKey(m_window, GLFW_KEY_A) == GLFW_PRESS)
             cx += speed;
 
-
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
+
+        static char buf[64] = "";
 
         ImGui::Begin("status");
         ImGui::InputText("shader", buf, IM_ARRAYSIZE(buf));

@@ -840,6 +840,8 @@ void vulkan_test_terminate(void* self) {
 }
 
 application_setup create_application() {
+
+    return game_test_start();
     static vulkan_test test;
     return (application_setup) {
         .app = &test,
@@ -848,6 +850,4 @@ application_setup create_application() {
         .on_update = vulkan_test_update,
         .on_terminate = vulkan_test_terminate,
     };
-
-    return game_test_start();
 }

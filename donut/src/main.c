@@ -3,7 +3,7 @@
 #include <pthread.h>
 #include <string.h>
 
-#if defined(WIN32)
+#if defined(WIN32) || defined(_WIN32)
     #include <windows.h>
     #include <conio.h>
 #else

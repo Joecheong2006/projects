@@ -4,13 +4,10 @@
 
 extern mfw::Application* mfw::CreateApplication();
 
-int main(int argc, char** argv) {
-    (void)argc;
-    (void)argv;
+int main() {
     mfw::Application* app = mfw::CreateApplication();
     app->run();
     delete app;
-    return 0;
 }
 
 #endif
