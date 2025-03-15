@@ -1,11 +1,17 @@
 #version 330 core
 
 #define PI 3.1415926
+#define RAD(x) ((x) * PI / 180.0)
 
 layout(location = 0) out vec4 frag_color;
 
 uniform vec2 resolution;
 uniform float time;
+
+struct hit_info {
+    vec3 point, normal;
+    float t;
+};
 
 struct circle {
     vec3 center;
@@ -21,8 +27,8 @@ uint pcg(uint v) {
     return (word >> uint(22)) ^ word;
 }
 
-float rand(float p) {
-    return float(pcg(uint(p + time))) / float(uint(0xffffffff));
+float rand(inout float p) {
+    return float(pcg(uint(p))) / float(uint(0xffffffff));
 }
 
 float randND(float state) {
@@ -54,43 +60,70 @@ vec3 ray_at(ray r, float t) {
     return r.origin + t * r.direction;
 }
 
-float hit_sphere(vec3 center, float radius, ray r) {
-    vec3 dir = center - r.origin;
+bool hit_sphere_circle(in circle cir, ray r, float max, out hit_info info) {
+    vec3 dir = cir.center - r.origin;
     float a = dot(r.direction, r.direction);
     float b = -2.0 * dot(r.direction, dir);
-    float c = dot(dir, dir) - radius * radius;
+    float c = dot(dir, dir) - cir.radius * cir.radius;
     float discriminant = b * b - 4 * a * c;
     if (discriminant < 0) {
-        return -1;
+        return false;
     }
-    return (-b - sqrt(discriminant)) / (2.0 * a);
+
+    float sqrtd = sqrt(discriminant);
+    info.t = (-b - sqrtd) / (2.0 * a);
+
+    if (!(info.t > 0 && info.t < max)) {
+        info.t = (-b + sqrtd) / (2.0 * a);
+        if (!(info.t > 0 && info.t < max)) {
+            return false;
+        }
+    }
+
+    info.point = ray_at(r, info.t);
+    info.normal = (info.point - cir.center) / cir.radius;
+    if (dot(r.direction, info.normal) > 0) {
+        info.normal = -info.normal;
+    }
+    return true;
 }
 
-vec3 ray_color(ray r) {
+bool hit(ray r, out hit_info track) {
+    hit_info tmp;
+
     float closest = 0xffffff;
+    bool hit_something = false;
+
+    for (int i = 0; i < CIRCLE_LEN; ++i) {
+        if (hit_sphere_circle(circles[i], r, closest, tmp)) {
+            hit_something = true;
+            closest = tmp.t;
+            track = tmp;
+        }
+    }
+
+    return hit_something;
+}
+
+vec3 trace_color(ray r) {
     vec3 color = vec3(0.0);
 
-    for (int b = 0; b < 2; ++b) {
-        ray reflect_r = r;
-        vec3 collect_color = vec3(1.0);
-        for (int i = 0; i < CIRCLE_LEN; ++i) {
-            float t = hit_sphere(circles[i].center, circles[i].radius, r);
-            if (t >= 0 && closest > t) {
-                vec3 normal = normalize(ray_at(r, t) - circles[i].center);
-                collect_color = dot(-normalize(vec3(1, 1, 1)), normal) * collect_color;
-                closest = t;
+    float m = 1.0;
 
-                vec3 nr = ray_at(r, t);
-                vec3 n = dot(normal, -nr) * normal - nr;
-                reflect_r = Ray(nr + 2.0 * n, nr);
-            }
+    for (int i = 0; i < 20; ++i) {
+        hit_info info;
+        if (hit(r, info)) {
+            color += dot(-normalize(vec3(1, 1, 1)), info.normal) * vec3(1.0) * m;
+
+            m *= 0.7;
+
+            r.origin = info.point + info.normal * 0.001;
+            r.direction -= 2.0 * dot(info.normal, r.direction) * info.normal;
+            normalize(r.direction);
         }
-        if (reflect_r == r) {
+        else {
             break;
         }
-        r = reflect_r;
-        closest = 0xffffff;
-        color += collect_color;
     }
 
     return color;
@@ -105,15 +138,15 @@ void main() {
     circles[0].radius = 0.5;
 
     // vec3 forward = vec3(cos(time), 0.0, sin(time));
-    // vec3 camera_center = vec3(cos(time), 0, sin(time)) * 6;
+    vec3 camera_center = vec3(sin(time * 1.2), 0, -cos(time * 1.2)) * 6;
     vec3 forward = vec3(0.0, 0.0, 1.0);
-    vec3 camera_center = vec3(0.0, 0.0, 0);
+    // vec3 camera_center = vec3(0.0, 0.0, 0);
 
     float viewport_ratio = resolution.x / resolution.y;
     float focal_length = length(forward - camera_center);
     float fov = 45.0;
 
-    float viewport_height = 2.0 * tan((fov * PI / 180.0) / 2.0) * focal_length;
+    float viewport_height = 2.0 * tan(RAD(fov) / 2.0) * focal_length;
     float viewport_width = viewport_height * viewport_ratio;
     vec2 viewport = vec2(viewport_width, viewport_height);
 
@@ -126,17 +159,17 @@ void main() {
     uv += camera_center;
 
     vec2 per_pixel = viewport / vec2(resolution.x, resolution.y);
+    ray r = Ray(camera_center, uv + (per_pixel.x * i + per_pixel.y * j) * 0.5 - camera_center);
 
-    ray r = Ray(camera_center, uv + vec3(per_pixel, 0) * 0.5 - camera_center);
-    vec3 color = ray_color(r);
+    vec3 color = trace_color(r);
     int pixelSimple = 0;
+
     for (int i = 0; i < pixelSimple; ++i) {
-        // vec3 offset = vec3(rand2(gl_FragCoord.xy + vec2(i + time * 1000)) / resolution.xy + per_pixel * 0.5, 0);
-        vec3 offset = vec3(rand2(gl_FragCoord.xy + vec2(i + time * 1000)) / resolution.xy, 0)
-                    + per_pixel.x * i * 0.5 + per_pixel.y * j * 0.5;
-        color += ray_color(Ray(
+        color += trace_color(Ray(
             camera_center,
-            r.direction + offset - camera_center
+            uv + ((per_pixel.x + randND(gl_FragCoord.x + i + time * 1000) / resolution.x) * i
+               + (per_pixel.y + randND(gl_FragCoord.y + i + time * 1000) / resolution.y) * j) * 0.5
+               - camera_center
         ));
     }
 

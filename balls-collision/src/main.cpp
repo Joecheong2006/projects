@@ -2,6 +2,6 @@
 
 int main()
 {
-    // Simulation::Run();
+    Simulation::Run();
     return 0;
 }

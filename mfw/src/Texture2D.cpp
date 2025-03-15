@@ -19,7 +19,9 @@ namespace mfw {
 
         unsigned char *data = stbi_load(path, &m_width, &m_height, &m_bpp, 0);
 
-        GLCALL(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_width, m_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data));
+        GLenum format = m_bpp == 4 ? GL_RGBA : GL_RGB;
+        GLCALL(glTexImage2D(GL_TEXTURE_2D, 0, format, m_width, m_height, 0, format, GL_UNSIGNED_BYTE, data));
+        // GLCALL(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_width, m_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data));
         GLCALL(glGenerateMipmap(GL_TEXTURE_2D));
 
         if(data) stbi_image_free(data);

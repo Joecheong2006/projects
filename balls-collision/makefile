@@ -41,7 +41,7 @@ bin:
 	@cp $(DLL) $(BIN)/.
 
 app: $(OBJ)
-	$(CC) -o $(OUT) $(OBJ) $(LIB)
+	$(CC) -o $(OUT) $(OBJ) $(LIB) -static-libgcc -static-libstdc++ -Wl,-Bstatic -lstdc++ -Wl,-Bdynamic
 	@echo "[100%] Compilation completed"
 
 %.o: %.cpp

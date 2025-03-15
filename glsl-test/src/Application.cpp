@@ -149,11 +149,13 @@ void Application::run() {
     while(!glfwWindowShouldClose(m_window))
     {
         GLCALL(glClear(GL_COLOR_BUFFER_BIT));
+
+        static double start_time = glfwGetTime();
         
         currentShader->bind();
         vao.bind();
         currentShader->set_2f("resolution", width, height);
-        currentShader->set_1f("time", glfwGetTime());
+        currentShader->set_1f("time", glfwGetTime() - start_time);
         GLCALL(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
 
         float speed = 0.02;

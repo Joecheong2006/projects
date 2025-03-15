@@ -19,6 +19,7 @@ else
 endif
 
 all:
+	@$(CC) $(CFLAGS) $(OBJ) -o $(OUT)
 
 bin:
 	@mkdir -p $(BIN)

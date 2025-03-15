@@ -14,6 +14,7 @@ namespace mfw {
 
         void bind() const;
         void unbind() const;
+        void setBuffer(const u32* data, u32 count) const;
 
         inline u32 count() const { return m_count; }
     };

@@ -23,7 +23,7 @@ namespace mfw {
     {}
 
     Clock::~Clock() {
-        LOG_INFO("[{}][{}ms]\n", message, timer.getDuration());
+        LOG_INFO("[{}][{}ms]\n", message, timer.getDuration() * 1000.0);
     }
 
 }
