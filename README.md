@@ -1,6 +1,8 @@
 # Personal Projects
 
-This folder contains a collection of personal projects exploring compilers, graphics, simulations, algorithms, and various utilities. Each directory represents an independent project, experiment, or tool.
+This repository contains a collection of personal projects I built primarily during high school, starting from the pandemic period when I first began seriously learning programming. These projects document my progress — from early experiments to more advanced work in compilers, graphics, and simulations.
+
+In Summer 2024, I challenged myself to deepen my understanding of computer science by writing my own compiler in C and exploring graphics programming and physical simulations. Many of the projects here are the direct result of that effort.
 
 ## Project Overview
 
